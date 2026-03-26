@@ -1,0 +1,45 @@
+# .clang-tidy
+---
+Checks: >
+  clang-analyzer-*,
+  cppcoreguidelines-*,
+  readability-identifier-naming,
+  -readability-braces-around-statements,
+  -modernize-use-nodiscard,
+  -modernize-use-trailing-return-type
+
+CheckOptions:
+  # Variables: lower_case
+  - key: readability-identifier-naming.VariableCase
+    value: camelBack
+  - key: readability-identifier-naming.MemberCase
+    value: camelBack
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.PrivateMemberCase
+    value: camelBack
+  - key: readability-identifier-naming.PrivateMemberPrefix
+    value: ""
+  - key: readability-identifier-naming.PrivateMemberSuffix
+    value: "_"
+
+  # Functions: camelBack
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.MethodCase
+    value: camelBack
+
+  # Classes / structs: PascalCase
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.StructCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key: readability-identifier-naming.EnumConstantCase
+    value: UPPER_CASE
+
+WarningsAsErrors: '*'
+
+HeaderFilterRegex: 'src/.*|include/.*'
+FormatStyle: file
