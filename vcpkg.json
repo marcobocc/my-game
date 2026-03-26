@@ -3,5 +3,29 @@
   "version": "0.1.0",
   "builtin-baseline": "dd930e314f529c86d2703a60d5ea7dd6573d9e5a",
   "dependencies": [
+    {
+      "name": "glfw3",
+      "default-features": true
+    },
+    {
+      "name": "vulkan-memory-allocator",
+      "default-features": true
+    },
+    {
+      "name": "glm",
+      "default-features": true
+    },
+    {
+      "name": "volk",
+      "default-features": true
+    },
+    {
+      "name": "log4cxx",
+      "default-features": true
+    },
+    {
+      "name": "fmt",
+      "default-features": true
+    }
   ]
 }
