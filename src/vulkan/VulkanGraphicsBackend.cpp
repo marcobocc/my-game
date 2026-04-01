@@ -39,8 +39,10 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
     }
 }
 
-void VulkanGraphicsBackend::draw(const MeshComponent& mesh, const MaterialComponent& material) {
-    drawQueue_.push_back({&mesh, &material});
+void VulkanGraphicsBackend::draw(const MeshComponent& mesh,
+                                 const MaterialComponent& material,
+                                 const glm::mat4& modelMatrix) {
+    drawQueue_.push_back({&mesh, &material, modelMatrix});
 }
 
 void VulkanGraphicsBackend::renderFrame() {
@@ -70,8 +72,8 @@ void VulkanGraphicsBackend::renderFrame() {
     rpInfo.pClearValues = &clearColor;
     vkCmdBeginRenderPass(cmd, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    for (auto& [mesh, material]: drawQueue_) {
-        renderEntity(cmd, *mesh, *material);
+    for (auto& [mesh, material, modelMatrix]: drawQueue_) {
+        renderEntity(cmd, *mesh, *material, modelMatrix);
     }
 
     vkCmdEndRenderPass(cmd);
@@ -83,8 +85,10 @@ void VulkanGraphicsBackend::renderFrame() {
     currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-inline void
-VulkanGraphicsBackend::renderEntity(VkCommandBuffer cmd, const MeshComponent& mesh, const MaterialComponent& material) {
+inline void VulkanGraphicsBackend::renderEntity(VkCommandBuffer cmd,
+                                                const MeshComponent& mesh,
+                                                const MaterialComponent& material,
+                                                const glm::mat4& modelMatrix) {
     // Create or fetch vertex buffer
     VulkanBuffer* vertexBuffer = vertexBuffersManager_.createOrGetVertexBuffer(
             mesh.name, mesh.vertices.data(), mesh.vertices.size() * sizeof(float));
@@ -133,9 +137,9 @@ VulkanGraphicsBackend::renderEntity(VkCommandBuffer cmd, const MeshComponent& me
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(cmd, 0, 1, &buf, offsets);
 
-    // Push material tint uniform (fragment shader expects a vec3)
-    // vkCmdPushConstants(
-    // cmd, pipeline->getPipelineLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(glm::vec3), &material.tintColor);
+    // Push model matrix
+    vkCmdPushConstants(
+            cmd, pipeline->getVkPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &modelMatrix);
 
     // Draw
     if (mesh.hasIndices()) {

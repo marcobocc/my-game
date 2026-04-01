@@ -2,6 +2,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
 #include "ecs/components/MaterialComponent.hpp"
 #include "ecs/components/MeshComponent.hpp"
 #include "vulkan/VulkanCommandManager.hpp"
@@ -22,15 +23,19 @@ public:
 
     ~VulkanGraphicsBackend();
     explicit VulkanGraphicsBackend(GLFWwindow* window);
-    void draw(const MeshComponent& mesh, const MaterialComponent& material);
+    void draw(const MeshComponent& mesh, const MaterialComponent& material, const glm::mat4& modelMatrix);
     void renderFrame();
 
 private:
-    void renderEntity(VkCommandBuffer cmd, const MeshComponent& mesh, const MaterialComponent& material);
+    void renderEntity(VkCommandBuffer cmd,
+                      const MeshComponent& mesh,
+                      const MaterialComponent& material,
+                      const glm::mat4& modelMatrix);
 
     struct DrawCall {
         const MeshComponent* mesh;
         const MaterialComponent* material;
+        glm::mat4 modelMatrix;
     };
 
     size_t currentFrame_ = 0;
