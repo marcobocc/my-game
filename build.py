@@ -155,9 +155,26 @@ def configure_cmake(toolchain: Path, build_type: str = "Debug") -> None:
 
 def build_target(target: str) -> None:
     toolchain = get_vcpkg_toolchain()
+    compile_shaders()
     configure_cmake(toolchain)
     build_log(f"Building target {target}")
     run_cmd(["cmake", "--build", "."], cwd=BUILD_DIR)
+
+
+# -----------------------------------------------------------------------------
+# Shader Compilation
+# -----------------------------------------------------------------------------
+def compile_shaders() -> None:
+    input_shaders_dir = PROJECT_ROOT / "shaders"
+    output_shaders_dir = BUILD_DIR / "shaders"
+    output_shaders_dir.mkdir(parents=True, exist_ok=True)
+    shader_exts = {".vert", ".frag"}
+    for shader in input_shaders_dir.iterdir():
+        if shader.suffix not in shader_exts:
+            continue
+        out = output_shaders_dir / f"{shader.name}.spv"
+        info(f"Compiling {shader.name} -> {out.name}")
+        run_cmd(["glslc", str(shader), "-o", str(out)])
 
 
 # -----------------------------------------------------------------------------
