@@ -72,6 +72,21 @@ void VulkanGraphicsBackend::renderFrame() {
     rpInfo.pClearValues = &clearColor;
     vkCmdBeginRenderPass(cmd, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+    // Set dynamic viewport and scissor
+    VkExtent2D extent = swapchainManager_.extent();
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(extent.width);
+    viewport.height = static_cast<float>(extent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = extent;
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+
     for (auto& [mesh, material, modelMatrix]: drawQueue_) {
         renderEntity(cmd, *mesh, *material, modelMatrix);
     }
