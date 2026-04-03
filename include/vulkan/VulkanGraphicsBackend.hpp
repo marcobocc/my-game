@@ -1,10 +1,10 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include "ecs/components/MaterialComponent.hpp"
 #include "ecs/components/MeshComponent.hpp"
+#include "vulkan/VulkanFramesManager.hpp"
 #include "vulkan/VulkanCommandManager.hpp"
 #include "vulkan/VulkanDebugMessenger.hpp"
 #include "vulkan/VulkanDevice.hpp"
@@ -15,7 +15,6 @@
 
 class VulkanGraphicsBackend {
 public:
-    static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
     VulkanGraphicsBackend(const VulkanGraphicsBackend&) = delete;
     VulkanGraphicsBackend& operator=(const VulkanGraphicsBackend&) = delete;
     VulkanGraphicsBackend(VulkanGraphicsBackend&&) = delete;
@@ -23,26 +22,13 @@ public:
 
     ~VulkanGraphicsBackend();
     explicit VulkanGraphicsBackend(GLFWwindow* window);
+
     void draw(const MeshComponent& mesh, const MaterialComponent& material, const glm::mat4& modelMatrix);
     void renderFrame();
 
 private:
-    void renderEntity(VkCommandBuffer cmd,
-                      const MeshComponent& mesh,
-                      const MaterialComponent& material,
-                      const glm::mat4& modelMatrix);
-
-    struct DrawCall {
-        const MeshComponent* mesh;
-        const MaterialComponent* material;
-        glm::mat4 modelMatrix;
-    };
-
     size_t currentFrame_ = 0;
-    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores_{};
-    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores_{};
-    std::array<VkFence, MAX_FRAMES_IN_FLIGHT> inFlightFences_{};
-    GLFWwindow* window_ = nullptr; // TODO: Create window wrapper object
+    GLFWwindow* window_ = nullptr;
     VulkanInstance instance_;
     VulkanDebugMessenger debugMessenger_;
     VulkanDevice device_;
@@ -50,5 +36,6 @@ private:
     VulkanSwapchainManager swapchainManager_;
     VulkanPipelinesManager pipelinesManager_;
     VulkanVertexBuffersManager vertexBuffersManager_;
+    VulkanFramesManager framesManager_;
     std::vector<DrawCall> drawQueue_;
 };
