@@ -13,32 +13,12 @@ public:
     VulkanVertexBuffersManager& operator=(VulkanVertexBuffersManager&&) = delete;
 
     ~VulkanVertexBuffersManager() = default;
-    VulkanVertexBuffersManager(VkDevice device, VkPhysicalDevice physicalDevice) :
-        device_(device),
-        physicalDevice_(physicalDevice) {}
+    VulkanVertexBuffersManager(VkDevice device, VkPhysicalDevice physicalDevice);
 
     template<typename T>
-    VulkanBuffer* createOrGetVertexBuffer(const std::string& name, const T* data, size_t size) {
-        auto it = buffers_.find(name);
-        if (it != buffers_.end()) return it->second.get();
+    VulkanBuffer* createOrGetVertexBuffer(const std::string& name, const T* data, size_t size);
 
-        auto buffer = std::make_unique<VulkanBuffer>(device_,
-                                                     physicalDevice_,
-                                                     size,
-                                                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                     data);
-
-        auto [insertedIt, _] = buffers_.emplace(name, std::move(buffer));
-        return insertedIt->second.get();
-    }
-
-    VulkanBuffer* getVertexBuffer(const std::string& name) {
-        auto it = buffers_.find(name);
-        if (it != buffers_.end()) return it->second.get();
-        return nullptr;
-    }
+    VulkanBuffer* getVertexBuffer(const std::string& name);
 
 private:
     VkDevice device_;

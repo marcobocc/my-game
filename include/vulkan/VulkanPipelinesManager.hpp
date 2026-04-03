@@ -10,25 +10,16 @@ public:
     VulkanPipelinesManager& operator=(const VulkanPipelinesManager&) = delete;
     VulkanPipelinesManager(VulkanPipelinesManager&&) = delete;
     VulkanPipelinesManager& operator=(VulkanPipelinesManager&&) = delete;
- ~VulkanPipelinesManager() = default;
-    VulkanPipelinesManager(VkDevice device, VkRenderPass renderPass) : device_(device), renderPass_(renderPass) {}
+
+    ~VulkanPipelinesManager() = default;
+    VulkanPipelinesManager(VkDevice device, VkRenderPass renderPass);
 
     VulkanPipeline* createOrGetPipeline(const std::string& materialName,
                                         const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
                                         const std::string& vertPath,
-                                        const std::string& fragPath) {
-        auto it = pipelines_.find(materialName);
-        if (it != pipelines_.end()) return &it->second;
-        VulkanPipeline pipeline(device_, renderPass_, vertPath, fragPath, vertexInputInfo);
-        auto [insertedIt, _] = pipelines_.emplace(materialName, std::move(pipeline));
-        return &insertedIt->second;
-    }
+                                        const std::string& fragPath);
 
-    VulkanPipeline* getPipeline(const std::string& materialName) {
-        auto it = pipelines_.find(materialName);
-        if (it != pipelines_.end()) return &it->second;
-        return nullptr;
-    }
+    VulkanPipeline* getPipeline(const std::string& materialName);
 
 private:
     VkDevice device_;
