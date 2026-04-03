@@ -3,7 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vulkan/vulkan.h>
-#include "vulkan/VulkanBuffer.hpp"
+#include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 
 class VulkanVertexBuffersManager {
 public:

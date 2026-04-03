@@ -6,15 +6,15 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 
-class VulkanSwapchainManager {
+class VulkanSwapchain {
 public:
-    VulkanSwapchainManager(const VulkanSwapchainManager&) = delete;
-    VulkanSwapchainManager& operator=(const VulkanSwapchainManager&) = delete;
-    VulkanSwapchainManager(VulkanSwapchainManager&&) = delete;
-    VulkanSwapchainManager& operator=(VulkanSwapchainManager&&) = delete;
+    VulkanSwapchain(const VulkanSwapchain&) = delete;
+    VulkanSwapchain& operator=(const VulkanSwapchain&) = delete;
+    VulkanSwapchain(VulkanSwapchain&&) = delete;
+    VulkanSwapchain& operator=(VulkanSwapchain&&) = delete;
 
-    ~VulkanSwapchainManager();
-    VulkanSwapchainManager(GLFWwindow* window, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device);
+    ~VulkanSwapchain();
+    VulkanSwapchain(GLFWwindow* window, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device);
 
     void recreate();
     bool acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t& imageIndex) const;
@@ -35,7 +35,7 @@ private:
     void createFramebuffers();
     void cleanupSwapchain();
 
-    inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("VulkanSwapchainManager");
+    inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("VulkanSwapchain");
 
     GLFWwindow* window_;
     VkInstance instance_;

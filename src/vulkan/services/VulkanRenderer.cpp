@@ -1,19 +1,19 @@
-#include "vulkan/VulkanRenderer.hpp"
+#include "vulkan/services/VulkanRenderer.hpp"
 #include <volk.h>
-#include "vulkan/VulkanBuffer.hpp"
 #include "vulkan/VulkanErrorHandling.hpp"
+#include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 
 VulkanRenderer::VulkanRenderer(VkDevice device,
                                VkPhysicalDevice physicalDevice,
                                size_t swapchainImageCount,
                                VulkanPipelinesManager& pipelinesManager,
                                VulkanVertexBuffersManager& vertexBuffersManager,
-                               VulkanSwapchainManager& swapchainManager) :
+                               VulkanSwapchain& swapchain) :
     device_(device),
     images_(swapchainImageCount),
     pipelinesManager_(pipelinesManager),
     vertexBuffersManager_(vertexBuffersManager),
-    swapchainManager_(swapchainManager) {
+    swapchainManager_(swapchain) {
     createSynchronizationObjects();
 }
 
@@ -46,14 +46,14 @@ void VulkanRenderer::createSynchronizationObjects() {
 
 bool VulkanRenderer::renderFrame(size_t& currentFrame,
                                  VulkanCommandManager& commandManager,
-                                 const VulkanSwapchainManager& swapchainManager,
+                                 const VulkanSwapchain& swapchain,
                                  VkQueue graphicsQueue,
                                  const std::vector<DrawCall>& drawCalls,
                                  VkDescriptorSet cameraDescriptorSet) const {
     waitForFrame(currentFrame);
 
     uint32_t imageIndex = 0;
-    if (!acquireImage(currentFrame, swapchainManager, imageIndex)) {
+    if (!acquireImage(currentFrame, swapchain, imageIndex)) {
         return false;
     }
 
@@ -61,7 +61,7 @@ bool VulkanRenderer::renderFrame(size_t& currentFrame,
     VkCommandBuffer cmd = commandManager.allocateCommandBuffer();
     VulkanCommandManager::beginCommandBuffer(cmd);
     recordCommandBuffer(cmd, imageIndex, drawCalls, cameraDescriptorSet);
-    submitAndPresent(cmd, currentFrame, imageIndex, commandManager, swapchainManager, graphicsQueue);
+    submitAndPresent(cmd, currentFrame, imageIndex, commandManager, swapchain, graphicsQueue);
     commandManager.endFrame();
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -74,14 +74,12 @@ void VulkanRenderer::waitForFrame(size_t frameIndex) const {
     vkResetFences(device_, 1, &fence);
 }
 
-bool VulkanRenderer::acquireImage(size_t currentFrame,
-                                  const VulkanSwapchainManager& swapchainManager,
-                                  uint32_t& imageIndex) const {
+bool VulkanRenderer::acquireImage(size_t currentFrame, const VulkanSwapchain& swapchain, uint32_t& imageIndex) const {
     size_t acquireIndex = currentFrame % images_.size();
-    if (!swapchainManager.acquireNextImage(images_.at(acquireIndex).imageAvailableSemaphore, imageIndex)) {
+    if (!swapchain.acquireNextImage(images_.at(acquireIndex).imageAvailableSemaphore, imageIndex)) {
         return false;
     }
-    if (imageIndex >= swapchainManager.imageCount()) {
+    if (imageIndex >= swapchain.imageCount()) {
         return false;
     }
     return true;
@@ -91,7 +89,7 @@ void VulkanRenderer::submitAndPresent(VkCommandBuffer cmd,
                                       size_t currentFrame,
                                       uint32_t imageIndex,
                                       VulkanCommandManager& commandManager,
-                                      const VulkanSwapchainManager& swapchainManager,
+                                      const VulkanSwapchain& swapchain,
                                       VkQueue graphicsQueue) const {
     VulkanCommandManager::endCommandBuffer(cmd);
     size_t acquireIndex = currentFrame % images_.size();
@@ -101,7 +99,7 @@ void VulkanRenderer::submitAndPresent(VkCommandBuffer cmd,
                                        images_.at(imageIndex).renderFinishedSemaphore,
                                        fence);
 
-    swapchainManager.present(graphicsQueue, images_.at(imageIndex).renderFinishedSemaphore, imageIndex);
+    swapchain.present(graphicsQueue, images_.at(imageIndex).renderFinishedSemaphore, imageIndex);
 }
 
 void VulkanRenderer::recordCommandBuffer(VkCommandBuffer cmd,

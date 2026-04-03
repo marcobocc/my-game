@@ -1,4 +1,4 @@
-#include "vulkan/VulkanPipelinesManager.hpp"
+#include "vulkan/resource_managers/VulkanPipelinesManager.hpp"
 
 VulkanPipelinesManager::VulkanPipelinesManager(VkDevice device,
                                                VkRenderPass renderPass,

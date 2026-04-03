@@ -1,7 +1,7 @@
-#include "vulkan/VulkanCameraManager.hpp"
+#include "vulkan/resource_managers/VulkanCameraManager.hpp"
 #include <vector>
 #include <volk.h>
-#include "vulkan/VulkanBuffer.hpp"
+#include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/VulkanErrorHandling.hpp"
 
 VulkanCameraManager::VulkanCameraManager(VkDevice device, VkPhysicalDevice physicalDevice) :

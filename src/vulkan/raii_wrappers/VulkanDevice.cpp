@@ -1,4 +1,4 @@
-#include "vulkan/VulkanDevice.hpp"
+#include "vulkan/raii_wrappers/VulkanDevice.hpp"
 #include <algorithm>
 #include <stdexcept>
 #include <string_view>

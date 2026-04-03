@@ -1,4 +1,4 @@
-#include "vulkan/VulkanBuffer.hpp"
+#include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include <cstring>
 #include <volk.h>
 #include "vulkan/VulkanErrorHandling.hpp"

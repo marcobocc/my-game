@@ -1,4 +1,4 @@
-#include "vulkan/VulkanInstance.hpp"
+#include "vulkan/raii_wrappers/VulkanInstance.hpp"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vector>

@@ -4,15 +4,15 @@
 #include "ecs/components/CameraComponent.hpp"
 #include "ecs/components/MaterialComponent.hpp"
 #include "ecs/components/MeshComponent.hpp"
-#include "vulkan/VulkanCameraManager.hpp"
-#include "vulkan/VulkanCommandManager.hpp"
-#include "vulkan/VulkanDebugMessenger.hpp"
-#include "vulkan/VulkanDevice.hpp"
-#include "vulkan/VulkanInstance.hpp"
-#include "vulkan/VulkanPipelinesManager.hpp"
-#include "vulkan/VulkanRenderer.hpp"
-#include "vulkan/VulkanSwapchainManager.hpp"
-#include "vulkan/VulkanVertexBuffersManager.hpp"
+#include "vulkan/resource_managers/VulkanCameraManager.hpp"
+#include "vulkan/services/VulkanCommandManager.hpp"
+#include "vulkan/raii_wrappers/VulkanDebugMessenger.hpp"
+#include "vulkan/raii_wrappers/VulkanDevice.hpp"
+#include "vulkan/raii_wrappers/VulkanInstance.hpp"
+#include "vulkan/resource_managers/VulkanPipelinesManager.hpp"
+#include "vulkan/services/VulkanRenderer.hpp"
+#include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
+#include "vulkan/resource_managers/VulkanVertexBuffersManager.hpp"
 
 class VulkanGraphicsBackend {
 public:
@@ -36,7 +36,7 @@ private:
     VulkanDebugMessenger debugMessenger_;
     VulkanDevice device_;
     VulkanCommandManager commandManager_;
-    VulkanSwapchainManager swapchainManager_;
+    VulkanSwapchain swapchainManager_;
     VulkanVertexBuffersManager vertexBuffersManager_;
     VulkanCameraManager cameraManager_;
     VulkanPipelinesManager pipelinesManager_;

@@ -6,10 +6,10 @@
 #include <vulkan/vulkan.h>
 #include "ecs/components/MaterialComponent.hpp"
 #include "ecs/components/MeshComponent.hpp"
-#include "vulkan/VulkanCommandManager.hpp"
-#include "vulkan/VulkanPipelinesManager.hpp"
-#include "vulkan/VulkanSwapchainManager.hpp"
-#include "vulkan/VulkanVertexBuffersManager.hpp"
+#include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
+#include "vulkan/resource_managers/VulkanPipelinesManager.hpp"
+#include "vulkan/resource_managers/VulkanVertexBuffersManager.hpp"
+#include "vulkan/services/VulkanCommandManager.hpp"
 
 struct DrawCall {
     const MeshComponent* mesh;
@@ -32,11 +32,11 @@ public:
                    size_t swapchainImageCount,
                    VulkanPipelinesManager& pipelinesManager,
                    VulkanVertexBuffersManager& vertexBuffersManager,
-                   VulkanSwapchainManager& swapchainManager);
+                   VulkanSwapchain& swapchain);
 
     bool renderFrame(size_t& currentFrame,
                      VulkanCommandManager& commandManager,
-                     const VulkanSwapchainManager& swapchainManager,
+                     const VulkanSwapchain& swapchain,
                      VkQueue graphicsQueue,
                      const std::vector<DrawCall>& drawCalls,
                      VkDescriptorSet cameraDescriptorSet) const;
@@ -44,12 +44,12 @@ public:
 private:
     void createSynchronizationObjects();
     void waitForFrame(size_t frameIndex) const;
-    bool acquireImage(size_t currentFrame, const VulkanSwapchainManager& swapchainManager, uint32_t& imageIndex) const;
+    bool acquireImage(size_t currentFrame, const VulkanSwapchain& swapchain, uint32_t& imageIndex) const;
     void submitAndPresent(VkCommandBuffer cmd,
                           size_t currentFrame,
                           uint32_t imageIndex,
                           VulkanCommandManager& commandManager,
-                          const VulkanSwapchainManager& swapchainManager,
+                          const VulkanSwapchain& swapchain,
                           VkQueue graphicsQueue) const;
     void recordCommandBuffer(VkCommandBuffer cmd,
                              uint32_t imageIndex,
@@ -75,5 +75,5 @@ private:
 
     VulkanPipelinesManager& pipelinesManager_;
     VulkanVertexBuffersManager& vertexBuffersManager_;
-    VulkanSwapchainManager& swapchainManager_;
+    VulkanSwapchain& swapchainManager_;
 };

@@ -1,4 +1,4 @@
-#include "vulkan/VulkanVertexBuffersManager.hpp"
+#include "vulkan/resource_managers/VulkanVertexBuffersManager.hpp"
 
 VulkanVertexBuffersManager::VulkanVertexBuffersManager(VkDevice device, VkPhysicalDevice physicalDevice) :
     device_(device),

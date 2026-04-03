@@ -1,20 +1,20 @@
-#include "vulkan/VulkanSwapchainManager.hpp"
+#include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
 
 #include <algorithm>
 #include <stdexcept>
 #include <volk.h>
 #include "vulkan/VulkanErrorHandling.hpp"
 
-VulkanSwapchainManager::~VulkanSwapchainManager() {
+VulkanSwapchain::~VulkanSwapchain() {
     cleanupSwapchain();
     if (renderPass_ != VK_NULL_HANDLE) vkDestroyRenderPass(device_, renderPass_, nullptr);
     if (surface_ != VK_NULL_HANDLE) vkDestroySurfaceKHR(instance_, surface_, nullptr);
 }
 
-VulkanSwapchainManager::VulkanSwapchainManager(GLFWwindow* window,
-                                               VkInstance instance,
-                                               VkPhysicalDevice physicalDevice,
-                                               VkDevice device) :
+VulkanSwapchain::VulkanSwapchain(GLFWwindow* window,
+                                 VkInstance instance,
+                                 VkPhysicalDevice physicalDevice,
+                                 VkDevice device) :
     window_(window),
     instance_(instance),
     physicalDevice_(physicalDevice),
@@ -26,7 +26,7 @@ VulkanSwapchainManager::VulkanSwapchainManager(GLFWwindow* window,
     createFramebuffers();
 }
 
-void VulkanSwapchainManager::recreate() {
+void VulkanSwapchain::recreate() {
     vkDeviceWaitIdle(device_);
     cleanupSwapchain();
     createSwapchain();
@@ -34,7 +34,7 @@ void VulkanSwapchainManager::recreate() {
     createFramebuffers();
 }
 
-bool VulkanSwapchainManager::acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t& imageIndex) const {
+bool VulkanSwapchain::acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t& imageIndex) const {
     VkResult result = vkAcquireNextImageKHR(
             device_, swapchain_, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) return false;
@@ -42,7 +42,7 @@ bool VulkanSwapchainManager::acquireNextImage(VkSemaphore imageAvailableSemaphor
     return true;
 }
 
-bool VulkanSwapchainManager::present(VkQueue presentQueue,
+bool VulkanSwapchain::present(VkQueue presentQueue,
                                      VkSemaphore renderFinishedSemaphore,
                                      uint32_t imageIndex) const {
     VkPresentInfoKHR presentInfo{};
@@ -58,35 +58,35 @@ bool VulkanSwapchainManager::present(VkQueue presentQueue,
     return true;
 }
 
-VkExtent2D VulkanSwapchainManager::extent() const { return swapchainExtent_; }
+VkExtent2D VulkanSwapchain::extent() const { return swapchainExtent_; }
 
-VkRenderPass VulkanSwapchainManager::renderPass() const { return renderPass_; }
+VkRenderPass VulkanSwapchain::renderPass() const { return renderPass_; }
 
-VkSwapchainKHR VulkanSwapchainManager::swapchain() const { return swapchain_; }
+VkSwapchainKHR VulkanSwapchain::swapchain() const { return swapchain_; }
 
-uint32_t VulkanSwapchainManager::imageCount() const { return static_cast<uint32_t>(swapchainImages_.size()); }
+uint32_t VulkanSwapchain::imageCount() const { return static_cast<uint32_t>(swapchainImages_.size()); }
 
-VkImage VulkanSwapchainManager::image(uint32_t index) const {
+VkImage VulkanSwapchain::image(uint32_t index) const {
     if (index >= swapchainImages_.size()) return VK_NULL_HANDLE;
     return swapchainImages_.at(index);
 }
 
-VkImageView VulkanSwapchainManager::imageView(uint32_t index) const {
+VkImageView VulkanSwapchain::imageView(uint32_t index) const {
     if (index >= swapchainImageViews_.size()) return VK_NULL_HANDLE;
     return swapchainImageViews_.at(index);
 }
 
-VkFramebuffer VulkanSwapchainManager::framebuffer(uint32_t index) const {
+VkFramebuffer VulkanSwapchain::framebuffer(uint32_t index) const {
     if (index >= framebuffers_.size()) return VK_NULL_HANDLE;
     return framebuffers_.at(index);
 }
 
-void VulkanSwapchainManager::createSurface() {
+void VulkanSwapchain::createSurface() {
     VkResult surfaceResult = glfwCreateWindowSurface(instance_, window_, nullptr, &surface_);
     throwIfUnsuccessful(surfaceResult);
 }
 
-void VulkanSwapchainManager::createSwapchain() {
+void VulkanSwapchain::createSwapchain() {
     VkSurfaceCapabilitiesKHR capabilities{};
     throwIfUnsuccessful(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice_, surface_, &capabilities));
 
@@ -146,7 +146,7 @@ void VulkanSwapchainManager::createSwapchain() {
     swapchainImageFormat_ = chosenFormat.format;
 }
 
-void VulkanSwapchainManager::createImageViews() {
+void VulkanSwapchain::createImageViews() {
     swapchainImageViews_.resize(swapchainImages_.size());
     for (size_t i = 0; i < swapchainImages_.size(); ++i) {
         VkImageViewCreateInfo viewInfo{};
@@ -168,7 +168,7 @@ void VulkanSwapchainManager::createImageViews() {
     }
 }
 
-void VulkanSwapchainManager::createRenderPass() {
+void VulkanSwapchain::createRenderPass() {
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapchainImageFormat_;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -198,7 +198,7 @@ void VulkanSwapchainManager::createRenderPass() {
     throwIfUnsuccessful(vkCreateRenderPass(device_, &renderPassInfo, nullptr, &renderPass_));
 }
 
-void VulkanSwapchainManager::createFramebuffers() {
+void VulkanSwapchain::createFramebuffers() {
     framebuffers_.resize(swapchainImageViews_.size());
     for (size_t i = 0; i < swapchainImageViews_.size(); ++i) {
         std::array attachments = {swapchainImageViews_.at(i)};
@@ -216,7 +216,7 @@ void VulkanSwapchainManager::createFramebuffers() {
     }
 }
 
-void VulkanSwapchainManager::cleanupSwapchain() {
+void VulkanSwapchain::cleanupSwapchain() {
     for (auto fb: framebuffers_)
         if (fb != VK_NULL_HANDLE) vkDestroyFramebuffer(device_, fb, nullptr);
 

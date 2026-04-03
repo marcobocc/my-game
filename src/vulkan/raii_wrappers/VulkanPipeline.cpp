@@ -1,4 +1,4 @@
-#include "vulkan/VulkanPipeline.hpp"
+#include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include <fstream>
 #include <stdexcept>
 #include <volk.h>

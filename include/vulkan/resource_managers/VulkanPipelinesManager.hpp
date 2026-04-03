@@ -2,7 +2,7 @@
 #include <string>
 #include <unordered_map>
 #include <vulkan/vulkan.h>
-#include "vulkan/VulkanPipeline.hpp"
+#include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 
 class VulkanPipelinesManager {
 public:
