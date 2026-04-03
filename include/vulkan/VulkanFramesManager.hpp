@@ -13,17 +13,17 @@ class VulkanFramesManager {
 public:
     static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
 
+    VulkanFramesManager(const VulkanFramesManager&) = delete;
+    VulkanFramesManager& operator=(const VulkanFramesManager&) = delete;
+    VulkanFramesManager(VulkanFramesManager&&) = delete;
+    VulkanFramesManager& operator=(VulkanFramesManager&&) = delete;
+
+    ~VulkanFramesManager();
     VulkanFramesManager(VkDevice device,
                         size_t swapchainImageCount,
                         VulkanPipelinesManager& pipelinesManager,
                         VulkanVertexBuffersManager& vertexBuffersManager,
                         VulkanSwapchainManager& swapchainManager);
-    ~VulkanFramesManager();
-
-    VulkanFramesManager(const VulkanFramesManager&) = delete;
-    VulkanFramesManager& operator=(const VulkanFramesManager&) = delete;
-    VulkanFramesManager(VulkanFramesManager&&) = delete;
-    VulkanFramesManager& operator=(VulkanFramesManager&&) = delete;
 
     bool renderFrame(size_t& currentFrame,
                      VulkanCommandManager& commandManager,

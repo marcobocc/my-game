@@ -17,6 +17,12 @@ struct DrawCall {
 
 class FrameRenderer {
 public:
+    FrameRenderer(const FrameRenderer&) = delete;
+    FrameRenderer& operator=(const FrameRenderer&) = delete;
+    FrameRenderer(FrameRenderer&&) = delete;
+    FrameRenderer& operator=(FrameRenderer&&) = delete;
+
+    ~FrameRenderer() = default;
     FrameRenderer(VulkanPipelinesManager& pipelinesManager,
                   VulkanVertexBuffersManager& vertexBuffersManager,
                   VulkanSwapchainManager& swapchainManager);

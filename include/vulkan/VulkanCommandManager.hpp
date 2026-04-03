@@ -10,11 +10,11 @@ public:
     VulkanCommandManager(VulkanCommandManager&&) = delete;
     VulkanCommandManager& operator=(VulkanCommandManager&&) = delete;
 
+    ~VulkanCommandManager();
     explicit VulkanCommandManager(VkDevice device,
                                   uint32_t graphicsQueueFamilyIndex,
                                   VkQueue graphicsQueue,
                                   size_t maxFramesInFlight);
-    ~VulkanCommandManager();
     void beginFrame();
     void endFrame();
     VkCommandBuffer allocateCommandBuffer(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);

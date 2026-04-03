@@ -7,6 +7,12 @@
 
 class VulkanVertexBuffersManager {
 public:
+    VulkanVertexBuffersManager(const VulkanVertexBuffersManager&) = delete;
+    VulkanVertexBuffersManager& operator=(const VulkanVertexBuffersManager&) = delete;
+    VulkanVertexBuffersManager(VulkanVertexBuffersManager&&) = delete;
+    VulkanVertexBuffersManager& operator=(VulkanVertexBuffersManager&&) = delete;
+
+    ~VulkanVertexBuffersManager() = default;
     VulkanVertexBuffersManager(VkDevice device, VkPhysicalDevice physicalDevice) :
         device_(device),
         physicalDevice_(physicalDevice) {}

@@ -1,5 +1,4 @@
 #pragma once
-#include <array>
 #include <string>
 #include <unordered_map>
 #include <vulkan/vulkan.h>
@@ -7,6 +6,11 @@
 
 class VulkanPipelinesManager {
 public:
+    VulkanPipelinesManager(const VulkanPipelinesManager&) = delete;
+    VulkanPipelinesManager& operator=(const VulkanPipelinesManager&) = delete;
+    VulkanPipelinesManager(VulkanPipelinesManager&&) = delete;
+    VulkanPipelinesManager& operator=(VulkanPipelinesManager&&) = delete;
+ ~VulkanPipelinesManager() = default;
     VulkanPipelinesManager(VkDevice device, VkRenderPass renderPass) : device_(device), renderPass_(renderPass) {}
 
     VulkanPipeline* createOrGetPipeline(const std::string& materialName,

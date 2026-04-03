@@ -15,6 +15,7 @@ public:
 
     ~VulkanSwapchainManager();
     VulkanSwapchainManager(GLFWwindow* window, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device);
+
     void recreate();
     bool acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t& imageIndex) const;
     bool present(VkQueue presentQueue, VkSemaphore renderFinishedSemaphore, uint32_t imageIndex) const;
