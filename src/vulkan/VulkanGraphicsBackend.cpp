@@ -15,17 +15,17 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
     commandManager_(device_.getVkDevice(),
                     device_.getGraphicsQueueFamilyIndex(),
                     device_.getVkGraphicsQueue(),
-                    VulkanFramesManager::MAX_FRAMES_IN_FLIGHT),
+                    VulkanRenderer::MAX_FRAMES_IN_FLIGHT),
     swapchainManager_(window_, instance_.getVkInstance(), device_.getVkPhysicalDevice(), device_.getVkDevice()),
     vertexBuffersManager_(device_.getVkDevice(), device_.getVkPhysicalDevice()),
     cameraManager_(device_.getVkDevice(), device_.getVkPhysicalDevice()),
     pipelinesManager_(device_.getVkDevice(), swapchainManager_.renderPass(), cameraManager_.getDescriptorSetLayout()),
-    framesManager_(device_.getVkDevice(),
-                   device_.getVkPhysicalDevice(),
-                   swapchainManager_.imageCount(),
-                   pipelinesManager_,
-                   vertexBuffersManager_,
-                   swapchainManager_) {
+    renderer_(device_.getVkDevice(),
+              device_.getVkPhysicalDevice(),
+              swapchainManager_.imageCount(),
+              pipelinesManager_,
+              vertexBuffersManager_,
+              swapchainManager_) {
 
     if (!window) throw std::runtime_error("Window pointer is null");
 }
@@ -38,12 +38,12 @@ void VulkanGraphicsBackend::draw(const MeshComponent& mesh,
 
 void VulkanGraphicsBackend::renderFrame(const CameraComponent& camera) {
     cameraManager_.updateCameraUBO(currentFrame_, camera);
-    if (framesManager_.renderFrame(currentFrame_,
-                                   commandManager_,
-                                   swapchainManager_,
-                                   device_.getVkGraphicsQueue(),
-                                   drawQueue_,
-                                   cameraManager_.getDescriptorSet(currentFrame_))) {
+    if (renderer_.renderFrame(currentFrame_,
+                              commandManager_,
+                              swapchainManager_,
+                              device_.getVkGraphicsQueue(),
+                              drawQueue_,
+                              cameraManager_.getDescriptorSet(currentFrame_))) {
         drawQueue_.clear();
     }
 }

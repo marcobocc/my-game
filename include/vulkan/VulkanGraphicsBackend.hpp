@@ -8,9 +8,9 @@
 #include "vulkan/VulkanCommandManager.hpp"
 #include "vulkan/VulkanDebugMessenger.hpp"
 #include "vulkan/VulkanDevice.hpp"
-#include "vulkan/VulkanFramesManager.hpp"
 #include "vulkan/VulkanInstance.hpp"
 #include "vulkan/VulkanPipelinesManager.hpp"
+#include "vulkan/VulkanRenderer.hpp"
 #include "vulkan/VulkanSwapchainManager.hpp"
 #include "vulkan/VulkanVertexBuffersManager.hpp"
 
@@ -40,6 +40,6 @@ private:
     VulkanVertexBuffersManager vertexBuffersManager_;
     VulkanCameraManager cameraManager_;
     VulkanPipelinesManager pipelinesManager_;
-    VulkanFramesManager framesManager_;
+    VulkanRenderer renderer_;
     std::vector<DrawCall> drawQueue_;
 };
