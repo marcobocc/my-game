@@ -79,7 +79,7 @@ bool VulkanRenderer::acquireImage(size_t currentFrame, const VulkanSwapchain& sw
     if (!swapchain.acquireNextImage(images_.at(acquireIndex).imageAvailableSemaphore, imageIndex)) {
         return false;
     }
-    if (imageIndex >= swapchain.imageCount()) {
+    if (imageIndex >= swapchain.getImageCount()) {
         return false;
     }
     return true;
@@ -120,17 +120,17 @@ void VulkanRenderer::beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex) c
     VkClearValue clearColor = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
     VkRenderPassBeginInfo rpInfo{};
     rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    rpInfo.renderPass = swapchainManager_.renderPass();
-    rpInfo.framebuffer = swapchainManager_.framebuffer(imageIndex);
+    rpInfo.renderPass = swapchainManager_.getVkRenderPass();
+    rpInfo.framebuffer = swapchainManager_.getVkFramebuffer(imageIndex);
     rpInfo.renderArea.offset = {0, 0};
-    rpInfo.renderArea.extent = swapchainManager_.extent();
+    rpInfo.renderArea.extent = swapchainManager_.getVkExtent();
     rpInfo.clearValueCount = 1;
     rpInfo.pClearValues = &clearColor;
     vkCmdBeginRenderPass(cmd, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 
 void VulkanRenderer::setupViewportAndScissor(VkCommandBuffer cmd) const {
-    VkExtent2D extent = swapchainManager_.extent();
+    VkExtent2D extent = swapchainManager_.getVkExtent();
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;

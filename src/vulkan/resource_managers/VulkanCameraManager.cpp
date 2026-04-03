@@ -66,7 +66,7 @@ void VulkanCameraManager::createBuffers() {
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = VulkanBuffer::findMemoryType(physicalDevice_,
+        allocInfo.memoryTypeIndex = VulkanBuffer::getMemoryType(physicalDevice_,
                                                                  memRequirements.memoryTypeBits,
                                                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                                          VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);

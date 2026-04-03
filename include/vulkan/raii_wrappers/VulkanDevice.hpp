@@ -12,10 +12,11 @@ public:
 
     ~VulkanDevice();
     explicit VulkanDevice(VkInstance instance);
+
     VkDevice getVkDevice() const;
     VkPhysicalDevice getVkPhysicalDevice() const;
-    uint32_t getGraphicsQueueFamilyIndex() const;
     VkQueue getVkGraphicsQueue() const;
+    uint32_t getGraphicsQueueFamilyIndex() const;
 
 private:
     bool createLogicalDevice(VkPhysicalDevice physicalDevice);

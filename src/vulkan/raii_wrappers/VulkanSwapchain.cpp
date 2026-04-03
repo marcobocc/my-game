@@ -42,9 +42,7 @@ bool VulkanSwapchain::acquireNextImage(VkSemaphore imageAvailableSemaphore, uint
     return true;
 }
 
-bool VulkanSwapchain::present(VkQueue presentQueue,
-                                     VkSemaphore renderFinishedSemaphore,
-                                     uint32_t imageIndex) const {
+bool VulkanSwapchain::present(VkQueue presentQueue, VkSemaphore renderFinishedSemaphore, uint32_t imageIndex) const {
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
@@ -58,25 +56,25 @@ bool VulkanSwapchain::present(VkQueue presentQueue,
     return true;
 }
 
-VkExtent2D VulkanSwapchain::extent() const { return swapchainExtent_; }
+VkExtent2D VulkanSwapchain::getVkExtent() const { return swapchainExtent_; }
 
-VkRenderPass VulkanSwapchain::renderPass() const { return renderPass_; }
+VkRenderPass VulkanSwapchain::getVkRenderPass() const { return renderPass_; }
 
-VkSwapchainKHR VulkanSwapchain::swapchain() const { return swapchain_; }
+VkSwapchainKHR VulkanSwapchain::getVkSwapchain() const { return swapchain_; }
 
-uint32_t VulkanSwapchain::imageCount() const { return static_cast<uint32_t>(swapchainImages_.size()); }
+uint32_t VulkanSwapchain::getImageCount() const { return static_cast<uint32_t>(swapchainImages_.size()); }
 
-VkImage VulkanSwapchain::image(uint32_t index) const {
+VkImage VulkanSwapchain::getVkImage(uint32_t index) const {
     if (index >= swapchainImages_.size()) return VK_NULL_HANDLE;
     return swapchainImages_.at(index);
 }
 
-VkImageView VulkanSwapchain::imageView(uint32_t index) const {
+VkImageView VulkanSwapchain::getVkImageView(uint32_t index) const {
     if (index >= swapchainImageViews_.size()) return VK_NULL_HANDLE;
     return swapchainImageViews_.at(index);
 }
 
-VkFramebuffer VulkanSwapchain::framebuffer(uint32_t index) const {
+VkFramebuffer VulkanSwapchain::getVkFramebuffer(uint32_t index) const {
     if (index >= framebuffers_.size()) return VK_NULL_HANDLE;
     return framebuffers_.at(index);
 }

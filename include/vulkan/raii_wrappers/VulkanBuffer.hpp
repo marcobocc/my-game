@@ -16,9 +16,11 @@ public:
                  VkBufferUsageFlags usage,
                  VkMemoryPropertyFlags properties,
                  const void* data = nullptr);
+
     VkBuffer getVkBuffer() const;
+
     static uint32_t
-    findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    getMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 private:
     void createBuffer(VkPhysicalDevice physicalDevice,

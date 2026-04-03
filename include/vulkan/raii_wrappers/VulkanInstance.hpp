@@ -11,6 +11,7 @@ public:
 
     ~VulkanInstance();
     VulkanInstance();
+
     VkInstance getVkInstance() const;
 
 private:

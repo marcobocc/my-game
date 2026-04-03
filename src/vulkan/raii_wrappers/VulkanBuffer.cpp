@@ -45,7 +45,7 @@ void VulkanBuffer::createBuffer(VkPhysicalDevice physicalDevice,
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
+    allocInfo.memoryTypeIndex = getMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
 
     throwIfUnsuccessful(vkAllocateMemory(device_, &allocInfo, nullptr, &memory_));
 
@@ -60,7 +60,7 @@ void VulkanBuffer::createBuffer(VkPhysicalDevice physicalDevice,
 }
 
 uint32_t
-VulkanBuffer::findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+VulkanBuffer::getMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; ++i) {

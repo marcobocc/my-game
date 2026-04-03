@@ -19,13 +19,14 @@ public:
     void recreate();
     bool acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t& imageIndex) const;
     bool present(VkQueue presentQueue, VkSemaphore renderFinishedSemaphore, uint32_t imageIndex) const;
-    VkExtent2D extent() const;
-    VkRenderPass renderPass() const;
-    VkSwapchainKHR swapchain() const;
-    uint32_t imageCount() const;
-    VkImage image(uint32_t index) const;
-    VkImageView imageView(uint32_t index) const;
-    VkFramebuffer framebuffer(uint32_t index) const;
+
+    VkExtent2D getVkExtent() const;
+    VkRenderPass getVkRenderPass() const;
+    VkSwapchainKHR getVkSwapchain() const;
+    uint32_t getImageCount() const;
+    VkImage getVkImage(uint32_t index) const;
+    VkImageView getVkImageView(uint32_t index) const;
+    VkFramebuffer getVkFramebuffer(uint32_t index) const;
 
 private:
     void createSurface();

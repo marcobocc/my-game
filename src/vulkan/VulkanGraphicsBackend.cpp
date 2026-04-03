@@ -19,10 +19,11 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
     swapchainManager_(window_, instance_.getVkInstance(), device_.getVkPhysicalDevice(), device_.getVkDevice()),
     vertexBuffersManager_(device_.getVkDevice(), device_.getVkPhysicalDevice()),
     cameraManager_(device_.getVkDevice(), device_.getVkPhysicalDevice()),
-    pipelinesManager_(device_.getVkDevice(), swapchainManager_.renderPass(), cameraManager_.getDescriptorSetLayout()),
+    pipelinesManager_(
+            device_.getVkDevice(), swapchainManager_.getVkRenderPass(), cameraManager_.getDescriptorSetLayout()),
     renderer_(device_.getVkDevice(),
               device_.getVkPhysicalDevice(),
-              swapchainManager_.imageCount(),
+              swapchainManager_.getImageCount(),
               pipelinesManager_,
               vertexBuffersManager_,
               swapchainManager_) {
