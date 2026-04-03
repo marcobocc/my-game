@@ -32,10 +32,11 @@ VulkanPipeline::VulkanPipeline(VkDevice device,
                                VkRenderPass renderPass,
                                const std::string& vertPath,
                                const std::string& fragPath,
-                               const VkPipelineVertexInputStateCreateInfo& vertexInputInfo) :
+                               const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
+                               VkDescriptorSetLayout cameraDescriptorSetLayout) :
     device_(device) {
     auto shaderStages = createShaderStages(vertPath.c_str(), fragPath.c_str());
-    createPipelineLayout();
+    createPipelineLayout(cameraDescriptorSetLayout);
     createGraphicsPipeline(renderPass, shaderStages, vertexInputInfo);
     destroyShaderModules();
 }
@@ -50,16 +51,24 @@ void VulkanPipeline::cleanup() {
     destroyShaderModules();
 }
 
-void VulkanPipeline::createPipelineLayout() {
+void VulkanPipeline::createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout) {
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+ if (cameraDescriptorSetLayout != VK_NULL_HANDLE) {
+        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.pSetLayouts = &cameraDescriptorSetLayout;
+    } else {
+        pipelineLayoutInfo.setLayoutCount = 0;
+        pipelineLayoutInfo.pSetLayouts = nullptr;
+    }
+
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(float) * 16;
-
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+
     auto result = vkCreatePipelineLayout(device_, &pipelineLayoutInfo, nullptr, &layout_);
     throwIfUnsuccessful(result);
 }

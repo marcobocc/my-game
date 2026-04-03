@@ -26,12 +26,15 @@ public:
                   VulkanVertexBuffersManager& vertexBuffersManager,
                   VulkanSwapchainManager& swapchainManager);
 
-    void renderFrame(VkCommandBuffer commandBuffer, uint32_t imageIndex, const std::vector<DrawCall>& drawCalls) const;
+    void renderFrame(VkCommandBuffer commandBuffer,
+                     uint32_t imageIndex,
+                     const std::vector<DrawCall>& drawCalls,
+                     VkDescriptorSet cameraDescriptorSet) const;
 
 private:
     void beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex) const;
     void setupViewportAndScissor(VkCommandBuffer cmd) const;
-    void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall) const;
+    void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall, VkDescriptorSet cameraDescriptorSet) const;
     static void endRenderPass(VkCommandBuffer cmd);
 
     VulkanPipelinesManager& pipelinesManager_;

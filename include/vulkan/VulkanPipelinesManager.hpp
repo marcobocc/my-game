@@ -12,7 +12,9 @@ public:
     VulkanPipelinesManager& operator=(VulkanPipelinesManager&&) = delete;
 
     ~VulkanPipelinesManager() = default;
-    VulkanPipelinesManager(VkDevice device, VkRenderPass renderPass);
+    VulkanPipelinesManager(VkDevice device,
+                           VkRenderPass renderPass,
+                           VkDescriptorSetLayout cameraDescriptorSetLayout = VK_NULL_HANDLE);
 
     VulkanPipeline* createOrGetPipeline(const std::string& materialName,
                                         const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
@@ -24,5 +26,6 @@ public:
 private:
     VkDevice device_;
     VkRenderPass renderPass_;
+    VkDescriptorSetLayout cameraDescriptorSetLayout_;
     std::unordered_map<std::string, VulkanPipeline> pipelines_;
 };

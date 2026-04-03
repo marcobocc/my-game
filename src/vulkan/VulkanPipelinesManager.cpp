@@ -1,8 +1,11 @@
 #include "vulkan/VulkanPipelinesManager.hpp"
 
-VulkanPipelinesManager::VulkanPipelinesManager(VkDevice device, VkRenderPass renderPass) :
+VulkanPipelinesManager::VulkanPipelinesManager(VkDevice device,
+                                               VkRenderPass renderPass,
+                                               VkDescriptorSetLayout cameraDescriptorSetLayout) :
     device_(device),
-    renderPass_(renderPass) {}
+    renderPass_(renderPass),
+    cameraDescriptorSetLayout_(cameraDescriptorSetLayout) {}
 
 VulkanPipeline* VulkanPipelinesManager::createOrGetPipeline(const std::string& materialName,
                                                             const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
@@ -11,7 +14,7 @@ VulkanPipeline* VulkanPipelinesManager::createOrGetPipeline(const std::string& m
     auto it = pipelines_.find(materialName);
     if (it != pipelines_.end()) return &it->second;
 
-    VulkanPipeline pipeline(device_, renderPass_, vertPath, fragPath, vertexInputInfo);
+    VulkanPipeline pipeline(device_, renderPass_, vertPath, fragPath, vertexInputInfo, cameraDescriptorSetLayout_);
     auto [insertedIt, _] = pipelines_.emplace(materialName, std::move(pipeline));
     return &insertedIt->second;
 }

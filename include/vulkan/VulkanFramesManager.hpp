@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <glm/glm.hpp>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "vulkan/FrameRenderer.hpp"
@@ -20,6 +21,7 @@ public:
 
     ~VulkanFramesManager();
     VulkanFramesManager(VkDevice device,
+                        VkPhysicalDevice physicalDevice,
                         size_t swapchainImageCount,
                         VulkanPipelinesManager& pipelinesManager,
                         VulkanVertexBuffersManager& vertexBuffersManager,
@@ -29,7 +31,8 @@ public:
                      VulkanCommandManager& commandManager,
                      const VulkanSwapchainManager& swapchainManager,
                      VkQueue graphicsQueue,
-                     const std::vector<DrawCall>& drawCalls) const;
+                     const std::vector<DrawCall>& drawCalls,
+                     VkDescriptorSet cameraDescriptorSet) const;
 
 private:
     void createSynchronizationObjects();

@@ -14,12 +14,13 @@ FrameRenderer::FrameRenderer(VulkanPipelinesManager& pipelinesManager,
 
 void FrameRenderer::renderFrame(VkCommandBuffer commandBuffer,
                                 uint32_t imageIndex,
-                                const std::vector<DrawCall>& drawCalls) const {
+                                const std::vector<DrawCall>& drawCalls,
+                                VkDescriptorSet cameraDescriptorSet) const {
     beginRenderPass(commandBuffer, imageIndex);
     setupViewportAndScissor(commandBuffer);
 
     for (const auto& drawCall: drawCalls) {
-        renderEntity(commandBuffer, drawCall);
+        renderEntity(commandBuffer, drawCall, cameraDescriptorSet);
     }
 
     endRenderPass(commandBuffer);
@@ -55,7 +56,9 @@ void FrameRenderer::setupViewportAndScissor(VkCommandBuffer cmd) const {
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
-void FrameRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall) const {
+void FrameRenderer::renderEntity(VkCommandBuffer cmd,
+                                 const DrawCall& drawCall,
+                                 VkDescriptorSet cameraDescriptorSet) const {
     const auto& mesh = *drawCall.mesh;
     const auto& [name, vertexShaderPath, fragmentShaderPath] = *drawCall.material;
     const auto& modelMatrix = drawCall.modelMatrix;
@@ -97,6 +100,14 @@ void FrameRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall) 
     auto* pipeline = pipelinesManager_.createOrGetPipeline(name, vertexInputInfo, vertexShaderPath, fragmentShaderPath);
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getVkPipeline());
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            pipeline->getVkPipelineLayout(),
+                            0,
+                            1,
+                            &cameraDescriptorSet,
+                            0,
+                            nullptr);
 
     VkBuffer buf = vertexBuffer->getVkBuffer();
     VkDeviceSize offsets[] = {0};

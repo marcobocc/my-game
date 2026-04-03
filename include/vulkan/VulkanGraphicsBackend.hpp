@@ -1,13 +1,14 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
+#include "ecs/components/CameraComponent.hpp"
 #include "ecs/components/MaterialComponent.hpp"
 #include "ecs/components/MeshComponent.hpp"
-#include "vulkan/VulkanFramesManager.hpp"
+#include "vulkan/VulkanCameraManager.hpp"
 #include "vulkan/VulkanCommandManager.hpp"
 #include "vulkan/VulkanDebugMessenger.hpp"
 #include "vulkan/VulkanDevice.hpp"
+#include "vulkan/VulkanFramesManager.hpp"
 #include "vulkan/VulkanInstance.hpp"
 #include "vulkan/VulkanPipelinesManager.hpp"
 #include "vulkan/VulkanSwapchainManager.hpp"
@@ -24,9 +25,11 @@ public:
     explicit VulkanGraphicsBackend(GLFWwindow* window);
 
     void draw(const MeshComponent& mesh, const MaterialComponent& material, const glm::mat4& modelMatrix);
-    void renderFrame();
+    void renderFrame(const CameraComponent& camera);
 
 private:
+    static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
+
     size_t currentFrame_ = 0;
     GLFWwindow* window_ = nullptr;
     VulkanInstance instance_;
@@ -34,8 +37,9 @@ private:
     VulkanDevice device_;
     VulkanCommandManager commandManager_;
     VulkanSwapchainManager swapchainManager_;
-    VulkanPipelinesManager pipelinesManager_;
     VulkanVertexBuffersManager vertexBuffersManager_;
+    VulkanCameraManager cameraManager_;
+    VulkanPipelinesManager pipelinesManager_;
     VulkanFramesManager framesManager_;
     std::vector<DrawCall> drawQueue_;
 };

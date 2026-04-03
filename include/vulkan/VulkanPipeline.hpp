@@ -16,7 +16,8 @@ public:
                    VkRenderPass renderPass,
                    const std::string& vertPath,
                    const std::string& fragPath,
-                   const VkPipelineVertexInputStateCreateInfo& vertexInputInfo);
+                   const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
+                   VkDescriptorSetLayout cameraDescriptorSetLayout = VK_NULL_HANDLE);
 
     VkPipeline getVkPipeline() const;
     VkPipelineLayout getVkPipelineLayout() const;
@@ -28,7 +29,7 @@ private:
     std::vector<VkShaderModule> shaderModules_;
 
     void cleanup();
-    void createPipelineLayout();
+    void createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout);
     std::array<VkPipelineShaderStageCreateInfo, 2> createShaderStages(const char* vertPath, const char* fragPath);
     void createGraphicsPipeline(VkRenderPass renderPass,
                                 const std::array<VkPipelineShaderStageCreateInfo, 2>& shaderStages,

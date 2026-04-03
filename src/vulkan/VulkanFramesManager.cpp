@@ -1,8 +1,10 @@
 #include "vulkan/VulkanFramesManager.hpp"
 #include <volk.h>
+#include "vulkan/VulkanBuffer.hpp"
 #include "vulkan/VulkanErrorHandling.hpp"
 
 VulkanFramesManager::VulkanFramesManager(VkDevice device,
+                                         VkPhysicalDevice physicalDevice,
                                          size_t swapchainImageCount,
                                          VulkanPipelinesManager& pipelinesManager,
                                          VulkanVertexBuffersManager& vertexBuffersManager,
@@ -44,7 +46,8 @@ bool VulkanFramesManager::renderFrame(size_t& currentFrame,
                                       VulkanCommandManager& commandManager,
                                       const VulkanSwapchainManager& swapchainManager,
                                       VkQueue graphicsQueue,
-                                      const std::vector<DrawCall>& drawCalls) const {
+                                      const std::vector<DrawCall>& drawCalls,
+                                      VkDescriptorSet cameraDescriptorSet) const {
     waitForFrame(currentFrame);
 
     uint32_t imageIndex = 0;
@@ -55,7 +58,7 @@ bool VulkanFramesManager::renderFrame(size_t& currentFrame,
     commandManager.beginFrame();
     VkCommandBuffer cmd = commandManager.allocateCommandBuffer();
     VulkanCommandManager::beginCommandBuffer(cmd);
-    frameRenderer_.renderFrame(cmd, imageIndex, drawCalls);
+    frameRenderer_.renderFrame(cmd, imageIndex, drawCalls, cameraDescriptorSet);
     submitAndPresent(cmd, currentFrame, imageIndex, commandManager, swapchainManager, graphicsQueue);
     commandManager.endFrame();
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

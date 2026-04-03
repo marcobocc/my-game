@@ -17,9 +17,15 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
                     device_.getVkGraphicsQueue(),
                     VulkanFramesManager::MAX_FRAMES_IN_FLIGHT),
     swapchainManager_(window_, instance_.getVkInstance(), device_.getVkPhysicalDevice(), device_.getVkDevice()),
-    pipelinesManager_(device_.getVkDevice(), swapchainManager_.renderPass()),
     vertexBuffersManager_(device_.getVkDevice(), device_.getVkPhysicalDevice()),
-    framesManager_(device_.getVkDevice(), swapchainManager_.imageCount(), pipelinesManager_, vertexBuffersManager_, swapchainManager_) {
+    cameraManager_(device_.getVkDevice(), device_.getVkPhysicalDevice()),
+    pipelinesManager_(device_.getVkDevice(), swapchainManager_.renderPass(), cameraManager_.getDescriptorSetLayout()),
+    framesManager_(device_.getVkDevice(),
+                   device_.getVkPhysicalDevice(),
+                   swapchainManager_.imageCount(),
+                   pipelinesManager_,
+                   vertexBuffersManager_,
+                   swapchainManager_) {
 
     if (!window) throw std::runtime_error("Window pointer is null");
 }
@@ -30,8 +36,14 @@ void VulkanGraphicsBackend::draw(const MeshComponent& mesh,
     drawQueue_.push_back({&mesh, &material, modelMatrix});
 }
 
-void VulkanGraphicsBackend::renderFrame() {
-    if (framesManager_.renderFrame(currentFrame_, commandManager_, swapchainManager_, device_.getVkGraphicsQueue(), drawQueue_)) {
+void VulkanGraphicsBackend::renderFrame(const CameraComponent& camera) {
+    cameraManager_.updateCameraUBO(currentFrame_, camera);
+    if (framesManager_.renderFrame(currentFrame_,
+                                   commandManager_,
+                                   swapchainManager_,
+                                   device_.getVkGraphicsQueue(),
+                                   drawQueue_,
+                                   cameraManager_.getDescriptorSet(currentFrame_))) {
         drawQueue_.clear();
     }
 }
