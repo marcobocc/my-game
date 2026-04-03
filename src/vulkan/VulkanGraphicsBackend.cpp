@@ -1,7 +1,12 @@
 #include "vulkan/VulkanGraphicsBackend.hpp"
 #include <stdexcept>
+#include <volk.h>
 
-VulkanGraphicsBackend::~VulkanGraphicsBackend() = default;
+VulkanGraphicsBackend::~VulkanGraphicsBackend() {
+    if (device_.getVkDevice() != VK_NULL_HANDLE) {
+        vkDeviceWaitIdle(device_.getVkDevice());
+    }
+}
 
 VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
     window_(window),
