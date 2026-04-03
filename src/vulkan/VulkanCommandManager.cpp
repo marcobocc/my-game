@@ -30,8 +30,6 @@ VulkanCommandManager::~VulkanCommandManager() {
 
 void VulkanCommandManager::beginFrame() {
     auto& [commandPool, frameFence] = frames_.at(currentFrame_);
-    vkWaitForFences(device_, 1, &frameFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(device_, 1, &frameFence);
     vkResetCommandPool(device_, commandPool, 0);
 }
 
@@ -52,7 +50,8 @@ VkCommandBuffer VulkanCommandManager::allocateCommandBuffer(VkCommandBufferLevel
 
 void VulkanCommandManager::submitCommandBuffer(VkCommandBuffer cmd,
                                                VkSemaphore waitSemaphore,
-                                               VkSemaphore signalSemaphore) {
+                                               VkSemaphore signalSemaphore,
+                                               VkFence fence) {
     auto& [commandPool, frameFence] = frames_.at(currentFrame_);
     VkSubmitInfo submit{};
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -72,7 +71,8 @@ void VulkanCommandManager::submitCommandBuffer(VkCommandBuffer cmd,
     submit.commandBufferCount = 1;
     submit.pCommandBuffers = &cmd;
 
-    throwIfUnsuccessful(vkQueueSubmit(graphicsQueue_, 1, &submit, frameFence));
+    VkFence fenceToUse = fence != VK_NULL_HANDLE ? fence : frameFence;
+    throwIfUnsuccessful(vkQueueSubmit(graphicsQueue_, 1, &submit, fenceToUse));
 }
 
 void VulkanCommandManager::beginCommandBuffer(VkCommandBuffer cmd, VkCommandBufferUsageFlags flags) {

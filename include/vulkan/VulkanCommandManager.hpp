@@ -20,7 +20,8 @@ public:
     VkCommandBuffer allocateCommandBuffer(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     void submitCommandBuffer(VkCommandBuffer cmd,
                              VkSemaphore waitSemaphore = VK_NULL_HANDLE,
-                             VkSemaphore signalSemaphore = VK_NULL_HANDLE);
+                             VkSemaphore signalSemaphore = VK_NULL_HANDLE,
+                             VkFence fence = VK_NULL_HANDLE);
     static void beginCommandBuffer(VkCommandBuffer cmd,
                                    VkCommandBufferUsageFlags flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     static void endCommandBuffer(VkCommandBuffer cmd);

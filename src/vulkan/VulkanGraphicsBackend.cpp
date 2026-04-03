@@ -49,12 +49,11 @@ void VulkanGraphicsBackend::renderFrame() {
     VkSemaphore imageAvailableSemaphore = imageAvailableSemaphores_.at(currentFrame_);
     VkSemaphore renderFinishedSemaphore = renderFinishedSemaphores_.at(currentFrame_);
     VkFence inFlightFence = inFlightFences_.at(currentFrame_);
-    VkResult fenceStatus = vkGetFenceStatus(device_.getVkDevice(), inFlightFence);
-    if (fenceStatus == VK_NOT_READY) {
-        // Previous frame is still in flight, skip rendering this frame to avoid blocking UI
-        return;
-    }
+
+    // Wait for the previous frame to finish
+    vkWaitForFences(device_.getVkDevice(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
     vkResetFences(device_.getVkDevice(), 1, &inFlightFence);
+
     uint32_t imageIndex = 0;
     if (!swapchainManager_.acquireNextImage(imageAvailableSemaphore, imageIndex)) return;
     if (imageIndex >= swapchainManager_.imageCount()) return;
@@ -93,7 +92,7 @@ void VulkanGraphicsBackend::renderFrame() {
 
     vkCmdEndRenderPass(cmd);
     VulkanCommandManager::endCommandBuffer(cmd);
-    commandManager_.submitCommandBuffer(cmd, imageAvailableSemaphore, renderFinishedSemaphore);
+    commandManager_.submitCommandBuffer(cmd, imageAvailableSemaphore, renderFinishedSemaphore, inFlightFence);
     swapchainManager_.present(device_.getVkGraphicsQueue(), renderFinishedSemaphore, imageIndex);
     commandManager_.endFrame();
     drawQueue_.clear();
