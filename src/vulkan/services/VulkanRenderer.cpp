@@ -129,15 +129,18 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer cmd,
 }
 
 void VulkanRenderer::beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex) const {
-    VkClearValue clearColor = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
+    std::array<VkClearValue, 2> clearValues{};
+    clearValues.at(0).color = {{0.1f, 0.1f, 0.1f, 1.0f}};
+    clearValues.at(1).depthStencil = {1.0f, 0};
+
     VkRenderPassBeginInfo rpInfo{};
     rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     rpInfo.renderPass = swapchainManager_.getVkRenderPass();
     rpInfo.framebuffer = swapchainManager_.getVkFramebuffer(imageIndex);
     rpInfo.renderArea.offset = {0, 0};
     rpInfo.renderArea.extent = swapchainManager_.getVkExtent();
-    rpInfo.clearValueCount = 1;
-    rpInfo.pClearValues = &clearColor;
+    rpInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    rpInfo.pClearValues = clearValues.data();
     vkCmdBeginRenderPass(cmd, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 

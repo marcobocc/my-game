@@ -32,9 +32,11 @@ private:
     void createSurface();
     void createSwapchain();
     void createImageViews();
+    void createDepthResources();
     void createRenderPass();
     void createFramebuffers();
     void cleanupSwapchain();
+    VkFormat findDepthFormat();
 
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("VulkanSwapchain");
 
@@ -52,4 +54,11 @@ private:
     VkFormat swapchainImageFormat_{VK_FORMAT_UNDEFINED};
     VkExtent2D swapchainExtent_{};
     VkRenderPass renderPass_{VK_NULL_HANDLE};
+
+    struct DepthBuffer {
+        VkImage image{VK_NULL_HANDLE};
+        VkDeviceMemory memory{VK_NULL_HANDLE};
+        VkImageView view{VK_NULL_HANDLE};
+        VkFormat format{VK_FORMAT_UNDEFINED};
+    } depthBuffer_;
 };

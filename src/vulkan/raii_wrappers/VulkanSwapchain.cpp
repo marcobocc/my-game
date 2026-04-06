@@ -4,9 +4,13 @@
 #include <stdexcept>
 #include <volk.h>
 #include "vulkan/VulkanErrorHandling.hpp"
+#include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 
 VulkanSwapchain::~VulkanSwapchain() {
     cleanupSwapchain();
+    if (depthBuffer_.view != VK_NULL_HANDLE) vkDestroyImageView(device_, depthBuffer_.view, nullptr);
+    if (depthBuffer_.image != VK_NULL_HANDLE) vkDestroyImage(device_, depthBuffer_.image, nullptr);
+    if (depthBuffer_.memory != VK_NULL_HANDLE) vkFreeMemory(device_, depthBuffer_.memory, nullptr);
     if (renderPass_ != VK_NULL_HANDLE) vkDestroyRenderPass(device_, renderPass_, nullptr);
     if (surface_ != VK_NULL_HANDLE) vkDestroySurfaceKHR(instance_, surface_, nullptr);
 }
@@ -22,6 +26,7 @@ VulkanSwapchain::VulkanSwapchain(GLFWwindow* window,
     createSurface();
     createSwapchain();
     createImageViews();
+    createDepthResources();
     createRenderPass();
     createFramebuffers();
 }
@@ -31,6 +36,7 @@ void VulkanSwapchain::recreate() {
     cleanupSwapchain();
     createSwapchain();
     createImageViews();
+    createDepthResources();
     createFramebuffers();
 }
 
@@ -177,19 +183,35 @@ void VulkanSwapchain::createRenderPass() {
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+    VkAttachmentDescription depthAttachment{};
+    depthAttachment.format = depthBuffer_.format;
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
     VkAttachmentReference colorAttachmentRef{};
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = 1;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
+    std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+    renderPassInfo.pAttachments = attachments.data();
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
 
@@ -199,7 +221,7 @@ void VulkanSwapchain::createRenderPass() {
 void VulkanSwapchain::createFramebuffers() {
     framebuffers_.resize(swapchainImageViews_.size());
     for (size_t i = 0; i < swapchainImageViews_.size(); ++i) {
-        std::array attachments = {swapchainImageViews_.at(i)};
+        std::array attachments = {swapchainImageViews_.at(i), depthBuffer_.view};
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -214,12 +236,76 @@ void VulkanSwapchain::createFramebuffers() {
     }
 }
 
+void VulkanSwapchain::createDepthResources() {
+    depthBuffer_.format = findDepthFormat();
+
+    // Create depth image
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = swapchainExtent_.width;
+    imageInfo.extent.height = swapchainExtent_.height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = depthBuffer_.format;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    throwIfUnsuccessful(vkCreateImage(device_, &imageInfo, nullptr, &depthBuffer_.image));
+
+    // Allocate memory for depth image
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(device_, depthBuffer_.image, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = VulkanBuffer::getMemoryType(
+            physicalDevice_, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    throwIfUnsuccessful(vkAllocateMemory(device_, &allocInfo, nullptr, &depthBuffer_.memory));
+    vkBindImageMemory(device_, depthBuffer_.image, depthBuffer_.memory, 0);
+
+    // Create depth image view
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = depthBuffer_.image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = depthBuffer_.format;
+    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    throwIfUnsuccessful(vkCreateImageView(device_, &viewInfo, nullptr, &depthBuffer_.view));
+}
+
+VkFormat VulkanSwapchain::findDepthFormat() {
+    std::vector<VkFormat> candidates = {
+            VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
+
+    for (VkFormat format: candidates) {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(physicalDevice_, format, &props);
+
+        if (props.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+            return format;
+        }
+    }
+
+    throw std::runtime_error("Failed to find supported depth format");
+}
+
 void VulkanSwapchain::cleanupSwapchain() {
     for (auto fb: framebuffers_)
         if (fb != VK_NULL_HANDLE) vkDestroyFramebuffer(device_, fb, nullptr);
 
     framebuffers_.clear();
-
     for (auto view: swapchainImageViews_)
         if (view != VK_NULL_HANDLE) vkDestroyImageView(device_, view, nullptr);
 
