@@ -39,6 +39,7 @@ bool VulkanDevice::createLogicalDevice(VkPhysicalDevice physicalDevice) {
     VkPhysicalDeviceFeatures features{};
     std::vector<const char*> extensions;
     extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    extensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME); // Enable negative viewport support
 #ifdef __APPLE__
     uint32_t extCount = 0;
     vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, nullptr);

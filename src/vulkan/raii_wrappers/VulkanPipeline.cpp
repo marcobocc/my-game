@@ -125,6 +125,14 @@ void VulkanPipeline::createGraphicsPipeline(VkRenderPass renderPass,
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    // Clockwise front faces due to negative viewport with VK_KHR_maintenance1:
+    //  - Engine uses right-handed coordinate system with counter-clockwise vertex winding
+    //  - Negative viewport height (VK_KHR_maintenance1) flips Y-axis in screen space
+    //  - This Y-flip inverts the perceived triangle winding order after viewport transform
+    //  - Counter-clockwise vertices now appear clockwise in the flipped coordinate system
+    //  - Therefore we configure front faces as clockwise to match the transformed geometry
+    // From the user's perspective, they can continue using counter-clockwise winding order
+    // in their vertex data and it will work correctly
     rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
