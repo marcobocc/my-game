@@ -6,13 +6,18 @@
 VulkanRenderer::VulkanRenderer(VkDevice device,
                                VkPhysicalDevice physicalDevice,
                                size_t swapchainImageCount,
-                               VulkanPipelinesManager& pipelinesManager,
-                               VulkanVertexBuffersManager& vertexBuffersManager,
+                               VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
+                               VulkanResourceCache<VulkanPipeline>& pipelineCache,
+                               VkRenderPass renderPass,
+                               VkDescriptorSetLayout cameraDescriptorSetLayout,
                                VulkanSwapchain& swapchain) :
     device_(device),
+    physicalDevice_(physicalDevice),
+    renderPass_(renderPass),
+    cameraDescriptorSetLayout_(cameraDescriptorSetLayout),
     images_(swapchainImageCount),
-    pipelinesManager_(pipelinesManager),
-    vertexBuffersManager_(vertexBuffersManager),
+    vertexBufferCache_(vertexBufferCache),
+    pipelineCache_(pipelineCache),
     swapchainManager_(swapchain) {
     createSynchronizationObjects();
 }
@@ -49,7 +54,7 @@ bool VulkanRenderer::renderFrame(size_t& currentFrame,
                                  const VulkanSwapchain& swapchain,
                                  VkQueue graphicsQueue,
                                  const std::vector<DrawCall>& drawCalls,
-                                 VkDescriptorSet cameraDescriptorSet) const {
+                                 VkDescriptorSet cameraDescriptorSet) {
     waitForFrame(currentFrame);
 
     uint32_t imageIndex = 0;
@@ -105,7 +110,7 @@ void VulkanRenderer::submitAndPresent(VkCommandBuffer cmd,
 void VulkanRenderer::recordCommandBuffer(VkCommandBuffer cmd,
                                          uint32_t imageIndex,
                                          const std::vector<DrawCall>& drawCalls,
-                                         VkDescriptorSet cameraDescriptorSet) const {
+                                         VkDescriptorSet cameraDescriptorSet) {
     beginRenderPass(cmd, imageIndex);
     setupViewportAndScissor(cmd);
 
@@ -148,13 +153,19 @@ void VulkanRenderer::setupViewportAndScissor(VkCommandBuffer cmd) const {
 
 void VulkanRenderer::renderEntity(VkCommandBuffer cmd,
                                   const DrawCall& drawCall,
-                                  VkDescriptorSet cameraDescriptorSet) const {
+                                  VkDescriptorSet cameraDescriptorSet) {
     const auto& mesh = *drawCall.mesh;
     const auto& [name, vertexShaderPath, fragmentShaderPath] = *drawCall.material;
     const auto& modelMatrix = drawCall.modelMatrix;
 
-    VulkanBuffer* vertexBuffer = vertexBuffersManager_.createOrGetVertexBuffer(
-            mesh.name, mesh.vertices.data(), mesh.vertices.size() * sizeof(float));
+    VulkanBuffer* vertexBuffer = vertexBufferCache_.createOrGet(
+            mesh.name,
+            device_,
+            physicalDevice_,
+            mesh.vertices.size() * sizeof(float),
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            mesh.vertices.data());
 
     std::vector<VkVertexInputAttributeDescription> vkAttributes;
     uint32_t location = 0;
@@ -187,7 +198,13 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd,
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vkAttributes.size());
     vertexInputInfo.pVertexAttributeDescriptions = vkAttributes.data();
 
-    auto* pipeline = pipelinesManager_.createOrGetPipeline(name, vertexInputInfo, vertexShaderPath, fragmentShaderPath);
+    auto* pipeline = pipelineCache_.createOrGet(name,
+                                                device_,
+                                                renderPass_,
+                                                vertexShaderPath,
+                                                fragmentShaderPath,
+                                                vertexInputInfo,
+                                                cameraDescriptorSetLayout_);
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getVkPipeline());
     vkCmdBindDescriptorSets(cmd,

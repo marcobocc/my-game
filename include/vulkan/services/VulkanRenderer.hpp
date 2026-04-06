@@ -6,10 +6,11 @@
 #include <vulkan/vulkan.h>
 #include "ecs/components/MaterialComponent.hpp"
 #include "ecs/components/MeshComponent.hpp"
+#include "vulkan/raii_wrappers/VulkanBuffer.hpp"
+#include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
-#include "vulkan/resource_managers/VulkanPipelinesManager.hpp"
-#include "vulkan/resource_managers/VulkanVertexBuffersManager.hpp"
 #include "vulkan/services/VulkanCommandManager.hpp"
+#include "vulkan/services/VulkanResourceCache.hpp"
 
 struct DrawCall {
     const MeshComponent* mesh;
@@ -30,8 +31,10 @@ public:
     VulkanRenderer(VkDevice device,
                    VkPhysicalDevice physicalDevice,
                    size_t swapchainImageCount,
-                   VulkanPipelinesManager& pipelinesManager,
-                   VulkanVertexBuffersManager& vertexBuffersManager,
+                   VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
+                   VulkanResourceCache<VulkanPipeline>& pipelineCache,
+                   VkRenderPass renderPass,
+                   VkDescriptorSetLayout cameraDescriptorSetLayout,
                    VulkanSwapchain& swapchain);
 
     bool renderFrame(size_t& currentFrame,
@@ -39,7 +42,7 @@ public:
                      const VulkanSwapchain& swapchain,
                      VkQueue graphicsQueue,
                      const std::vector<DrawCall>& drawCalls,
-                     VkDescriptorSet cameraDescriptorSet) const;
+                     VkDescriptorSet cameraDescriptorSet);
 
 private:
     void createSynchronizationObjects();
@@ -54,10 +57,10 @@ private:
     void recordCommandBuffer(VkCommandBuffer cmd,
                              uint32_t imageIndex,
                              const std::vector<DrawCall>& drawCalls,
-                             VkDescriptorSet cameraDescriptorSet) const;
+                             VkDescriptorSet cameraDescriptorSet);
     void beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex) const;
     void setupViewportAndScissor(VkCommandBuffer cmd) const;
-    void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall, VkDescriptorSet cameraDescriptorSet) const;
+    void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall, VkDescriptorSet cameraDescriptorSet);
     static void endRenderPass(VkCommandBuffer cmd);
 
     struct FrameSync {
@@ -70,10 +73,13 @@ private:
     };
 
     VkDevice device_;
+    VkPhysicalDevice physicalDevice_;
+    VkRenderPass renderPass_;
+    VkDescriptorSetLayout cameraDescriptorSetLayout_;
     std::array<FrameSync, MAX_FRAMES_IN_FLIGHT> frames_{};
     std::vector<ImageSync> images_;
 
-    VulkanPipelinesManager& pipelinesManager_;
-    VulkanVertexBuffersManager& vertexBuffersManager_;
+    VulkanResourceCache<VulkanBuffer>& vertexBufferCache_;
+    VulkanResourceCache<VulkanPipeline>& pipelineCache_;
     VulkanSwapchain& swapchainManager_;
 };

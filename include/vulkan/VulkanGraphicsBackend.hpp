@@ -4,15 +4,16 @@
 #include "ecs/components/CameraComponent.hpp"
 #include "ecs/components/MaterialComponent.hpp"
 #include "ecs/components/MeshComponent.hpp"
-#include "vulkan/resource_managers/VulkanCameraManager.hpp"
-#include "vulkan/services/VulkanCommandManager.hpp"
+#include "services/VulkanResourceCache.hpp"
+#include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanDebugMessenger.hpp"
 #include "vulkan/raii_wrappers/VulkanDevice.hpp"
 #include "vulkan/raii_wrappers/VulkanInstance.hpp"
-#include "vulkan/resource_managers/VulkanPipelinesManager.hpp"
-#include "vulkan/services/VulkanRenderer.hpp"
+#include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
-#include "vulkan/resource_managers/VulkanVertexBuffersManager.hpp"
+#include "vulkan/resource_managers/VulkanCameraManager.hpp"
+#include "vulkan/services/VulkanCommandManager.hpp"
+#include "vulkan/services/VulkanRenderer.hpp"
 
 class VulkanGraphicsBackend {
 public:
@@ -27,6 +28,7 @@ public:
     void draw(const MeshComponent& mesh, const MaterialComponent& material, const glm::mat4& modelMatrix);
     void renderFrame(const CameraComponent& camera);
 
+
 private:
     static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -37,9 +39,9 @@ private:
     VulkanDevice device_;
     VulkanCommandManager commandManager_;
     VulkanSwapchain swapchainManager_;
-    VulkanVertexBuffersManager vertexBuffersManager_;
     VulkanCameraManager cameraManager_;
-    VulkanPipelinesManager pipelinesManager_;
+    VulkanResourceCache<VulkanBuffer> vertexBufferCache_;
+    VulkanResourceCache<VulkanPipeline> pipelineCache_;
     VulkanRenderer renderer_;
     std::vector<DrawCall> drawQueue_;
 };
