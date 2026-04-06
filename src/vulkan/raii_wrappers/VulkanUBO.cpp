@@ -1,18 +1,19 @@
-#include "vulkan/resource_managers/VulkanCameraManager.hpp"
+#include "vulkan/raii_wrappers/VulkanUBO.hpp"
 #include <vector>
 #include <volk.h>
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/VulkanErrorHandling.hpp"
 
-VulkanCameraManager::VulkanCameraManager(VkDevice device, VkPhysicalDevice physicalDevice) :
+VulkanUBO::VulkanUBO(VkDevice device, VkPhysicalDevice physicalDevice, size_t uboSize) :
     device_(device),
-    physicalDevice_(physicalDevice) {
+    physicalDevice_(physicalDevice),
+    uboSize_(uboSize) {
     createDescriptorSetLayout();
     createBuffers();
     createDescriptorSets();
 }
 
-VulkanCameraManager::~VulkanCameraManager() {
+VulkanUBO::~VulkanUBO() {
     if (device_ != VK_NULL_HANDLE) {
         vkDeviceWaitIdle(device_);
 
@@ -33,7 +34,7 @@ VulkanCameraManager::~VulkanCameraManager() {
     }
 }
 
-void VulkanCameraManager::createDescriptorSetLayout() {
+void VulkanUBO::createDescriptorSetLayout() {
     VkDescriptorSetLayoutBinding uboLayoutBinding{};
     uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -49,9 +50,9 @@ void VulkanCameraManager::createDescriptorSetLayout() {
     throwIfUnsuccessful(vkCreateDescriptorSetLayout(device_, &layoutInfo, nullptr, &descriptorSetLayout_));
 }
 
-void VulkanCameraManager::createBuffers() {
+void VulkanUBO::createBuffers() {
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-        VkDeviceSize bufferSize = sizeof(CameraUBO);
+        VkDeviceSize bufferSize = uboSize_;
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.size = bufferSize;
@@ -76,7 +77,7 @@ void VulkanCameraManager::createBuffers() {
     }
 }
 
-void VulkanCameraManager::createDescriptorSets() {
+void VulkanUBO::createDescriptorSets() {
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSize.descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
@@ -102,7 +103,7 @@ void VulkanCameraManager::createDescriptorSets() {
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = buffers_[i];
         bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(CameraUBO);
+        bufferInfo.range = uboSize_;
 
         VkWriteDescriptorSet descriptorWrite{};
         descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -117,13 +118,9 @@ void VulkanCameraManager::createDescriptorSets() {
     }
 }
 
-void VulkanCameraManager::updateCameraUBO(size_t frameIndex, const CameraComponent& camera) const {
-    CameraUBO ubo;
-    ubo.view = camera.getViewMatrix();
-    ubo.proj = camera.getProjectionMatrix();
-
+void VulkanUBO::updateUBO(size_t frameIndex, const void* uboData, size_t uboSize) const {
     void* data;
-    vkMapMemory(device_, bufferMemories_[frameIndex], 0, sizeof(CameraUBO), 0, &data);
-    memcpy(data, &ubo, sizeof(CameraUBO));
+    vkMapMemory(device_, bufferMemories_[frameIndex], 0, uboSize, 0, &data);
+    memcpy(data, uboData, uboSize);
     vkUnmapMemory(device_, bufferMemories_[frameIndex]);
 }

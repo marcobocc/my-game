@@ -3,19 +3,23 @@
 #include "vulkan/VulkanErrorHandling.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 
+struct CameraUBO {
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
 VulkanRenderer::VulkanRenderer(VkDevice device,
                                VkPhysicalDevice physicalDevice,
                                size_t swapchainImageCount,
                                VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                                VulkanResourceCache<VulkanPipeline>& pipelineCache,
                                VkRenderPass renderPass,
-                               VkDescriptorSetLayout cameraDescriptorSetLayout,
                                VulkanSwapchain& swapchain) :
     device_(device),
     physicalDevice_(physicalDevice),
     renderPass_(renderPass),
-    cameraDescriptorSetLayout_(cameraDescriptorSetLayout),
     images_(swapchainImageCount),
+    cameraUBO_(device, physicalDevice, sizeof(CameraUBO)),
     vertexBufferCache_(vertexBufferCache),
     pipelineCache_(pipelineCache),
     swapchainManager_(swapchain) {
@@ -54,8 +58,11 @@ bool VulkanRenderer::renderFrame(size_t& currentFrame,
                                  const VulkanSwapchain& swapchain,
                                  VkQueue graphicsQueue,
                                  const std::vector<DrawCall>& drawCalls,
-                                 VkDescriptorSet cameraDescriptorSet) {
+                                 const CameraComponent& camera) {
     waitForFrame(currentFrame);
+
+    CameraUBO cameraUBO{.view = camera.getViewMatrix(), .proj = camera.getProjectionMatrix()};
+    cameraUBO_.updateUBO(currentFrame, &cameraUBO, sizeof(CameraUBO));
 
     uint32_t imageIndex = 0;
     if (!acquireImage(currentFrame, swapchain, imageIndex)) {
@@ -65,7 +72,7 @@ bool VulkanRenderer::renderFrame(size_t& currentFrame,
     commandManager.beginFrame();
     VkCommandBuffer cmd = commandManager.allocateCommandBuffer();
     VulkanCommandManager::beginCommandBuffer(cmd);
-    recordCommandBuffer(cmd, imageIndex, drawCalls, cameraDescriptorSet);
+    recordCommandBuffer(cmd, imageIndex, currentFrame, drawCalls);
     submitAndPresent(cmd, currentFrame, imageIndex, commandManager, swapchain, graphicsQueue);
     commandManager.endFrame();
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -109,13 +116,13 @@ void VulkanRenderer::submitAndPresent(VkCommandBuffer cmd,
 
 void VulkanRenderer::recordCommandBuffer(VkCommandBuffer cmd,
                                          uint32_t imageIndex,
-                                         const std::vector<DrawCall>& drawCalls,
-                                         VkDescriptorSet cameraDescriptorSet) {
+                                         size_t currentFrame,
+                                         const std::vector<DrawCall>& drawCalls) {
     beginRenderPass(cmd, imageIndex);
     setupViewportAndScissor(cmd);
 
     for (const auto& drawCall: drawCalls) {
-        renderEntity(cmd, drawCall, cameraDescriptorSet);
+        renderEntity(cmd, drawCall, currentFrame);
     }
 
     endRenderPass(cmd);
@@ -151,21 +158,19 @@ void VulkanRenderer::setupViewportAndScissor(VkCommandBuffer cmd) const {
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
-void VulkanRenderer::renderEntity(VkCommandBuffer cmd,
-                                  const DrawCall& drawCall,
-                                  VkDescriptorSet cameraDescriptorSet) {
+void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall, size_t currentFrame) {
     const auto& mesh = *drawCall.mesh;
     const auto& [name, vertexShaderPath, fragmentShaderPath] = *drawCall.material;
     const auto& modelMatrix = drawCall.modelMatrix;
 
-    VulkanBuffer* vertexBuffer = vertexBufferCache_.createOrGet(
-            mesh.name,
-            device_,
-            physicalDevice_,
-            mesh.vertices.size() * sizeof(float),
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            mesh.vertices.data());
+    VulkanBuffer* vertexBuffer =
+            vertexBufferCache_.createOrGet(mesh.name,
+                                           device_,
+                                           physicalDevice_,
+                                           mesh.vertices.size() * sizeof(float),
+                                           VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                           mesh.vertices.data());
 
     std::vector<VkVertexInputAttributeDescription> vkAttributes;
     uint32_t location = 0;
@@ -204,9 +209,12 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd,
                                                 vertexShaderPath,
                                                 fragmentShaderPath,
                                                 vertexInputInfo,
-                                                cameraDescriptorSetLayout_);
+                                                cameraUBO_.getDescriptorSetLayout());
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getVkPipeline());
+
+    VkDescriptorSet cameraDescriptorSet = cameraUBO_.getDescriptorSet(currentFrame);
+
     vkCmdBindDescriptorSets(cmd,
                             VK_PIPELINE_BIND_POINT_GRAPHICS,
                             pipeline->getVkPipelineLayout(),

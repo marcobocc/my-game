@@ -9,9 +9,8 @@
 #include "vulkan/raii_wrappers/VulkanDebugMessenger.hpp"
 #include "vulkan/raii_wrappers/VulkanDevice.hpp"
 #include "vulkan/raii_wrappers/VulkanInstance.hpp"
-#include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
-#include "vulkan/resource_managers/VulkanCameraManager.hpp"
+#include "vulkan/services/VulkanResourceCache.hpp"
 #include "vulkan/services/VulkanCommandManager.hpp"
 #include "vulkan/services/VulkanRenderer.hpp"
 
@@ -39,7 +38,6 @@ private:
     VulkanDevice device_;
     VulkanCommandManager commandManager_;
     VulkanSwapchain swapchainManager_;
-    VulkanCameraManager cameraManager_;
     VulkanResourceCache<VulkanBuffer> vertexBufferCache_;
     VulkanResourceCache<VulkanPipeline> pipelineCache_;
     VulkanRenderer renderer_;
