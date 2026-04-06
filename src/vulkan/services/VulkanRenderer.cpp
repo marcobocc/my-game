@@ -190,7 +190,7 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
 
     std::vector<VkVertexInputAttributeDescription> vkAttributes;
     uint32_t location = 0;
-    for (const auto& attr: mesh.attributes) {
+    for (const auto& attr: mesh.vertexAttributes) {
         VkFormat format = VK_FORMAT_UNDEFINED;
         if (attr.componentCount == 2)
             format = VK_FORMAT_R32G32_SFLOAT;

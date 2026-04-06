@@ -1,20 +1,59 @@
 #pragma once
+#include <array>
+#include <glm/glm.hpp>
 #include <string>
 #include <vector>
 
 struct VertexAttribute {
-    std::string name; // "position", "color", etc.
-    uint32_t offset; // offset in floats from start of vertex
-    uint32_t componentCount; // 2 for vec2, 3 for vec3, 4 for vec4
+    uint32_t offset;
+    uint32_t componentCount;
+};
+
+struct PositionColorVertex {
+    glm::vec3 position;
+    glm::vec3 color;
+
+    static constexpr uint32_t POSITION_OFFSET = 0;
+    static constexpr uint32_t POSITION_COMPONENTS = 3;
+    static constexpr uint32_t COLOR_OFFSET = 3;
+    static constexpr uint32_t COLOR_COMPONENTS = 3;
+
+    static constexpr uint32_t VERTEX_STRIDE = 6;
+    static constexpr std::array<VertexAttribute, 2> VERTEX_ATTRIBS = {
+            {{POSITION_OFFSET, POSITION_COMPONENTS}, {COLOR_OFFSET, COLOR_COMPONENTS}}};
 };
 
 struct Mesh {
-    std::string name;
-    std::vector<float> vertices; // flattened vertex data
-    std::vector<uint32_t> indices; // optional index buffer
-    uint32_t vertexStride = 0; // floats per vertex
-    std::vector<VertexAttribute> attributes; // logical attributes
+    std::string name{};
+    std::vector<float> vertices{};
+    std::vector<uint32_t> indices{};
+    std::vector<VertexAttribute> vertexAttributes{};
+    uint32_t vertexStride{};
 
     size_t getVertexCount() const { return vertices.size() / vertexStride; }
     bool hasIndices() const { return !indices.empty(); }
+};
+
+class MeshFactory {
+public:
+    static Mesh createPositionColorMesh(const std::string& name,
+                                        const std::vector<PositionColorVertex>& vertices,
+                                        const std::vector<uint32_t>& indices = {}) {
+        std::vector<float> data;
+        for (const auto& [position, color]: vertices) {
+            data.push_back(position.x);
+            data.push_back(position.y);
+            data.push_back(position.z);
+            data.push_back(color.r);
+            data.push_back(color.g);
+            data.push_back(color.b);
+        }
+
+        return {.name = name,
+                .vertices = data,
+                .indices = indices,
+                .vertexAttributes = std::vector(PositionColorVertex::VERTEX_ATTRIBS.begin(),
+                                                PositionColorVertex::VERTEX_ATTRIBS.end()),
+                .vertexStride = PositionColorVertex::VERTEX_STRIDE};
+    }
 };
