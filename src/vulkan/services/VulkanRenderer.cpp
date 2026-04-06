@@ -173,6 +173,18 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                                            mesh.vertices.data());
 
+    VulkanBuffer* indexBuffer = nullptr;
+    if (mesh.hasIndices()) {
+        indexBuffer = vertexBufferCache_.createOrGet(mesh.name + "_indices",
+                                                     device_,
+                                                     physicalDevice_,
+                                                     mesh.indices.size() * sizeof(uint32_t),
+                                                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                             VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                                     mesh.indices.data());
+    }
+
     std::vector<VkVertexInputAttributeDescription> vkAttributes;
     uint32_t location = 0;
     for (const auto& attr: mesh.attributes) {
@@ -233,7 +245,9 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
             cmd, pipeline->getVkPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &modelMatrix);
 
     if (mesh.hasIndices()) {
-        // Index buffer support can be added later
+        VkBuffer idxBuf = indexBuffer->getVkBuffer();
+        vkCmdBindIndexBuffer(cmd, idxBuf, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(cmd, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
     } else {
         vkCmdDraw(cmd, static_cast<uint32_t>(mesh.getVertexCount()), 1, 0, 0);
     }
