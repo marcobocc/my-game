@@ -28,8 +28,8 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
     if (!window) throw std::runtime_error("Window pointer is null");
 }
 
-void VulkanGraphicsBackend::draw(const MeshComponent& mesh,
-                                 const MaterialComponent& material,
+void VulkanGraphicsBackend::draw(const Mesh& mesh,
+                                 const Material& material,
                                  const glm::mat4& modelMatrix) {
     drawQueue_.push_back({&mesh, &material, modelMatrix});
 }

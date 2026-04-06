@@ -8,7 +8,7 @@ struct VertexAttribute {
     uint32_t componentCount; // 2 for vec2, 3 for vec3, 4 for vec4
 };
 
-struct MeshComponent {
+struct Mesh {
     std::string name;
     std::vector<float> vertices; // flattened vertex data
     std::vector<uint32_t> indices; // optional index buffer

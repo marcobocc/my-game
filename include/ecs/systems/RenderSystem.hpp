@@ -1,6 +1,7 @@
 #pragma once
 #include "ecs/GameEntitiesManager.hpp"
 #include "ecs/components/CameraComponent.hpp"
+#include "ecs/components/RenderableComponent.hpp"
 #include "ecs/components/TransformComponent.hpp"
 #include "vulkan/VulkanGraphicsBackend.hpp"
 
@@ -9,9 +10,9 @@ public:
     RenderSystem(GameEntitiesManager& ecs, VulkanGraphicsBackend& backend) : ecs_(ecs), backend_(backend) {}
 
     void update() {
-        auto drawables = ecs_.query<MeshComponent, MaterialComponent, TransformComponent>();
-        for (auto& [entity, mesh, material, transform]: drawables) {
-            backend_.draw(mesh, material, transform.getModelMatrix());
+        auto drawables = ecs_.query<RenderableComponent, TransformComponent>();
+        for (auto& [entity, renderable, transform]: drawables) {
+            backend_.draw(*renderable.mesh, *renderable.material, transform.getModelMatrix());
         }
 
         auto cameras = ecs_.query<CameraComponent>();

@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-struct MaterialComponent {
+struct Material {
     std::string name;
     std::string vertexShaderPath;
     std::string fragmentShaderPath;

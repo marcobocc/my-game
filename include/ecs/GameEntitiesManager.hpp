@@ -94,8 +94,6 @@ namespace detail {
 } // namespace detail
 
 #include "ecs/components/CameraComponent.hpp"
-#include "ecs/components/MaterialComponent.hpp"
-#include "ecs/components/MeshComponent.hpp"
+#include "ecs/components/RenderableComponent.hpp"
 #include "ecs/components/TransformComponent.hpp"
-using GameEntitiesManager =
-        detail::GameEntitiesManager<MeshComponent, MaterialComponent, TransformComponent, CameraComponent>;
+using GameEntitiesManager = detail::GameEntitiesManager<RenderableComponent, TransformComponent, CameraComponent>;

@@ -1,18 +1,18 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include "core/Material.hpp"
+#include "core/Mesh.hpp"
 #include "ecs/components/CameraComponent.hpp"
-#include "ecs/components/MaterialComponent.hpp"
-#include "ecs/components/MeshComponent.hpp"
 #include "services/VulkanResourceCache.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanDebugMessenger.hpp"
 #include "vulkan/raii_wrappers/VulkanDevice.hpp"
 #include "vulkan/raii_wrappers/VulkanInstance.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
-#include "vulkan/services/VulkanResourceCache.hpp"
 #include "vulkan/services/VulkanCommandManager.hpp"
 #include "vulkan/services/VulkanRenderer.hpp"
+#include "vulkan/services/VulkanResourceCache.hpp"
 
 class VulkanGraphicsBackend {
 public:
@@ -24,7 +24,7 @@ public:
     ~VulkanGraphicsBackend();
     explicit VulkanGraphicsBackend(GLFWwindow* window);
 
-    void draw(const MeshComponent& mesh, const MaterialComponent& material, const glm::mat4& modelMatrix);
+    void draw(const Mesh& mesh, const Material& material, const glm::mat4& modelMatrix);
     void renderFrame(const CameraComponent& camera);
 
 

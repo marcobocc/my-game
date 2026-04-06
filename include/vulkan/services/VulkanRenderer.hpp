@@ -4,19 +4,19 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "core/Material.hpp"
+#include "core/Mesh.hpp"
 #include "ecs/components/CameraComponent.hpp"
-#include "ecs/components/MaterialComponent.hpp"
-#include "ecs/components/MeshComponent.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
 #include "vulkan/raii_wrappers/VulkanUBO.hpp"
-#include "vulkan/services/VulkanResourceCache.hpp"
 #include "vulkan/services/VulkanCommandManager.hpp"
+#include "vulkan/services/VulkanResourceCache.hpp"
 
 struct DrawCall {
-    const MeshComponent* mesh;
-    const MaterialComponent* material;
+    const Mesh* mesh;
+    const Material* material;
     glm::mat4 modelMatrix;
 };
 
