@@ -9,6 +9,7 @@ VulkanPipeline::VulkanPipeline(VulkanPipeline&& other) noexcept {
     pipeline_ = other.pipeline_;
     layout_ = other.layout_;
     shaderModules_ = std::move(other.shaderModules_);
+    pushConstantSize_ = other.pushConstantSize_;
     other.pipeline_ = VK_NULL_HANDLE;
     other.layout_ = VK_NULL_HANDLE;
 }
@@ -20,6 +21,7 @@ VulkanPipeline& VulkanPipeline::operator=(VulkanPipeline&& other) noexcept {
         pipeline_ = other.pipeline_;
         layout_ = other.layout_;
         shaderModules_ = std::move(other.shaderModules_);
+        pushConstantSize_ = other.pushConstantSize_;
         other.pipeline_ = VK_NULL_HANDLE;
         other.layout_ = VK_NULL_HANDLE;
     }
@@ -33,10 +35,12 @@ VulkanPipeline::VulkanPipeline(VkDevice device,
                                const std::string& vertPath,
                                const std::string& fragPath,
                                const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
+                               uint32_t pushConstantSize,
                                VkDescriptorSetLayout cameraDescriptorSetLayout) :
-    device_(device) {
+    device_(device),
+    pushConstantSize_(pushConstantSize) {
     auto shaderStages = createShaderStages(vertPath.c_str(), fragPath.c_str());
-    createPipelineLayout(cameraDescriptorSetLayout);
+    createPipelineLayout(cameraDescriptorSetLayout, pushConstantSize_);
     createGraphicsPipeline(renderPass, shaderStages, vertexInputInfo);
     destroyShaderModules();
 }
@@ -51,7 +55,7 @@ void VulkanPipeline::cleanup() {
     destroyShaderModules();
 }
 
-void VulkanPipeline::createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout) {
+void VulkanPipeline::createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout, uint32_t pushConstantSize) {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     if (cameraDescriptorSetLayout != VK_NULL_HANDLE) {
@@ -65,7 +69,7 @@ void VulkanPipeline::createPipelineLayout(VkDescriptorSetLayout cameraDescriptor
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(float) * 16;
+    pushConstantRange.size = pushConstantSize;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 

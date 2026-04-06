@@ -9,6 +9,17 @@ struct VertexAttribute {
     uint32_t componentCount;
 };
 
+// Position-only vertex for material-colored geometry
+struct PositionVertex {
+    glm::vec3 position;
+
+    static constexpr uint32_t POSITION_OFFSET = 0;
+    static constexpr uint32_t POSITION_COMPONENTS = 3;
+    static constexpr uint32_t VERTEX_STRIDE = 3;
+    static constexpr std::array<VertexAttribute, 1> VERTEX_ATTRIBS = {{{POSITION_OFFSET, POSITION_COMPONENTS}}};
+};
+
+// Position + Color vertex for vertex-colored geometry
 struct PositionColorVertex {
     glm::vec3 position;
     glm::vec3 color;
@@ -36,6 +47,26 @@ struct Mesh {
 
 class MeshFactory {
 public:
+    // Create mesh with position-only vertices (colors come from material)
+    static Mesh createPositionMesh(const std::string& name,
+                                   const std::vector<PositionVertex>& vertices,
+                                   const std::vector<uint32_t>& indices = {}) {
+        std::vector<float> data;
+        for (const auto& vertex: vertices) {
+            data.push_back(vertex.position.x);
+            data.push_back(vertex.position.y);
+            data.push_back(vertex.position.z);
+        }
+
+        return {.name = name,
+                .vertices = data,
+                .indices = indices,
+                .vertexAttributes =
+                        std::vector(PositionVertex::VERTEX_ATTRIBS.begin(), PositionVertex::VERTEX_ATTRIBS.end()),
+                .vertexStride = PositionVertex::VERTEX_STRIDE};
+    }
+
+    // Create mesh with position + color vertices
     static Mesh createPositionColorMesh(const std::string& name,
                                         const std::vector<PositionColorVertex>& vertices,
                                         const std::vector<uint32_t>& indices = {}) {

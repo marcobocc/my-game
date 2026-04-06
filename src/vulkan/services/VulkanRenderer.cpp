@@ -163,8 +163,13 @@ void VulkanRenderer::setupViewportAndScissor(VkCommandBuffer cmd) const {
 }
 
 void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall, size_t currentFrame) {
+    struct PushConstants {
+        glm::mat4 modelMatrix;
+        glm::vec4 baseColor;
+    };
+
     const auto& mesh = *drawCall.mesh;
-    const auto& [name, vertexShaderPath, fragmentShaderPath] = *drawCall.material;
+    const auto& [name, vertexShaderPath, fragmentShaderPath, baseColor] = *drawCall.material;
     const auto& modelMatrix = drawCall.modelMatrix;
 
     VulkanBuffer* vertexBuffer =
@@ -219,12 +224,16 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
     vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(vkAttributes.size());
     vertexInputInfo.pVertexAttributeDescriptions = vkAttributes.data();
 
+    // For now all shaders use this size, even if they don't use all fields
+    constexpr uint32_t pushConstantSize = sizeof(PushConstants);
+
     auto* pipeline = pipelineCache_.createOrGet(name,
                                                 device_,
                                                 renderPass_,
                                                 vertexShaderPath,
                                                 fragmentShaderPath,
                                                 vertexInputInfo,
+                                                pushConstantSize,
                                                 cameraUBO_.getDescriptorSetLayout());
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getVkPipeline());
@@ -244,8 +253,12 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(cmd, 0, 1, &buf, offsets);
 
+    PushConstants pushConstants;
+    pushConstants.modelMatrix = modelMatrix;
+    pushConstants.baseColor = baseColor;
+
     vkCmdPushConstants(
-            cmd, pipeline->getVkPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &modelMatrix);
+            cmd, pipeline->getVkPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pushConstants);
 
     if (mesh.hasIndices()) {
         VkBuffer idxBuf = indexBuffer->getVkBuffer();
