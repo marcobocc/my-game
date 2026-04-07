@@ -1,5 +1,4 @@
 #pragma once
-#include <glm/glm.hpp>
 #include <memory>
 #include <string>
 #include "core/AssetManager.hpp"
@@ -9,7 +8,7 @@ class MaterialBuilder {
 public:
     explicit MaterialBuilder(AssetManager& assetManager) : assetManager_(assetManager) {}
 
-    std::string createMaterialColor(const glm::vec4& color) const {
+    std::string solidColor(const glm::vec4& color) const {
         std::string materialName = getMaterialNameForColor(color);
 
         auto material = std::make_unique<Material>();

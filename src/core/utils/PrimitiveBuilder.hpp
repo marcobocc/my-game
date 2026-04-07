@@ -8,14 +8,14 @@ class PrimitiveBuilder {
 public:
     explicit PrimitiveBuilder(AssetManager& assetManager) : assetManager_(assetManager) {}
 
-    std::string createCube() const {
+    std::string cube() const {
         auto mesh = MeshFactory::createPositionMesh(PRIMITIVE_GEOMETRY_CUBE, getCubeVertices(), getCubeIndices());
         auto meshPtr = std::make_unique<Mesh>(std::move(mesh));
         assetManager_.insertMesh(std::move(meshPtr));
         return PRIMITIVE_GEOMETRY_CUBE;
     }
 
-    std::string createTriangle() const {
+    std::string triangle() const {
         auto mesh = MeshFactory::createPositionMesh(PRIMITIVE_GEOMETRY_TRIANGLE, getTriangleVertices());
         auto meshPtr = std::make_unique<Mesh>(std::move(mesh));
         assetManager_.insertMesh(std::move(meshPtr));
