@@ -23,25 +23,27 @@ find_package(VulkanHeaders CONFIG REQUIRED)
 # -------------------------------------------------------------------------
 # Sources
 # -------------------------------------------------------------------------
-file(GLOB_RECURSE SOURCES src/*.cpp src/*.hpp)
-
-# -------------------------------------------------------------------------
-# Executable
-# -------------------------------------------------------------------------
-add_executable(${PROJECT_NAME} ${SOURCES})
-
-# -------------------------------------------------------------------------
-# Include directories
-# -------------------------------------------------------------------------
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+file(GLOB_RECURSE ENGINE_SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp
 )
 
 # -------------------------------------------------------------------------
-# Link libraries
+# Game Engine Library
 # -------------------------------------------------------------------------
-target_link_libraries(${PROJECT_NAME} PRIVATE
+add_library(GameEngineLib STATIC ${ENGINE_SOURCES})
+
+# -------------------------------------------------------------------------
+# Library Include directories
+# -------------------------------------------------------------------------
+target_include_directories(GameEngineLib PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+# -------------------------------------------------------------------------
+# Library Link libraries
+# -------------------------------------------------------------------------
+target_link_libraries(GameEngineLib PUBLIC
         log4cxx
         fmt::fmt
         glfw
@@ -52,25 +54,29 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         GPUOpen::VulkanMemoryAllocator
 )
 
-
 # On macOS, link MoltenVK explicitly
 if (APPLE)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ${MOLTENVK_LIBRARY})
+    target_link_libraries(GameEngineLib PUBLIC ${MOLTENVK_LIBRARY})
 endif ()
 
 # Ensure VK_NO_PROTOTYPES is defined globally for all translation units
-target_compile_definitions(${PROJECT_NAME} PRIVATE VK_NO_PROTOTYPES)
+target_compile_definitions(GameEngineLib PUBLIC VK_NO_PROTOTYPES)
 
 # -------------------------------------------------------------------------
-# Compiler options
+# Library Compiler options
 # -------------------------------------------------------------------------
 if (MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /permissive-)
+    target_compile_options(GameEngineLib PRIVATE /W4 /permissive-)
 else ()
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+    target_compile_options(GameEngineLib PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 endif ()
 
 # -------------------------------------------------------------------------
-# Optional Vulkan macro
+# Vulkan macros
 # -------------------------------------------------------------------------
 add_definitions(-DVULKAN_ENGINE)
+
+# -------------------------------------------------------------------------
+# Executables
+# -------------------------------------------------------------------------
+add_executable(main ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)

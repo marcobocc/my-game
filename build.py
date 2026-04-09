@@ -11,7 +11,6 @@ from pathlib import Path
 # -----------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 BUILD_DIR = PROJECT_ROOT / "build"
-TARGET = "GameEngine"
 
 
 # -----------------------------------------------------------------------------
@@ -139,7 +138,6 @@ def clean_build_dir() -> None:
         warn(f"Removing {BUILD_DIR}")
         shutil.rmtree(BUILD_DIR)
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
-    success("Build directory ready.")
 
 
 def configure_cmake(toolchain: Path, build_type: str = "Debug") -> None:
@@ -208,23 +206,24 @@ def run_target(target: str) -> None:
 def main() -> None:
     import argparse
     parser = argparse.ArgumentParser(description="Build script for CrossPlatformVulkanEngine")
+    parser.add_argument("target", type=str, help="Name of the executable target to build and run")
     parser.add_argument("--lint", action="store_true", help="Run Clang-Tidy and exit")
-    parser.add_argument("--clean", action="store_true", help="Clean build directory and exit")
     args = parser.parse_args()
 
-    if args.clean:
+    if args.target == "clean":
         clean_build_dir()
+        success("Clean completed.")
         return
 
     info("Starting build workflow")
-    build_target(TARGET)
+    build_target(args.target)
 
     if args.lint:
         run_clang_format()
         run_clang_tidy()
 
-    success("Build completed successfully.")
-    run_target(TARGET)
+    success(f"Target {args.target} built successfully.")
+    run_target(args.target)
 
 
 if __name__ == "__main__":
