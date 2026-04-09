@@ -102,6 +102,9 @@ void VulkanContext::createLogicalDevice() {
         }
     }
 #endif
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature{};
+    dynamicRenderingFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+    dynamicRenderingFeature.dynamicRendering = VK_TRUE;
     VkDeviceCreateInfo deviceInfo{};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pQueueCreateInfos = &queueInfo;
@@ -109,6 +112,7 @@ void VulkanContext::createLogicalDevice() {
     deviceInfo.pEnabledFeatures = &features;
     deviceInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     deviceInfo.ppEnabledExtensionNames = extensions.data();
+    deviceInfo.pNext = &dynamicRenderingFeature;
     throwIfUnsuccessful(vkCreateDevice(physicalDevice_, &deviceInfo, nullptr, &device_));
     volkLoadDevice(device_);
     vkGetDeviceQueue(device_, graphicsQueueFamilyIndex_, 0, &graphicsQueue_);
