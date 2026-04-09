@@ -4,9 +4,6 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "core/assets/types/Material.hpp"
-#include "core/assets/types/Mesh.hpp"
-#include "core/assets/types/ShaderPipeline.hpp"
 #include "core/components/CameraComponent.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanPipeline.hpp"
@@ -14,13 +11,7 @@
 #include "vulkan/raii_wrappers/VulkanUBO.hpp"
 #include "vulkan/services/VulkanCommandManager.hpp"
 #include "vulkan/services/VulkanResourceCache.hpp"
-
-struct DrawCall {
-    const Mesh* mesh;
-    const Material* material;
-    const ShaderPipeline* shaderPipeline;
-    const glm::mat4 modelMatrix;
-};
+#include "vulkan/services/VulkanSceneRenderer.hpp"
 
 class VulkanRenderer {
 public:
@@ -56,14 +47,6 @@ private:
                           VulkanCommandManager& commandManager,
                           const VulkanSwapchain& swapchain,
                           VkQueue graphicsQueue) const;
-    void recordCommandBuffer(VkCommandBuffer cmd,
-                             uint32_t imageIndex,
-                             size_t currentFrame,
-                             const std::vector<DrawCall>& drawCalls);
-    void beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const;
-    void endRendering(VkCommandBuffer cmd);
-    void setupViewportAndScissor(VkCommandBuffer cmd) const;
-    void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall, size_t currentFrame);
     static void endRenderPass(VkCommandBuffer cmd);
 
     struct FrameSync {
@@ -84,4 +67,5 @@ private:
     VulkanResourceCache<VulkanBuffer>& vertexBufferCache_;
     VulkanResourceCache<VulkanPipeline>& pipelineCache_;
     VulkanSwapchain& swapchainManager_;
+    VulkanSceneRenderer sceneRenderer_;
 };
