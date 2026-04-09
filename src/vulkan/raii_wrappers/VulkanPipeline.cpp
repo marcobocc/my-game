@@ -1,5 +1,4 @@
 #include "vulkan/raii_wrappers/VulkanPipeline.hpp"
-#include <fstream>
 #include <stdexcept>
 #include <volk.h>
 #include "vulkan/VulkanErrorHandling.hpp"
@@ -32,14 +31,14 @@ VulkanPipeline::~VulkanPipeline() { cleanup(); }
 
 VulkanPipeline::VulkanPipeline(VkDevice device,
                                VkRenderPass renderPass,
-                               const std::string& vertPath,
-                               const std::string& fragPath,
+                               const std::vector<char>& vertBytecode,
+                               const std::vector<char>& fragBytecode,
                                const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
                                uint32_t pushConstantSize,
                                VkDescriptorSetLayout cameraDescriptorSetLayout) :
     device_(device),
     pushConstantSize_(pushConstantSize) {
-    auto shaderStages = createShaderStages(vertPath.c_str(), fragPath.c_str());
+    auto shaderStages = createShaderStages(vertBytecode, fragBytecode);
     createPipelineLayout(cameraDescriptorSetLayout, pushConstantSize_);
     createGraphicsPipeline(renderPass, shaderStages, vertexInputInfo);
     destroyShaderModules();
@@ -77,12 +76,10 @@ void VulkanPipeline::createPipelineLayout(VkDescriptorSetLayout cameraDescriptor
     throwIfUnsuccessful(result);
 }
 
-std::array<VkPipelineShaderStageCreateInfo, 2> VulkanPipeline::createShaderStages(const char* vertPath,
-                                                                                  const char* fragPath) {
-    auto vertShaderCode = readFile(vertPath);
-    auto fragShaderCode = readFile(fragPath);
-    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+std::array<VkPipelineShaderStageCreateInfo, 2> VulkanPipeline::createShaderStages(const std::vector<char>& vertBytecode,
+                                                                                  const std::vector<char>& fragBytecode) {
+    VkShaderModule vertShaderModule = createShaderModule(vertBytecode);
+    VkShaderModule fragShaderModule = createShaderModule(fragBytecode);
     shaderModules_.push_back(vertShaderModule);
     shaderModules_.push_back(fragShaderModule);
 
@@ -188,18 +185,6 @@ void VulkanPipeline::destroyShaderModules() {
     for (auto module: shaderModules_)
         vkDestroyShaderModule(device_, module, nullptr);
     shaderModules_.clear();
-}
-
-std::vector<char> VulkanPipeline::readFile(const char* filename) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-    if (!file.is_open()) throw std::runtime_error("Failed to open file");
-
-    size_t fileSize = file.tellg();
-    std::vector<char> buffer(fileSize);
-    file.seekg(0);
-    file.read(buffer.data(), static_cast<std::streamsize>(fileSize));
-    file.close();
-    return buffer;
 }
 
 VkShaderModule VulkanPipeline::createShaderModule(const std::vector<char>& code) const {

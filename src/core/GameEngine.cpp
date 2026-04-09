@@ -36,7 +36,7 @@ void GameEngine::initialize(unsigned int windowWidth, unsigned int windowHeight,
     ecs_ = std::make_unique<GameEntitiesManager>();
     graphicsBackend_ = std::make_unique<VulkanGraphicsBackend>(window_);
     assetManager_ = std::make_unique<AssetManager>();
-    renderSystem_ = std::make_unique<RenderSystem>(*ecs_, *graphicsBackend_);
+    renderSystem_ = std::make_unique<RenderSystem>(*ecs_, *assetManager_, *graphicsBackend_);
     playerInput_ = std::make_unique<InputComponent>();
     inputSystem_ = std::make_unique<InputSystem>(window_, *playerInput_);
     lastFrameTime_ = glfwGetTime();

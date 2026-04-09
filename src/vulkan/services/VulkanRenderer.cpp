@@ -169,7 +169,8 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
     };
 
     const auto& mesh = *drawCall.mesh;
-    const auto& [name, vertexShaderPath, fragmentShaderPath, baseColor] = *drawCall.material;
+    const auto& material = *drawCall.material;
+    const auto& shaderPipeline = *drawCall.shaderPipeline;
     const auto& modelMatrix = drawCall.modelMatrix;
 
     VulkanBuffer* vertexBuffer =
@@ -227,11 +228,11 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
     // For now all shaders use this size, even if they don't use all fields
     constexpr uint32_t pushConstantSize = sizeof(PushConstants);
 
-    auto* pipeline = pipelineCache_.createOrGet(name,
+    auto* pipeline = pipelineCache_.createOrGet(shaderPipeline.name,
                                                 device_,
                                                 renderPass_,
-                                                vertexShaderPath,
-                                                fragmentShaderPath,
+                                                shaderPipeline.vertexStage.bytecode,
+                                                shaderPipeline.fragmentStage.bytecode,
                                                 vertexInputInfo,
                                                 pushConstantSize,
                                                 cameraUBO_.getDescriptorSetLayout());
@@ -255,7 +256,7 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
 
     PushConstants pushConstants;
     pushConstants.modelMatrix = modelMatrix;
-    pushConstants.baseColor = baseColor;
+    pushConstants.baseColor = material.baseColor;
 
     vkCmdPushConstants(
             cmd, pipeline->getVkPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pushConstants);

@@ -4,8 +4,9 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "core/Material.hpp"
-#include "core/Mesh.hpp"
+#include "core/assets/types/Material.hpp"
+#include "core/assets/types/Mesh.hpp"
+#include "core/assets/types/ShaderPipeline.hpp"
 #include "core/components/CameraComponent.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanPipeline.hpp"
@@ -17,7 +18,8 @@
 struct DrawCall {
     const Mesh* mesh;
     const Material* material;
-    glm::mat4 modelMatrix;
+    const ShaderPipeline* shaderPipeline;
+    const glm::mat4 modelMatrix;
 };
 
 class VulkanRenderer {

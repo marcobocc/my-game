@@ -28,19 +28,16 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
     if (!window) throw std::runtime_error("Window pointer is null");
 }
 
-void VulkanGraphicsBackend::draw(const Mesh& mesh,
-                                 const Material& material,
+void VulkanGraphicsBackend::draw(const Mesh* mesh,
+                                 const Material* material,
+                                 const ShaderPipeline* shaderPipeline,
                                  const glm::mat4& modelMatrix) {
-    drawQueue_.push_back({&mesh, &material, modelMatrix});
+    drawQueue_.push_back({mesh, material, shaderPipeline, modelMatrix});
 }
 
 void VulkanGraphicsBackend::renderFrame(const CameraComponent& camera) {
-    if (renderer_.renderFrame(currentFrame_,
-                              commandManager_,
-                              swapchainManager_,
-                              device_.getVkGraphicsQueue(),
-                              drawQueue_,
-                              camera)) {
+    if (renderer_.renderFrame(
+                currentFrame_, commandManager_, swapchainManager_, device_.getVkGraphicsQueue(), drawQueue_, camera)) {
         drawQueue_.clear();
     }
 }

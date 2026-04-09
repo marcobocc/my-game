@@ -14,8 +14,8 @@ public:
     VulkanPipeline& operator=(VulkanPipeline&& other) noexcept;
     VulkanPipeline(VkDevice device,
                    VkRenderPass renderPass,
-                   const std::string& vertPath,
-                   const std::string& fragPath,
+                   const std::vector<char>& vertBytecode,
+                   const std::vector<char>& fragBytecode,
                    const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
                    uint32_t pushConstantSize,
                    VkDescriptorSetLayout cameraDescriptorSetLayout = VK_NULL_HANDLE);
@@ -32,11 +32,10 @@ private:
 
     void cleanup();
     void createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout, uint32_t pushConstantSize);
-    std::array<VkPipelineShaderStageCreateInfo, 2> createShaderStages(const char* vertPath, const char* fragPath);
+    std::array<VkPipelineShaderStageCreateInfo, 2> createShaderStages(const std::vector<char>& vertBytecode, const std::vector<char>& fragBytecode);
     void createGraphicsPipeline(VkRenderPass renderPass,
                                 const std::array<VkPipelineShaderStageCreateInfo, 2>& shaderStages,
                                 const VkPipelineVertexInputStateCreateInfo& vertexInputInfo);
     void destroyShaderModules();
-    static std::vector<char> readFile(const char* filename);
     VkShaderModule createShaderModule(const std::vector<char>& code) const;
 };
