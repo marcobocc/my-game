@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import shutil
 import stat
@@ -151,12 +152,17 @@ def configure_cmake(toolchain: Path, build_type: str = "Debug") -> None:
     ], cwd=BUILD_DIR)
 
 
-def build_target(target: str) -> None:
+def build_target(target: str | None) -> None:
     toolchain = get_vcpkg_toolchain()
     compile_shaders()
     configure_cmake(toolchain)
-    build_log(f"Building target {target}")
-    run_cmd(["cmake", "--build", "."], cwd=BUILD_DIR)
+    cmd = ["cmake", "--build", "."]
+    if target:
+        cmd += ["--target", target]
+        build_log(f"Building target {target}")
+    else:
+        build_log(f"Building all targets")
+    run_cmd(cmd, cwd=BUILD_DIR)
 
 
 # -----------------------------------------------------------------------------
@@ -216,9 +222,8 @@ def run_target(target: str) -> None:
 # Main Workflow
 # -----------------------------------------------------------------------------
 def main() -> None:
-    import argparse
     parser = argparse.ArgumentParser(description="Build script for CrossPlatformVulkanEngine")
-    parser.add_argument("target", type=str, help="Name of the executable target to build and run")
+    parser.add_argument("target", type=str, help="Name of the executable target to build and run", nargs="?")
     parser.add_argument("--lint", action="store_true", help="Run Clang-Tidy and exit")
     args = parser.parse_args()
 
@@ -234,8 +239,11 @@ def main() -> None:
         run_clang_format()
         run_clang_tidy()
 
-    success(f"Target {args.target} built successfully.")
-    run_target(args.target)
+    if not args.target:
+        success("Successfully built all targets")
+    else:
+        success(f"Successfully built target {args.target}")
+        run_target(args.target)
 
 
 if __name__ == "__main__":
