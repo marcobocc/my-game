@@ -27,6 +27,7 @@ public:
     VkImage getVkImage(uint32_t index) const;
     VkImageView getVkImageView(uint32_t index) const;
     VkImageView getDepthImageView() const { return depthBuffer_.view; }
+    VkImage getDepthImage() const { return depthBuffer_.image; }
     VkFormat getSwapchainImageFormat() const { return swapchainImageFormat_; }
     VkFormat getDepthFormat() const { return depthBuffer_.format; }
 
