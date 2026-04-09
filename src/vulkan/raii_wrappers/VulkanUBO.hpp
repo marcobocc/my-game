@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vulkan/vulkan.h>
+#include "vulkan/raii_wrappers/VulkanContext.hpp"
 
 class VulkanUBO {
 public:
@@ -13,7 +14,7 @@ public:
     VulkanUBO& operator=(VulkanUBO&&) = delete;
 
     ~VulkanUBO();
-    VulkanUBO(VkDevice device, VkPhysicalDevice physicalDevice, size_t uboSize);
+    VulkanUBO(const VulkanContext& vulkanContext, size_t uboSize);
 
     VkDescriptorSetLayout getDescriptorSetLayout() const { return descriptorSetLayout_; }
     VkDescriptorSet getDescriptorSet(size_t frameIndex) const { return descriptorSets_.at(frameIndex); }

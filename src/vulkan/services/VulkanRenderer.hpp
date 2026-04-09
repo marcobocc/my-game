@@ -6,6 +6,7 @@
 #include <vulkan/vulkan.h>
 #include "core/components/CameraComponent.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
+#include "vulkan/raii_wrappers/VulkanContext.hpp"
 #include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
 #include "vulkan/raii_wrappers/VulkanUBO.hpp"
@@ -23,8 +24,7 @@ public:
     VulkanRenderer& operator=(VulkanRenderer&&) = delete;
 
     ~VulkanRenderer();
-    VulkanRenderer(VkDevice device,
-                   VkPhysicalDevice physicalDevice,
+    VulkanRenderer(const VulkanContext& vulkanContext,
                    size_t swapchainImageCount,
                    VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                    VulkanResourceCache<VulkanPipeline>& pipelineCache,

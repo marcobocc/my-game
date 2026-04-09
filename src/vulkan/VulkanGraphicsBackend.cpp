@@ -3,21 +3,11 @@
 
 VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
     window_(window),
-    debugMessenger_(vulkanContext_.getVkInstance()),
-    commandManager_(vulkanContext_.getVkDevice(),
-                    vulkanContext_.getGraphicsQueueFamilyIndex(),
-                    vulkanContext_.getVkGraphicsQueue(),
-                    VulkanRenderer::MAX_FRAMES_IN_FLIGHT),
-    swapchainManager_(window_,
-                      vulkanContext_.getVkInstance(),
-                      vulkanContext_.getVkPhysicalDevice(),
-                      vulkanContext_.getVkDevice()),
-    renderer_(vulkanContext_.getVkDevice(),
-              vulkanContext_.getVkPhysicalDevice(),
-              swapchainManager_.getImageCount(),
-              vertexBufferCache_,
-              pipelineCache_,
-              swapchainManager_) {
+    debugMessenger_(vulkanContext_),
+    commandManager_(vulkanContext_, VulkanRenderer::MAX_FRAMES_IN_FLIGHT),
+    swapchainManager_(window_, vulkanContext_),
+    renderer_(
+            vulkanContext_, swapchainManager_.getImageCount(), vertexBufferCache_, pipelineCache_, swapchainManager_) {
     if (!window) throw std::runtime_error("Window pointer is null");
 }
 

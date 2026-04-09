@@ -2,6 +2,7 @@
 
 #include <log4cxx/logger.h>
 #include <vulkan/vulkan.h>
+#include "vulkan/raii_wrappers/VulkanContext.hpp"
 
 class VulkanDebugMessenger {
 public:
@@ -11,7 +12,7 @@ public:
     VulkanDebugMessenger& operator=(VulkanDebugMessenger&&) = delete;
 
     ~VulkanDebugMessenger();
-    explicit VulkanDebugMessenger(VkInstance instance);
+    explicit VulkanDebugMessenger(const VulkanContext& vulkanContext);
 
 private:
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,

@@ -7,6 +7,7 @@
 #include "core/assets/types/ShaderPipeline.hpp"
 #include "core/components/CameraComponent.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
+#include "vulkan/raii_wrappers/VulkanContext.hpp"
 #include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
 #include "vulkan/raii_wrappers/VulkanUBO.hpp"
@@ -21,8 +22,7 @@ struct DrawCall {
 
 class VulkanSceneRenderer {
 public:
-    VulkanSceneRenderer(VkDevice device,
-                        VkPhysicalDevice physicalDevice,
+    VulkanSceneRenderer(const VulkanContext& vulkanContext,
                         VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                         VulkanResourceCache<VulkanPipeline>& pipelineCache,
                         VulkanSwapchain& swapchain,

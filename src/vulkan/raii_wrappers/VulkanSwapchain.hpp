@@ -5,6 +5,7 @@
 #include <log4cxx/logger.h>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "vulkan/raii_wrappers/VulkanContext.hpp"
 
 class VulkanSwapchain {
 public:
@@ -14,7 +15,7 @@ public:
     VulkanSwapchain& operator=(VulkanSwapchain&&) = delete;
 
     ~VulkanSwapchain();
-    VulkanSwapchain(GLFWwindow* window, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device);
+    VulkanSwapchain(GLFWwindow* window, const VulkanContext& vulkanContext);
 
     void recreate();
     bool acquireNextImage(VkSemaphore imageAvailableSemaphore, uint32_t& imageIndex) const;

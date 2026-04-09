@@ -14,14 +14,11 @@ VulkanSwapchain::~VulkanSwapchain() {
     if (surface_ != VK_NULL_HANDLE) vkDestroySurfaceKHR(instance_, surface_, nullptr);
 }
 
-VulkanSwapchain::VulkanSwapchain(GLFWwindow* window,
-                                 VkInstance instance,
-                                 VkPhysicalDevice physicalDevice,
-                                 VkDevice device) :
+VulkanSwapchain::VulkanSwapchain(GLFWwindow* window, const VulkanContext& vulkanContext) :
     window_(window),
-    instance_(instance),
-    physicalDevice_(physicalDevice),
-    device_(device) {
+    instance_(vulkanContext.getVkInstance()),
+    physicalDevice_(vulkanContext.getVkPhysicalDevice()),
+    device_(vulkanContext.getVkDevice()) {
     createSurface();
     createSwapchain();
     createImageViews();

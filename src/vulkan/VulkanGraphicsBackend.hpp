@@ -35,7 +35,7 @@ private:
 
     size_t currentFrame_ = 0;
     GLFWwindow* window_ = nullptr;
-    VulkanContext vulkanContext_;
+    VulkanContext vulkanContext_{};
     VulkanDebugMessenger debugMessenger_;
     VulkanCommandManager commandManager_;
     VulkanSwapchain swapchainManager_;

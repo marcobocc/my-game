@@ -6,7 +6,8 @@ VulkanDebugMessenger::~VulkanDebugMessenger() {
     if (debugMessenger_ != VK_NULL_HANDLE) vkDestroyDebugUtilsMessengerEXT(instance_, debugMessenger_, nullptr);
 }
 
-VulkanDebugMessenger::VulkanDebugMessenger(VkInstance instance) : instance_(instance) {
+VulkanDebugMessenger::VulkanDebugMessenger(const VulkanContext& vulkanContext) :
+    instance_(vulkanContext.getVkInstance()) {
     VkDebugUtilsMessengerCreateInfoEXT info{};
     info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |

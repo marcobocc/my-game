@@ -9,20 +9,19 @@ struct CameraUBO {
     glm::mat4 proj;
 };
 
-VulkanRenderer::VulkanRenderer(VkDevice device,
-                               VkPhysicalDevice physicalDevice,
+VulkanRenderer::VulkanRenderer(const VulkanContext& vulkanContext,
                                size_t swapchainImageCount,
                                VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                                VulkanResourceCache<VulkanPipeline>& pipelineCache,
                                VulkanSwapchain& swapchain) :
-    device_(device),
-    physicalDevice_(physicalDevice),
+    device_(vulkanContext.getVkDevice()),
+    physicalDevice_(vulkanContext.getVkPhysicalDevice()),
     images_(swapchainImageCount),
-    cameraUBO_(device, physicalDevice, sizeof(CameraUBO)),
+    cameraUBO_(vulkanContext, sizeof(CameraUBO)),
     vertexBufferCache_(vertexBufferCache),
     pipelineCache_(pipelineCache),
     swapchainManager_(swapchain),
-    sceneRenderer_(device_, physicalDevice_, vertexBufferCache_, pipelineCache_, swapchainManager_, cameraUBO_) {
+    sceneRenderer_(vulkanContext, vertexBufferCache_, pipelineCache_, swapchainManager_, cameraUBO_) {
     createSynchronizationObjects();
 }
 

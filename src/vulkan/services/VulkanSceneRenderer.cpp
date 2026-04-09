@@ -3,14 +3,13 @@
 #include <volk.h>
 
 
-VulkanSceneRenderer::VulkanSceneRenderer(VkDevice device,
-                                         VkPhysicalDevice physicalDevice,
+VulkanSceneRenderer::VulkanSceneRenderer(const VulkanContext& vulkanContext,
                                          VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                                          VulkanResourceCache<VulkanPipeline>& pipelineCache,
                                          VulkanSwapchain& swapchain,
                                          VulkanUBO& cameraUBO) :
-    device_(device),
-    physicalDevice_(physicalDevice),
+    device_(vulkanContext.getVkDevice()),
+    physicalDevice_(vulkanContext.getVkPhysicalDevice()),
     vertexBufferCache_(vertexBufferCache),
     pipelineCache_(pipelineCache),
     swapchain_(swapchain),

@@ -3,13 +3,10 @@
 #include <volk.h>
 #include "vulkan/VulkanErrorHandling.hpp"
 
-VulkanCommandManager::VulkanCommandManager(VkDevice device,
-                                           uint32_t graphicsQueueFamilyIndex,
-                                           VkQueue graphicsQueue,
-                                           size_t maxFramesInFlight) :
-    device_(device),
-    graphicsQueueFamilyIndex_(graphicsQueueFamilyIndex),
-    graphicsQueue_(graphicsQueue),
+VulkanCommandManager::VulkanCommandManager(const VulkanContext& vulkanContext, size_t maxFramesInFlight) :
+    device_(vulkanContext.getVkDevice()),
+    graphicsQueueFamilyIndex_(vulkanContext.getGraphicsQueueFamilyIndex()),
+    graphicsQueue_(vulkanContext.getVkGraphicsQueue()),
     frames_(maxFramesInFlight),
     maxFramesInFlight_(maxFramesInFlight) {
     createCommandPools();

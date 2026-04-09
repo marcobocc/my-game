@@ -1,12 +1,12 @@
 #include "vulkan/raii_wrappers/VulkanUBO.hpp"
 #include <vector>
 #include <volk.h>
-#include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/VulkanErrorHandling.hpp"
+#include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 
-VulkanUBO::VulkanUBO(VkDevice device, VkPhysicalDevice physicalDevice, size_t uboSize) :
-    device_(device),
-    physicalDevice_(physicalDevice),
+VulkanUBO::VulkanUBO(const VulkanContext& vulkanContext, size_t uboSize) :
+    device_(vulkanContext.getVkDevice()),
+    physicalDevice_(vulkanContext.getVkPhysicalDevice()),
     uboSize_(uboSize) {
     createDescriptorSetLayout();
     createBuffers();
