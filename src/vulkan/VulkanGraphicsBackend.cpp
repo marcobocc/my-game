@@ -1,29 +1,23 @@
 #include "vulkan/VulkanGraphicsBackend.hpp"
 #include <stdexcept>
-#include <volk.h>
-
-VulkanGraphicsBackend::~VulkanGraphicsBackend() {
-    if (device_.getVkDevice() != VK_NULL_HANDLE) {
-        vkDeviceWaitIdle(device_.getVkDevice());
-    }
-}
 
 VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
     window_(window),
-    debugMessenger_(instance_.getVkInstance()),
-    device_(instance_.getVkInstance()),
-    commandManager_(device_.getVkDevice(),
-                    device_.getGraphicsQueueFamilyIndex(),
-                    device_.getVkGraphicsQueue(),
+    debugMessenger_(vulkanContext_.getVkInstance()),
+    commandManager_(vulkanContext_.getVkDevice(),
+                    vulkanContext_.getGraphicsQueueFamilyIndex(),
+                    vulkanContext_.getVkGraphicsQueue(),
                     VulkanRenderer::MAX_FRAMES_IN_FLIGHT),
-    swapchainManager_(window_, instance_.getVkInstance(), device_.getVkPhysicalDevice(), device_.getVkDevice()),
-    renderer_(device_.getVkDevice(),
-              device_.getVkPhysicalDevice(),
+    swapchainManager_(window_,
+                      vulkanContext_.getVkInstance(),
+                      vulkanContext_.getVkPhysicalDevice(),
+                      vulkanContext_.getVkDevice()),
+    renderer_(vulkanContext_.getVkDevice(),
+              vulkanContext_.getVkPhysicalDevice(),
               swapchainManager_.getImageCount(),
               vertexBufferCache_,
               pipelineCache_,
               swapchainManager_) {
-
     if (!window) throw std::runtime_error("Window pointer is null");
 }
 
@@ -35,8 +29,12 @@ void VulkanGraphicsBackend::draw(const Mesh* mesh,
 }
 
 void VulkanGraphicsBackend::renderFrame(const CameraComponent& camera) {
-    if (renderer_.renderFrame(
-                currentFrame_, commandManager_, swapchainManager_, device_.getVkGraphicsQueue(), drawQueue_, camera)) {
+    if (renderer_.renderFrame(currentFrame_,
+                              commandManager_,
+                              swapchainManager_,
+                              vulkanContext_.getVkGraphicsQueue(),
+                              drawQueue_,
+                              camera)) {
         drawQueue_.clear();
     }
 }
