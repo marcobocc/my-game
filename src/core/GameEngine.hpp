@@ -3,10 +3,10 @@
 #include <GLFW/glfw3.h>
 #include <functional>
 #include <memory>
-#include "ecs/GameEntitiesManager.hpp"
-#include "ecs/components/InputComponent.hpp"
-#include "ecs/systems/InputSystem.hpp"
-#include "ecs/systems/RenderSystem.hpp"
+#include "core/GameEntitiesManager.hpp"
+#include "core/components/InputComponent.hpp"
+#include "core/systems/InputSystem.hpp"
+#include "core/systems/RenderSystem.hpp"
 #include "vulkan/VulkanGraphicsBackend.hpp"
 
 class GameEngine {

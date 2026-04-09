@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "GameEngine.hpp"
+#include "core/GameEngine.hpp"
 #include "core/components/CameraComponent.hpp"
 #include "core/components/RenderableComponent.hpp"
 #include "core/components/TransformComponent.hpp"

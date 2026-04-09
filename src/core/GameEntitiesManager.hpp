@@ -4,6 +4,9 @@
 #include <tuple>
 #include <unordered_map>
 #include <vector>
+#include "core/components/CameraComponent.hpp"
+#include "core/components/RenderableComponent.hpp"
+#include "core/components/TransformComponent.hpp"
 
 namespace detail {
     template<typename... Components>
@@ -93,7 +96,4 @@ namespace detail {
     };
 } // namespace detail
 
-#include "ecs/components/CameraComponent.hpp"
-#include "ecs/components/RenderableComponent.hpp"
-#include "ecs/components/TransformComponent.hpp"
 using GameEntitiesManager = detail::GameEntitiesManager<RenderableComponent, TransformComponent, CameraComponent>;

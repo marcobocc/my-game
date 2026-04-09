@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 #include "core/Material.hpp"
 #include "core/Mesh.hpp"
-#include "ecs/components/CameraComponent.hpp"
+#include "core/components/CameraComponent.hpp"
 #include "services/VulkanResourceCache.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanDebugMessenger.hpp"

@@ -1,8 +1,8 @@
 #pragma once
-#include "ecs/GameEntitiesManager.hpp"
-#include "ecs/components/CameraComponent.hpp"
-#include "ecs/components/RenderableComponent.hpp"
-#include "ecs/components/TransformComponent.hpp"
+#include "core/GameEntitiesManager.hpp"
+#include "core/components/CameraComponent.hpp"
+#include "core/components/RenderableComponent.hpp"
+#include "core/components/TransformComponent.hpp"
 #include "vulkan/VulkanGraphicsBackend.hpp"
 
 class RenderSystem {

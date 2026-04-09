@@ -1,6 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
-#include "ecs/components/InputComponent.hpp"
+#include "core/components/InputComponent.hpp"
 
 class InputSystem {
 public:

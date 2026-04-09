@@ -6,7 +6,7 @@
 #include <vulkan/vulkan.h>
 #include "core/Material.hpp"
 #include "core/Mesh.hpp"
-#include "ecs/components/CameraComponent.hpp"
+#include "core/components/CameraComponent.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
