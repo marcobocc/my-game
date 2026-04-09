@@ -25,6 +25,8 @@ private:
     void createLogicalDevice();
     void createDescriptorPool();
     static uint32_t findGraphicsQueueFamily(VkPhysicalDevice device);
+    std::vector<const char*> getRequiredExtensions() const;
+    static bool deviceSupportsExtensions(VkPhysicalDevice device, const std::vector<const char*>& requiredExtensions);
 
     VkInstance instance_{VK_NULL_HANDLE};
     VkDevice device_{VK_NULL_HANDLE};

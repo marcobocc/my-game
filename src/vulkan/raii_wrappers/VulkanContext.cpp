@@ -1,5 +1,6 @@
 #include "VulkanContext.hpp"
 #include <GLFW/glfw3.h>
+#include <set>
 #include <stdexcept>
 #include <vector>
 #include <volk.h>
@@ -42,8 +43,8 @@ void VulkanContext::createInstance() {
     std::copy_n(glfwExts, glfwExtCount, std::back_inserter(extensions));
     extensions.push_back("VK_EXT_debug_utils");
 #ifdef __APPLE__
-    extensions.push_back("VK_KHR_portability_enumeration");
-    extensions.push_back("VK_KHR_get_physical_device_properties2");
+    extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+    extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 #endif
 
     VkInstanceCreateInfo createInfo{};
@@ -62,17 +63,21 @@ void VulkanContext::createInstance() {
 
 void VulkanContext::pickPhysicalDevice() {
     uint32_t deviceCount = 0;
-    throwIfUnsuccessful(vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr));
-    std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
-    vkEnumeratePhysicalDevices(instance_, &deviceCount, physicalDevices.data());
-    for (const auto physicalDevice: physicalDevices) {
-        VkPhysicalDeviceProperties props{};
-        vkGetPhysicalDeviceProperties(physicalDevice, &props);
-        physicalDevice_ = physicalDevice;
+    vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr);
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance_, &deviceCount, devices.data());
+
+    std::vector<const char*> requiredExtensions = getRequiredExtensions();
+    std::vector<VkPhysicalDevice> suitableDevices;
+    for (const auto& device: devices) {
+        if (deviceSupportsExtensions(device, requiredExtensions)) {
+            suitableDevices.push_back(device);
+        }
     }
-    if (physicalDevice_ == VK_NULL_HANDLE) {
-        throw std::runtime_error("Failed to find a suitable GPU");
+    if (suitableDevices.empty()) {
+        throw std::runtime_error("No suitable physical device found supporting all required extensions");
     }
+    physicalDevice_ = suitableDevices[0];
 }
 
 void VulkanContext::createLogicalDevice() {
@@ -87,24 +92,12 @@ void VulkanContext::createLogicalDevice() {
     queueInfo.queueCount = 1;
     queueInfo.pQueuePriorities = &priority;
     VkPhysicalDeviceFeatures features{};
-    std::vector<const char*> extensions;
-    extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    extensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
-    extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-#ifdef __APPLE__
-    uint32_t extCount = 0;
-    vkEnumerateDeviceExtensionProperties(physicalDevice_, nullptr, &extCount, nullptr);
-    std::vector<VkExtensionProperties> availableExtensions(extCount);
-    vkEnumerateDeviceExtensionProperties(physicalDevice_, nullptr, &extCount, availableExtensions.data());
-    for (const auto& [extensionName, specVersion]: availableExtensions) {
-        if (strncmp(extensionName, "VK_KHR_portability_subset", VK_MAX_EXTENSION_NAME_SIZE) == 0) {
-            extensions.push_back("VK_KHR_portability_subset");
-        }
-    }
-#endif
+    std::vector<const char*> extensions = getRequiredExtensions();
+
     VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature{};
     dynamicRenderingFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
     dynamicRenderingFeature.dynamicRendering = VK_TRUE;
+
     VkDeviceCreateInfo deviceInfo{};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     deviceInfo.pQueueCreateInfos = &queueInfo;
@@ -141,4 +134,35 @@ uint32_t VulkanContext::findGraphicsQueueFamily(VkPhysicalDevice device) {
         }
     }
     return UINT32_MAX;
+}
+
+std::vector<const char*> VulkanContext::getRequiredExtensions() const {
+#ifdef __APPLE__
+    return {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_MAINTENANCE1_EXTENSION_NAME,
+            VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+            "VK_KHR_portability_subset"};
+#else
+    return {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_MAINTENANCE1_EXTENSION_NAME,
+            VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
+#endif
+}
+
+bool VulkanContext::deviceSupportsExtensions(VkPhysicalDevice device,
+                                             const std::vector<const char*>& requiredExtensions) {
+    uint32_t extCount = 0;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extCount, nullptr);
+    std::vector<VkExtensionProperties> available(extCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extCount, available.data());
+    std::set<std::string> availableDeviceExtensions;
+    for (const auto& [extensionName, _]: available) {
+        availableDeviceExtensions.insert(extensionName);
+    }
+    for (const char* req: requiredExtensions) {
+        if (!availableDeviceExtensions.contains(req)) {
+            return false;
+        }
+    }
+    return true;
 }
