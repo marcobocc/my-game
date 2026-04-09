@@ -77,6 +77,16 @@ endif ()
 add_definitions(-DVULKAN_ENGINE)
 
 # -------------------------------------------------------------------------
-# Executables
+# Automatically discover and build all tools
 # -------------------------------------------------------------------------
-add_executable(main ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp)
+file(GLOB TOOL_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/tools/*")
+foreach (TOOL_DIR ${TOOL_DIRS})
+    if (IS_DIRECTORY ${TOOL_DIR})
+        get_filename_component(TOOL_NAME ${TOOL_DIR} NAME)
+        if (EXISTS "${TOOL_DIR}/main.cpp")
+            file(GLOB_RECURSE TOOL_SOURCES "${TOOL_DIR}/*.cpp" "${TOOL_DIR}/*.hpp")
+            add_executable(${TOOL_NAME} ${TOOL_SOURCES})
+            target_link_libraries(${TOOL_NAME} PRIVATE GameEngineLib)
+        endif ()
+    endif ()
+endforeach ()
