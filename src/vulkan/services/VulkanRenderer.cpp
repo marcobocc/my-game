@@ -26,6 +26,7 @@ VulkanRenderer::VulkanRenderer(const VulkanContext& vulkanContext,
 }
 
 VulkanRenderer::~VulkanRenderer() {
+    vkDeviceWaitIdle(device_);
     for (auto& [inFlightFence]: frames_) {
         if (inFlightFence != VK_NULL_HANDLE) vkDestroyFence(device_, inFlightFence, nullptr);
     }
