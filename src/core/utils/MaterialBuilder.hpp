@@ -21,7 +21,7 @@ public:
     }
 
 private:
-    static constexpr auto DEFAULT_MATERIAL_SHADER_PIPELINE = "uniform_coloring";
+    static constexpr auto DEFAULT_MATERIAL_SHADER_PIPELINE = "solid_coloring";
 
     static constexpr auto MATERIAL_COLOR_WHITE = "_material_color_white";
     static constexpr auto MATERIAL_COLOR_RED = "_material_color_red";
