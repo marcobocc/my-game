@@ -9,9 +9,9 @@
 
 class SceneBuilder {
 public:
-    explicit SceneBuilder(GameEngine& engine) :
-        engine_(engine),
-        assetManager_(engine.getAssetManager()),
+    explicit SceneBuilder(GameEntitiesManager& entitiesManager, AssetManager& assetManager) :
+        entitiesManager_(entitiesManager),
+        assetManager_(assetManager),
         primitiveBuilder_(assetManager_),
         materialBuilder_(assetManager_) {}
 
@@ -23,9 +23,9 @@ public:
         std::string materialName = materialBuilder_.solidColor(color);
         RenderableComponent renderableComponent{meshName, materialName};
 
-        unsigned int entityId = engine_.getECS().createEntity();
-        engine_.getECS().addComponent(entityId, std::move(createTransform(position, scale)));
-        engine_.getECS().addComponent(entityId, std::move(renderableComponent));
+        unsigned int entityId = entitiesManager_.createEntity();
+        entitiesManager_.addComponent(entityId, std::move(createTransform(position, scale)));
+        entitiesManager_.addComponent(entityId, std::move(renderableComponent));
         return entityId;
     }
 
@@ -37,9 +37,9 @@ public:
         std::string materialName = materialBuilder_.solidColor(color);
         RenderableComponent renderableComponent{meshName, materialName};
 
-        unsigned int entityId = engine_.getECS().createEntity();
-        engine_.getECS().addComponent(entityId, std::move(createTransform(position, scale)));
-        engine_.getECS().addComponent(entityId, std::move(renderableComponent));
+        unsigned int entityId = entitiesManager_.createEntity();
+        entitiesManager_.addComponent(entityId, std::move(createTransform(position, scale)));
+        entitiesManager_.addComponent(entityId, std::move(renderableComponent));
         return entityId;
     }
 
@@ -52,9 +52,9 @@ public:
         assetManager_.insertMesh(std::move(mesh));
         assetManager_.insertMaterial(std::move(material));
 
-        unsigned int entityId = engine_.getECS().createEntity();
-        engine_.getECS().addComponent(entityId, std::move(createTransform(position, scale)));
-        engine_.getECS().addComponent(entityId, std::move(renderableComponent));
+        unsigned int entityId = entitiesManager_.createEntity();
+        entitiesManager_.addComponent(entityId, std::move(createTransform(position, scale)));
+        entitiesManager_.addComponent(entityId, std::move(renderableComponent));
         return entityId;
     }
 
@@ -75,13 +75,13 @@ public:
         camera.nearPlane = nearPlane;
         camera.farPlane = farPlane;
 
-        unsigned int entityId = engine_.getECS().createEntity();
-        engine_.getECS().addComponent(entityId, std::move(camera));
+        unsigned int entityId = entitiesManager_.createEntity();
+        entitiesManager_.addComponent(entityId, std::move(camera));
         return entityId;
     }
 
 private:
-    GameEngine& engine_;
+    GameEntitiesManager& entitiesManager_;
     AssetManager& assetManager_;
     PrimitiveBuilder primitiveBuilder_;
     MaterialBuilder materialBuilder_;
