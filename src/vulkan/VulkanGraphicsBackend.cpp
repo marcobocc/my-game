@@ -22,7 +22,6 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window) :
               swapchainManager_.getImageCount(),
               vertexBufferCache_,
               pipelineCache_,
-              swapchainManager_.getVkRenderPass(),
               swapchainManager_) {
 
     if (!window) throw std::runtime_error("Window pointer is null");

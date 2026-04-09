@@ -13,11 +13,9 @@ VulkanRenderer::VulkanRenderer(VkDevice device,
                                size_t swapchainImageCount,
                                VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                                VulkanResourceCache<VulkanPipeline>& pipelineCache,
-                               VkRenderPass renderPass,
                                VulkanSwapchain& swapchain) :
     device_(device),
     physicalDevice_(physicalDevice),
-    renderPass_(renderPass),
     images_(swapchainImageCount),
     cameraUBO_(device, physicalDevice, sizeof(CameraUBO)),
     vertexBufferCache_(vertexBufferCache),
@@ -118,31 +116,52 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer cmd,
                                          uint32_t imageIndex,
                                          size_t currentFrame,
                                          const std::vector<DrawCall>& drawCalls) {
-    beginRenderPass(cmd, imageIndex);
+    beginRendering(cmd, imageIndex);
     setupViewportAndScissor(cmd);
 
     for (const auto& drawCall: drawCalls) {
         renderEntity(cmd, drawCall, currentFrame);
     }
 
-    endRenderPass(cmd);
+    endRendering(cmd);
 }
 
-void VulkanRenderer::beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex) const {
-    std::array<VkClearValue, 2> clearValues{};
-    clearValues.at(0).color = {{0.1f, 0.1f, 0.1f, 1.0f}};
-    clearValues.at(1).depthStencil = {1.0f, 0};
+void VulkanRenderer::beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const {
+    VkClearValue clearColor{};
+    clearColor.color = {{0.1f, 0.1f, 0.1f, 1.0f}};
+    VkClearValue clearDepth{};
+    clearDepth.depthStencil = {1.0f, 0};
 
-    VkRenderPassBeginInfo rpInfo{};
-    rpInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    rpInfo.renderPass = swapchainManager_.getVkRenderPass();
-    rpInfo.framebuffer = swapchainManager_.getVkFramebuffer(imageIndex);
-    rpInfo.renderArea.offset = {0, 0};
-    rpInfo.renderArea.extent = swapchainManager_.getVkExtent();
-    rpInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-    rpInfo.pClearValues = clearValues.data();
-    vkCmdBeginRenderPass(cmd, &rpInfo, VK_SUBPASS_CONTENTS_INLINE);
+    VkRenderingAttachmentInfo colorAttachment{};
+    colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    colorAttachment.imageView = swapchainManager_.getVkImageView(imageIndex);
+    colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.clearValue = clearColor;
+
+    VkRenderingAttachmentInfo depthAttachment{};
+    depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    depthAttachment.imageView = swapchainManager_.getDepthImageView();
+    depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.clearValue = clearDepth;
+
+    VkRenderingInfo renderingInfo{};
+    renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+    renderingInfo.renderArea.offset = {0, 0};
+    renderingInfo.renderArea.extent = swapchainManager_.getVkExtent();
+    renderingInfo.layerCount = 1;
+    renderingInfo.colorAttachmentCount = 1;
+    renderingInfo.pColorAttachments = &colorAttachment;
+    renderingInfo.pDepthAttachment = &depthAttachment;
+    renderingInfo.pStencilAttachment = nullptr;
+
+    vkCmdBeginRendering(cmd, &renderingInfo);
 }
+
+void VulkanRenderer::endRendering(VkCommandBuffer cmd) { vkCmdEndRendering(cmd); }
 
 void VulkanRenderer::setupViewportAndScissor(VkCommandBuffer cmd) const {
     VkExtent2D extent = swapchainManager_.getVkExtent();
@@ -230,12 +249,13 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
 
     auto* pipeline = pipelineCache_.createOrGet(shaderPipeline.name,
                                                 device_,
-                                                renderPass_,
                                                 shaderPipeline.vertexStage.bytecode,
                                                 shaderPipeline.fragmentStage.bytecode,
                                                 vertexInputInfo,
                                                 pushConstantSize,
-                                                cameraUBO_.getDescriptorSetLayout());
+                                                cameraUBO_.getDescriptorSetLayout(),
+                                                swapchainManager_.getSwapchainImageFormat(),
+                                                swapchainManager_.getDepthFormat());
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getVkPipeline());
 
@@ -270,4 +290,3 @@ void VulkanRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall,
     }
 }
 
-void VulkanRenderer::endRenderPass(VkCommandBuffer cmd) { vkCmdEndRenderPass(cmd); }

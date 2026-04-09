@@ -30,17 +30,20 @@ VulkanPipeline& VulkanPipeline::operator=(VulkanPipeline&& other) noexcept {
 VulkanPipeline::~VulkanPipeline() { cleanup(); }
 
 VulkanPipeline::VulkanPipeline(VkDevice device,
-                               VkRenderPass renderPass,
                                const std::vector<char>& vertBytecode,
                                const std::vector<char>& fragBytecode,
                                const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
                                uint32_t pushConstantSize,
-                               VkDescriptorSetLayout cameraDescriptorSetLayout) :
+                               VkDescriptorSetLayout cameraDescriptorSetLayout,
+                               VkFormat colorFormat,
+                               VkFormat depthFormat) :
     device_(device),
-    pushConstantSize_(pushConstantSize) {
+    pushConstantSize_(pushConstantSize),
+    colorFormat_(colorFormat),
+    depthFormat_(depthFormat) {
     auto shaderStages = createShaderStages(vertBytecode, fragBytecode);
     createPipelineLayout(cameraDescriptorSetLayout, pushConstantSize_);
-    createGraphicsPipeline(renderPass, shaderStages, vertexInputInfo);
+    createGraphicsPipeline(shaderStages, vertexInputInfo);
     destroyShaderModules();
 }
 
@@ -76,8 +79,8 @@ void VulkanPipeline::createPipelineLayout(VkDescriptorSetLayout cameraDescriptor
     throwIfUnsuccessful(result);
 }
 
-std::array<VkPipelineShaderStageCreateInfo, 2> VulkanPipeline::createShaderStages(const std::vector<char>& vertBytecode,
-                                                                                  const std::vector<char>& fragBytecode) {
+std::array<VkPipelineShaderStageCreateInfo, 2>
+VulkanPipeline::createShaderStages(const std::vector<char>& vertBytecode, const std::vector<char>& fragBytecode) {
     VkShaderModule vertShaderModule = createShaderModule(vertBytecode);
     VkShaderModule fragShaderModule = createShaderModule(fragBytecode);
     shaderModules_.push_back(vertShaderModule);
@@ -98,8 +101,7 @@ std::array<VkPipelineShaderStageCreateInfo, 2> VulkanPipeline::createShaderStage
     return {vertStage, fragStage};
 }
 
-void VulkanPipeline::createGraphicsPipeline(VkRenderPass renderPass,
-                                            const std::array<VkPipelineShaderStageCreateInfo, 2>& shaderStages,
+void VulkanPipeline::createGraphicsPipeline(const std::array<VkPipelineShaderStageCreateInfo, 2>& shaderStages,
                                             const VkPipelineVertexInputStateCreateInfo& vertexInputInfo) {
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -161,8 +163,17 @@ void VulkanPipeline::createGraphicsPipeline(VkRenderPass renderPass,
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &colorBlendAttachment;
 
+    // --- Dynamic Rendering ---
+    VkPipelineRenderingCreateInfo pipelineRenderingInfo{};
+    pipelineRenderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    pipelineRenderingInfo.colorAttachmentCount = 1;
+    pipelineRenderingInfo.pColorAttachmentFormats = &colorFormat_;
+    pipelineRenderingInfo.depthAttachmentFormat = depthFormat_;
+    pipelineRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.pNext = &pipelineRenderingInfo;
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineInfo.pStages = shaderStages.data();
     pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -173,7 +184,7 @@ void VulkanPipeline::createGraphicsPipeline(VkRenderPass renderPass,
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.layout = layout_;
-    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.renderPass = VK_NULL_HANDLE;
     pipelineInfo.subpass = 0;
     pipelineInfo.pDynamicState = &dynamicState;
 

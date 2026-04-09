@@ -37,7 +37,6 @@ public:
                    size_t swapchainImageCount,
                    VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                    VulkanResourceCache<VulkanPipeline>& pipelineCache,
-                   VkRenderPass renderPass,
                    VulkanSwapchain& swapchain);
 
     bool renderFrame(size_t& currentFrame,
@@ -61,7 +60,8 @@ private:
                              uint32_t imageIndex,
                              size_t currentFrame,
                              const std::vector<DrawCall>& drawCalls);
-    void beginRenderPass(VkCommandBuffer cmd, uint32_t imageIndex) const;
+    void beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const;
+    void endRendering(VkCommandBuffer cmd);
     void setupViewportAndScissor(VkCommandBuffer cmd) const;
     void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall, size_t currentFrame);
     static void endRenderPass(VkCommandBuffer cmd);
@@ -77,7 +77,6 @@ private:
 
     VkDevice device_;
     VkPhysicalDevice physicalDevice_;
-    VkRenderPass renderPass_;
     std::array<FrameSync, MAX_FRAMES_IN_FLIGHT> frames_{};
     std::vector<ImageSync> images_;
 
