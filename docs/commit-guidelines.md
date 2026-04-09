@@ -7,7 +7,7 @@
 │       │             │
 │       │             └─⫸ Summary in present tense. Not capitalized. No period at the end.
 │       │
-│       └─⫸ Game subsystem affected: core|rendering
+│       └─⫸ Scope: core|rendering|tools
 │
 └─⫸ Commit Type: feat|fix|refactor|style|docs|tests|build|revert
 ```
@@ -29,9 +29,10 @@ The type communicates the **main purpose** of the change. Must be one of the fol
 
 ### Scope
 
-The scope is optional and communicates the **main game subsystem** affected. Must be one of the following:
+The scope is optional and communicates the **main subsystem** affected. Must be one of the following:
 
 | Scope     | Description                                                                                                       |
 |-----------|-------------------------------------------------------------------------------------------------------------------|
 | core      | Changes to the game engine's core logic, such as the entity-component system, event system or resource management |
 | rendering | Changes involving Vulkan, the rendering pipeline, shaders, or other graphics-related code                         |
+| tools     | Changes to editors or other game development tools                                                                |
