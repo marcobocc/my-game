@@ -57,6 +57,7 @@ target_link_libraries(GameEngineLib PUBLIC
         volk::volk_headers
         Vulkan::Headers
         GPUOpen::VulkanMemoryAllocator
+        imgui
 )
 
 # On macOS, link MoltenVK explicitly
