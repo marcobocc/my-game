@@ -21,6 +21,11 @@ find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 find_package(VulkanHeaders CONFIG REQUIRED)
 
 # -------------------------------------------------------------------------
+# Vendored dependencies
+# -------------------------------------------------------------------------
+add_subdirectory(vendor)
+
+# -------------------------------------------------------------------------
 # Sources
 # -------------------------------------------------------------------------
 file(GLOB_RECURSE ENGINE_SOURCES
@@ -71,10 +76,6 @@ else ()
     target_compile_options(GameEngineLib PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 endif ()
 
-# -------------------------------------------------------------------------
-# Vulkan macros
-# -------------------------------------------------------------------------
-add_definitions(-DVULKAN_ENGINE)
 
 # -------------------------------------------------------------------------
 # Automatically discover and build all tools
