@@ -47,7 +47,6 @@ private:
                           VulkanCommandManager& commandManager,
                           const VulkanSwapchain& swapchain,
                           VkQueue graphicsQueue) const;
-    static void endRenderPass(VkCommandBuffer cmd);
     void setImageLayoutTransition(VkCommandBuffer cmd, VkImage image, VkFormat format,
                               VkImageLayout oldLayout, VkImageLayout newLayout,
                               VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
