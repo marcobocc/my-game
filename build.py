@@ -12,6 +12,7 @@ from pathlib import Path
 # -----------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 BUILD_DIR = PROJECT_ROOT / "build"
+BINARIES_DIR = BUILD_DIR / "bin"
 
 
 # -----------------------------------------------------------------------------
@@ -171,7 +172,7 @@ def build_target(target: str | None) -> None:
 def compile_shaders() -> None:
     """Compile shaders from the assets directory"""
     shaders_dir = PROJECT_ROOT / "assets/shaders"
-    out_dir = BUILD_DIR / "assets/shaders"
+    out_dir = BINARIES_DIR / "assets/shaders"
 
     for pipeline_dir in shaders_dir.iterdir():
         if not pipeline_dir.is_dir():
@@ -203,7 +204,9 @@ def ensure_executable(path: Path) -> None:
 
 
 def find_executable(target: str) -> Path:
-    candidates = [BUILD_DIR / target, BUILD_DIR / target / target]
+    candidates = [
+        BINARIES_DIR / target,
+    ]
     for path in candidates:
         if path.is_file():
             ensure_executable(path)
