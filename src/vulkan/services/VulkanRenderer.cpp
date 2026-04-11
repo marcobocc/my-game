@@ -1,8 +1,10 @@
 #include "vulkan/services/VulkanRenderer.hpp"
+#include <GLFW/glfw3.h>
 #include <volk.h>
 #include "vulkan/VulkanErrorHandling.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
+#include "vulkan/services/VulkanImguiRenderer.hpp"
 #include "vulkan/services/VulkanSceneRenderer.hpp"
 
 struct CameraUBO {
@@ -14,7 +16,9 @@ VulkanRenderer::VulkanRenderer(const VulkanContext& vulkanContext,
                                size_t swapchainImageCount,
                                VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                                VulkanResourceCache<VulkanPipeline>& pipelineCache,
-                               VulkanSwapchain& swapchain) :
+                               VulkanSwapchain& swapchain,
+                               GLFWwindow* window,
+                               UserInterface* userInterface) :
     device_(vulkanContext.getVkDevice()),
     physicalDevice_(vulkanContext.getVkPhysicalDevice()),
     images_(swapchainImageCount),
@@ -22,7 +26,8 @@ VulkanRenderer::VulkanRenderer(const VulkanContext& vulkanContext,
     vertexBufferCache_(vertexBufferCache),
     pipelineCache_(pipelineCache),
     swapchainManager_(swapchain),
-    sceneRenderer_(vulkanContext, vertexBufferCache_, pipelineCache_, swapchainManager_, cameraUBO_) {
+    sceneRenderer_(vulkanContext, vertexBufferCache_, pipelineCache_, swapchainManager_, cameraUBO_),
+    imguiRenderer_(vulkanContext, swapchain, swapchainImageCount, window, userInterface) {
     createSynchronizationObjects();
 }
 
@@ -132,12 +137,11 @@ bool VulkanRenderer::renderFrame(size_t& currentFrame,
                                    VK_IMAGE_ASPECT_DEPTH_BIT);
 
     sceneRenderer_.recordScenePass(cmd, imageIndex, currentFrame, drawCalls);
-    // TODO: Other passes go here
+    imguiRenderer_.recordUIPass(cmd, imageIndex);
 
     submitAndPresent(cmd, currentFrame, imageIndex, commandManager, swapchain, graphicsQueue);
     commandManager.endFrame();
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
     return true;
 }
 

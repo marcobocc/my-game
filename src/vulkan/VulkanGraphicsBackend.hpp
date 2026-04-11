@@ -4,6 +4,7 @@
 #include "core/assets/types/Mesh.hpp"
 #include "core/assets/types/ShaderPipeline.hpp"
 #include "core/components/CameraComponent.hpp"
+#include "core/ui/UserInterface.hpp"
 #include "services/VulkanResourceCache.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanContext.hpp"
@@ -21,12 +22,13 @@ public:
     VulkanGraphicsBackend& operator=(VulkanGraphicsBackend&&) = delete;
 
     ~VulkanGraphicsBackend() = default;
-    explicit VulkanGraphicsBackend(GLFWwindow* window);
+    explicit VulkanGraphicsBackend(GLFWwindow* window, UserInterface* userInterface);
 
     void draw(const Mesh* mesh,
               const Material* material,
               const ShaderPipeline* shaderPipeline,
               const glm::mat4& modelMatrix);
+
     void renderFrame(const CameraComponent& camera);
 
 

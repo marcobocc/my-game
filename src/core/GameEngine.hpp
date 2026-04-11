@@ -22,6 +22,7 @@ public:
     explicit GameEngine(unsigned int windowWidth, unsigned int windowHeight, const char* windowTitle);
     ~GameEngine();
 
+    UserInterface& getUserInterface() const { return *userInterface_; }
     GameEntitiesManager& getECS() const { return *ecs_; }
     AssetManager& getAssetManager() const { return *assetManager_; }
     const InputComponent& getPlayerInput() const { return *playerInput_; }
@@ -34,6 +35,7 @@ private:
     bool shouldClose() const;
 
     GLFWwindow* window_;
+    std::unique_ptr<UserInterface> userInterface_;
     std::unique_ptr<GameEntitiesManager> ecs_;
     std::unique_ptr<AssetManager> assetManager_;
     std::unique_ptr<VulkanGraphicsBackend> graphicsBackend_;

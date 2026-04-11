@@ -1,16 +1,19 @@
 #pragma once
 
+#include <GLFW/glfw3.h>
 #include <array>
 #include <glm/glm.hpp>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "core/components/CameraComponent.hpp"
+#include "core/ui/UserInterface.hpp"
 #include "vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "vulkan/raii_wrappers/VulkanContext.hpp"
 #include "vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
 #include "vulkan/raii_wrappers/VulkanUBO.hpp"
 #include "vulkan/services/VulkanCommandManager.hpp"
+#include "vulkan/services/VulkanImguiRenderer.hpp"
 #include "vulkan/services/VulkanResourceCache.hpp"
 #include "vulkan/services/VulkanSceneRenderer.hpp"
 
@@ -28,7 +31,9 @@ public:
                    size_t swapchainImageCount,
                    VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                    VulkanResourceCache<VulkanPipeline>& pipelineCache,
-                   VulkanSwapchain& swapchain);
+                   VulkanSwapchain& swapchain,
+                   GLFWwindow* window,
+                   UserInterface* userInterface);
 
     bool renderFrame(size_t& currentFrame,
                      VulkanCommandManager& commandManager,
@@ -71,4 +76,5 @@ private:
     VulkanResourceCache<VulkanPipeline>& pipelineCache_;
     VulkanSwapchain& swapchainManager_;
     VulkanSceneRenderer sceneRenderer_;
+    VulkanImguiRenderer imguiRenderer_;
 };

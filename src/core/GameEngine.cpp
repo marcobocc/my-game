@@ -33,8 +33,9 @@ void GameEngine::initialize(unsigned int windowWidth, unsigned int windowHeight,
         throw std::runtime_error("Failed to create GLFW window");
     }
 
+    userInterface_ = std::make_unique<UserInterface>();
     ecs_ = std::make_unique<GameEntitiesManager>();
-    graphicsBackend_ = std::make_unique<VulkanGraphicsBackend>(window_);
+    graphicsBackend_ = std::make_unique<VulkanGraphicsBackend>(window_, userInterface_.get());
     assetManager_ = std::make_unique<AssetManager>();
     renderSystem_ = std::make_unique<RenderSystem>(*ecs_, *assetManager_, *graphicsBackend_);
     playerInput_ = std::make_unique<InputComponent>();
