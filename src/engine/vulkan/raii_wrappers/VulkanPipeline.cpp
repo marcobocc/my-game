@@ -1,5 +1,4 @@
 #include "vulkan/raii_wrappers/VulkanPipeline.hpp"
-#include <stdexcept>
 #include <volk.h>
 #include "vulkan/VulkanErrorHandling.hpp"
 

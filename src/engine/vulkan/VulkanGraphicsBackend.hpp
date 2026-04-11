@@ -12,7 +12,6 @@
 #include "vulkan/raii_wrappers/VulkanSwapchain.hpp"
 #include "vulkan/services/VulkanCommandManager.hpp"
 #include "vulkan/services/VulkanRenderer.hpp"
-#include "vulkan/services/VulkanResourceCache.hpp"
 
 class VulkanGraphicsBackend {
 public:
