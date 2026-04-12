@@ -16,23 +16,23 @@
 
 The type communicates the **main purpose** of the change. Must be one of the following:
 
-| Type     | Description                                                                                                                     |
-|----------|---------------------------------------------------------------------------------------------------------------------------------|
-| feat     | Introduces a new feature or changes behavior                                                                                    |
-| fix      | Patches a bug                                                                                                                   |
-| refactor | Architectural or structural changes to source code that neither fix a bug nor change behavior                                   |
-| style    | Only formatting, whitespace, variable renaming, and other changes to source code with the intent of improving human readability |
-| docs     | Only changes documentation or comments                                                                                          |
-| tests    | Only adds missing tests or corrects tests, without changing behavior                                                            |
-| build    | Only changes to the build system and tooling                                                                                    |
-| revert   | Undoes a previous commit                                                                                                        |
+| Type     | Description                                                                                                 |
+|----------|-------------------------------------------------------------------------------------------------------------|
+| feat     | Introduces a new feature or changes behavior                                                                |
+| fix      | Patches a bug                                                                                               |
+| refactor | Restructures code for organization, maintainability or readability without changing behavior or fixing bugs |
+| format   | Affects only the formatting of the code itself (whitespace, indentation). No other change must be present   |
+| docs     | Affects only documentation or comments in the source code                                                   |
+| tests    | Adds missing tests or corrects existing tests, without changing behaviour of the source code itself         |
+| build    | Affects the build system, dependencies and tooling                                                          |
+| revert   | Undoes a previous commit                                                                                    |
 
 ### Scope
 
-The scope is optional and communicates the **main subsystem** affected. Must be one of the following:
+The scope is required for `feat`, `fix` and `refactor` and communicates the **main subsystem** affected. Must be one of the following:
 
 | Scope     | Description                                                                                                       |
 |-----------|-------------------------------------------------------------------------------------------------------------------|
-| core      | Changes to the game engine's core logic, such as the entity-component system, event system or resource management |
-| rendering | Changes involving Vulkan, the rendering pipeline, shaders, or other graphics-related code                         |
+| core      | Changes to the game engine's core logic, such as the entity-component system, input system or resource management |
+| rendering | Changes involving the rendering system, Vulkan, and other graphics-related code                                   |
 | tools     | Changes to editors or other game development tools                                                                |
