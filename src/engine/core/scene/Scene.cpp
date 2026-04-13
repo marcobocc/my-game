@@ -50,6 +50,22 @@ std::string Scene::createCube(const _createCube_Options& options) {
     return objectName;
 }
 
+std::string Scene::createMeshObject(const std::string& meshName, const _createMeshObject_Options& options) {
+    auto [objectName, successful] = createEmptyObject();
+    auto& gameObj = getObject(objectName);
+
+    auto& transform = gameObj.add<Transform>();
+    transform.position = options.position;
+    transform.scale = options.scale;
+
+    auto& [name] = gameObj.add<Mesh>();
+    name = meshName;
+
+    auto& [shaderName, baseColor] = gameObj.add<Material>();
+    baseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    return objectName;
+}
+
 std::string Scene::createCamera(const _createCamera_Options& options) {
     auto [objectName, created] = createEmptyObject();
     auto& obj = getObject(objectName);
