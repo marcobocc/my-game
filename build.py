@@ -15,6 +15,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 BUILD_DIR = PROJECT_ROOT / "build"
 BINARIES_DIR = BUILD_DIR / "bin"
+ASSETS_DIR = PROJECT_ROOT / "assets"
 
 
 # -----------------------------------------------------------------------------
@@ -189,8 +190,7 @@ def build_target(target: str | None) -> None:
 # -----------------------------------------------------------------------------
 def compile_shaders() -> None:
     """Compile shaders from the assets directory"""
-    shaders_dir = PROJECT_ROOT / "assets/shaders"
-    out_dir = BINARIES_DIR / "assets/shaders"
+    shaders_dir = ASSETS_DIR / "shaders"
 
     for pipeline_dir in shaders_dir.iterdir():
         if not pipeline_dir.is_dir():
@@ -203,9 +203,7 @@ def compile_shaders() -> None:
             warn(f"No .vert or .frag files found in pipeline {pipeline_name}")
             continue
 
-        pipeline_out_dir = out_dir / pipeline_name
-        pipeline_out_dir.mkdir(parents=True, exist_ok=True)
-
+        pipeline_out_dir = shaders_dir / pipeline_name
         for shader_file in shader_files:
             output_file = pipeline_out_dir / f"{shader_file.name}.spv"
             info(f"Compiling {pipeline_name}/{shader_file.name} -> {shader_file.name}.spv")
@@ -236,7 +234,7 @@ def find_executable(target: str) -> Path:
 def run_target(target: str) -> None:
     exe = find_executable(target)
     run_log(f"Running executable: {exe}")
-    run_cmd([str(exe)], cwd=exe.parent)
+    run_cmd([str(exe), "--assets_path", str(ASSETS_DIR)], cwd=exe.parent)
 
 
 # -----------------------------------------------------------------------------

@@ -11,11 +11,11 @@
 
 class MeshLoader {
 public:
-    explicit MeshLoader(std::filesystem::path dir = "assets/meshes") : directory_(std::move(dir)) {}
+    explicit MeshLoader(const std::filesystem::path& assetsPath) : assetsPath_(assetsPath) {}
 
     std::unique_ptr<MeshData> load(const std::string& name) const {
         if (auto prefab = PrefabMesh::load(name)) return prefab;
-        auto path = directory_ / (name + ".obj");
+        auto path = assetsPath_ / "meshes" / name;
         std::ifstream file(path);
         if (!file) throw std::runtime_error("Failed to open mesh: " + path.string());
 
@@ -81,5 +81,5 @@ private:
         return std::make_unique<MeshData>(std::move(mesh));
     }
 
-    std::filesystem::path directory_;
+    std::filesystem::path assetsPath_;
 };

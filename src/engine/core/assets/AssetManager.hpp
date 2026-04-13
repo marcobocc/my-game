@@ -9,6 +9,10 @@
 
 class AssetManager {
 public:
+    explicit AssetManager(const std::filesystem::path& assetsPath) :
+        meshLoader_(assetsPath),
+        shaderLoader_(assetsPath) {}
+
     // ---------------- SHADER ----------------
     ShaderPipeline* getShader(const std::string& name) { return getAsset(name, shaderCache_, shaderLoader_); }
     void insertShader(std::unique_ptr<ShaderPipeline> shader) { shaderCache_[shader->name] = std::move(shader); }

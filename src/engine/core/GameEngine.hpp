@@ -17,7 +17,10 @@ public:
     GameEngine(GameEngine&&) = delete;
     GameEngine& operator=(GameEngine&&) = delete;
 
-    explicit GameEngine(unsigned int windowWidth, unsigned int windowHeight, const char* windowTitle);
+    explicit GameEngine(unsigned int windowWidth,
+                        unsigned int windowHeight,
+                        const char* windowTitle,
+                        std::filesystem::path assetsPath);
     ~GameEngine();
 
     UserInterface& getUserInterface() const { return *userInterface_; }
@@ -29,7 +32,10 @@ public:
     void requestClose() const;
 
 private:
-    void initialize(unsigned int windowWidth, unsigned int windowHeight, const char* windowTitle);
+    void initialize(unsigned int windowWidth,
+                    unsigned int windowHeight,
+                    const char* windowTitle,
+                    const std::filesystem::path& assetsPath);
     bool shouldClose() const;
 
     GLFWwindow* window_;

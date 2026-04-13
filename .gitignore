@@ -71,3 +71,6 @@ ENV/
 htmlcov/
 .tox/
 .cache/
+
+# Assets
+*.spv

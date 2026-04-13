@@ -9,10 +9,10 @@
 
 class ShaderLoader {
 public:
-    explicit ShaderLoader(const std::filesystem::path& directory = "assets/shaders") : directory_(directory) {}
+    explicit ShaderLoader(const std::filesystem::path& assetsPath) : assetsPath_(assetsPath) {}
 
     std::unique_ptr<ShaderPipeline> load(const std::string& pipelineName) const {
-        auto pipelineDir = directory_ / pipelineName;
+        auto pipelineDir = assetsPath_ / "shaders" / pipelineName;
 
         auto pipeline = std::make_unique<ShaderPipeline>();
         pipeline->name = pipelineName;
@@ -39,16 +39,6 @@ private:
         throw std::runtime_error("No compiled shader found with extension " + extension + " in " +
                                  pipelineDir.string());
     }
-    std::unique_ptr<ShaderPipeline>
-    load(const std::string& name, const std::string& vertexStageFile, const std::string& fragmentStageFile) const {
-        auto pipeline = std::make_unique<ShaderPipeline>();
-        pipeline->name = name;
-        pipeline->vertexStage.stageName = directory_ / vertexStageFile;
-        pipeline->vertexStage.bytecode = readFile(pipeline->vertexStage.stageName);
-        pipeline->fragmentStage.stageName = directory_ / fragmentStageFile;
-        pipeline->fragmentStage.bytecode = readFile(pipeline->fragmentStage.stageName);
-        return pipeline;
-    }
 
     static std::vector<char> readFile(const std::filesystem::path& path) {
         std::ifstream file(path, std::ios::ate | std::ios::binary);
@@ -61,5 +51,5 @@ private:
         return buffer;
     }
 
-    std::filesystem::path directory_;
+    std::filesystem::path assetsPath_;
 };

@@ -5,8 +5,8 @@
 
 class ObjectViewerApp {
 public:
-    ObjectViewerApp(unsigned int windowWidth, unsigned int windowHeight) :
-        engine_(windowWidth, windowHeight, "Object Viewer"),
+    ObjectViewerApp(unsigned int windowWidth, unsigned int windowHeight, const std::filesystem::path& assetsPath) :
+        engine_(windowWidth, windowHeight, "Object Viewer", assetsPath),
         scene_(engine_.getScene()) {
         setupScene();
     }

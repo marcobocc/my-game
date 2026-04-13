@@ -2,10 +2,13 @@
 #include <stdexcept>
 
 
-GameEngine::GameEngine(unsigned int windowWidth, unsigned int windowHeight, const char* windowTitle) :
+GameEngine::GameEngine(unsigned int windowWidth,
+                       unsigned int windowHeight,
+                       const char* windowTitle,
+                       std::filesystem::path assetsPath) :
     window_(nullptr),
     lastFrameTime_(0.0) {
-    initialize(windowWidth, windowHeight, windowTitle);
+    initialize(windowWidth, windowHeight, windowTitle, assetsPath);
 }
 
 GameEngine::~GameEngine() {
@@ -21,7 +24,10 @@ GameEngine::~GameEngine() {
     glfwTerminate();
 }
 
-void GameEngine::initialize(unsigned int windowWidth, unsigned int windowHeight, const char* windowTitle) {
+void GameEngine::initialize(unsigned int windowWidth,
+                            unsigned int windowHeight,
+                            const char* windowTitle,
+                            const std::filesystem::path& assetsPath) {
     if (!glfwInit()) {
         throw std::runtime_error("Failed to initialize GLFW");
     }
@@ -34,7 +40,7 @@ void GameEngine::initialize(unsigned int windowWidth, unsigned int windowHeight,
     }
 
     userInterface_ = std::make_unique<UserInterface>();
-    assetManager_ = std::make_unique<AssetManager>();
+    assetManager_ = std::make_unique<AssetManager>(assetsPath);
     scene_ = std::make_unique<Scene>();
     graphicsBackend_ = std::make_unique<VulkanGraphicsBackend>(window_, userInterface_.get());
     renderSystem_ = std::make_unique<RenderSystem>(*assetManager_, *graphicsBackend_);
