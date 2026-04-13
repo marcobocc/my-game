@@ -6,6 +6,7 @@ import stat
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 # -----------------------------------------------------------------------------
@@ -109,7 +110,7 @@ def get_source_files() -> list[Path]:
 
 def run_clang_tidy() -> bool:
     info("Running clang-tidy")
-    cmd = [
+    base_cmd = [
         "clang-tidy",
         "-p", str(BUILD_DIR),
         "-quiet",
@@ -117,14 +118,19 @@ def run_clang_tidy() -> bool:
         "--warnings-as-errors=*",
     ]
     if sys.platform == "darwin":
-        cmd.append("--extra-arg-before=--driver-mode=clang++")
+        base_cmd.append("--extra-arg-before=--driver-mode=clang++")
         sdk = get_macos_sdk_path()
         if sdk:
-            cmd += ["--extra-arg=-isysroot", f"--extra-arg={sdk}"]
+            base_cmd += ["--extra-arg=-isysroot", f"--extra-arg={sdk}"]
     src_files = get_source_files()
-    cmd += [str(f) for f in src_files]
-    return_code = run_cmd(cmd)
-    if return_code != 0:
+    commands = [base_cmd + [str(f)] for f in src_files]
+    failed = False
+    with ThreadPoolExecutor() as executor:
+        futures = [executor.submit(run_cmd, cmd) for cmd in commands]
+        for future in as_completed(futures):
+            if future.result() != 0:
+                failed = True
+    if failed:
         warn("clang-tidy found issues")
         return False
     return True
