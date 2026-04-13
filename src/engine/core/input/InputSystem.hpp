@@ -22,9 +22,7 @@ public:
         return it != mouseButtons_.end() && it->second;
     }
 
-    std::pair<double, double> getMousePosition() const {
-        return std::make_pair(mouseX_, mouseY_);
-    }
+    std::pair<double, double> getMousePosition() const { return std::make_pair(mouseX_, mouseY_); }
 
 private:
     void updateKeys() {

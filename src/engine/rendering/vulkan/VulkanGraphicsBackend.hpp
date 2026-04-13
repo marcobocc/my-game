@@ -1,9 +1,9 @@
 #pragma once
 #include <GLFW/glfw3.h>
-#include "core/objects/components/Material.hpp"
 #include "core/assets/types/MeshData.hpp"
 #include "core/assets/types/ShaderPipeline.hpp"
 #include "core/objects/components/Camera.hpp"
+#include "core/objects/components/Material.hpp"
 #include "core/ui/UserInterface.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanContext.hpp"

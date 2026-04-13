@@ -7,8 +7,8 @@
 #include <volk.h>
 
 VulkanImguiRenderer::VulkanImguiRenderer(const VulkanContext& vulkanContext,
-                             VulkanSwapchain& swapchain,
-                             uint32_t imageCount,
+                                         VulkanSwapchain& swapchain,
+                                         uint32_t imageCount,
                                          GLFWwindow* window,
                                          UserInterface* userInterface) :
     swapchain_(swapchain),

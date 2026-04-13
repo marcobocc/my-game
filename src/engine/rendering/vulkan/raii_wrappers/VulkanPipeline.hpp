@@ -13,13 +13,13 @@ public:
     VulkanPipeline(VulkanPipeline&& other) noexcept;
     VulkanPipeline& operator=(VulkanPipeline&& other) noexcept;
     VulkanPipeline(VkDevice device,
-                  const std::vector<char>& vertBytecode,
-                  const std::vector<char>& fragBytecode,
-                  const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
-                  uint32_t pushConstantSize,
-                  VkDescriptorSetLayout cameraDescriptorSetLayout = VK_NULL_HANDLE,
-                  VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
-                  VkFormat depthFormat = VK_FORMAT_D32_SFLOAT);
+                   const std::vector<char>& vertBytecode,
+                   const std::vector<char>& fragBytecode,
+                   const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
+                   uint32_t pushConstantSize,
+                   VkDescriptorSetLayout cameraDescriptorSetLayout = VK_NULL_HANDLE,
+                   VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
+                   VkFormat depthFormat = VK_FORMAT_D32_SFLOAT);
 
     VkPipeline getVkPipeline() const;
     VkPipelineLayout getVkPipelineLayout() const;
@@ -35,9 +35,10 @@ private:
 
     void cleanup();
     void createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout, uint32_t pushConstantSize);
-    std::array<VkPipelineShaderStageCreateInfo, 2> createShaderStages(const std::vector<char>& vertBytecode, const std::vector<char>& fragBytecode);
+    std::array<VkPipelineShaderStageCreateInfo, 2> createShaderStages(const std::vector<char>& vertBytecode,
+                                                                      const std::vector<char>& fragBytecode);
     void createGraphicsPipeline(const std::array<VkPipelineShaderStageCreateInfo, 2>& shaderStages,
-                               const VkPipelineVertexInputStateCreateInfo& vertexInputInfo);
+                                const VkPipelineVertexInputStateCreateInfo& vertexInputInfo);
     void destroyShaderModules();
     VkShaderModule createShaderModule(const std::vector<char>& code) const;
 };

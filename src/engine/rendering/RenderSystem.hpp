@@ -1,10 +1,10 @@
 #pragma once
 #include "core/assets/AssetManager.hpp"
-#include "core/scene/Scene.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Material.hpp"
-#include "core/objects/components/Transform.hpp"
 #include "core/objects/components/Mesh.hpp"
+#include "core/objects/components/Transform.hpp"
+#include "core/scene/Scene.hpp"
 #include "rendering/vulkan/VulkanGraphicsBackend.hpp"
 
 class RenderSystem {

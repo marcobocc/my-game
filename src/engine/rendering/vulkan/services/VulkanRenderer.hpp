@@ -51,10 +51,14 @@ private:
                           VulkanCommandManager& commandManager,
                           const VulkanSwapchain& swapchain,
                           VkQueue graphicsQueue) const;
-    void setImageLayoutTransition(VkCommandBuffer cmd, VkImage image, VkFormat format,
-                              VkImageLayout oldLayout, VkImageLayout newLayout,
-                              VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-                              VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT) const;
+    void setImageLayoutTransition(VkCommandBuffer cmd,
+                                  VkImage image,
+                                  VkFormat format,
+                                  VkImageLayout oldLayout,
+                                  VkImageLayout newLayout,
+                                  VkPipelineStageFlags srcStage,
+                                  VkPipelineStageFlags dstStage,
+                                  VkImageAspectFlags aspectMask = VK_IMAGE_ASPECT_COLOR_BIT) const;
 
     struct FrameSync {
         VkFence inFlightFence = VK_NULL_HANDLE;

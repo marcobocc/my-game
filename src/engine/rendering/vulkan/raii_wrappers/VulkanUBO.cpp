@@ -67,10 +67,10 @@ void VulkanUBO::createBuffers() {
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = VulkanBuffer::getMemoryType(physicalDevice_,
-                                                                 memRequirements.memoryTypeBits,
-                                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        allocInfo.memoryTypeIndex =
+                VulkanBuffer::getMemoryType(physicalDevice_,
+                                            memRequirements.memoryTypeBits,
+                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         throwIfUnsuccessful(vkAllocateMemory(device_, &allocInfo, nullptr, &bufferMemories_[i]));
         throwIfUnsuccessful(vkBindBufferMemory(device_, buffers_[i], bufferMemories_[i], 0));
