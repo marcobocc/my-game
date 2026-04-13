@@ -19,3 +19,10 @@ target_compile_definitions(imgui PRIVATE IMGUI_IMPL_VULKAN_USE_VOLK)     # DO NO
 # IMGUI_IMPL_VULKAN_USE_VOLK ensures that ImGui uses the Vulkan function pointers (vkGetInstanceProcAddr,
 # vkGetDeviceProcAddr, etc) that are loaded via Volk. Removing IMGUI_IMPL_VULKAN_USE_VOLK will immediately result
 # in a segmentation fault when initializing ImGui.
+
+# -------------------------------------------------------------------------
+# stb
+# -------------------------------------------------------------------------
+set(STB_DIR ${VENDOR_DIR}/stb)
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE ${STB_DIR})

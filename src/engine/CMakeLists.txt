@@ -21,6 +21,7 @@ target_link_libraries(GameEngineLib PUBLIC
     Vulkan::Headers
     GPUOpen::VulkanMemoryAllocator
     imgui
+    stb
 )
 
 # On macOS, link MoltenVK explicitly
@@ -37,4 +38,3 @@ if (MSVC)
 else ()
     target_compile_options(GameEngineLib PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 endif ()
-
