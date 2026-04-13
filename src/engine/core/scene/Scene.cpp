@@ -46,7 +46,7 @@ std::string Scene::createCube(const _createCube_Options& options) {
     name = PRIMITIVE_GEOMETRY_CUBE;
 
     auto& [shaderName, baseColor] = gameObj.add<Material>();
-    baseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    baseColor = options.color;
     return objectName;
 }
 
@@ -62,7 +62,7 @@ std::string Scene::createMeshObject(const std::string& meshName, const _createMe
     name = meshName;
 
     auto& [shaderName, baseColor] = gameObj.add<Material>();
-    baseColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+    baseColor = options.color;
     return objectName;
 }
 
