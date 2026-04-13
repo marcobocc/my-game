@@ -161,34 +161,39 @@ def clean_build_dir() -> None:
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def configure_cmake(toolchain: Path, build_type: str = "Debug") -> None:
+def configure_cmake(toolchain: Path, build_type: str = "Debug") -> bool:
     configure(f"Running CMake ({build_type})")
-    run_cmd([
+    return_code = run_cmd([
         "cmake",
         str(PROJECT_ROOT),
         f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
     ], cwd=BUILD_DIR)
+    return return_code == 0
 
 
-def build_target(target: str | None) -> None:
+
+def build_target(target: str | None) -> bool:
     toolchain = get_vcpkg_toolchain()
     compile_shaders()
-    configure_cmake(toolchain)
+    if not configure_cmake(toolchain):
+        return False
     cmd = ["cmake", "--build", "."]
     if target:
         cmd += ["--target", target]
         build_log(f"Building target {target}")
     else:
         build_log(f"Building all targets")
-    run_cmd(cmd, cwd=BUILD_DIR)
+    return_code = run_cmd(cmd, cwd=BUILD_DIR)
+    return return_code == 0
+
 
 
 # -----------------------------------------------------------------------------
 # Shader Compilation
 # -----------------------------------------------------------------------------
-def compile_shaders() -> None:
+def compile_shaders() -> bool:
     """Compile shaders from the assets directory"""
     shaders_dir = ASSETS_DIR / "shaders"
 
@@ -207,7 +212,10 @@ def compile_shaders() -> None:
         for shader_file in shader_files:
             output_file = pipeline_out_dir / f"{shader_file.name}.spv"
             info(f"Compiling {pipeline_name}/{shader_file.name} -> {shader_file.name}.spv")
-            run_cmd(["glslc", str(shader_file), "-o", str(output_file)])
+            return_code = run_cmd(["glslc", str(shader_file), "-o", str(output_file)])
+            if return_code != 0:
+                return False
+    return True
 
 
 # -----------------------------------------------------------------------------
@@ -257,7 +265,10 @@ def main() -> None:
     # ----------------------------------------
     info("Starting build workflow")
     start_time = time.perf_counter()
-    build_target(args.target)
+    if not build_target(args.target):
+        error("Build failed")
+        sys.exit(1)
+
     linting_successful = False
     if not args.no_lint:
         linting_successful = run_clang_format(args.format) and run_clang_tidy()
