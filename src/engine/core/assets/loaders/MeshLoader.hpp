@@ -6,13 +6,15 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include "core/assets/types/Mesh.hpp"
+#include "core/assets/loaders/prefabs/PrefabMesh.hpp"
+#include "core/assets/types/MeshData.hpp"
 
 class MeshLoader {
 public:
     explicit MeshLoader(std::filesystem::path dir = "assets/meshes") : directory_(std::move(dir)) {}
 
-    std::unique_ptr<Mesh> load(const std::string& name) const {
+    std::unique_ptr<MeshData> load(const std::string& name) const {
+        if (auto prefab = PrefabMesh::load(name)) return prefab;
         auto path = directory_ / (name + ".obj");
         std::ifstream file(path);
         if (!file) throw std::runtime_error("Failed to open mesh: " + path.string());
@@ -59,7 +61,7 @@ private:
         return data;
     }
 
-    std::unique_ptr<Mesh> convertToMesh(const ObjData& data, const std::string& name) const {
+    std::unique_ptr<MeshData> convertToMesh(const ObjData& data, const std::string& name) const {
         std::vector<PositionVertex> vertices;
         std::vector<uint32_t> indices;
         uint32_t idx = 0;
@@ -76,7 +78,7 @@ private:
         }
 
         auto mesh = MeshFactory::createPositionMesh(name, vertices, indices);
-        return std::make_unique<Mesh>(std::move(mesh));
+        return std::make_unique<MeshData>(std::move(mesh));
     }
 
     std::filesystem::path directory_;

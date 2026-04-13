@@ -12,7 +12,7 @@ GameEngine::~GameEngine() {
     inputSystem_.reset();
     renderSystem_.reset();
     graphicsBackend_.reset();
-    ecs_.reset();
+    scene_.reset();
 
     if (window_) {
         glfwDestroyWindow(window_);
@@ -34,12 +34,11 @@ void GameEngine::initialize(unsigned int windowWidth, unsigned int windowHeight,
     }
 
     userInterface_ = std::make_unique<UserInterface>();
-    ecs_ = std::make_unique<GameEntitiesManager>();
-    graphicsBackend_ = std::make_unique<VulkanGraphicsBackend>(window_, userInterface_.get());
     assetManager_ = std::make_unique<AssetManager>();
-    renderSystem_ = std::make_unique<RenderSystem>(*ecs_, *assetManager_, *graphicsBackend_);
-    playerInput_ = std::make_unique<InputComponent>();
-    inputSystem_ = std::make_unique<InputSystem>(window_, *playerInput_);
+    scene_ = std::make_unique<Scene>();
+    graphicsBackend_ = std::make_unique<VulkanGraphicsBackend>(window_, userInterface_.get());
+    renderSystem_ = std::make_unique<RenderSystem>(*assetManager_, *graphicsBackend_);
+    inputSystem_ = std::make_unique<InputSystem>(window_);
     lastFrameTime_ = glfwGetTime();
 }
 
@@ -54,7 +53,7 @@ void GameEngine::run(const GameLoopFunc& gameLoopFunc) {
         inputSystem_->update();
 
         gameLoopFunc(deltaTime);
-        renderSystem_->update();
+        renderSystem_->update(*scene_);
     }
 }
 

@@ -1,13 +1,13 @@
 #pragma once
 #include <glm/gtc/matrix_transform.hpp>
 #include "core/GameEngine.hpp"
-#include "core/components/TransformComponent.hpp"
-#include "core/utils/SceneBuilder.hpp"
+#include "core/objects/components/Transform.hpp"
 
 class ObjectViewerApp {
 public:
     ObjectViewerApp(unsigned int windowWidth, unsigned int windowHeight) :
-        engine_(windowWidth, windowHeight, "Object Viewer") {
+        engine_(windowWidth, windowHeight, "Object Viewer"),
+        scene_(engine_.getScene()) {
         setupScene();
     }
 
@@ -20,12 +20,12 @@ public:
 
 private:
     GameEngine engine_;
-    unsigned int objectId_{};
+    Scene& scene_;
+    std::string objectId_{};
 
     void setupScene() {
-        SceneBuilder sceneBuilder(engine_.getECS(), engine_.getAssetManager());
-        sceneBuilder.addCamera(glm::vec3(0.0f, 0.0f, 4.0f));
-        objectId_ = sceneBuilder.addCube();
+        scene_.createCamera(glm::vec3(0.0f, 0.0f, 4.0f));
+        objectId_ = scene_.createCube();
     }
 
     void update(double deltaTime) const {
@@ -33,16 +33,14 @@ private:
         static float totalTime = 0.0f;
         totalTime += static_cast<float>(deltaTime);
 
-        auto& transform = engine_.getECS().getComponent<TransformComponent>(objectId_);
+        auto& transform = engine_.getScene().getObject(objectId_).add<Transform>();
         transform.rotation = glm::angleAxis(totalTime * 0.8f, glm::vec3(0.0f, 1.0f, 0.0f)) *
                              glm::angleAxis(totalTime * 0.5f, glm::vec3(1.0f, 0.0f, 0.0f)) *
                              glm::angleAxis(totalTime * 0.3f, glm::vec3(0.0f, 0.0f, 1.0f));
     }
 
     void handlePlayerInput() const {
-        auto& playerInput = engine_.getPlayerInput();
-        if (playerInput.keys.at(GLFW_KEY_ESCAPE)) {
-            engine_.requestClose();
-        }
+        auto& playerInput = engine_.getInputSystem();
+        if (playerInput.isKeyPressed(GLFW_KEY_ESCAPE)) engine_.requestClose();
     }
 };
