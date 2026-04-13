@@ -64,12 +64,13 @@ def log_cmd(msg: str) -> None: _log("CMD", msg, Color.DIM)
 # -----------------------------------------------------------------------------
 # Utilities
 # -----------------------------------------------------------------------------
-def run_cmd(cmd_list, cwd: Path | None = None) -> None:
+def run_cmd(cmd_list, cwd: Path | None = None) -> int:
     log_cmd(" ".join(cmd_list))
     result = subprocess.run(cmd_list, cwd=cwd)
     if result.returncode != 0:
         error(f"Command failed with exit code {result.returncode}")
-        sys.exit(result.returncode)
+        return result.returncode
+    return 0
 
 
 def get_macos_sdk_path() -> str:
@@ -106,9 +107,8 @@ def get_source_files() -> list[Path]:
     return files
 
 
-def run_clang_tidy() -> None:
+def run_clang_tidy() -> bool:
     info("Running clang-tidy")
-
     cmd = [
         "clang-tidy",
         "-p", str(BUILD_DIR),
@@ -116,24 +116,35 @@ def run_clang_tidy() -> None:
         "-header-filter=src/.*|include/.*",
         "--warnings-as-errors=*",
     ]
-
     if sys.platform == "darwin":
         cmd.append("--extra-arg-before=--driver-mode=clang++")
         sdk = get_macos_sdk_path()
         if sdk:
             cmd += ["--extra-arg=-isysroot", f"--extra-arg={sdk}"]
-
     src_files = get_source_files()
     cmd += [str(f) for f in src_files]
+    return_code = run_cmd(cmd)
+    if return_code != 0:
+        warn("clang-tidy found issues")
+        return False
+    return True
 
-    run_cmd(cmd)
 
-
-def run_clang_format():
-    info("Running clang-format (dry run)")
-    src_files = get_source_files()
-    for f in src_files:
-        run_cmd(["clang-format", "--dry-run", "--Werror", str(f)])
+def run_clang_format(apply_fixes: bool = False) -> bool:
+    src_files = [str(f) for f in get_source_files()]
+    info("Running clang-format")
+    return_code = run_cmd(["clang-format", "--dry-run", "--Werror", *src_files])
+    if return_code != 0:
+        if apply_fixes:
+            warn("clang-format found issues, attempting automatic fixes...")
+            return_code = run_cmd(["clang-format", "-i", *src_files])
+            if return_code != 0:
+                error("Failed to apply clang-format fixes")
+                return False
+            success("Automatically fixed all formatting issues")
+            return True
+    success("No formatting issues found")
+    return True
 
 
 def clean_build_dir() -> None:
@@ -228,7 +239,8 @@ def run_target(target: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build script for CrossPlatformVulkanEngine")
     parser.add_argument("target", type=str, help="Name of the executable target to build and run", nargs="?")
-    parser.add_argument("--lint", action="store_true", help="Run Clang-Tidy and exit")
+    parser.add_argument("--format", action="store_true", help="Automatically fix all formatting issues")
+    parser.add_argument("--no-lint", action="store_true", help="Skip running formatting and linting")
     args = parser.parse_args()
 
     if args.target == "clean":
@@ -236,22 +248,32 @@ def main() -> None:
         success("Clean completed.")
         return
 
-    start_time = time.perf_counter()
-
+    # ----------------------------------------
+    # Build workflow
+    # ----------------------------------------
     info("Starting build workflow")
+    start_time = time.perf_counter()
     build_target(args.target)
-
-    if args.lint:
-        run_clang_format()
-        run_clang_tidy()
-
+    linting_successful = False
+    if not args.no_lint:
+        linting_successful = run_clang_format(args.format) and run_clang_tidy()
     end_time = time.perf_counter()
-    success(f"Build finished in {end_time - start_time:.2f}s")
 
+    # ----------------------------------------
+    # Build workflow summary
+    # ----------------------------------------
     if not args.target:
-        success("Successfully built all targets")
+        success(f"Successfully built all targets in {end_time - start_time:.2f}s")
     else:
-        success(f"Successfully built target {args.target}")
+        success(f"Successfully built target {args.target} in {end_time - start_time:.2f}s")
+
+    if args.no_lint:
+        warn("Linting was skipped. Run without --no-lint to check for formatting and linting issues.")
+    else:
+        if not linting_successful:
+            warn(f"Linting issues detected. Check the logs above for more details.")
+
+    if args.target:
         run_target(args.target)
 
 
