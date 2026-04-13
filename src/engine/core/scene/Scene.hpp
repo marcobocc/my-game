@@ -1,16 +1,11 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <glm/vec4.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include "core/assets/PrefabNames.hpp"
 #include "core/objects/ComponentStorage.hpp"
 #include "core/objects/GameObject.hpp"
-#include "core/objects/components/Camera.hpp"
-#include "core/objects/components/Material.hpp"
-#include "core/objects/components/Mesh.hpp"
 #include "core/objects/components/Transform.hpp"
 
 class Scene {
@@ -27,16 +22,27 @@ public:
     }
 
     // ------------------------------------------------------------------------------
-    // BUILT-IN OBJECTS
+    // createCube
     // ------------------------------------------------------------------------------
-    std::string createCube(const glm::vec3& position = {0.0f, 0.0f, 0.0f}, const glm::vec3& scale = {1.0f, 1.0f, 1.0f});
-    std::string createCamera(const glm::vec3& position = {0.0f, 0.0f, 0.0f},
-                             const glm::vec3& forward = {0.0f, 0.0f, -1.0f},
-                             const glm::vec3& up = {0.0f, 1.0f, 0.0f},
-                             float fov = 45.0f,
-                             float aspect = 16.0f / 9.0f,
-                             float nearPlane = 0.1f,
-                             float farPlane = 100.0f);
+    struct _createCube_Options {
+        glm::vec3 position{0.0f, 0.0f, 0.0f};
+        glm::vec3 scale{1.0f, 1.0f, 1.0f};
+    };
+    std::string createCube(const _createCube_Options& options);
+
+    // ------------------------------------------------------------------------------
+    // createCamera
+    // ------------------------------------------------------------------------------
+    struct _createCamera_Options {
+        glm::vec3 position{0.0f, 0.0f, 0.0f};
+        glm::vec3 forward{0.0f, 0.0f, -1.0f};
+        glm::vec3 up{0.0f, 1.0f, 0.0f};
+        float fov{45.0f};
+        float aspect{16.0f / 9.0f};
+        float nearPlane{0.1f};
+        float farPlane{100.0f};
+    };
+    std::string createCamera(const _createCamera_Options& options);
 
 private:
     std::unique_ptr<ComponentStorage> componentStorage_;

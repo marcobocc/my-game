@@ -24,8 +24,8 @@ private:
     std::string objectId_{};
 
     void setupScene() {
-        scene_.createCamera(glm::vec3(0.0f, 0.0f, 4.0f));
-        objectId_ = scene_.createCube();
+        scene_.createCamera({.position = glm::vec3(0.0f, 0.0f, 4.0f)});
+        objectId_ = scene_.createCube({});
     }
 
     void update(double deltaTime) const {

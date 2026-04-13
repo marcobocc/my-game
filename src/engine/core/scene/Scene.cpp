@@ -5,6 +5,10 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include "core/assets/PrefabNames.hpp"
+#include "core/objects/components/Camera.hpp"
+#include "core/objects/components/Material.hpp"
+#include "core/objects/components/Mesh.hpp"
 
 Scene::Scene() : componentStorage_(std::make_unique<ComponentStorage>()) {}
 
@@ -30,13 +34,13 @@ std::string Scene::generateName() {
 // BUILT-IN OBJECTS
 // ------------------------------------------------------------------------------
 
-std::string Scene::createCube(const glm::vec3& position, const glm::vec3& scale) {
+std::string Scene::createCube(const _createCube_Options& options) {
     auto [objectName, successful] = createEmptyObject();
     auto& gameObj = getObject(objectName);
 
     auto& transform = gameObj.add<Transform>();
-    transform.position = position;
-    transform.scale = scale;
+    transform.position = options.position;
+    transform.scale = options.scale;
 
     auto& [name] = gameObj.add<Mesh>();
     name = PRIMITIVE_GEOMETRY_CUBE;
@@ -46,22 +50,16 @@ std::string Scene::createCube(const glm::vec3& position, const glm::vec3& scale)
     return objectName;
 }
 
-std::string Scene::createCamera(const glm::vec3& position,
-                                const glm::vec3& forward,
-                                const glm::vec3& up,
-                                float fov,
-                                float aspect,
-                                float nearPlane,
-                                float farPlane) {
+std::string Scene::createCamera(const _createCamera_Options& options) {
     auto [objectName, created] = createEmptyObject();
     auto& obj = getObject(objectName);
     auto& camera = obj.add<Camera>();
-    camera = Camera{.position = position,
-                    .forward = forward,
-                    .up = up,
-                    .fov = fov,
-                    .aspect = aspect,
-                    .nearPlane = nearPlane,
-                    .farPlane = farPlane};
+    camera = Camera{.position = options.position,
+                    .forward = options.forward,
+                    .up = options.up,
+                    .fov = options.fov,
+                    .aspect = options.aspect,
+                    .nearPlane = options.nearPlane,
+                    .farPlane = options.farPlane};
     return objectName;
 }
