@@ -5,6 +5,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 # -----------------------------------------------------------------------------
@@ -235,12 +236,17 @@ def main() -> None:
         success("Clean completed.")
         return
 
+    start_time = time.perf_counter()
+
     info("Starting build workflow")
     build_target(args.target)
 
     if args.lint:
         run_clang_format()
         run_clang_tidy()
+
+    end_time = time.perf_counter()
+    success(f"Build finished in {end_time - start_time:.2f}s")
 
     if not args.target:
         success("Successfully built all targets")
