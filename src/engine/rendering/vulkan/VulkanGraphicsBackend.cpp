@@ -1,7 +1,10 @@
 #include "rendering/vulkan/VulkanGraphicsBackend.hpp"
 #include <stdexcept>
 
-VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window, UserInterface* userInterface) :
+VulkanGraphicsBackend::VulkanGraphicsBackend(AssetManager& assetManager,
+                                             GLFWwindow* window,
+                                             UserInterface* userInterface) :
+    assetManager_(assetManager),
     window_(window),
     debugMessenger_(vulkanContext_),
     commandManager_(vulkanContext_, VulkanRenderer::MAX_FRAMES_IN_FLIGHT),
@@ -12,15 +15,13 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window, UserInterface* 
               pipelineCache_,
               swapchainManager_,
               window_,
-              userInterface) {
+              userInterface,
+              assetManager_) {
     if (!window) throw std::runtime_error("Window pointer is null");
 }
 
-void VulkanGraphicsBackend::draw(const MeshData* mesh,
-                                 const Material* material,
-                                 const Shader* shaderPipeline,
-                                 const glm::mat4& modelMatrix) {
-    drawQueue_.push_back({mesh, material, shaderPipeline, modelMatrix});
+void VulkanGraphicsBackend::draw(const Mesh& mesh, const Material& material, const Transform& transform) {
+    drawQueue_.push_back({mesh, material, transform});
 }
 
 void VulkanGraphicsBackend::renderFrame(const Camera& camera) {

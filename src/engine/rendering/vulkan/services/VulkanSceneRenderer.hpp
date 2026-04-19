@@ -1,10 +1,10 @@
 #pragma once
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "assets/types/mesh/MeshData.hpp"
-#include "assets/types/shader/Shader.hpp"
-#include "core/objects/components/Camera.hpp"
+#include "assets/AssetManager.hpp"
 #include "core/objects/components/Material.hpp"
+#include "core/objects/components/Mesh.hpp"
+#include "core/objects/components/Transform.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanContext.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanPipeline.hpp"
@@ -13,10 +13,9 @@
 #include "rendering/vulkan/services/VulkanResourceCache.hpp"
 
 struct DrawCall {
-    const MeshData* mesh;
-    const Material* material;
-    const Shader* shaderPipeline;
-    const glm::mat4 modelMatrix;
+    Mesh mesh;
+    Material material;
+    Transform transform;
 };
 
 class VulkanSceneRenderer {
@@ -25,7 +24,8 @@ public:
                         VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                         VulkanResourceCache<VulkanPipeline>& pipelineCache,
                         VulkanSwapchain& swapchain,
-                        VulkanUBO& cameraUBO);
+                        VulkanUBO& cameraUBO,
+                        AssetManager& assetManager);
 
     void recordScenePass(VkCommandBuffer cmd,
                          uint32_t imageIndex,
@@ -44,4 +44,5 @@ private:
     VulkanResourceCache<VulkanPipeline>& pipelineCache_;
     VulkanSwapchain& swapchain_;
     VulkanUBO& cameraUBO_;
+    AssetManager& assetManager_;
 };

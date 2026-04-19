@@ -32,7 +32,8 @@ public:
                    VulkanResourceCache<VulkanPipeline>& pipelineCache,
                    VulkanSwapchain& swapchain,
                    GLFWwindow* window,
-                   UserInterface* userInterface);
+                   UserInterface* userInterface,
+                   AssetManager& assetManager);
 
     bool renderFrame(size_t& currentFrame,
                      VulkanCommandManager& commandManager,
@@ -79,5 +80,6 @@ private:
     VulkanResourceCache<VulkanPipeline>& pipelineCache_;
     VulkanSwapchain& swapchainManager_;
     VulkanSceneRenderer sceneRenderer_;
+    AssetManager& assetManager_;
     VulkanImguiRenderer imguiRenderer_;
 };

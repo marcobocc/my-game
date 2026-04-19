@@ -1,9 +1,10 @@
 #pragma once
 #include <GLFW/glfw3.h>
-#include "assets/types/mesh/MeshData.hpp"
-#include "assets/types/shader/Shader.hpp"
+#include "assets/AssetManager.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Material.hpp"
+#include "core/objects/components/Mesh.hpp"
+#include "core/objects/components/Transform.hpp"
 #include "core/ui/UserInterface.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanContext.hpp"
@@ -21,10 +22,9 @@ public:
     VulkanGraphicsBackend& operator=(VulkanGraphicsBackend&&) = delete;
 
     ~VulkanGraphicsBackend() = default;
-    explicit VulkanGraphicsBackend(GLFWwindow* window, UserInterface* userInterface);
+    VulkanGraphicsBackend(AssetManager& assetManager, GLFWwindow* window, UserInterface* userInterface);
 
-    void
-    draw(const MeshData* mesh, const Material* material, const Shader* shaderPipeline, const glm::mat4& modelMatrix);
+    void draw(const Mesh& mesh, const Material& material, const Transform& transform);
 
     void renderFrame(const Camera& camera);
 
@@ -33,6 +33,7 @@ private:
     static constexpr size_t MAX_FRAMES_IN_FLIGHT = 2;
 
     size_t currentFrame_ = 0;
+    AssetManager& assetManager_;
     GLFWwindow* window_ = nullptr;
     VulkanContext vulkanContext_{};
     VulkanDebugMessenger debugMessenger_;

@@ -18,7 +18,8 @@ VulkanRenderer::VulkanRenderer(const VulkanContext& vulkanContext,
                                VulkanResourceCache<VulkanPipeline>& pipelineCache,
                                VulkanSwapchain& swapchain,
                                GLFWwindow* window,
-                               UserInterface* userInterface) :
+                               UserInterface* userInterface,
+                               AssetManager& assetManager) :
     device_(vulkanContext.getVkDevice()),
     physicalDevice_(vulkanContext.getVkPhysicalDevice()),
     images_(swapchainImageCount),
@@ -26,7 +27,8 @@ VulkanRenderer::VulkanRenderer(const VulkanContext& vulkanContext,
     vertexBufferCache_(vertexBufferCache),
     pipelineCache_(pipelineCache),
     swapchainManager_(swapchain),
-    sceneRenderer_(vulkanContext, vertexBufferCache_, pipelineCache_, swapchainManager_, cameraUBO_),
+    sceneRenderer_(vulkanContext, vertexBufferCache_, pipelineCache_, swapchainManager_, cameraUBO_, assetManager),
+    assetManager_(assetManager),
     imguiRenderer_(vulkanContext, swapchain, swapchainImageCount, window, userInterface) {
     createSynchronizationObjects();
 }

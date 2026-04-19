@@ -9,16 +9,12 @@
 
 class RenderSystem {
 public:
-    RenderSystem(AssetManager& asset_manager, VulkanGraphicsBackend& backend) :
-        asset_manager_(asset_manager),
-        backend_(backend) {}
+    explicit RenderSystem(VulkanGraphicsBackend& backend) : backend_(backend) {}
 
     void update(const Scene& scene) {
         auto drawables = scene.getObjectsWith<Mesh, Material, Transform>();
         for (auto& [entity, mesh, material, transform]: drawables) {
-            auto meshAsset = asset_manager_.get<MeshData>(mesh.name);
-            auto shaderAsset = asset_manager_.get<Shader>(material.shaderName);
-            backend_.draw(meshAsset, &material, shaderAsset, transform.getModelMatrix());
+            backend_.draw(mesh, material, transform);
         }
 
         auto cameras = scene.getObjectsWith<Camera>();
@@ -31,6 +27,5 @@ public:
     }
 
 private:
-    AssetManager& asset_manager_;
     VulkanGraphicsBackend& backend_;
 };
