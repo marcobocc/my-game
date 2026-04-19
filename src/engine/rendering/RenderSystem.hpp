@@ -3,6 +3,7 @@
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Material.hpp"
 #include "core/objects/components/Mesh.hpp"
+#include "core/objects/components/RenderProperties.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "core/scene/Scene.hpp"
 #include "rendering/vulkan/VulkanGraphicsBackend.hpp"
@@ -12,8 +13,9 @@ public:
     explicit RenderSystem(VulkanGraphicsBackend& backend) : backend_(backend) {}
 
     void update(const Scene& scene) {
-        auto drawables = scene.getObjectsWith<Mesh, Material, Transform>();
-        for (auto& [entity, mesh, material, transform]: drawables) {
+        auto drawables = scene.getObjectsWith<Mesh, Material, Transform, RenderProperties>();
+        for (auto& [entity, mesh, material, transform, renderProps]: drawables) {
+            if (!renderProps.enabled) continue;
             backend_.draw(mesh, material, transform);
         }
 

@@ -1,5 +1,4 @@
 #include "Scene.hpp"
-#include <glm/glm.hpp>
 #include <glm/vec4.hpp>
 #include <memory>
 #include <string>
@@ -9,6 +8,7 @@
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Material.hpp"
 #include "core/objects/components/Mesh.hpp"
+#include "core/objects/components/RenderProperties.hpp"
 
 Scene::Scene() : componentStorage_(std::make_unique<ComponentStorage>()) {}
 
@@ -48,6 +48,8 @@ std::string Scene::createCube(const _createCube_Options& options) {
     auto& mat = gameObj.add<Material>();
     mat.baseColor = options.color;
     mat.textureName = options.textureName;
+
+    gameObj.add<RenderProperties>();
     return objectName;
 }
 
@@ -65,6 +67,8 @@ std::string Scene::createMeshObject(const std::string& meshName, const _createMe
     auto& mat = gameObj.add<Material>();
     mat.baseColor = options.color;
     mat.textureName = options.textureName;
+
+    gameObj.add<RenderProperties>();
     return objectName;
 }
 

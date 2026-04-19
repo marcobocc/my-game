@@ -7,6 +7,7 @@
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Material.hpp"
 #include "core/objects/components/Mesh.hpp"
+#include "core/objects/components/RenderProperties.hpp"
 #include "core/objects/components/Transform.hpp"
 
 namespace detail {
@@ -82,4 +83,4 @@ namespace detail {
     };
 } // namespace detail
 
-using ComponentStorage = detail::ComponentStorage<Transform, Camera, Mesh, Material>;
+using ComponentStorage = detail::ComponentStorage<Transform, Camera, Mesh, Material, RenderProperties>;
