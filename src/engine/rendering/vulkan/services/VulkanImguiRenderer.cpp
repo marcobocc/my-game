@@ -17,6 +17,8 @@ VulkanImguiRenderer::VulkanImguiRenderer(const VulkanContext& vulkanContext,
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui_ImplGlfw_InitForVulkan(window, true);
 
     ImGui_ImplVulkan_InitInfo initInfo = {};
