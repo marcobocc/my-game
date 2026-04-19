@@ -1,18 +1,18 @@
-#include "rendering/vulkan/services/VulkanImguiRenderer.hpp"
+#include "rendering/vulkan/services/renderers/VulkanImguiRenderer.hpp"
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <iostream>
 #include <volk.h>
+#include "../VulkanSwapchainManager.hpp"
 
 VulkanImguiRenderer::VulkanImguiRenderer(const VulkanContext& vulkanContext,
-                                         VulkanSwapchain& swapchain,
-                                         uint32_t imageCount,
+                                         VulkanSwapchainManager& swapchainManager,
                                          GLFWwindow* window,
-                                         UserInterface* userInterface) :
-    swapchain_(swapchain),
-    swapchainImageFormat_(swapchain.getSwapchainImageFormat()),
+                                         UserInterface& userInterface) :
+    swapchainManager_(swapchainManager),
+    swapchainImageFormat_(swapchainManager.swapchain().swapchainImageFormat),
     userInterface_(userInterface) {
 
     IMGUI_CHECKVERSION();
@@ -23,13 +23,13 @@ VulkanImguiRenderer::VulkanImguiRenderer(const VulkanContext& vulkanContext,
 
     ImGui_ImplVulkan_InitInfo initInfo = {};
     initInfo.ApiVersion = VK_API_VERSION_1_3;
-    initInfo.Instance = vulkanContext.getVkInstance();
-    initInfo.PhysicalDevice = vulkanContext.getVkPhysicalDevice();
-    initInfo.Device = vulkanContext.getVkDevice();
-    initInfo.Queue = vulkanContext.getVkGraphicsQueue();
-    initInfo.DescriptorPool = vulkanContext.getVkDescriptorPool();
-    initInfo.MinImageCount = imageCount;
-    initInfo.ImageCount = imageCount;
+    initInfo.Instance = vulkanContext.instance;
+    initInfo.PhysicalDevice = vulkanContext.physicalDevice;
+    initInfo.Device = vulkanContext.device;
+    initInfo.Queue = vulkanContext.graphicsQueue;
+    initInfo.DescriptorPool = vulkanContext.descriptorPool;
+    initInfo.MinImageCount = static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size());
+    initInfo.ImageCount = static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size());
     initInfo.UseDynamicRendering = true;
     initInfo.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
     initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
@@ -49,7 +49,7 @@ void VulkanImguiRenderer::recordUIPass(VkCommandBuffer cmd, uint32_t imageIndex)
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    for (const auto& widget: userInterface_->widgets())
+    for (const auto& widget: userInterface_.widgets())
         widget->draw();
     ImGui::Render();
     if (ImDrawData* drawData = ImGui::GetDrawData()) {
@@ -61,7 +61,7 @@ void VulkanImguiRenderer::recordUIPass(VkCommandBuffer cmd, uint32_t imageIndex)
 void VulkanImguiRenderer::beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const {
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    colorAttachment.imageView = swapchain_.getVkImageView(imageIndex);
+    colorAttachment.imageView = swapchainManager_.swapchain().swapchainImageViews[imageIndex];
     colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -71,7 +71,7 @@ void VulkanImguiRenderer::beginRendering(VkCommandBuffer cmd, uint32_t imageInde
     VkRenderingInfo renderInfo{};
     renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
     renderInfo.renderArea.offset = {0, 0};
-    renderInfo.renderArea.extent = swapchain_.getVkExtent();
+    renderInfo.renderArea.extent = swapchainManager_.swapchain().swapchainExtent;
     renderInfo.layerCount = 1;
     renderInfo.colorAttachmentCount = 1;
     renderInfo.pColorAttachments = &colorAttachment;

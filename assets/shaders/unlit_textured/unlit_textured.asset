@@ -1,7 +1,7 @@
 {
-  "name": "solid_textured",
+  "name": "unlit_textured",
   "type": "shader",
-  "vertexShader": "solid_textured.vert.spv",
-  "fragmentShader": "solid_textured.frag.spv"
+  "vertexShader": "unlit_textured.vert.spv",
+  "fragmentShader": "unlit_textured.frag.spv"
 }
 

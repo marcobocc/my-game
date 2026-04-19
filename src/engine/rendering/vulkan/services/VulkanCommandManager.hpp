@@ -2,7 +2,8 @@
 
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "rendering/vulkan/raii_wrappers/VulkanContext.hpp"
+#include "../core/structs.hpp"
+#include "VulkanSwapchainManager.hpp"
 
 class VulkanCommandManager {
 public:
@@ -12,7 +13,7 @@ public:
     VulkanCommandManager& operator=(VulkanCommandManager&&) = delete;
 
     ~VulkanCommandManager();
-    explicit VulkanCommandManager(const VulkanContext& vulkanContext, size_t maxFramesInFlight);
+    explicit VulkanCommandManager(const VulkanContext& vulkanContext, const VulkanSwapchainManager& swapchainManager);
     void beginFrame();
     void endFrame();
     VkCommandBuffer allocateCommandBuffer(VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);

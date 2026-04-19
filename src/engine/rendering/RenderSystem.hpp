@@ -6,7 +6,7 @@
 #include "core/objects/components/RenderProperties.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "core/scene/Scene.hpp"
-#include "rendering/vulkan/VulkanGraphicsBackend.hpp"
+#include "vulkan/services/VulkanGraphicsBackend.hpp"
 
 class RenderSystem {
 public:

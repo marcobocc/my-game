@@ -14,7 +14,7 @@ GameEngine::GameEngine(unsigned int windowWidth,
 GameEngine::~GameEngine() {
     inputSystem_.reset();
     renderSystem_.reset();
-    graphicsBackend_.reset();
+    vulkanWiringContainer_.reset();
     scene_.reset();
 
     if (window_) {
@@ -46,8 +46,8 @@ void GameEngine::initialize(unsigned int windowWidth,
     assetCache_ = std::make_unique<AssetCache>();
     assetManager_ = std::make_unique<AssetManager>(*assetCache_, assetsPath);
     scene_ = std::make_unique<Scene>();
-    graphicsBackend_ = std::make_unique<VulkanGraphicsBackend>(*assetManager_, window_, userInterface_.get());
-    renderSystem_ = std::make_unique<RenderSystem>(*graphicsBackend_);
+    vulkanWiringContainer_ = std::make_unique<VulkanWiringContainer>(window_, *assetManager_, *userInterface_);
+    renderSystem_ = std::make_unique<RenderSystem>(vulkanWiringContainer_->graphicsBackend());
     inputSystem_ = std::make_unique<InputSystem>(window_);
     lastFrameTime_ = glfwGetTime();
 }
@@ -60,10 +60,7 @@ void GameEngine::framebufferResizeCallback(GLFWwindow* window, int width, int he
 
 void GameEngine::handleResize() {
     if (framebufferResized_) {
-        // Recreate swapchain and any dependent resources
-        if (graphicsBackend_) {
-            graphicsBackend_->recreateSwapchain();
-        }
+        vulkanWiringContainer_->graphicsBackend().recreateSwapchain();
         framebufferResized_ = false;
     }
 }

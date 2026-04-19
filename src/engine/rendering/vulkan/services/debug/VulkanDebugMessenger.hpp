@@ -2,7 +2,7 @@
 
 #include <log4cxx/logger.h>
 #include <vulkan/vulkan.h>
-#include "rendering/vulkan/raii_wrappers/VulkanContext.hpp"
+#include "../../core/structs.hpp"
 
 class VulkanDebugMessenger {
 public:

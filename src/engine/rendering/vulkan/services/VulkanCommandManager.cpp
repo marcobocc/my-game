@@ -1,14 +1,15 @@
 #include "rendering/vulkan/services/VulkanCommandManager.hpp"
 #include <array>
 #include <volk.h>
-#include "rendering/vulkan/VulkanErrorHandling.hpp"
+#include "../core/error_handling.hpp"
 
-VulkanCommandManager::VulkanCommandManager(const VulkanContext& vulkanContext, size_t maxFramesInFlight) :
-    device_(vulkanContext.getVkDevice()),
-    graphicsQueueFamilyIndex_(vulkanContext.getGraphicsQueueFamilyIndex()),
-    graphicsQueue_(vulkanContext.getVkGraphicsQueue()),
-    frames_(maxFramesInFlight),
-    maxFramesInFlight_(maxFramesInFlight) {
+VulkanCommandManager::VulkanCommandManager(const VulkanContext& vulkanContext,
+                                           const VulkanSwapchainManager& swapchainManager) :
+    device_(vulkanContext.device),
+    graphicsQueueFamilyIndex_(vulkanContext.graphicsQueueFamilyIndex),
+    graphicsQueue_(vulkanContext.graphicsQueue),
+    frames_(swapchainManager.swapchain().swapchainImages.size()),
+    maxFramesInFlight_(swapchainManager.swapchain().swapchainImages.size()) {
     createCommandPools();
     createFences();
 }

@@ -1,13 +1,12 @@
-#include "rendering/vulkan/raii_wrappers/VulkanDebugMessenger.hpp"
+#include "VulkanDebugMessenger.hpp"
 #include <volk.h>
-#include "rendering/vulkan/VulkanErrorHandling.hpp"
+#include "../../core/error_handling.hpp"
 
 VulkanDebugMessenger::~VulkanDebugMessenger() {
     if (debugMessenger_ != VK_NULL_HANDLE) vkDestroyDebugUtilsMessengerEXT(instance_, debugMessenger_, nullptr);
 }
 
-VulkanDebugMessenger::VulkanDebugMessenger(const VulkanContext& vulkanContext) :
-    instance_(vulkanContext.getVkInstance()) {
+VulkanDebugMessenger::VulkanDebugMessenger(const VulkanContext& vulkanContext) : instance_(vulkanContext.instance) {
     VkDebugUtilsMessengerCreateInfoEXT info{};
     info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -43,7 +42,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugMessenger::debugCallback(VkDebugUtilsM
     if (type & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) typeStr += "VALIDATION ";
     if (type & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) typeStr += "PERFORMANCE ";
 
-    const char* msg = (data && data->pMessage) ? data->pMessage : "<no message>";
+    const char* msg = data && data->pMessage ? data->pMessage : "<no message>";
     std::string message = "[Vulkan][" + severityStr + "] [" + typeStr + "] " + msg;
 
     if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)

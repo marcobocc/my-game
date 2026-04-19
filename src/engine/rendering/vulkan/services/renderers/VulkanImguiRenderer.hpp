@@ -1,25 +1,25 @@
 #pragma once
 #include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
+#include "../../core/structs.hpp"
 #include "core/ui/UserInterface.hpp"
-#include "rendering/vulkan/raii_wrappers/VulkanContext.hpp"
-#include "rendering/vulkan/raii_wrappers/VulkanSwapchain.hpp"
+
+class VulkanSwapchainManager;
 
 class VulkanImguiRenderer {
 public:
     VulkanImguiRenderer(const VulkanContext& vulkanContext,
-                        VulkanSwapchain& swapchain,
-                        uint32_t imageCount,
+                        VulkanSwapchainManager& swapchainManager,
                         GLFWwindow* window,
-                        UserInterface* userInterface);
+                        UserInterface& userInterface);
     ~VulkanImguiRenderer();
 
     void recordUIPass(VkCommandBuffer cmd, uint32_t imageIndex);
 
 private:
-    VulkanSwapchain& swapchain_;
+    VulkanSwapchainManager& swapchainManager_;
     VkFormat swapchainImageFormat_ = VK_FORMAT_UNDEFINED;
-    UserInterface* userInterface_;
+    UserInterface& userInterface_;
 
     void beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const;
     void endRendering(VkCommandBuffer cmd);

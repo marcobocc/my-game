@@ -3,8 +3,9 @@
 #include <functional>
 #include <memory>
 #include "core/input/InputSystem.hpp"
+#include "core/ui/UserInterface.hpp"
 #include "rendering/RenderSystem.hpp"
-#include "rendering/vulkan/VulkanGraphicsBackend.hpp"
+#include "rendering/vulkan/VulkanWiringContainer.hpp"
 #include "scene/Scene.hpp"
 
 class GameEngine {
@@ -41,7 +42,7 @@ private:
 
     GLFWwindow* window_;
     std::unique_ptr<UserInterface> userInterface_;
-    std::unique_ptr<VulkanGraphicsBackend> graphicsBackend_;
+    std::unique_ptr<VulkanWiringContainer> vulkanWiringContainer_;
     std::unique_ptr<RenderSystem> renderSystem_;
     std::unique_ptr<InputSystem> inputSystem_;
     std::unique_ptr<Scene> scene_;
