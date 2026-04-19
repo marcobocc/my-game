@@ -40,7 +40,8 @@ void GameEngine::initialize(unsigned int windowWidth,
     }
 
     userInterface_ = std::make_unique<UserInterface>();
-    assetManager_ = std::make_unique<AssetManager>(assetsPath);
+    assetCache_ = std::make_unique<AssetCache>();
+    assetManager_ = std::make_unique<AssetManager>(*assetCache_, assetsPath);
     scene_ = std::make_unique<Scene>();
     graphicsBackend_ = std::make_unique<VulkanGraphicsBackend>(window_, userInterface_.get());
     renderSystem_ = std::make_unique<RenderSystem>(*assetManager_, *graphicsBackend_);

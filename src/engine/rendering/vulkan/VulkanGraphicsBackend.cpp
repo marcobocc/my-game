@@ -18,7 +18,7 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GLFWwindow* window, UserInterface* 
 
 void VulkanGraphicsBackend::draw(const MeshData* mesh,
                                  const Material* material,
-                                 const ShaderPipeline* shaderPipeline,
+                                 const Shader* shaderPipeline,
                                  const glm::mat4& modelMatrix) {
     drawQueue_.push_back({mesh, material, shaderPipeline, modelMatrix});
 }

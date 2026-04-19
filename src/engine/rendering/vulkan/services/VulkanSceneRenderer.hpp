@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "core/assets/types/MeshData.hpp"
-#include "core/assets/types/ShaderPipeline.hpp"
+#include "assets/types/mesh/MeshData.hpp"
+#include "assets/types/shader/Shader.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Material.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanBuffer.hpp"
@@ -15,7 +15,7 @@
 struct DrawCall {
     const MeshData* mesh;
     const Material* material;
-    const ShaderPipeline* shaderPipeline;
+    const Shader* shaderPipeline;
     const glm::mat4 modelMatrix;
 };
 

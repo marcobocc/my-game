@@ -1,0 +1,6 @@
+{
+  "name": "solid_coloring",
+  "type": "shader",
+  "vertexShader": "solid_coloring.vert.spv",
+  "fragmentShader": "solid_coloring.frag.spv"
+}

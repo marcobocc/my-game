@@ -1,5 +1,5 @@
 #pragma once
-#include "core/assets/AssetManager.hpp"
+#include "assets/AssetManager.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Material.hpp"
 #include "core/objects/components/Mesh.hpp"
@@ -15,10 +15,10 @@ public:
 
     void update(const Scene& scene) {
         auto drawables = scene.getObjectsWith<Mesh, Material, Transform>();
-        for (auto& [entity, meshRef, material, transform]: drawables) {
-            auto meshPtr = asset_manager_.getMesh(meshRef.name);
-            auto shaderPipeline = asset_manager_.getShader(material.shaderName);
-            backend_.draw(meshPtr, &material, shaderPipeline, transform.getModelMatrix());
+        for (auto& [entity, mesh, material, transform]: drawables) {
+            auto meshAsset = asset_manager_.get<MeshData>(mesh.name);
+            auto shaderAsset = asset_manager_.get<Shader>(material.shaderName);
+            backend_.draw(meshAsset, &material, shaderAsset, transform.getModelMatrix());
         }
 
         auto cameras = scene.getObjectsWith<Camera>();

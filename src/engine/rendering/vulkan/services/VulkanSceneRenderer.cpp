@@ -93,29 +93,29 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
     const auto& modelMatrix = drawCall.modelMatrix;
 
     VulkanBuffer* vertexBuffer =
-            vertexBufferCache_.createOrGet(mesh.name,
+            vertexBufferCache_.createOrGet(mesh.getName(),
                                            device_,
                                            physicalDevice_,
-                                           mesh.vertices.size() * sizeof(float),
+                                           mesh.getVertices().size() * sizeof(float),
                                            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                           mesh.vertices.data());
+                                           mesh.getVertices().data());
 
     VulkanBuffer* indexBuffer = nullptr;
     if (mesh.hasIndices()) {
-        indexBuffer = vertexBufferCache_.createOrGet(mesh.name + "_indices",
+        indexBuffer = vertexBufferCache_.createOrGet(mesh.getName() + "_indices",
                                                      device_,
                                                      physicalDevice_,
-                                                     mesh.indices.size() * sizeof(uint32_t),
+                                                     mesh.getIndices().size() * sizeof(uint32_t),
                                                      VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                                                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                                                              VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                                     mesh.indices.data());
+                                                     mesh.getIndices().data());
     }
 
     std::vector<VkVertexInputAttributeDescription> vkAttributes;
     uint32_t location = 0;
-    for (const auto& [offset, componentCount]: mesh.vertexAttributes) {
+    for (const auto& [offset, componentCount]: mesh.getVertexAttributes()) {
         VkFormat format = VK_FORMAT_UNDEFINED;
         if (componentCount == 2)
             format = VK_FORMAT_R32G32_SFLOAT;
@@ -134,7 +134,7 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
 
     VkVertexInputBindingDescription bindingDesc{};
     bindingDesc.binding = 0;
-    bindingDesc.stride = sizeof(float) * mesh.vertexStride;
+    bindingDesc.stride = sizeof(float) * mesh.getVertexStride();
     bindingDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -146,10 +146,10 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
 
     constexpr uint32_t pushConstantSize = sizeof(PushConstants);
 
-    auto* pipeline = pipelineCache_.createOrGet(shaderPipeline.name,
+    auto* pipeline = pipelineCache_.createOrGet(shaderPipeline.getName(),
                                                 device_,
-                                                shaderPipeline.vertexStage.bytecode,
-                                                shaderPipeline.fragmentStage.bytecode,
+                                                shaderPipeline.getVertexBytecode(),
+                                                shaderPipeline.getFragmentBytecode(),
                                                 vertexInputInfo,
                                                 pushConstantSize,
                                                 cameraUBO_.getDescriptorSetLayout(),
@@ -181,7 +181,7 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
     if (mesh.hasIndices() && indexBuffer != nullptr) {
         VkBuffer idxBuf = indexBuffer->getVkBuffer();
         vkCmdBindIndexBuffer(cmd, idxBuf, 0, VK_INDEX_TYPE_UINT32);
-        vkCmdDrawIndexed(cmd, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
+        vkCmdDrawIndexed(cmd, static_cast<uint32_t>(mesh.getIndices().size()), 1, 0, 0, 0);
     } else {
         vkCmdDraw(cmd, static_cast<uint32_t>(mesh.getVertexCount()), 1, 0, 0);
     }

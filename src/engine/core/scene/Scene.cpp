@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include "core/assets/PrefabNames.hpp"
+#include "assets/types/mesh/details/PrefabNames.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Material.hpp"
 #include "core/objects/components/Mesh.hpp"

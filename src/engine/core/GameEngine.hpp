@@ -2,7 +2,6 @@
 #include <GLFW/glfw3.h>
 #include <functional>
 #include <memory>
-#include "core/assets/AssetManager.hpp"
 #include "core/input/InputSystem.hpp"
 #include "rendering/RenderSystem.hpp"
 #include "rendering/vulkan/VulkanGraphicsBackend.hpp"
@@ -40,11 +39,12 @@ private:
 
     GLFWwindow* window_;
     std::unique_ptr<UserInterface> userInterface_;
-    std::unique_ptr<AssetManager> assetManager_;
     std::unique_ptr<VulkanGraphicsBackend> graphicsBackend_;
     std::unique_ptr<RenderSystem> renderSystem_;
     std::unique_ptr<InputSystem> inputSystem_;
     std::unique_ptr<Scene> scene_;
+    std::unique_ptr<AssetCache> assetCache_;
+    std::unique_ptr<AssetManager> assetManager_;
 
     GameLoopFunc updateFunction_;
     double lastFrameTime_;

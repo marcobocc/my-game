@@ -1,7 +1,7 @@
 #pragma once
 #include <GLFW/glfw3.h>
-#include "core/assets/types/MeshData.hpp"
-#include "core/assets/types/ShaderPipeline.hpp"
+#include "assets/types/mesh/MeshData.hpp"
+#include "assets/types/shader/Shader.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Material.hpp"
 #include "core/ui/UserInterface.hpp"
@@ -23,10 +23,8 @@ public:
     ~VulkanGraphicsBackend() = default;
     explicit VulkanGraphicsBackend(GLFWwindow* window, UserInterface* userInterface);
 
-    void draw(const MeshData* mesh,
-              const Material* material,
-              const ShaderPipeline* shaderPipeline,
-              const glm::mat4& modelMatrix);
+    void
+    draw(const MeshData* mesh, const Material* material, const Shader* shaderPipeline, const glm::mat4& modelMatrix);
 
     void renderFrame(const Camera& camera);
 
