@@ -22,6 +22,7 @@ target_link_libraries(GameEngineLib PUBLIC
     GPUOpen::VulkanMemoryAllocator
     imgui
     stb
+    nlohmann_json::nlohmann_json
 )
 
 # On macOS, link MoltenVK explicitly

@@ -26,6 +26,10 @@
     {
       "name": "fmt",
       "default-features": true
+    },
+    {
+      "name": "nlohmann-json",
+      "default-features": true
     }
   ]
 }
