@@ -8,8 +8,13 @@ public:
         name(std::move(name)) {}
 
     template<typename T>
-    T& add() const {
+    T& add() {
         return componentStorage_.addComponent<T>(name);
+    }
+
+    template<typename T>
+    T& get() const {
+        return componentStorage_.getComponent<T>(name);
     }
 
 private:
