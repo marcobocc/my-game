@@ -53,12 +53,9 @@ Vertices: A → C → B (clockwise)
 ### Build and Run
 
 ```bash
-# Build all demo examples
-python3 build.py
-
-# Build and run the rotating specific demo example
-python3 build.py <demo_example>
+# Build and run a specific target (optionally: skip linting)
+python3 build.py <target> [--no-lint]
 
 # Clean build artifacts
-python3 build.py --clean
+python3 build.py clean
 ```
