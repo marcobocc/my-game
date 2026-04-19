@@ -31,8 +31,9 @@ The type communicates the **main purpose** of the change. Must be one of the fol
 
 The scope is required for `feat`, `fix` and `refactor` and communicates the **main subsystem** affected. Must be one of the following:
 
-| Scope     | Description                                                                                                       |
-|-----------|-------------------------------------------------------------------------------------------------------------------|
-| core      | Changes to the game engine's core logic, such as the entity-component system, input system or resource management |
-| rendering | Changes involving the rendering system, Vulkan, and other graphics-related code                                   |
-| tools     | Changes to editors or other game development tools                                                                |
+| Scope     | Description                                                                                |
+|-----------|--------------------------------------------------------------------------------------------|
+| core      | Changes to the game engine's core logic, such as the entity-component system, input system |
+| assets    | Changes involving the assets management system, asset definitions and asset loading        |
+| rendering | Changes involving the rendering system, Vulkan, and other graphics-related code            |
+| tools     | Changes to editors or other game development tools                                         |
