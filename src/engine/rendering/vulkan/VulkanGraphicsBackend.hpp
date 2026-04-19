@@ -41,6 +41,8 @@ private:
     VulkanSwapchain swapchainManager_;
     VulkanResourceCache<VulkanBuffer> vertexBufferCache_;
     VulkanResourceCache<VulkanPipeline> pipelineCache_;
+    VulkanResourceCache<VulkanTexture> textureCache_;
+    VulkanTextureSet textureSet_;
     VulkanRenderer renderer_;
     std::vector<DrawCall> drawQueue_;
 };

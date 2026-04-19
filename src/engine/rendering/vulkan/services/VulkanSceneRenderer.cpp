@@ -3,21 +3,25 @@
 #include <volk.h>
 #include "assets/types/mesh/MeshData.hpp"
 #include "assets/types/shader/Shader.hpp"
-
+#include "assets/types/texture/Texture.hpp"
 
 VulkanSceneRenderer::VulkanSceneRenderer(const VulkanContext& vulkanContext,
                                          VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                                          VulkanResourceCache<VulkanPipeline>& pipelineCache,
+                                         VulkanResourceCache<VulkanTexture>& textureCache,
                                          VulkanSwapchain& swapchain,
                                          VulkanUBO& cameraUBO,
+                                         VulkanTextureSet* textureSet,
                                          AssetManager& assetManager) :
     device_(vulkanContext.getVkDevice()),
     physicalDevice_(vulkanContext.getVkPhysicalDevice()),
     vertexBufferCache_(vertexBufferCache),
     pipelineCache_(pipelineCache),
+    textureCache_(textureCache),
     swapchain_(swapchain),
     cameraUBO_(cameraUBO),
-    assetManager_(assetManager) {}
+    assetManager_(assetManager),
+    textureSet_(textureSet) {}
 
 void VulkanSceneRenderer::recordScenePass(VkCommandBuffer cmd,
                                           uint32_t imageIndex,
@@ -92,10 +96,13 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
     };
 
     // Fetch assets using AssetManager
-    const MeshData* meshAsset = assetManager_.get<MeshData>(drawCall.mesh.name);
-    const Shader* shaderAsset = assetManager_.get<Shader>(drawCall.material.shaderName);
+    const auto& mesh = drawCall.mesh;
     const auto& material = drawCall.material;
     const auto& modelMatrix = drawCall.transform.getModelMatrix();
+
+    const MeshData* meshAsset = assetManager_.get<MeshData>(mesh.name);
+    const Shader* shaderAsset = assetManager_.get<Shader>(material.shaderName);
+    const Texture* texture = assetManager_.get<Texture>(material.textureName);
 
     VulkanBuffer* vertexBuffer =
             vertexBufferCache_.createOrGet(meshAsset->getName(),
@@ -158,6 +165,7 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
                                                 vertexInputInfo,
                                                 pushConstantSize,
                                                 cameraUBO_.getDescriptorSetLayout(),
+                                                textureSet_->getLayout(),
                                                 swapchain_.getSwapchainImageFormat(),
                                                 swapchain_.getDepthFormat());
 
@@ -165,14 +173,43 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
 
     VkDescriptorSet cameraDescriptorSet = cameraUBO_.getDescriptorSet(currentFrame);
 
-    vkCmdBindDescriptorSets(cmd,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            pipeline->getVkPipelineLayout(),
-                            0,
-                            1,
-                            &cameraDescriptorSet,
-                            0,
-                            nullptr);
+    VkDescriptorSet textureSet = VK_NULL_HANDLE;
+    if (!material.textureName.empty() && texture) {
+        auto it = textureDescriptorSets_.find(material.textureName);
+        if (it == textureDescriptorSets_.end()) {
+            VulkanTexture* tex = textureCache_.createOrGet(
+                    material.textureName,
+                    device_,
+                    physicalDevice_,
+                    static_cast<uint32_t>(texture->getWidth()),
+                    static_cast<uint32_t>(texture->getHeight()),
+                    std::vector<unsigned char>(texture->getImageData(),
+                                               texture->getImageData() +
+                                                       texture->getWidth() * texture->getHeight() * 4));
+            if (tex && tex->imageView != VK_NULL_HANDLE && tex->sampler != VK_NULL_HANDLE) {
+                if (textureSet_ != nullptr) {
+                    textureSet = textureSet_->allocateSet();
+                    textureSet_->updateSet(textureSet, tex->imageView, tex->sampler);
+                    textureDescriptorSets_[material.textureName] = textureSet;
+                } else {
+                    fprintf(stderr,
+                            "[Vulkan] Error: textureSet_ is null. Cannot allocate texture set for '%s'.\n",
+                            material.textureName.c_str());
+                }
+            }
+        } else {
+            textureSet = it->second;
+        }
+    }
+    if (textureSet == VK_NULL_HANDLE) {
+        fprintf(stderr,
+                "[Vulkan] Warning: No valid texture descriptor set available for object '%s'. Skipping draw.\n",
+                drawCall.mesh.name.c_str());
+        return;
+    }
+    VkDescriptorSet sets[2] = {cameraDescriptorSet, textureSet};
+    vkCmdBindDescriptorSets(
+            cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getVkPipelineLayout(), 0, 2, sets, 0, nullptr);
 
     VkBuffer buf = vertexBuffer->getVkBuffer();
     std::array<VkDeviceSize, 1> offsets = {};

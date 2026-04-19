@@ -18,6 +18,7 @@ public:
                    const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
                    uint32_t pushConstantSize,
                    VkDescriptorSetLayout cameraDescriptorSetLayout = VK_NULL_HANDLE,
+                   VkDescriptorSetLayout textureDescriptorSetLayout = VK_NULL_HANDLE,
                    VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
                    VkFormat depthFormat = VK_FORMAT_D32_SFLOAT);
 
@@ -34,7 +35,9 @@ private:
     VkFormat depthFormat_ = VK_FORMAT_D32_SFLOAT;
 
     void cleanup();
-    void createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout, uint32_t pushConstantSize);
+    void createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout,
+                              VkDescriptorSetLayout textureDescriptorSetLayout,
+                              uint32_t pushConstantSize);
     std::array<VkPipelineShaderStageCreateInfo, 2> createShaderStages(const std::vector<char>& vertBytecode,
                                                                       const std::vector<char>& fragBytecode);
     void createGraphicsPipeline(const std::array<VkPipelineShaderStageCreateInfo, 2>& shaderStages,

@@ -28,6 +28,7 @@ public:
         glm::vec3 position{0.0f, 0.0f, 0.0f};
         glm::vec3 scale{1.0f, 1.0f, 1.0f};
         glm::vec4 color{1.0f, 1.0f, 1.0f, 1.0f};
+        std::string textureName{"white1x1"};
     };
     std::string createCube(const _createCube_Options& options);
 
@@ -38,6 +39,7 @@ public:
         glm::vec3 position{0.0f, 0.0f, 0.0f};
         glm::vec3 scale{1.0f, 1.0f, 1.0f};
         glm::vec4 color{1.0f, 1.0f, 1.0f, 1.0f};
+        std::string textureName{"white1x1"};
     };
     std::string createMeshObject(const std::string& meshName, const _createMeshObject_Options& options);
 

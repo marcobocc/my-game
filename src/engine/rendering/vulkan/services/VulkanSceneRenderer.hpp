@@ -1,4 +1,5 @@
 #pragma once
+#include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "assets/AssetManager.hpp"
@@ -9,6 +10,8 @@
 #include "rendering/vulkan/raii_wrappers/VulkanContext.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanSwapchain.hpp"
+#include "rendering/vulkan/raii_wrappers/VulkanTexture.hpp"
+#include "rendering/vulkan/raii_wrappers/VulkanTextureSet.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanUBO.hpp"
 #include "rendering/vulkan/services/VulkanResourceCache.hpp"
 
@@ -23,8 +26,10 @@ public:
     VulkanSceneRenderer(const VulkanContext& vulkanContext,
                         VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                         VulkanResourceCache<VulkanPipeline>& pipelineCache,
+                        VulkanResourceCache<VulkanTexture>& textureCache,
                         VulkanSwapchain& swapchain,
                         VulkanUBO& cameraUBO,
+                        VulkanTextureSet* textureSet,
                         AssetManager& assetManager);
 
     void recordScenePass(VkCommandBuffer cmd,
@@ -42,7 +47,10 @@ private:
     VkPhysicalDevice physicalDevice_;
     VulkanResourceCache<VulkanBuffer>& vertexBufferCache_;
     VulkanResourceCache<VulkanPipeline>& pipelineCache_;
+    VulkanResourceCache<VulkanTexture>& textureCache_;
     VulkanSwapchain& swapchain_;
     VulkanUBO& cameraUBO_;
     AssetManager& assetManager_;
+    VulkanTextureSet* textureSet_ = nullptr;
+    std::unordered_map<std::string, VkDescriptorSet> textureDescriptorSets_;
 };

@@ -3,6 +3,7 @@
 #include <string>
 
 struct Material {
-    std::string shaderName{"solid_coloring"};
+    std::string shaderName{"solid_textured"};
     glm::vec4 baseColor{1.0f, 1.0f, 1.0f, 1.0f};
+    std::string textureName{"checkers"};
 };

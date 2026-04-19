@@ -10,6 +10,7 @@
 #include "rendering/vulkan/raii_wrappers/VulkanContext.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanPipeline.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanSwapchain.hpp"
+#include "rendering/vulkan/raii_wrappers/VulkanTexture.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanUBO.hpp"
 #include "rendering/vulkan/services/VulkanCommandManager.hpp"
 #include "rendering/vulkan/services/VulkanImguiRenderer.hpp"
@@ -30,9 +31,11 @@ public:
                    size_t swapchainImageCount,
                    VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                    VulkanResourceCache<VulkanPipeline>& pipelineCache,
+                   VulkanResourceCache<VulkanTexture>& textureCache,
                    VulkanSwapchain& swapchain,
                    GLFWwindow* window,
                    UserInterface* userInterface,
+                   VulkanTextureSet* textureSet,
                    AssetManager& assetManager);
 
     bool renderFrame(size_t& currentFrame,
@@ -78,8 +81,10 @@ private:
     VulkanUBO cameraUBO_;
     VulkanResourceCache<VulkanBuffer>& vertexBufferCache_;
     VulkanResourceCache<VulkanPipeline>& pipelineCache_;
+    VulkanResourceCache<VulkanTexture>& textureCache_;
     VulkanSwapchain& swapchainManager_;
     VulkanSceneRenderer sceneRenderer_;
     AssetManager& assetManager_;
     VulkanImguiRenderer imguiRenderer_;
+    VulkanTextureSet* textureSet_;
 };

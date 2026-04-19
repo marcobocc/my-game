@@ -4,6 +4,7 @@
 #include "rendering/vulkan/VulkanErrorHandling.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanBuffer.hpp"
 #include "rendering/vulkan/raii_wrappers/VulkanSwapchain.hpp"
+#include "rendering/vulkan/raii_wrappers/VulkanTexture.hpp"
 #include "rendering/vulkan/services/VulkanImguiRenderer.hpp"
 #include "rendering/vulkan/services/VulkanSceneRenderer.hpp"
 
@@ -16,9 +17,11 @@ VulkanRenderer::VulkanRenderer(const VulkanContext& vulkanContext,
                                size_t swapchainImageCount,
                                VulkanResourceCache<VulkanBuffer>& vertexBufferCache,
                                VulkanResourceCache<VulkanPipeline>& pipelineCache,
+                               VulkanResourceCache<VulkanTexture>& textureCache,
                                VulkanSwapchain& swapchain,
                                GLFWwindow* window,
                                UserInterface* userInterface,
+                               VulkanTextureSet* textureSet,
                                AssetManager& assetManager) :
     device_(vulkanContext.getVkDevice()),
     physicalDevice_(vulkanContext.getVkPhysicalDevice()),
@@ -26,10 +29,19 @@ VulkanRenderer::VulkanRenderer(const VulkanContext& vulkanContext,
     cameraUBO_(vulkanContext, sizeof(CameraUBO)),
     vertexBufferCache_(vertexBufferCache),
     pipelineCache_(pipelineCache),
+    textureCache_(textureCache),
     swapchainManager_(swapchain),
-    sceneRenderer_(vulkanContext, vertexBufferCache_, pipelineCache_, swapchainManager_, cameraUBO_, assetManager),
+    sceneRenderer_(vulkanContext,
+                   vertexBufferCache_,
+                   pipelineCache_,
+                   textureCache,
+                   swapchainManager_,
+                   cameraUBO_,
+                   textureSet,
+                   assetManager),
     assetManager_(assetManager),
-    imguiRenderer_(vulkanContext, swapchain, swapchainImageCount, window, userInterface) {
+    imguiRenderer_(vulkanContext, swapchain, swapchainImageCount, window, userInterface),
+    textureSet_(textureSet) {
     createSynchronizationObjects();
 }
 

@@ -45,8 +45,9 @@ std::string Scene::createCube(const _createCube_Options& options) {
     auto& [name] = gameObj.add<Mesh>();
     name = PRIMITIVE_GEOMETRY_CUBE;
 
-    auto& [shaderName, baseColor] = gameObj.add<Material>();
-    baseColor = options.color;
+    auto& mat = gameObj.add<Material>();
+    mat.baseColor = options.color;
+    mat.textureName = options.textureName;
     return objectName;
 }
 
@@ -61,8 +62,9 @@ std::string Scene::createMeshObject(const std::string& meshName, const _createMe
     auto& [name] = gameObj.add<Mesh>();
     name = meshName;
 
-    auto& [shaderName, baseColor] = gameObj.add<Material>();
-    baseColor = options.color;
+    auto& mat = gameObj.add<Material>();
+    mat.baseColor = options.color;
+    mat.textureName = options.textureName;
     return objectName;
 }
 

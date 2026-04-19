@@ -34,6 +34,7 @@ VulkanPipeline::VulkanPipeline(VkDevice device,
                                const VkPipelineVertexInputStateCreateInfo& vertexInputInfo,
                                uint32_t pushConstantSize,
                                VkDescriptorSetLayout cameraDescriptorSetLayout,
+                               VkDescriptorSetLayout textureDescriptorSetLayout,
                                VkFormat colorFormat,
                                VkFormat depthFormat) :
     device_(device),
@@ -41,7 +42,7 @@ VulkanPipeline::VulkanPipeline(VkDevice device,
     colorFormat_(colorFormat),
     depthFormat_(depthFormat) {
     auto shaderStages = createShaderStages(vertBytecode, fragBytecode);
-    createPipelineLayout(cameraDescriptorSetLayout, pushConstantSize_);
+    createPipelineLayout(cameraDescriptorSetLayout, textureDescriptorSetLayout, pushConstantSize_);
     createGraphicsPipeline(shaderStages, vertexInputInfo);
     destroyShaderModules();
 }
@@ -56,16 +57,18 @@ void VulkanPipeline::cleanup() {
     destroyShaderModules();
 }
 
-void VulkanPipeline::createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout, uint32_t pushConstantSize) {
+void VulkanPipeline::createPipelineLayout(VkDescriptorSetLayout cameraDescriptorSetLayout,
+                                          VkDescriptorSetLayout textureDescriptorSetLayout,
+                                          uint32_t pushConstantSize) {
+    VkDescriptorSetLayout setLayouts[2];
+    uint32_t setLayoutCount = 0;
+    if (cameraDescriptorSetLayout != VK_NULL_HANDLE) setLayouts[setLayoutCount++] = cameraDescriptorSetLayout;
+    if (textureDescriptorSetLayout != VK_NULL_HANDLE) setLayouts[setLayoutCount++] = textureDescriptorSetLayout;
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    if (cameraDescriptorSetLayout != VK_NULL_HANDLE) {
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &cameraDescriptorSetLayout;
-    } else {
-        pipelineLayoutInfo.setLayoutCount = 0;
-        pipelineLayoutInfo.pSetLayouts = nullptr;
-    }
+    pipelineLayoutInfo.setLayoutCount = setLayoutCount;
+    pipelineLayoutInfo.pSetLayouts = setLayoutCount > 0 ? setLayouts : nullptr;
 
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;

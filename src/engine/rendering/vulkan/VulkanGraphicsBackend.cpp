@@ -9,14 +9,17 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(AssetManager& assetManager,
     debugMessenger_(vulkanContext_),
     commandManager_(vulkanContext_, VulkanRenderer::MAX_FRAMES_IN_FLIGHT),
     swapchainManager_(window_, vulkanContext_),
+    textureSet_(vulkanContext_.getVkDevice(), vulkanContext_.getVkDescriptorPool()),
     renderer_(vulkanContext_,
               swapchainManager_.getImageCount(),
               vertexBufferCache_,
               pipelineCache_,
+              textureCache_,
               swapchainManager_,
               window_,
               userInterface,
-              assetManager_) {
+              &textureSet_,
+              assetManager) {
     if (!window) throw std::runtime_error("Window pointer is null");
 }
 
