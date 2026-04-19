@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/gtc/matrix_transform.hpp>
+#include "InspectorSidePanel.hpp"
 #include "core/GameEngine.hpp"
 #include "core/objects/components/Transform.hpp"
 
@@ -9,6 +10,7 @@ public:
         engine_(windowWidth, windowHeight, "Object Viewer", assetsPath),
         scene_(engine_.getScene()) {
         setupScene();
+        engine_.getUserInterface().emplace<InspectorSidePanel>(&objectId_, &scene_);
     }
 
     void run() {
