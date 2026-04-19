@@ -1,5 +1,6 @@
 #include "rendering/vulkan/VulkanGraphicsBackend.hpp"
 #include <stdexcept>
+#include <volk.h>
 
 VulkanGraphicsBackend::VulkanGraphicsBackend(AssetManager& assetManager,
                                              GLFWwindow* window,
@@ -10,17 +11,22 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(AssetManager& assetManager,
     commandManager_(vulkanContext_, VulkanRenderer::MAX_FRAMES_IN_FLIGHT),
     swapchainManager_(window_, vulkanContext_),
     textureSet_(vulkanContext_.getVkDevice(), vulkanContext_.getVkDescriptorPool()),
-    renderer_(vulkanContext_,
-              swapchainManager_.getImageCount(),
-              vertexBufferCache_,
-              pipelineCache_,
-              textureCache_,
-              swapchainManager_,
-              window_,
-              userInterface,
-              &textureSet_,
-              assetManager) {
+    renderer_(std::make_unique<VulkanRenderer>(vulkanContext_,
+                                               swapchainManager_.getImageCount(),
+                                               vertexBufferCache_,
+                                               pipelineCache_,
+                                               textureCache_,
+                                               swapchainManager_,
+                                               window_,
+                                               userInterface,
+                                               &textureSet_,
+                                               assetManager)),
+    userInterface_(userInterface) {
     if (!window) throw std::runtime_error("Window pointer is null");
+}
+
+VulkanGraphicsBackend::~VulkanGraphicsBackend() {
+    renderer_.reset();
 }
 
 void VulkanGraphicsBackend::draw(const Mesh& mesh, const Material& material, const Transform& transform) {
@@ -28,12 +34,28 @@ void VulkanGraphicsBackend::draw(const Mesh& mesh, const Material& material, con
 }
 
 void VulkanGraphicsBackend::renderFrame(const Camera& camera) {
-    if (renderer_.renderFrame(currentFrame_,
-                              commandManager_,
-                              swapchainManager_,
-                              vulkanContext_.getVkGraphicsQueue(),
-                              drawQueue_,
-                              camera)) {
+    if (renderer_->renderFrame(currentFrame_,
+                               commandManager_,
+                               swapchainManager_,
+                               vulkanContext_.getVkGraphicsQueue(),
+                               drawQueue_,
+                               camera)) {
         drawQueue_.clear();
     }
+}
+
+void VulkanGraphicsBackend::recreateSwapchain() {
+    vkDeviceWaitIdle(vulkanContext_.getVkDevice());
+    swapchainManager_.recreate();
+    renderer_.reset();
+    renderer_ = std::make_unique<VulkanRenderer>(vulkanContext_,
+                                                 swapchainManager_.getImageCount(),
+                                                 vertexBufferCache_,
+                                                 pipelineCache_,
+                                                 textureCache_,
+                                                 swapchainManager_,
+                                                 window_,
+                                                 userInterface_,
+                                                 &textureSet_,
+                                                 assetManager_);
 }

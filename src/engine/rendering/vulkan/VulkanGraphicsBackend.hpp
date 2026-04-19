@@ -21,12 +21,14 @@ public:
     VulkanGraphicsBackend(VulkanGraphicsBackend&&) = delete;
     VulkanGraphicsBackend& operator=(VulkanGraphicsBackend&&) = delete;
 
-    ~VulkanGraphicsBackend() = default;
+    ~VulkanGraphicsBackend();
     VulkanGraphicsBackend(AssetManager& assetManager, GLFWwindow* window, UserInterface* userInterface);
 
     void draw(const Mesh& mesh, const Material& material, const Transform& transform);
 
     void renderFrame(const Camera& camera);
+
+    void recreateSwapchain();
 
 
 private:
@@ -43,6 +45,7 @@ private:
     VulkanResourceCache<VulkanPipeline> pipelineCache_;
     VulkanResourceCache<VulkanTexture> textureCache_;
     VulkanTextureSet textureSet_;
-    VulkanRenderer renderer_;
+    std::unique_ptr<VulkanRenderer> renderer_;
     std::vector<DrawCall> drawQueue_;
+    UserInterface* userInterface_ = nullptr;
 };

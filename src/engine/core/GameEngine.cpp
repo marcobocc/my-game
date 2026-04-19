@@ -39,6 +39,9 @@ void GameEngine::initialize(unsigned int windowWidth,
         throw std::runtime_error("Failed to create GLFW window");
     }
 
+    glfwSetWindowUserPointer(window_, this);
+    glfwSetFramebufferSizeCallback(window_, framebufferResizeCallback);
+
     userInterface_ = std::make_unique<UserInterface>();
     assetCache_ = std::make_unique<AssetCache>();
     assetManager_ = std::make_unique<AssetManager>(*assetCache_, assetsPath);
@@ -49,6 +52,21 @@ void GameEngine::initialize(unsigned int windowWidth,
     lastFrameTime_ = glfwGetTime();
 }
 
+void GameEngine::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    if (auto engine = static_cast<GameEngine*>(glfwGetWindowUserPointer(window))) {
+        engine->framebufferResized_ = true;
+    }
+}
+
+void GameEngine::handleResize() {
+    if (framebufferResized_) {
+        // Recreate swapchain and any dependent resources
+        if (graphicsBackend_) {
+            graphicsBackend_->recreateSwapchain();
+        }
+        framebufferResized_ = false;
+    }
+}
 
 void GameEngine::run(const GameLoopFunc& gameLoopFunc) {
     while (!shouldClose()) {
@@ -58,6 +76,8 @@ void GameEngine::run(const GameLoopFunc& gameLoopFunc) {
 
         glfwPollEvents();
         inputSystem_->update();
+
+        handleResize();
 
         gameLoopFunc(deltaTime);
         renderSystem_->update(*scene_);

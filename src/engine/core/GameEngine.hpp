@@ -36,6 +36,8 @@ private:
                     const char* windowTitle,
                     const std::filesystem::path& assetsPath);
     bool shouldClose() const;
+    void handleResize();
+    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     GLFWwindow* window_;
     std::unique_ptr<UserInterface> userInterface_;
@@ -48,4 +50,5 @@ private:
 
     GameLoopFunc updateFunction_;
     double lastFrameTime_;
+    bool framebufferResized_ = false;
 };
