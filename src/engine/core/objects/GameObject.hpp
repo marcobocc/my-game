@@ -17,6 +17,11 @@ public:
         return componentStorage_.getComponent<T>(name);
     }
 
+    template<typename T>
+    bool has() const {
+        return componentStorage_.hasComponent<T>(name);
+    }
+
 private:
     ComponentStorage& componentStorage_;
     std::string name;
