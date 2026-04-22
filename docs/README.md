@@ -53,8 +53,8 @@ Vertices: A → C → B (clockwise)
 ### Build and Run
 
 ```bash
-# Build and run a specific target (optionally: skip linting)
-python3 build.py <target> [--no-lint]
+# Build and run a specific target (optionally: run linting with clang-tidy)
+python3 build.py <target> [--tidy]
 
 # Clean build artifacts
 python3 build.py clean

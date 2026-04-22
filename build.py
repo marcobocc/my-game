@@ -132,7 +132,7 @@ def run_clang_tidy() -> bool:
             if future.result() != 0:
                 failed = True
     if failed:
-        warn("clang-tidy found issues")
+        error("clang-tidy found issues. See logs above for more details")
         return False
     return True
 
@@ -148,7 +148,7 @@ def run_clang_format(apply_fixes: bool = False) -> bool:
             if return_code != 0:
                 error("Failed to apply clang-format fixes")
                 return False
-            success("Automatically fixed all formatting issues")
+            warn("Formatting issues were found but have been automatically fixed")
             return True
     success("No formatting issues found")
     return True
@@ -251,8 +251,7 @@ def run_target(target: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build script for CrossPlatformVulkanEngine")
     parser.add_argument("target", type=str, help="Name of the executable target to build and run", nargs="?")
-    parser.add_argument("--format", action="store_true", help="Automatically fix all formatting issues")
-    parser.add_argument("--no-lint", action="store_true", help="Skip running formatting and linting")
+    parser.add_argument("--tidy", action="store_true", help="Run clang-tidy after building")
     args = parser.parse_args()
 
     if args.target == "clean":
@@ -265,13 +264,18 @@ def main() -> None:
     # ----------------------------------------
     info("Starting build workflow")
     start_time = time.perf_counter()
+
     if not build_target(args.target):
         error("Build failed")
         sys.exit(1)
 
-    linting_successful = False
-    if not args.no_lint:
-        linting_successful = run_clang_format(args.format) and run_clang_tidy()
+    run_clang_format(apply_fixes=True)
+
+    if not args.tidy:
+        warn("clang-tidy was skipped. Run with --tidy to run clang-tidy")
+    else:
+        run_clang_tidy()
+
     end_time = time.perf_counter()
 
     # ----------------------------------------
@@ -281,12 +285,6 @@ def main() -> None:
         success(f"Successfully built all targets in {end_time - start_time:.2f}s")
     else:
         success(f"Successfully built target {args.target} in {end_time - start_time:.2f}s")
-
-    if args.no_lint:
-        warn("Linting was skipped. Run without --no-lint to check for formatting and linting issues.")
-    else:
-        if not linting_successful:
-            warn(f"Linting issues detected. Check the logs above for more details.")
 
     if args.target:
         run_target(args.target)
