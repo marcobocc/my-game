@@ -1,15 +1,15 @@
 #include "rendering/vulkan/services/renderers/VulkanImguiRenderer.hpp"
-#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <iostream>
 #include <volk.h>
 #include "../VulkanSwapchainManager.hpp"
+#include "core/GameWindow.hpp"
 
 VulkanImguiRenderer::VulkanImguiRenderer(const VulkanContext& vulkanContext,
                                          VulkanSwapchainManager& swapchainManager,
-                                         GLFWwindow* window,
+                                         GameWindow& window,
                                          UserInterface& userInterface) :
     swapchainManager_(swapchainManager),
     swapchainImageFormat_(swapchainManager.swapchain().swapchainImageFormat),
@@ -19,7 +19,7 @@ VulkanImguiRenderer::VulkanImguiRenderer(const VulkanContext& vulkanContext,
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    ImGui_ImplGlfw_InitForVulkan(window, true);
+    ImGui_ImplGlfw_InitForVulkan(window.get(), true);
 
     ImGui_ImplVulkan_InitInfo initInfo = {};
     initInfo.ApiVersion = VK_API_VERSION_1_3;

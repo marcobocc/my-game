@@ -7,7 +7,8 @@
 class ObjectViewerApp {
 public:
     ObjectViewerApp(unsigned int windowWidth, unsigned int windowHeight, const std::filesystem::path& assetsPath) :
-        engine_(windowWidth, windowHeight, "Object Viewer", assetsPath),
+        window_(windowWidth, windowHeight, "Object Viewer"),
+        engine_(window_, assetsPath),
         scene_(engine_.getScene()) {
         setupScene();
         engine_.getUserInterface().emplace<InspectorSidePanel>(&objectId_, &scene_);
@@ -21,6 +22,7 @@ public:
     }
 
 private:
+    GameWindow window_;
     GameEngine engine_;
     Scene& scene_;
     std::string objectId_{};

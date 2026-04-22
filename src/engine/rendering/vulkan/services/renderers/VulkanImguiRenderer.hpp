@@ -1,16 +1,16 @@
 #pragma once
-#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 #include "../../core/structs.hpp"
 #include "core/ui/UserInterface.hpp"
 
 class VulkanSwapchainManager;
+class GameWindow;
 
 class VulkanImguiRenderer {
 public:
     VulkanImguiRenderer(const VulkanContext& vulkanContext,
                         VulkanSwapchainManager& swapchainManager,
-                        GLFWwindow* window,
+                        GameWindow& window,
                         UserInterface& userInterface);
     ~VulkanImguiRenderer();
 

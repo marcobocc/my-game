@@ -1,7 +1,7 @@
 #pragma once
-#include <GLFW/glfw3.h>
 #include <functional>
 #include <memory>
+#include "core/GameWindow.hpp"
 #include "core/input/InputSystem.hpp"
 #include "core/ui/UserInterface.hpp"
 #include "rendering/RenderSystem.hpp"
@@ -17,10 +17,7 @@ public:
     GameEngine(GameEngine&&) = delete;
     GameEngine& operator=(GameEngine&&) = delete;
 
-    explicit GameEngine(unsigned int windowWidth,
-                        unsigned int windowHeight,
-                        const char* windowTitle,
-                        std::filesystem::path assetsPath);
+    explicit GameEngine(GameWindow& window, std::filesystem::path assetsPath);
     ~GameEngine();
 
     UserInterface& getUserInterface() const { return *userInterface_; }
@@ -32,15 +29,10 @@ public:
     void requestClose() const;
 
 private:
-    void initialize(unsigned int windowWidth,
-                    unsigned int windowHeight,
-                    const char* windowTitle,
-                    const std::filesystem::path& assetsPath);
+    void initialize(const std::filesystem::path& assetsPath);
     bool shouldClose() const;
-    void handleResize();
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
-    GLFWwindow* window_;
+    GameWindow& window_;
     std::unique_ptr<UserInterface> userInterface_;
     std::unique_ptr<VulkanWiringContainer> vulkanWiringContainer_;
     std::unique_ptr<RenderSystem> renderSystem_;
@@ -51,5 +43,4 @@ private:
 
     GameLoopFunc updateFunction_;
     double lastFrameTime_;
-    bool framebufferResized_ = false;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+class GameWindow;
 struct VulkanContext;
 class VulkanRenderingOrchestrator;
 class VulkanSwapchainManager;
@@ -45,15 +46,16 @@ public:
     VulkanGraphicsBackend& operator=(VulkanGraphicsBackend&&) = delete;
 
     ~VulkanGraphicsBackend();
-    VulkanGraphicsBackend(VulkanContext& context,
+    VulkanGraphicsBackend(GameWindow& window,
+                          VulkanContext& context,
                           VulkanRenderingOrchestrator& renderer,
                           VulkanSwapchainManager& swapchainManager);
 
     void draw(const Mesh& mesh, const Material& material, const Transform& transform) const;
     void renderFrame(const Camera& camera) const;
-    void recreateSwapchain() const;
 
 private:
+    GameWindow& window_;
     VulkanContext& context_;
     VulkanRenderingOrchestrator& renderer_;
     VulkanSwapchainManager& swapchainManager_;

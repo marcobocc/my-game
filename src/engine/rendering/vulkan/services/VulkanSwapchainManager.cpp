@@ -3,10 +3,10 @@
 #include <stdexcept>
 #include <volk.h>
 #include "../core/error_handling.hpp"
+#include "core/GameWindow.hpp"
 #include "rendering/vulkan/core/memory.hpp"
 
-VulkanSwapchainManager::VulkanSwapchainManager(GLFWwindow* window, const VulkanContext& vulkanContext) {
-    if (!window) throw std::runtime_error("Window pointer is null");
+VulkanSwapchainManager::VulkanSwapchainManager(GameWindow& window, const VulkanContext& vulkanContext) {
     createSurface(window, vulkanContext, swapchain_);
     createSwapchain(vulkanContext, swapchain_);
     createImageViews(vulkanContext, swapchain_);
@@ -17,7 +17,7 @@ VulkanSwapchain& VulkanSwapchainManager::swapchain() { return swapchain_; }
 
 const VulkanSwapchain& VulkanSwapchainManager::swapchain() const { return swapchain_; }
 
-VulkanSwapchain VulkanSwapchainManager::create(GLFWwindow* window, const VulkanContext& vulkanContext) const {
+VulkanSwapchain VulkanSwapchainManager::create(GameWindow& window, const VulkanContext& vulkanContext) const {
     VulkanSwapchain swapchain;
     createSurface(window, vulkanContext, swapchain);
     createSwapchain(vulkanContext, swapchain);
@@ -64,10 +64,10 @@ bool VulkanSwapchainManager::present(VkQueue presentQueue,
     return true;
 }
 
-void VulkanSwapchainManager::createSurface(GLFWwindow* window,
+void VulkanSwapchainManager::createSurface(GameWindow& window,
                                            const VulkanContext& vulkanContext,
                                            VulkanSwapchain& swapchain) const {
-    VkResult surfaceResult = glfwCreateWindowSurface(vulkanContext.instance, window, nullptr, &swapchain.surface);
+    VkResult surfaceResult = glfwCreateWindowSurface(vulkanContext.instance, window.get(), nullptr, &swapchain.surface);
     throwIfUnsuccessful(surfaceResult);
 }
 

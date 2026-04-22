@@ -41,7 +41,7 @@
 */
 class VulkanWiringContainer {
 public:
-    VulkanWiringContainer(GLFWwindow* window, AssetManager& assetManager, UserInterface& userInterface) :
+    VulkanWiringContainer(GameWindow& window, AssetManager& assetManager, UserInterface& userInterface) :
         vulkanContext_(initVulkanContext()),
         debugMessenger_(vulkanContext_),
         swapchainManager_(window, vulkanContext_),
@@ -54,7 +54,7 @@ public:
         sceneRenderer_(vulkanContext_, resourcesManager_, assetManager),
         imguiRenderer_(vulkanContext_, swapchainManager_, window, userInterface),
         renderingOrchestrator_(vulkanContext_, sceneRenderer_, imguiRenderer_, commandManager_, swapchainManager_),
-        graphicsBackend_(vulkanContext_, renderingOrchestrator_, swapchainManager_) {}
+        graphicsBackend_(window, vulkanContext_, renderingOrchestrator_, swapchainManager_) {}
 
     VulkanGraphicsBackend& graphicsBackend() { return graphicsBackend_; }
 
