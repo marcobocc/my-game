@@ -19,6 +19,10 @@ public:
         auto meshFilePath = assetFolder / def.meshFile;
         if (meshFilePath.extension() == ".obj") {
             auto [vertices, indices] = ObjFileParser::parseFile(meshFilePath);
+            if (!def.ccw) {
+                for (size_t i = 0; i + 2 < indices.size(); i += 3)
+                    std::swap(indices[i + 1], indices[i + 2]);
+            }
             auto mesh = std::make_unique<MeshData>(def.name, vertices, indices);
             dest.insert<MeshData>(def.name, std::move(mesh));
             return true;
