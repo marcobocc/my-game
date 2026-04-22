@@ -47,8 +47,7 @@ private:
     }
 
     static float childHeight(int rows) {
-        return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) +
-               ImGui::GetStyle().WindowPadding.y * 2.0f;
+        return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y * 2.0f;
     }
 
     void drawInspectorPanel() const {
