@@ -9,19 +9,21 @@
 
 class InspectorSidePanel : public ImguiWidget {
 public:
-    InspectorSidePanel(std::string* currentActiveObjectId, Scene* scene) :
+    InspectorSidePanel(std::string* currentActiveObjectId, Scene* scene, float sceneWidthRatio) :
         currentActiveObjectId_(currentActiveObjectId),
-        scene_(scene) {}
+        scene_(scene),
+        sceneWidthRatio_(sceneWidthRatio) {}
 
     void draw() const override { drawDockspace(); }
 
 private:
     std::string* currentActiveObjectId_;
     Scene* scene_;
+    float sceneWidthRatio_;
 
     void drawDockspace() const {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
-        float sidebarWidth = 300.0f;
+        float sidebarWidth = viewport->Size.x * (1.0f - sceneWidthRatio_);
         ImVec2 sidebarPos = ImVec2(viewport->Pos.x + viewport->Size.x - sidebarWidth, viewport->Pos.y);
         ImVec2 sidebarSize = ImVec2(sidebarWidth, viewport->Size.y);
 

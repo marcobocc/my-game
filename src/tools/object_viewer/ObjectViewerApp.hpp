@@ -6,12 +6,20 @@
 
 class ObjectViewerApp {
 public:
+    static constexpr float SCENE_WIDTH_RATIO = 0.70f;
+
     ObjectViewerApp(unsigned int windowWidth, unsigned int windowHeight, const std::filesystem::path& assetsPath) :
         window_(windowWidth, windowHeight, "Object Viewer"),
         engine_(window_, assetsPath),
         scene_(engine_.getScene()) {
+        auto [w, h] = window_.getSize();
+        window_.setSceneViewport({0, 0, static_cast<int>(static_cast<float>(w) * SCENE_WIDTH_RATIO), h});
+        window_.onFramebufferResize([this](int newW, int newH, int, int) {
+            window_.setSceneViewport({0, 0, static_cast<int>(static_cast<float>(newW) * SCENE_WIDTH_RATIO), newH});
+        });
+
         setupScene();
-        engine_.getUserInterface().emplace<InspectorSidePanel>(&objectId_, &scene_);
+        engine_.getUserInterface().emplace<InspectorSidePanel>(&objectId_, &scene_, SCENE_WIDTH_RATIO);
     }
 
     void run() {
