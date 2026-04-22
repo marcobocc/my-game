@@ -9,7 +9,7 @@
 │       │
 │       └─⫸ Scope: core|rendering|tools
 │
-└─⫸ Commit Type: feat|fix|refactor|style|docs|tests|build|revert
+└─⫸ Commit Type: feat|fix|refactor|format|docs|tests|build|revert
 ```
 
 ### Type
