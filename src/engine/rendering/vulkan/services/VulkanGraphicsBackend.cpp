@@ -1,20 +1,9 @@
 #include "VulkanGraphicsBackend.hpp"
 #include "VulkanRenderingOrchestrator.hpp"
-#include "core/GameWindow.hpp"
-#include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
 
-
-VulkanGraphicsBackend::VulkanGraphicsBackend(GameWindow& window,
-                                             VulkanContext& context,
-                                             VulkanRenderingOrchestrator& renderer,
-                                             VulkanSwapchainManager& swapchainManager) :
-    window_(window),
+VulkanGraphicsBackend::VulkanGraphicsBackend(VulkanContext& context, VulkanRenderingOrchestrator& renderer) :
     context_(context),
-    renderer_(renderer),
-    swapchainManager_(swapchainManager) {
-
-    window_.onFramebufferResize([this](int, int, int, int) { swapchainManager_.recreate(context_); });
-}
+    renderer_(renderer) {}
 
 VulkanGraphicsBackend::~VulkanGraphicsBackend() = default;
 

@@ -1,9 +1,7 @@
 #pragma once
 
-class GameWindow;
 struct VulkanContext;
 class VulkanRenderingOrchestrator;
-class VulkanSwapchainManager;
 struct Mesh;
 struct Material;
 struct Transform;
@@ -46,17 +44,12 @@ public:
     VulkanGraphicsBackend& operator=(VulkanGraphicsBackend&&) = delete;
 
     ~VulkanGraphicsBackend();
-    VulkanGraphicsBackend(GameWindow& window,
-                          VulkanContext& context,
-                          VulkanRenderingOrchestrator& renderer,
-                          VulkanSwapchainManager& swapchainManager);
+    VulkanGraphicsBackend(VulkanContext& context, VulkanRenderingOrchestrator& renderer);
 
     void draw(const Mesh& mesh, const Material& material, const Transform& transform) const;
     void renderFrame(const Camera& camera) const;
 
 private:
-    GameWindow& window_;
     VulkanContext& context_;
     VulkanRenderingOrchestrator& renderer_;
-    VulkanSwapchainManager& swapchainManager_;
 };

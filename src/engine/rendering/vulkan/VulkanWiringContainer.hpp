@@ -55,7 +55,7 @@ public:
         imguiRenderer_(vulkanContext_, swapchainManager_, window, userInterface),
         renderingOrchestrator_(
                 window, vulkanContext_, sceneRenderer_, imguiRenderer_, commandManager_, swapchainManager_),
-        graphicsBackend_(window, vulkanContext_, renderingOrchestrator_, swapchainManager_) {}
+        graphicsBackend_(vulkanContext_, renderingOrchestrator_) {}
 
     VulkanGraphicsBackend& graphicsBackend() { return graphicsBackend_; }
 

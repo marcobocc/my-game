@@ -20,6 +20,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     commandManager_(commandManager),
     swapchainManager_(swapchainManager) {
     initFrameSync();
+    window_.onFramebufferResize([this](int, int, int, int) { swapchainManager_.recreate(context_); });
 }
 
 VulkanRenderingOrchestrator::~VulkanRenderingOrchestrator() {
