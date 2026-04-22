@@ -10,6 +10,7 @@
 // ----------------------------------------------------------------------------
 // Forward definitions
 // ----------------------------------------------------------------------------
+class GameWindow;
 struct VulkanContext;
 class VulkanCommandManager;
 class VulkanSceneRenderer;
@@ -21,7 +22,8 @@ class VulkanSwapchainManager;
 // ----------------------------------------------------------------------------
 class VulkanRenderingOrchestrator {
 public:
-    VulkanRenderingOrchestrator(VulkanContext& context,
+    VulkanRenderingOrchestrator(GameWindow& window,
+                                VulkanContext& context,
                                 VulkanSceneRenderer& sceneRenderer,
                                 VulkanImguiRenderer& imguiRenderer,
                                 VulkanCommandManager& commandManager,
@@ -62,6 +64,7 @@ private:
     static void transitionDepthAttachment(VkCommandBuffer cmd, VkImage image);
     static void transitionToPresent(VkCommandBuffer cmd, VkImage image);
 
+    GameWindow& window_;
     VulkanContext& context_;
     VulkanSceneRenderer& sceneRenderer_;
     VulkanImguiRenderer& imguiRenderer_;

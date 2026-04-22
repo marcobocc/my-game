@@ -4,6 +4,13 @@
 #include <stdexcept>
 #include <utility>
 
+struct SceneViewport {
+    int x = 0;
+    int y = 0;
+    int width = 0;
+    int height = 0;
+};
+
 class GameWindow {
 public:
     GameWindow(const GameWindow&) = delete;
@@ -23,18 +30,20 @@ public:
             throw std::runtime_error("Failed to create window");
         }
 
-        int w, h;
+        int w = 0, h = 0;
         glfwGetFramebufferSize(window_, &w, &h);
         framebufferSize_ = {w, h};
+        sceneViewport_ = {0, 0, w, h};
 
         glfwSetWindowUserPointer(window_, this);
         glfwSetFramebufferSizeCallback(window_, [](GLFWwindow* win, int newWidth, int newHeight) {
             auto* self = static_cast<GameWindow*>(glfwGetWindowUserPointer(win));
             if (!self) return;
+            int oldWidth = self->framebufferSize_.first;
+            int oldHeight = self->framebufferSize_.second;
             self->framebufferSize_ = {newWidth, newHeight};
-            if (self->framebufferResizeHandler_) {
-                self->framebufferResizeHandler_();
-            }
+            for (const auto& handler: self->framebufferResizeHandlers_)
+                handler(newWidth, newHeight, oldWidth, oldHeight);
         });
     }
 
@@ -46,10 +55,12 @@ public:
     GLFWwindow* get() const { return window_; }
 
     std::pair<int, int> getSize() const { return framebufferSize_; }
-    void onFramebufferResize(std::function<void()> handler) {
-        if (framebufferResizeHandler_) throw std::runtime_error("Framebuffer resize handler already set");
-        framebufferResizeHandler_ = std::move(handler);
+    void onFramebufferResize(std::function<void(int, int, int, int)> handler) {
+        framebufferResizeHandlers_.push_back(std::move(handler));
     }
+
+    SceneViewport getSceneViewport() const { return sceneViewport_; }
+    void setSceneViewport(SceneViewport viewport) { sceneViewport_ = viewport; }
 
     bool shouldClose() const { return glfwWindowShouldClose(window_); }
     void requestClose() const { glfwSetWindowShouldClose(window_, GLFW_TRUE); }
@@ -59,5 +70,6 @@ public:
 private:
     GLFWwindow* window_;
     std::pair<int, int> framebufferSize_{};
-    std::function<void()> framebufferResizeHandler_;
+    SceneViewport sceneViewport_{};
+    std::vector<std::function<void(int, int, int, int)>> framebufferResizeHandlers_;
 };

@@ -2,15 +2,18 @@
 #include <volk.h>
 #include "VulkanCommandManager.hpp"
 #include "VulkanSwapchainManager.hpp"
+#include "core/GameWindow.hpp"
 #include "renderers/VulkanImguiRenderer.hpp"
 #include "renderers/VulkanSceneRenderer.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
 
-VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(VulkanContext& context,
+VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
+                                                         VulkanContext& context,
                                                          VulkanSceneRenderer& sceneRenderer,
                                                          VulkanImguiRenderer& imguiRenderer,
                                                          VulkanCommandManager& commandManager,
                                                          VulkanSwapchainManager& swapchainManager) :
+    window_(window),
     context_(context),
     sceneRenderer_(sceneRenderer),
     imguiRenderer_(imguiRenderer),
@@ -109,6 +112,7 @@ VkCommandBuffer VulkanRenderingOrchestrator::beginFrame() const {
 
 void VulkanRenderingOrchestrator::prepareSceneCanvas(VkCommandBuffer cmd, uint32_t imageIndex) const {
     const VulkanSwapchain& swapchain = swapchainManager_.swapchain();
+    const SceneViewport sv = window_.getSceneViewport();
 
     VkClearValue clearColor{};
     clearColor.color = {{0.1f, 0.1f, 0.1f, 1.0f}};
@@ -142,15 +146,15 @@ void VulkanRenderingOrchestrator::prepareSceneCanvas(VkCommandBuffer cmd, uint32
     vkCmdBeginRendering(cmd, &renderingInfo);
 
     VkViewport viewport{};
-    viewport.x = 0.0f;
-    viewport.y = static_cast<float>(swapchain.swapchainExtent.height);
-    viewport.width = static_cast<float>(swapchain.swapchainExtent.width);
-    viewport.height = -static_cast<float>(swapchain.swapchainExtent.height);
+    viewport.x = static_cast<float>(sv.x);
+    viewport.y = static_cast<float>(sv.y + sv.height);
+    viewport.width = static_cast<float>(sv.width);
+    viewport.height = -static_cast<float>(sv.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(cmd, 0, 1, &viewport);
 
-    VkRect2D scissor{{0, 0}, swapchain.swapchainExtent};
+    VkRect2D scissor{{sv.x, sv.y}, {static_cast<uint32_t>(sv.width), static_cast<uint32_t>(sv.height)}};
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 

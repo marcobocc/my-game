@@ -13,7 +13,7 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(GameWindow& window,
     renderer_(renderer),
     swapchainManager_(swapchainManager) {
 
-    window_.onFramebufferResize([this] { swapchainManager_.recreate(context_); });
+    window_.onFramebufferResize([this](int, int, int, int) { swapchainManager_.recreate(context_); });
 }
 
 VulkanGraphicsBackend::~VulkanGraphicsBackend() = default;
