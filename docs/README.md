@@ -24,7 +24,7 @@ The engine uses a **right-handed coordinate system** where:
 
 All mesh geometry must use **counter-clockwise vertex winding order** when viewed from the front face.
 
-For example, a triangle with vertices 1, 2, 3:
+For example, a triangle with vertices A, B, C:
 
 ```
      A
