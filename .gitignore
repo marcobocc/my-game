@@ -71,6 +71,7 @@ ENV/
 htmlcov/
 .tox/
 .cache/
+devtests
 
 # Assets
 *.spv
