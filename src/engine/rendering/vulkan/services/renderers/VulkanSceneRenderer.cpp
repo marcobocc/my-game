@@ -1,7 +1,7 @@
 #include "VulkanSceneRenderer.hpp"
 #include <volk.h>
 #include "assets/types/material/Material.hpp"
-#include "assets/types/mesh/MeshData.hpp"
+#include "assets/types/mesh/Mesh.hpp"
 #include "rendering/vulkan/core/buffers.hpp"
 #include "rendering/vulkan/core/descriptors.hpp"
 #include "rendering/vulkan/core/structs.hpp"
@@ -83,14 +83,14 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
                        sizeof(PushConstants),
                        &pushConstants);
 
-    const MeshData* meshData = assetManager_.get<MeshData>(drawCall.renderer.meshName);
-    const auto& meshBuffers = resourcesManager_.getMesh(*meshData);
+    const Mesh* mesh = assetManager_.get<Mesh>(drawCall.renderer.meshName);
+    const auto& meshBuffers = resourcesManager_.getMesh(*mesh);
     std::array<VkDeviceSize, 1> offsets = {};
     vkCmdBindVertexBuffers(cmd, 0, 1, &meshBuffers.vertexBuffer.buffer, offsets.data());
     vkCmdBindIndexBuffer(cmd, meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    if (meshData->hasIndices()) {
-        vkCmdDrawIndexed(cmd, static_cast<uint32_t>(meshData->getIndices().size()), 1, 0, 0, 0);
+    if (mesh->hasIndices()) {
+        vkCmdDrawIndexed(cmd, static_cast<uint32_t>(mesh->getIndices().size()), 1, 0, 0, 0);
         return;
     }
-    vkCmdDraw(cmd, static_cast<uint32_t>(meshData->getVertexCount()), 1, 0, 0);
+    vkCmdDraw(cmd, static_cast<uint32_t>(mesh->getVertexCount()), 1, 0, 0);
 }

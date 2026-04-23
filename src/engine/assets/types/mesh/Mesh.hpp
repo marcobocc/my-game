@@ -4,11 +4,11 @@
 #include "assets/types/base/Asset.hpp"
 #include "details/VertexLayouts.hpp"
 
-class MeshData final : public Asset {
+class Mesh final : public Asset {
 public:
-    MeshData(const std::string& name,
-             const std::vector<Vertex_WithLayout_PositionOnly>& vertices,
-             const std::vector<uint32_t>& indices) :
+    Mesh(const std::string& name,
+         const std::vector<Vertex_WithLayout_PositionOnly>& vertices,
+         const std::vector<uint32_t>& indices) :
         Asset(name) {
         std::vector<float> data;
         for (const auto& [position]: vertices) {
@@ -23,9 +23,9 @@ public:
         vertexStride_ = Vertex_WithLayout_PositionOnly::VERTEX_STRIDE;
     }
 
-    MeshData(const std::string& name,
-             const std::vector<Vertex_WithLayout_PositionUv>& vertices,
-             const std::vector<uint32_t>& indices) :
+    Mesh(const std::string& name,
+         const std::vector<Vertex_WithLayout_PositionUv>& vertices,
+         const std::vector<uint32_t>& indices) :
         Asset(name) {
         std::vector<float> data;
         for (const auto& [position, uv]: vertices) {
@@ -42,9 +42,9 @@ public:
         vertexStride_ = Vertex_WithLayout_PositionUv::VERTEX_STRIDE;
     }
 
-    MeshData(const std::string& name,
-             const std::vector<Vertex_WithLayout_PositionColor>& vertices,
-             const std::vector<uint32_t>& indices) :
+    Mesh(const std::string& name,
+         const std::vector<Vertex_WithLayout_PositionColor>& vertices,
+         const std::vector<uint32_t>& indices) :
         Asset(name) {
         std::vector<float> data;
         for (const auto& [position, color]: vertices) {

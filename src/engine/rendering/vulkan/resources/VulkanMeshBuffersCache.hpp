@@ -1,6 +1,6 @@
 #pragma once
 #include <unordered_map>
-#include "assets/types/mesh/MeshData.hpp"
+#include "assets/types/mesh/Mesh.hpp"
 #include "rendering/vulkan/core/buffers.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 
@@ -13,7 +13,7 @@ class VulkanMeshBuffersCache {
 public:
     explicit VulkanMeshBuffersCache(VulkanContext& context) : context_(context) {}
 
-    VulkanMeshBuffers& get(const MeshData& meshAsset) {
+    VulkanMeshBuffers& get(const Mesh& meshAsset) {
         auto it = cache_.find(meshAsset.getName());
         if (it != cache_.end()) return it->second;
 

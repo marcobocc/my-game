@@ -17,7 +17,7 @@ public:
         pipelineCache_(pipelineCache),
         materialCache_(materialCache) {}
 
-    VulkanMeshBuffers& getMesh(const MeshData& mesh) const { return meshBuffersCache_.get(mesh); }
+    VulkanMeshBuffers& getMesh(const Mesh& mesh) const { return meshBuffersCache_.get(mesh); }
 
     VulkanTexture& getTexture(const Texture& texture) const { return textureCache_.get(texture); }
 

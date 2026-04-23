@@ -15,13 +15,13 @@ struct AssetDescriptor {
     }
 };
 
-struct MeshDataDescriptor {
+struct MeshDescriptor {
     std::string name;
     std::string type;
     std::string meshFile;
     bool ccw;
 
-    static MeshDataDescriptor fromFile(const std::filesystem::path& path) {
+    static MeshDescriptor fromFile(const std::filesystem::path& path) {
         auto j = JsonUtils::loadJson(path);
         return {.name = JsonUtils::getRequired<std::string>(j, "name"),
                 .type = JsonUtils::getRequired<std::string>(j, "type"),
