@@ -32,6 +32,7 @@ public:
     };
     std::string createMesh(const std::string& meshName, const _createMesh_Options& options);
     std::string createCube(const _createMesh_Options& options);
+    std::string createRectangle2D(const _createMesh_Options& options);
 
     // ------------------------------------------------------------------------------
     // createCamera

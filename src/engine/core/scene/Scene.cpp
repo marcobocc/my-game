@@ -50,6 +50,10 @@ std::string Scene::createCube(const _createMesh_Options& options) {
     return createMesh(PRIMITIVE_GEOMETRY_CUBE, options);
 }
 
+std::string Scene::createRectangle2D(const _createMesh_Options& options) {
+    return createMesh(PRIMITIVE_GEOMETRY_RECTANGLE2D, options);
+}
+
 std::string Scene::createCamera(const _createCamera_Options& options) {
     auto [objectName, created] = createEmptyObject();
     auto& obj = getObject(objectName);

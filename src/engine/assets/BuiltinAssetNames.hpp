@@ -2,6 +2,7 @@
 
 // --- Primitive Geometries ---
 static constexpr auto PRIMITIVE_GEOMETRY_CUBE = "_cube.mesh";
+static constexpr auto PRIMITIVE_GEOMETRY_RECTANGLE2D = "_rectangle2d.mesh";
 
 // --- Textures ---
 static constexpr auto EMPTY_TEXTURE = "_white1x1.tex";
