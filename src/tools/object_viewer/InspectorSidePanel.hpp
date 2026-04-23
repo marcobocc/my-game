@@ -2,16 +2,22 @@
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include <string>
-#include "core/objects/components/Material.hpp"
+#include "assets/AssetManager.hpp"
+#include "assets/types/material/Material.hpp"
+#include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "core/scene/Scene.hpp"
 #include "core/ui/ImguiWidget.hpp"
 
 class InspectorSidePanel : public ImguiWidget {
 public:
-    InspectorSidePanel(std::string* currentActiveObjectId, Scene* scene, float sceneWidthRatio) :
+    InspectorSidePanel(std::string* currentActiveObjectId,
+                       Scene* scene,
+                       AssetManager* assetManager,
+                       float sceneWidthRatio) :
         currentActiveObjectId_(currentActiveObjectId),
         scene_(scene),
+        assetManager_(assetManager),
         sceneWidthRatio_(sceneWidthRatio) {}
 
     void draw() const override { drawDockspace(); }
@@ -19,6 +25,7 @@ public:
 private:
     std::string* currentActiveObjectId_;
     Scene* scene_;
+    AssetManager* assetManager_;
     float sceneWidthRatio_;
 
     void drawDockspace() const {
@@ -55,7 +62,6 @@ private:
     void drawInspectorPanel() const {
         auto& obj = scene_->getObject(*currentActiveObjectId_);
 
-
         if (ImGui::BeginChild("TransformPanel", ImVec2(0, childHeight(5)), true)) {
             ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.2f, 1.0f), "Transform");
             ImGui::Spacing();
@@ -72,35 +78,35 @@ private:
         ImGui::EndChild();
         ImGui::Spacing();
 
-        if (ImGui::BeginChild("MaterialPanel", ImVec2(0, childHeight(4)), true)) {
-            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.2f, 1.0f), "Material");
+        if (ImGui::BeginChild("RendererPanel", ImVec2(0, childHeight(5)), true)) {
+            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.2f, 1.0f), "Renderer");
             ImGui::Spacing();
-            if (obj.has<Material>()) {
-                auto& mat = obj.get<Material>();
-                float col[4] = {mat.baseColor.r, mat.baseColor.g, mat.baseColor.b, mat.baseColor.a};
-                if (ImGui::ColorEdit4("Base Color", col)) mat.baseColor = glm::vec4(col[0], col[1], col[2], col[3]);
-                if (!mat.textureName.empty())
-                    ImGui::Text("Texture: %s", mat.textureName.c_str());
+            if (obj.has<Renderer>()) {
+                auto& renderer = obj.get<Renderer>();
+
+                // --- Describe mesh ---
+                ImGui::Text("Mesh: %s", renderer.meshName.c_str());
+
+                // --- Describe material ---
+                const Material* mat = assetManager_->get<Material>(renderer.materialName);
+                ImGui::Text("Material: %s", renderer.materialName.c_str());
+
+                // --- Describe textures ---
+                if (!mat->getTextureName().empty())
+                    ImGui::Text("Texture: %s", mat->getTextureName().c_str());
                 else
                     ImGui::TextDisabled("Texture: none");
+
+                // --- Describe base color ---
+                glm::vec4 color = renderer.baseColorOverride.value_or(mat->getBaseColor());
+                float col[4] = {color.r, color.g, color.b, color.a};
+                if (ImGui::ColorEdit4("Base color", col))
+                    renderer.baseColorOverride = glm::vec4(col[0], col[1], col[2], col[3]);
             } else {
-                ImGui::TextDisabled("No material");
+                ImGui::TextDisabled("No renderer");
             }
         }
         ImGui::EndChild();
         ImGui::Spacing();
-
-        // header row + spacing row + name row
-        if (ImGui::BeginChild("MeshPanel", ImVec2(0, childHeight(3)), true)) {
-            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.2f, 1.0f), "Mesh");
-            ImGui::Spacing();
-            if (obj.has<Mesh>()) {
-                const auto& mesh = obj.get<Mesh>();
-                ImGui::Text("Name: %s", mesh.name.c_str());
-            } else {
-                ImGui::TextDisabled("No mesh");
-            }
-        }
-        ImGui::EndChild();
     }
 };

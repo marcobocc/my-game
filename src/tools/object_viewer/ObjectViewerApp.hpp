@@ -19,7 +19,8 @@ public:
         });
 
         setupScene();
-        engine_.getUserInterface().emplace<InspectorSidePanel>(&objectId_, &scene_, SCENE_WIDTH_RATIO);
+        engine_.getUserInterface().emplace<InspectorSidePanel>(
+                &objectId_, &scene_, &engine_.getAssetManager(), SCENE_WIDTH_RATIO);
     }
 
     void run() {
