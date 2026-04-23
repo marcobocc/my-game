@@ -9,12 +9,11 @@
 #include "assets/types/base/AssetLoader.hpp"
 
 class ShaderLoader : public AssetLoader {
-    static constexpr std::string ASSET_TYPE_STR = "shader";
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("ShaderLoader");
 
 public:
-    bool load(const std::filesystem::path& assetDescriptorFile, AssetCache& dest) override {
-        ShaderDescriptor def = ShaderDescriptor::fromFile(assetDescriptorFile);
+    bool load(const std::filesystem::path& assetDescriptorFile, const std::string& name, AssetCache& dest) override {
+        ShaderDescriptor def = ShaderDescriptor::fromFile(assetDescriptorFile, name);
         auto assetFolder = assetDescriptorFile.parent_path();
         auto vertexFilePath = assetFolder / def.vertexShader;
         auto fragmentFilePath = assetFolder / def.fragmentShader;
@@ -31,12 +30,10 @@ public:
             LOG4CXX_ERROR(LOGGER, e.what());
             return false;
         }
-        auto shader = std::make_unique<Shader>(def.name, std::move(vertexBytecode), std::move(fragmentBytecode));
-        dest.insert<Shader>(def.name, std::move(shader));
+        auto shader = std::make_unique<Shader>(name, std::move(vertexBytecode), std::move(fragmentBytecode));
+        dest.insert<Shader>(name, std::move(shader));
         return true;
     }
-
-    std::string getAssetType() override { return ASSET_TYPE_STR; }
 
 private:
     static std::vector<char> readShaderFile(const std::filesystem::path& filePath) {

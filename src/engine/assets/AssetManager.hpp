@@ -15,7 +15,6 @@ class AssetManager {
 public:
     struct AssetInfo {
         std::string name;
-        std::string type;
         std::filesystem::path descriptor;
         bool loaded;
     };
@@ -30,7 +29,7 @@ public:
 
 private:
     AssetInfo& getAssetInfo(const std::string& name);
-    void registerLoader(std::unique_ptr<AssetLoader> loader);
+    void registerLoader(const std::string& extension, std::unique_ptr<AssetLoader> loader);
     bool dispatchLoader(const std::string& name);
     void scan(const std::filesystem::path& root);
 
