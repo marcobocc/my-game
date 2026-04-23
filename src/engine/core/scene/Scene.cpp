@@ -3,7 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include "assets/types/mesh/details/PrefabNames.hpp"
+#include "../../assets/BuiltinAssetNames.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Renderer.hpp"
 

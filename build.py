@@ -195,7 +195,7 @@ def build_target(target: str | None) -> bool:
 # -----------------------------------------------------------------------------
 def compile_shaders() -> bool:
     """Compile shaders from the assets directory"""
-    shaders_dir = ASSETS_DIR / "shaders"
+    shaders_dir = ASSETS_DIR / "builtins" / "shaders"
 
     for pipeline_dir in shaders_dir.iterdir():
         if not pipeline_dir.is_dir():
