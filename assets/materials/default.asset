@@ -1,0 +1,6 @@
+{
+  "name": "default",
+  "type": "material",
+  "shaderName": "unlit_textured",
+  "textureName": "white1x1"
+}

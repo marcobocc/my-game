@@ -2,8 +2,7 @@
 
 struct VulkanContext;
 class VulkanRenderingOrchestrator;
-struct Mesh;
-struct Material;
+struct Renderer;
 struct Transform;
 struct Camera;
 
@@ -46,7 +45,7 @@ public:
     ~VulkanGraphicsBackend();
     VulkanGraphicsBackend(VulkanContext& context, VulkanRenderingOrchestrator& renderer);
 
-    void draw(const Mesh& mesh, const Material& material, const Transform& transform) const;
+    void draw(const Renderer& renderer, const Transform& transform) const;
     void renderFrame(const Camera& camera) const;
 
 private:

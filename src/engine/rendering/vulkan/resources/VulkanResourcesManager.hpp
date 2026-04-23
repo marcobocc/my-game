@@ -3,6 +3,7 @@
 #include "VulkanMeshBuffersCache.hpp"
 #include "VulkanPipelineCache.hpp"
 #include "VulkanTextureCache.hpp"
+#include "assets/types/material/Material.hpp"
 #include "assets/types/shader/Shader.hpp"
 
 class VulkanResourcesManager {
@@ -22,7 +23,7 @@ public:
 
     VulkanPipeline& getPipeline(const Shader& shader) const { return pipelineCache_.get(shader); }
 
-    VulkanMaterialSet& getMaterial(const Material& material) { return materialCache_.get(material); }
+    VulkanMaterial& getMaterial(const Material& material) { return materialCache_.get(material); }
 
 private:
     VulkanMeshBuffersCache& meshBuffersCache_;

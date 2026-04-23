@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include "assets/types/AssetDescriptors.hpp"
+#include "assets/types/material/MaterialLoader.hpp"
 #include "assets/types/mesh/MeshDataLoader.hpp"
 #include "assets/types/shader/ShaderLoader.hpp"
 #include "assets/types/texture/TextureLoader.hpp"
@@ -11,6 +12,7 @@ AssetManager::AssetManager(AssetCache& assetCache, const std::filesystem::path& 
     registerLoader(std::make_unique<ShaderLoader>());
     registerLoader(std::make_unique<MeshDataLoader>());
     registerLoader(std::make_unique<TextureLoader>());
+    registerLoader(std::make_unique<MaterialLoader>());
     scan(root);
 }
 

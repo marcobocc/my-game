@@ -28,10 +28,8 @@ VulkanRenderingOrchestrator::~VulkanRenderingOrchestrator() {
     destroyFrameSync();
 }
 
-void VulkanRenderingOrchestrator::enqueueForDrawing(const Mesh& mesh,
-                                                    const Material& material,
-                                                    const Transform& transform) const {
-    sceneRenderer_.enqueueForDrawing(mesh, material, transform);
+void VulkanRenderingOrchestrator::enqueueForDrawing(const Renderer& renderer, const Transform& transform) const {
+    sceneRenderer_.enqueueForDrawing(renderer, transform);
 }
 
 bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera) {

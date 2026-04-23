@@ -3,8 +3,7 @@
 #include <vulkan/vulkan.h>
 #include "../core/structs.hpp"
 #include "core/objects/components/Camera.hpp"
-#include "core/objects/components/Material.hpp"
-#include "core/objects/components/Mesh.hpp"
+#include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
 
 // ----------------------------------------------------------------------------
@@ -31,7 +30,7 @@ public:
 
     ~VulkanRenderingOrchestrator();
 
-    void enqueueForDrawing(const Mesh&, const Material&, const Transform&) const;
+    void enqueueForDrawing(const Renderer&, const Transform&) const;
     bool renderFrame(const Camera& camera);
 
 private:

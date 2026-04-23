@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include <glm/vec4.hpp>
 #include <string>
 #include "utils/JsonUtils.hpp"
 
@@ -54,5 +55,22 @@ struct TextureDescriptor {
         return {.name = JsonUtils::getRequired<std::string>(j, "name"),
                 .type = JsonUtils::getRequired<std::string>(j, "type"),
                 .image = JsonUtils::getRequired<std::string>(j, "image")};
+    }
+};
+
+struct MaterialDescriptor {
+    std::string name;
+    std::string type;
+    std::string shaderName;
+    glm::vec4 baseColor;
+    std::string textureName;
+
+    static MaterialDescriptor fromFile(const std::filesystem::path& path) {
+        auto j = JsonUtils::loadJson(path);
+        return {.name = JsonUtils::getRequired<std::string>(j, "name"),
+                .type = JsonUtils::getRequired<std::string>(j, "type"),
+                .shaderName = JsonUtils::getOptional<std::string>(j, "shaderName", "unlit_textured"),
+                .baseColor = JsonUtils::getOptional<glm::vec4>(j, "baseColor", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f}),
+                .textureName = JsonUtils::getOptional<std::string>(j, "textureName", "checkers")};
     }
 };

@@ -1,5 +1,6 @@
 #include "VulkanSceneRenderer.hpp"
 #include <volk.h>
+#include "assets/types/material/Material.hpp"
 #include "assets/types/mesh/MeshData.hpp"
 #include "rendering/vulkan/core/buffers.hpp"
 #include "rendering/vulkan/core/descriptors.hpp"
@@ -50,8 +51,8 @@ void VulkanSceneRenderer::updatePerFrameUBO(const Camera& camera) const {
     updateBuffer(vulkanContext_.device, perFrameUBO_.buffer, data, sizeof(data));
 }
 
-void VulkanSceneRenderer::enqueueForDrawing(const Mesh& mesh, const Material& material, const Transform& transform) {
-    drawQueue_.push_back({mesh, material, transform});
+void VulkanSceneRenderer::enqueueForDrawing(const Renderer& renderer, const Transform& transform) {
+    drawQueue_.push_back({renderer, transform});
 }
 
 void VulkanSceneRenderer::drawScene(VkCommandBuffer cmd, const Camera& camera) {
@@ -62,17 +63,18 @@ void VulkanSceneRenderer::drawScene(VkCommandBuffer cmd, const Camera& camera) {
 }
 
 void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall) const {
-    auto [pipeline, materialDescriptorSet] = resourcesManager_.getMaterial(drawCall.material);
+    const Material* material = assetManager_.get<Material>(drawCall.renderer.materialName);
+    auto [pipeline, texturesDescriptorSet] = resourcesManager_.getMaterial(*material);
 
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
     vkCmdBindDescriptorSets(
             cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &perFrameUBO_.descriptorSet, 0, nullptr);
     vkCmdBindDescriptorSets(
-            cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &materialDescriptorSet, 0, nullptr);
+            cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &texturesDescriptorSet, 0, nullptr);
 
     PushConstants pushConstants{
             .modelMatrix = drawCall.transform.getModelMatrix(),
-            .baseColor = drawCall.material.baseColor,
+            .baseColor = drawCall.renderer.baseColorOverride.value_or(material->getBaseColor()),
     };
     vkCmdPushConstants(cmd,
                        pipeline->layout,
@@ -81,7 +83,7 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
                        sizeof(PushConstants),
                        &pushConstants);
 
-    const MeshData* meshData = assetManager_.get<MeshData>(drawCall.mesh.name);
+    const MeshData* meshData = assetManager_.get<MeshData>(drawCall.renderer.meshName);
     const auto& meshBuffers = resourcesManager_.getMesh(*meshData);
     std::array<VkDeviceSize, 1> offsets = {};
     vkCmdBindVertexBuffers(cmd, 0, 1, &meshBuffers.vertexBuffer.buffer, offsets.data());

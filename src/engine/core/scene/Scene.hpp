@@ -27,8 +27,7 @@ public:
     struct _createCube_Options {
         glm::vec3 position{0.0f, 0.0f, 0.0f};
         glm::vec3 scale{1.0f, 1.0f, 1.0f};
-        glm::vec4 color{1.0f, 1.0f, 1.0f, 1.0f};
-        std::string textureName{"white1x1"};
+        std::string materialName{"default"};
     };
     std::string createCube(const _createCube_Options& options);
 
@@ -38,8 +37,7 @@ public:
     struct _createMeshObject_Options {
         glm::vec3 position{0.0f, 0.0f, 0.0f};
         glm::vec3 scale{1.0f, 1.0f, 1.0f};
-        glm::vec4 color{1.0f, 1.0f, 1.0f, 1.0f};
-        std::string textureName{"white1x1"};
+        std::string materialName{"default"};
     };
     std::string createMeshObject(const std::string& meshName, const _createMeshObject_Options& options);
 

@@ -2,15 +2,13 @@
 #include <vector>
 #include "assets/AssetManager.hpp"
 #include "core/objects/components/Camera.hpp"
-#include "core/objects/components/Material.hpp"
-#include "core/objects/components/Mesh.hpp"
+#include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 #include "rendering/vulkan/resources/VulkanResourcesManager.hpp"
 
 struct DrawCall {
-    const Mesh& mesh;
-    const Material& material;
+    const Renderer& renderer;
     const Transform& transform;
 };
 
@@ -22,7 +20,7 @@ public:
 
     ~VulkanSceneRenderer();
 
-    void enqueueForDrawing(const Mesh&, const Material&, const Transform&);
+    void enqueueForDrawing(const Renderer&, const Transform&);
     void drawScene(VkCommandBuffer cmd, const Camera& camera);
 
 private:

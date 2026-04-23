@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <fstream>
+#include <glm/vec4.hpp>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
@@ -39,6 +40,16 @@ namespace JsonUtils {
         }
         try {
             return j.at(key).get<T>();
+        } catch (...) {
+            throw std::runtime_error(std::string("Invalid type for optional field: ") + key);
+        }
+    }
+    template<>
+    inline glm::vec4 getOptional(const nlohmann::json& j, const char* key, glm::vec4 defaultValue) {
+        if (!j.contains(key)) return defaultValue;
+        try {
+            auto arr = j.at(key).get<std::array<float, 4>>();
+            return glm::vec4(arr[0], arr[1], arr[2], arr[3]);
         } catch (...) {
             throw std::runtime_error(std::string("Invalid type for optional field: ") + key);
         }

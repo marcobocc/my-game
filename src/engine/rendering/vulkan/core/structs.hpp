@@ -73,7 +73,7 @@ struct VulkanPipeline {
 // Material structs
 // ------------------------------------------------------------------------
 
-struct VulkanMaterialSet {
+struct VulkanMaterial {
     VulkanPipeline* pipeline = nullptr;
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 };

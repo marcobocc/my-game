@@ -7,8 +7,8 @@ VulkanGraphicsBackend::VulkanGraphicsBackend(VulkanContext& context, VulkanRende
 
 VulkanGraphicsBackend::~VulkanGraphicsBackend() = default;
 
-void VulkanGraphicsBackend::draw(const Mesh& mesh, const Material& material, const Transform& transform) const {
-    renderer_.enqueueForDrawing(mesh, material, transform);
+void VulkanGraphicsBackend::draw(const Renderer& renderer, const Transform& transform) const {
+    renderer_.enqueueForDrawing(renderer, transform);
 }
 
 void VulkanGraphicsBackend::renderFrame(const Camera& camera) const { renderer_.renderFrame(camera); }

@@ -5,7 +5,7 @@
 #include "VulkanPipelineCache.hpp"
 #include "VulkanTextureCache.hpp"
 #include "assets/AssetManager.hpp"
-#include "core/objects/components/Material.hpp"
+#include "assets/types/material/Material.hpp"
 #include "rendering/vulkan/core/descriptors.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 
@@ -20,28 +20,28 @@ public:
         textureCache_(textureCache),
         assetManager_(assetManager) {}
 
-    VulkanMaterialSet& get(const Material& material) {
-        const std::string key = material.shaderName + "|" + material.textureName;
+    VulkanMaterial& get(const Material& material) {
+        const std::string key = material.getShaderName() + "|" + material.getTextureName();
         auto it = cache_.find(key);
         if (it != cache_.end()) return it->second;
 
-        const Shader* shader = assetManager_.get<Shader>(material.shaderName);
+        const Shader* shader = assetManager_.get<Shader>(material.getShaderName());
         VulkanPipeline& pipeline = pipelineCache_.get(*shader);
-        VkDescriptorSet descriptorSet = createMaterialDescriptorSet(pipeline, material);
-        VulkanMaterialSet materialSet{
-                .pipeline = &pipeline,
-                .descriptorSet = descriptorSet,
-        };
-        auto [inserted, _] = cache_.emplace(key, std::move(materialSet));
+        VkDescriptorSet descriptorSet = createTexturesDescriptorSet(pipeline, material);
+        auto [inserted, _] = cache_.emplace(key,
+                                            VulkanMaterial{
+                                                    .pipeline = &pipeline,
+                                                    .descriptorSet = descriptorSet,
+                                            });
         return inserted->second;
     }
 
 private:
-    VkDescriptorSet createMaterialDescriptorSet(const VulkanPipeline& pipeline, const Material& material) const {
+    VkDescriptorSet createTexturesDescriptorSet(const VulkanPipeline& pipeline, const Material& material) const {
         auto descriptorSetLayout = pipeline.descriptorSetLayouts[1]; // TODO: Get the layout from reflection
         VkDescriptorSet set = createEmptyDescriptorSet(context_.device, context_.descriptorPool, descriptorSetLayout);
 
-        const Texture* texture = assetManager_.get<Texture>(material.textureName);
+        const Texture* texture = assetManager_.get<Texture>(material.getTextureName());
         const VulkanTexture& tex = textureCache_.get(*texture);
 
         VkDescriptorImageInfo imageInfo{};
@@ -65,5 +65,5 @@ private:
     VulkanPipelineCache& pipelineCache_;
     VulkanTextureCache& textureCache_;
     AssetManager& assetManager_;
-    std::unordered_map<std::string, VulkanMaterialSet> cache_;
+    std::unordered_map<std::string, VulkanMaterial> cache_;
 };

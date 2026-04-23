@@ -1,9 +1,6 @@
 #pragma once
-#include "assets/AssetManager.hpp"
 #include "core/objects/components/Camera.hpp"
-#include "core/objects/components/Material.hpp"
-#include "core/objects/components/Mesh.hpp"
-#include "core/objects/components/RenderProperties.hpp"
+#include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "core/scene/Scene.hpp"
 #include "vulkan/services/VulkanGraphicsBackend.hpp"
@@ -13,10 +10,10 @@ public:
     explicit RenderSystem(VulkanGraphicsBackend& backend) : backend_(backend) {}
 
     void update(const Scene& scene) {
-        auto drawables = scene.getObjectsWith<Mesh, Material, Transform, RenderProperties>();
-        for (auto& [entity, mesh, material, transform, renderProps]: drawables) {
-            if (!renderProps.enabled) continue;
-            backend_.draw(mesh, material, transform);
+        auto drawables = scene.getObjectsWith<Renderer, Transform>();
+        for (auto& [entity, renderer, transform]: drawables) {
+            if (!renderer.enabled) continue;
+            backend_.draw(renderer, transform);
         }
 
         auto cameras = scene.getObjectsWith<Camera>();

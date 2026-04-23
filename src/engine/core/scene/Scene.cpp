@@ -1,14 +1,11 @@
 #include "Scene.hpp"
-#include <glm/vec4.hpp>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include "assets/types/mesh/details/PrefabNames.hpp"
 #include "core/objects/components/Camera.hpp"
-#include "core/objects/components/Material.hpp"
-#include "core/objects/components/Mesh.hpp"
-#include "core/objects/components/RenderProperties.hpp"
+#include "core/objects/components/Renderer.hpp"
 
 Scene::Scene() : componentStorage_(std::make_unique<ComponentStorage>()) {}
 
@@ -42,14 +39,10 @@ std::string Scene::createCube(const _createCube_Options& options) {
     transform.position = options.position;
     transform.scale = options.scale;
 
-    auto& [name] = gameObj.add<Mesh>();
-    name = PRIMITIVE_GEOMETRY_CUBE;
+    auto& renderer = gameObj.add<Renderer>();
+    renderer.meshName = PRIMITIVE_GEOMETRY_CUBE;
+    renderer.materialName = options.materialName;
 
-    auto& mat = gameObj.add<Material>();
-    mat.baseColor = options.color;
-    mat.textureName = options.textureName;
-
-    gameObj.add<RenderProperties>();
     return objectName;
 }
 
@@ -61,14 +54,10 @@ std::string Scene::createMeshObject(const std::string& meshName, const _createMe
     transform.position = options.position;
     transform.scale = options.scale;
 
-    auto& [name] = gameObj.add<Mesh>();
-    name = meshName;
+    auto& renderer = gameObj.add<Renderer>();
+    renderer.meshName = meshName;
+    renderer.materialName = options.materialName;
 
-    auto& mat = gameObj.add<Material>();
-    mat.baseColor = options.color;
-    mat.textureName = options.textureName;
-
-    gameObj.add<RenderProperties>();
     return objectName;
 }
 
