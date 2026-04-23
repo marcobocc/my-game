@@ -7,7 +7,7 @@
 #include "assets/BuiltinAssetNames.hpp"
 #include "core/objects/ComponentStorage.hpp"
 #include "core/objects/GameObject.hpp"
-#include "core/objects/components/Transform.hpp"
+#include "core/scene/DefaultOptions.hpp"
 
 class Scene {
 public:
@@ -23,36 +23,27 @@ public:
     }
 
     // ------------------------------------------------------------------------------
-    // createCube
+    // createMesh
     // ------------------------------------------------------------------------------
-    struct _createCube_Options {
-        glm::vec3 position{0.0f, 0.0f, 0.0f};
-        glm::vec3 scale{1.0f, 1.0f, 1.0f};
+    struct _createMesh_Options {
+        glm::vec3 position{DEFAULT_POSITION};
+        glm::vec3 scale{DEFAULT_SCALE};
         std::string materialName{SOLID_COLOR_MATERIAL};
     };
-    std::string createCube(const _createCube_Options& options);
-
-    // ------------------------------------------------------------------------------
-    // createMeshObject
-    // ------------------------------------------------------------------------------
-    struct _createMeshObject_Options {
-        glm::vec3 position{0.0f, 0.0f, 0.0f};
-        glm::vec3 scale{1.0f, 1.0f, 1.0f};
-        std::string materialName{SOLID_COLOR_MATERIAL};
-    };
-    std::string createMeshObject(const std::string& meshName, const _createMeshObject_Options& options);
+    std::string createMesh(const std::string& meshName, const _createMesh_Options& options);
+    std::string createCube(const _createMesh_Options& options);
 
     // ------------------------------------------------------------------------------
     // createCamera
     // ------------------------------------------------------------------------------
     struct _createCamera_Options {
-        glm::vec3 position{0.0f, 0.0f, 0.0f};
-        glm::vec3 forward{0.0f, 0.0f, -1.0f};
-        glm::vec3 up{0.0f, 1.0f, 0.0f};
-        float fov{45.0f};
-        float aspect{16.0f / 9.0f};
-        float nearPlane{0.1f};
-        float farPlane{100.0f};
+        glm::vec3 position{DEFAULT_POSITION};
+        glm::vec3 forward{DEFAULT_FORWARD};
+        glm::vec3 up{DEFAULT_UP};
+        float fov{DEFAULT_FOV};
+        float aspect{DEFAULT_ASPECT};
+        float nearPlane{DEFAULT_NEAR_PLANE};
+        float farPlane{DEFAULT_FAR_PLANE};
     };
     std::string createCamera(const _createCamera_Options& options);
 

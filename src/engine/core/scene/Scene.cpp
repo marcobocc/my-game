@@ -31,22 +31,7 @@ std::string Scene::generateName() {
 // BUILT-IN OBJECTS
 // ------------------------------------------------------------------------------
 
-std::string Scene::createCube(const _createCube_Options& options) {
-    auto [objectName, successful] = createEmptyObject();
-    auto& gameObj = getObject(objectName);
-
-    auto& transform = gameObj.add<Transform>();
-    transform.position = options.position;
-    transform.scale = options.scale;
-
-    auto& renderer = gameObj.add<Renderer>();
-    renderer.meshName = PRIMITIVE_GEOMETRY_CUBE;
-    renderer.materialName = options.materialName;
-
-    return objectName;
-}
-
-std::string Scene::createMeshObject(const std::string& meshName, const _createMeshObject_Options& options) {
+std::string Scene::createMesh(const std::string& meshName, const _createMesh_Options& options) {
     auto [objectName, successful] = createEmptyObject();
     auto& gameObj = getObject(objectName);
 
@@ -59,6 +44,10 @@ std::string Scene::createMeshObject(const std::string& meshName, const _createMe
     renderer.materialName = options.materialName;
 
     return objectName;
+}
+
+std::string Scene::createCube(const _createMesh_Options& options) {
+    return createMesh(PRIMITIVE_GEOMETRY_CUBE, options);
 }
 
 std::string Scene::createCamera(const _createCamera_Options& options) {
