@@ -19,30 +19,25 @@ public:
     GameWindow& operator=(GameWindow&&) = delete;
 
     GameWindow(size_t width, size_t height, const char* title) {
-        if (!glfwInit()) {
-            throw std::runtime_error("Failed to initialize window");
-        }
+        if (!glfwInit()) throw std::runtime_error("Failed to initialize window");
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        window_ = glfwCreateWindow(width, height, title, nullptr, nullptr);
-
+        window_ = glfwCreateWindow(static_cast<int>(width), static_cast<int>(height), title, nullptr, nullptr);
         if (!window_) {
             glfwTerminate();
             throw std::runtime_error("Failed to create window");
         }
-
-        int w = 0, h = 0;
-        glfwGetFramebufferSize(window_, &w, &h);
-        framebufferSize_ = {w, h};
-        sceneViewport_ = {0, 0, w, h};
-
+        int lw = 0, lh = 0;
+        glfwGetWindowSize(window_, &lw, &lh);
+        logicalSize_ = {lw, lh};
+        sceneViewport_ = {0, 0, lw, lh};
         glfwSetWindowUserPointer(window_, this);
-        glfwSetFramebufferSizeCallback(window_, [](GLFWwindow* win, int newWidth, int newHeight) {
+        glfwSetWindowSizeCallback(window_, [](GLFWwindow* win, int newWidth, int newHeight) {
             auto* self = static_cast<GameWindow*>(glfwGetWindowUserPointer(win));
             if (!self) return;
-            int oldWidth = self->framebufferSize_.first;
-            int oldHeight = self->framebufferSize_.second;
-            self->framebufferSize_ = {newWidth, newHeight};
-            for (const auto& handler: self->framebufferResizeHandlers_)
+            int oldWidth = self->logicalSize_.first;
+            int oldHeight = self->logicalSize_.second;
+            self->logicalSize_ = {newWidth, newHeight};
+            for (const auto& handler: self->windowResizeHandlers_)
                 handler(newWidth, newHeight, oldWidth, oldHeight);
         });
     }
@@ -54,9 +49,18 @@ public:
 
     GLFWwindow* get() const { return window_; }
 
-    std::pair<int, int> getSize() const { return framebufferSize_; }
-    void onFramebufferResize(std::function<void(int, int, int, int)> handler) {
-        framebufferResizeHandlers_.push_back(std::move(handler));
+    std::pair<int, int> getLogicalSize() const { return logicalSize_; }
+
+    // Returns the scale factor from logical to framebuffer (physical pixel) coordinates.
+    // On high-DPI displays this is typically {2, 2}; on standard displays {1, 1}.
+    std::pair<float, float> getContentScale() const {
+        float sx = 1.0f, sy = 1.0f;
+        glfwGetWindowContentScale(window_, &sx, &sy);
+        return {sx, sy};
+    }
+
+    void onWindowResize(std::function<void(int, int, int, int)> handler) {
+        windowResizeHandlers_.push_back(std::move(handler));
     }
 
     SceneViewport getSceneViewport() const { return sceneViewport_; }
@@ -69,7 +73,7 @@ public:
 
 private:
     GLFWwindow* window_;
-    std::pair<int, int> framebufferSize_{};
+    std::pair<int, int> logicalSize_{};
     SceneViewport sceneViewport_{};
-    std::vector<std::function<void(int, int, int, int)>> framebufferResizeHandlers_;
+    std::vector<std::function<void(int, int, int, int)>> windowResizeHandlers_;
 };

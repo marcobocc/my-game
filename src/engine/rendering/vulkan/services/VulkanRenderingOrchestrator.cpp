@@ -20,7 +20,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     commandManager_(commandManager),
     swapchainManager_(swapchainManager) {
     initFrameSync();
-    window_.onFramebufferResize([this](int, int, int, int) { swapchainManager_.recreate(context_); });
+    window_.onWindowResize([this](int, int, int, int) { swapchainManager_.recreate(context_); });
 }
 
 VulkanRenderingOrchestrator::~VulkanRenderingOrchestrator() {
@@ -112,6 +112,11 @@ VkCommandBuffer VulkanRenderingOrchestrator::beginFrame() const {
 void VulkanRenderingOrchestrator::prepareSceneCanvas(VkCommandBuffer cmd, uint32_t imageIndex) const {
     const VulkanSwapchain& swapchain = swapchainManager_.swapchain();
     const SceneViewport sv = window_.getSceneViewport();
+    const auto [scaleX, scaleY] = window_.getContentScale();
+    const int framebufferX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
+    const int framebufferY = static_cast<int>(static_cast<float>(sv.y) * scaleY);
+    const int framebufferWidth = static_cast<int>(static_cast<float>(sv.width) * scaleX);
+    const int framebufferHeight = static_cast<int>(static_cast<float>(sv.height) * scaleY);
 
     VkClearValue clearColor{};
     clearColor.color = {{0.1f, 0.1f, 0.1f, 1.0f}};
@@ -145,15 +150,16 @@ void VulkanRenderingOrchestrator::prepareSceneCanvas(VkCommandBuffer cmd, uint32
     vkCmdBeginRendering(cmd, &renderingInfo);
 
     VkViewport viewport{};
-    viewport.x = static_cast<float>(sv.x);
-    viewport.y = static_cast<float>(sv.y + sv.height);
-    viewport.width = static_cast<float>(sv.width);
-    viewport.height = -static_cast<float>(sv.height);
+    viewport.x = static_cast<float>(framebufferX);
+    viewport.y = static_cast<float>(framebufferY + framebufferHeight);
+    viewport.width = static_cast<float>(framebufferWidth);
+    viewport.height = -static_cast<float>(framebufferHeight);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(cmd, 0, 1, &viewport);
 
-    VkRect2D scissor{{sv.x, sv.y}, {static_cast<uint32_t>(sv.width), static_cast<uint32_t>(sv.height)}};
+    VkRect2D scissor{{framebufferX, framebufferY},
+                     {static_cast<uint32_t>(framebufferWidth), static_cast<uint32_t>(framebufferHeight)}};
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
