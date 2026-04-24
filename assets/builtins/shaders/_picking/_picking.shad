@@ -1,0 +1,4 @@
+{
+  "vertexShader": "_picking.vert.spv",
+  "fragmentShader": "_picking.frag.spv"
+}

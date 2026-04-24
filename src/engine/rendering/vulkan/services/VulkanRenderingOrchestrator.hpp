@@ -1,4 +1,6 @@
 #pragma once
+#include <optional>
+#include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "../core/structs.hpp"
@@ -15,6 +17,7 @@ struct VulkanContext;
 class VulkanCommandManager;
 class VulkanSceneRenderer;
 class VulkanGridRenderer;
+class VulkanPickingRenderer;
 class VulkanImguiRenderer;
 class VulkanSwapchainManager;
 
@@ -27,6 +30,7 @@ public:
                                 VulkanContext& context,
                                 VulkanSceneRenderer& sceneRenderer,
                                 VulkanGridRenderer& gridRenderer,
+                                VulkanPickingRenderer& pickingRenderer,
                                 VulkanImguiRenderer& imguiRenderer,
                                 VulkanCommandManager& commandManager,
                                 VulkanSwapchainManager& swapchainManager,
@@ -34,8 +38,11 @@ public:
 
     ~VulkanRenderingOrchestrator();
 
-    void enqueueForDrawing(const Renderer&, const Transform&) const;
+    void enqueueForDrawing(const Renderer&, const Transform&, std::string objectId) const;
     bool renderFrame(const Camera& camera, const Transform& cameraTransform);
+
+    void requestPick(uint32_t x, uint32_t y);
+    std::optional<std::string> getPickResult();
 
 private:
     // Frame stages
@@ -71,8 +78,15 @@ private:
     VulkanContext& context_;
     VulkanSceneRenderer& sceneRenderer_;
     VulkanGridRenderer& gridRenderer_;
+    VulkanPickingRenderer& pickingRenderer_;
     VulkanImguiRenderer& imguiRenderer_;
     VulkanCommandManager& commandManager_;
     VulkanSwapchainManager& swapchainManager_;
     RendererSettings& settings_;
+
+    bool hasPendingPickRequest_ = false;
+    uint32_t pendingPickX_ = 0;
+    uint32_t pendingPickY_ = 0;
+    bool pickResultReady_ = false;
+    std::optional<std::string> pendingPickResult_;
 };

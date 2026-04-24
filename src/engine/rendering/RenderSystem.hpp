@@ -13,7 +13,7 @@ public:
         auto drawables = scene.getObjectsWith<Renderer, Transform>();
         for (auto& [entity, renderer, transform]: drawables) {
             if (!renderer.enabled) continue;
-            backend_.draw(renderer, transform);
+            backend_.draw(renderer, transform, entity);
         }
 
         auto cameras = scene.getObjectsWith<Camera, Transform>();

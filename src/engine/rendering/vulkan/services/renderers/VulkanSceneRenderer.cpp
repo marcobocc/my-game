@@ -51,8 +51,10 @@ void VulkanSceneRenderer::updatePerFrameUBO(const Camera& camera, const Transfor
     updateBuffer(vulkanContext_.device, perFrameUBO_.buffer, data, sizeof(data));
 }
 
-void VulkanSceneRenderer::enqueueForDrawing(const Renderer& renderer, const Transform& transform) {
-    drawQueue_.push_back({renderer, transform});
+void VulkanSceneRenderer::enqueueForDrawing(const Renderer& renderer,
+                                            const Transform& transform,
+                                            std::string objectId) {
+    drawQueue_.push_back({renderer, transform, std::move(objectId)});
 }
 
 void VulkanSceneRenderer::drawScene(VkCommandBuffer cmd, const Camera& camera, const Transform& cameraTransform) {

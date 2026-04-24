@@ -5,6 +5,7 @@
 #include "core/GameWindow.hpp"
 #include "renderers/VulkanGridRenderer.hpp"
 #include "renderers/VulkanImguiRenderer.hpp"
+#include "renderers/VulkanPickingRenderer.hpp"
 #include "renderers/VulkanSceneRenderer.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
 
@@ -12,6 +13,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanContext& context,
                                                          VulkanSceneRenderer& sceneRenderer,
                                                          VulkanGridRenderer& gridRenderer,
+                                                         VulkanPickingRenderer& pickingRenderer,
                                                          VulkanImguiRenderer& imguiRenderer,
                                                          VulkanCommandManager& commandManager,
                                                          VulkanSwapchainManager& swapchainManager,
@@ -20,12 +22,17 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     context_(context),
     sceneRenderer_(sceneRenderer),
     gridRenderer_(gridRenderer),
+    pickingRenderer_(pickingRenderer),
     imguiRenderer_(imguiRenderer),
     commandManager_(commandManager),
     swapchainManager_(swapchainManager),
     settings_(settings) {
     initFrameSync();
-    window_.onWindowResize([this](int, int, int, int) { swapchainManager_.recreate(context_); });
+    window_.onWindowResize([this](int, int, int, int) {
+        swapchainManager_.recreate(context_);
+        const auto& extent = swapchainManager_.swapchain().swapchainExtent;
+        pickingRenderer_.resize(extent.width, extent.height);
+    });
 }
 
 VulkanRenderingOrchestrator::~VulkanRenderingOrchestrator() {
@@ -33,12 +40,18 @@ VulkanRenderingOrchestrator::~VulkanRenderingOrchestrator() {
     destroyFrameSync();
 }
 
-void VulkanRenderingOrchestrator::enqueueForDrawing(const Renderer& renderer, const Transform& transform) const {
-    sceneRenderer_.enqueueForDrawing(renderer, transform);
+void VulkanRenderingOrchestrator::enqueueForDrawing(const Renderer& renderer,
+                                                    const Transform& transform,
+                                                    std::string objectId) const {
+    sceneRenderer_.enqueueForDrawing(renderer, transform, std::move(objectId));
 }
 
 bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transform& cameraTransform) {
     waitForCurrentFrame();
+    if (pickResultReady_) {
+        pickResultReady_ = false;
+        pendingPickResult_ = pickingRenderer_.resolvePickedObject();
+    }
     uint32_t imageIndex = 0;
     if (!acquireImage(imageIndex)) return false;
     VkCommandBuffer cmd = beginFrame();
@@ -46,6 +59,16 @@ bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transf
     endFrame(cmd, imageIndex);
     advanceFrame();
     return true;
+}
+
+void VulkanRenderingOrchestrator::requestPick(uint32_t x, uint32_t y) {
+    hasPendingPickRequest_ = true;
+    pendingPickX_ = x;
+    pendingPickY_ = y;
+}
+
+std::optional<std::string> VulkanRenderingOrchestrator::getPickResult() {
+    return std::exchange(pendingPickResult_, std::nullopt);
 }
 
 // ------------------- Frame sync -------------------
@@ -172,6 +195,14 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                                                  uint32_t imageIndex,
                                                  const Camera& camera,
                                                  const Transform& cameraTransform) {
+    pickingRenderer_.setDrawQueue(sceneRenderer_.getDrawQueue());
+    pickingRenderer_.drawPickingPass(cmd, camera, cameraTransform);
+    if (hasPendingPickRequest_) {
+        pickingRenderer_.requestPixelReadback(cmd, pendingPickX_, pendingPickY_);
+        hasPendingPickRequest_ = false;
+        pickResultReady_ = true;
+    }
+
     transitionToRenderLayouts(cmd, imageIndex);
     prepareSceneCanvas(cmd, imageIndex);
     sceneRenderer_.drawScene(cmd, camera, cameraTransform);

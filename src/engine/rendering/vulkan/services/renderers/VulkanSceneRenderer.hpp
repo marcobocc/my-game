@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <vector>
 #include "assets/AssetManager.hpp"
 #include "core/objects/components/Camera.hpp"
@@ -10,6 +11,7 @@
 struct DrawCall {
     const Renderer& renderer;
     const Transform& transform;
+    std::string objectId;
 };
 
 class VulkanSceneRenderer {
@@ -20,8 +22,9 @@ public:
 
     ~VulkanSceneRenderer();
 
-    void enqueueForDrawing(const Renderer&, const Transform&);
+    void enqueueForDrawing(const Renderer&, const Transform&, std::string objectId);
     void drawScene(VkCommandBuffer cmd, const Camera& camera, const Transform& cameraTransform);
+    const std::vector<DrawCall>& getDrawQueue() const { return drawQueue_; }
 
 private:
     void createPerFrameUBO();

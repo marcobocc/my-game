@@ -17,6 +17,7 @@
 #include "services/debug/VulkanDebugMessenger.hpp"
 #include "services/renderers/VulkanGridRenderer.hpp"
 #include "services/renderers/VulkanImguiRenderer.hpp"
+#include "services/renderers/VulkanPickingRenderer.hpp"
 #include "services/renderers/VulkanSceneRenderer.hpp"
 
 /*
@@ -61,11 +62,13 @@ public:
         resourcesManager_(meshBuffersCache_, textureCache_, pipelineCache_, materialCache_),
         sceneRenderer_(vulkanContext_, resourcesManager_, assetManager),
         gridRenderer_(vulkanContext_, assetManager),
+        pickingRenderer_(vulkanContext_, assetManager),
         imguiRenderer_(vulkanContext_, swapchainManager_, window, userInterface),
         renderingOrchestrator_(window,
                                vulkanContext_,
                                sceneRenderer_,
                                gridRenderer_,
+                               pickingRenderer_,
                                imguiRenderer_,
                                commandManager_,
                                swapchainManager_,
@@ -73,6 +76,11 @@ public:
         graphicsBackend_(vulkanContext_, renderingOrchestrator_) {
         assetManager.get<Shader>(GRID_SHADER);
         gridRenderer_.init(GRID_SHADER);
+
+        assetManager.get<Shader>(PICKING_SHADER);
+        const auto& extent = swapchainManager_.swapchain().swapchainExtent;
+        pickingRenderer_.setResourcesManager(resourcesManager_);
+        pickingRenderer_.init(extent.width, extent.height);
     }
 
     VulkanGraphicsBackend& graphicsBackend() { return graphicsBackend_; }
@@ -92,6 +100,7 @@ private:
 
     VulkanSceneRenderer sceneRenderer_;
     VulkanGridRenderer gridRenderer_;
+    VulkanPickingRenderer pickingRenderer_;
     VulkanImguiRenderer imguiRenderer_;
     VulkanRenderingOrchestrator renderingOrchestrator_;
 

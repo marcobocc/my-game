@@ -1,4 +1,6 @@
 #include "GameEngine.hpp"
+#include <optional>
+#include <string>
 
 
 GameEngine::GameEngine(GameWindow& window, std::filesystem::path assetsPath) : window_(window), lastFrameTime_(0.0) {
@@ -42,3 +44,11 @@ void GameEngine::run(const GameLoopFunc& gameLoopFunc) {
 bool GameEngine::shouldClose() const { return window_.shouldClose(); }
 
 void GameEngine::requestClose() const { window_.requestClose(); }
+
+void GameEngine::requestPick(uint32_t x, uint32_t y) const {
+    vulkanWiringContainer_->graphicsBackend().requestPick(x, y);
+}
+
+std::optional<std::string> GameEngine::getPickResult() const {
+    return vulkanWiringContainer_->graphicsBackend().getPickResult();
+}

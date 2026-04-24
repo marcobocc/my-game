@@ -48,6 +48,7 @@ private:
     double lastMouseY_ = 0.0;
     bool wasOrbiting_ = false;
     bool wasPanning_ = false;
+    bool wasLeftDown_ = false;
 
     void setupScene() {
         cameraId_ = scene_.createCamera({.position = computeCameraPosition()});
@@ -143,6 +144,17 @@ private:
 
         lastMouseX_ = mouseX;
         lastMouseY_ = mouseY;
+
+        bool leftDown = input.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
+        if (leftDown && !wasLeftDown_) {
+            auto [scaleX, scaleY] = window_.getContentScale();
+            auto x = static_cast<uint32_t>(mouseX * scaleX);
+            auto y = static_cast<uint32_t>(mouseY * scaleY);
+            engine_.requestPick(x, y);
+        }
+        wasLeftDown_ = leftDown;
+
+        if (auto picked = engine_.getPickResult()) printf("Picked object: %s\n", picked->c_str());
 
         applyCameraTransform();
     }

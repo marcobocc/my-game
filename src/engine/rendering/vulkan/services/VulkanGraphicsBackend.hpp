@@ -1,4 +1,6 @@
 #pragma once
+#include <optional>
+#include <string>
 
 struct VulkanContext;
 class VulkanRenderingOrchestrator;
@@ -45,8 +47,10 @@ public:
     ~VulkanGraphicsBackend();
     VulkanGraphicsBackend(VulkanContext& context, VulkanRenderingOrchestrator& renderer);
 
-    void draw(const Renderer& renderer, const Transform& transform) const;
+    void draw(const Renderer& renderer, const Transform& transform, std::string objectId) const;
     void renderFrame(const Camera& camera, const Transform& cameraTransform) const;
+    void requestPick(uint32_t x, uint32_t y) const;
+    std::optional<std::string> getPickResult() const;
 
 private:
     VulkanContext& context_;

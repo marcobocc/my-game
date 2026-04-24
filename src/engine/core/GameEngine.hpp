@@ -1,6 +1,8 @@
 #pragma once
 #include <functional>
 #include <memory>
+#include <optional>
+#include <string>
 #include "assets/AssetImporter.hpp"
 #include "core/GameWindow.hpp"
 #include "core/input/InputSystem.hpp"
@@ -27,6 +29,9 @@ public:
     InputSystem& getInputSystem() const { return *inputSystem_; }
     Scene& getScene() const { return *scene_; }
     RendererSettings& getRendererSettings() { return rendererSettings_; }
+
+    void requestPick(uint32_t x, uint32_t y) const;
+    std::optional<std::string> getPickResult() const;
 
     void run(const GameLoopFunc& gameLoopFunc);
     void requestClose() const;
