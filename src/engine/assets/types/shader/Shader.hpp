@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
+#include <vector>
 #include "assets/types/base/Asset.hpp"
-
 
 class Shader final : public Asset {
 public:

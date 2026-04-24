@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <memory>
+#include "assets/AssetImporter.hpp"
 #include "core/GameWindow.hpp"
 #include "core/input/InputSystem.hpp"
 #include "core/ui/UserInterface.hpp"
@@ -38,7 +39,8 @@ private:
     std::unique_ptr<RenderSystem> renderSystem_;
     std::unique_ptr<InputSystem> inputSystem_;
     std::unique_ptr<Scene> scene_;
-    std::unique_ptr<AssetCache> assetCache_;
+    std::unique_ptr<AssetStorage> assetStorage_;
+    std::unique_ptr<AssetImporter> assetImporter_;
     std::unique_ptr<AssetManager> assetManager_;
 
     GameLoopFunc updateFunction_;

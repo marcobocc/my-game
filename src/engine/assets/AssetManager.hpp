@@ -1,50 +1,21 @@
 #pragma once
-#include <filesystem>
-#include <log4cxx/logger.h>
-#include <unordered_map>
-#include <vector>
-#include "AssetCache.hpp"
-#include "types/base/AssetLoader.hpp"
-
-class AssetCache;
-class AssetLoader;
+#include <string>
+#include "AssetImporter.hpp"
+#include "AssetStorage.hpp"
 
 class AssetManager {
-    inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetManager");
-
 public:
-    struct AssetInfo {
-        std::string name;
-        std::filesystem::path descriptor;
-        bool loaded;
-    };
-
-    explicit AssetManager(AssetCache& assetCache, const std::filesystem::path& root);
+    explicit AssetManager(AssetImporter& importer, AssetStorage& cache) : assetImporter_(importer), storage_(cache) {}
 
     template<typename T>
-    T* get(const std::string& name);
-    void load(const std::string& name);
-
-    std::vector<AssetInfo> getAssetInfos() const;
+    T* get(const std::string& name) {
+        if (auto* cached = storage_.get<T>(name)) return cached;
+        bool importSuccessful = assetImporter_.import(name);
+        if (!importSuccessful) throw std::runtime_error("Could not load asset: " + name);
+        return storage_.get<T>(name);
+    }
 
 private:
-    AssetInfo& getAssetInfo(const std::string& name);
-    void registerLoader(const std::string& extension, std::unique_ptr<AssetLoader> loader);
-    bool dispatchLoader(const std::string& name);
-    void scan(const std::filesystem::path& root);
-
-    AssetCache& cache_;
-    std::unordered_map<std::string, AssetInfo> assetsInfos_;
-    std::unordered_map<std::string, std::unique_ptr<AssetLoader>> loaders_;
+    AssetImporter& assetImporter_;
+    AssetStorage& storage_;
 };
-
-// ----------------------------------------------------
-// Template definitions
-// ----------------------------------------------------
-
-template<typename T>
-T* AssetManager::get(const std::string& name) {
-    if (auto* cached = cache_.get<T>(name)) return cached;
-    load(name);
-    return cache_.get<T>(name);
-}

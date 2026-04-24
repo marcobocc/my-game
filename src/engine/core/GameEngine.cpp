@@ -14,8 +14,9 @@ GameEngine::~GameEngine() {
 
 void GameEngine::initialize(const std::filesystem::path& assetsPath) {
     userInterface_ = std::make_unique<UserInterface>();
-    assetCache_ = std::make_unique<AssetCache>();
-    assetManager_ = std::make_unique<AssetManager>(*assetCache_, assetsPath);
+    assetStorage_ = std::make_unique<AssetStorage>();
+    assetImporter_ = std::make_unique<AssetImporter>(assetsPath, *assetStorage_);
+    assetManager_ = std::make_unique<AssetManager>(*assetImporter_, *assetStorage_);
     scene_ = std::make_unique<Scene>();
     vulkanWiringContainer_ = std::make_unique<VulkanWiringContainer>(window_, *assetManager_, *userInterface_);
     renderSystem_ = std::make_unique<RenderSystem>(vulkanWiringContainer_->graphicsBackend());

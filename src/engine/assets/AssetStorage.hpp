@@ -1,11 +1,14 @@
 #pragma once
+#include <log4cxx/logger.h>
 #include <memory>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
 #include <unordered_set>
 
-class AssetCache {
+class AssetStorage {
+    inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetStorage");
+
 public:
     template<typename T>
     T* get(const std::string& name) {
@@ -20,6 +23,7 @@ public:
         auto& container = getContainer<T>();
         auto [it, inserted] = container.emplace(name, std::move(asset));
         names_.insert(name);
+        if (inserted) LOG4CXX_INFO(LOGGER, "Cached asset: " << name);
         return it->second.get();
     }
 
