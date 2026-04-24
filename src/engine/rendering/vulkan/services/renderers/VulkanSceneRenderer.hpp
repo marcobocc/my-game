@@ -21,11 +21,11 @@ public:
     ~VulkanSceneRenderer();
 
     void enqueueForDrawing(const Renderer&, const Transform&);
-    void drawScene(VkCommandBuffer cmd, const Camera& camera);
+    void drawScene(VkCommandBuffer cmd, const Camera& camera, const Transform& cameraTransform);
 
 private:
     void createPerFrameUBO();
-    void updatePerFrameUBO(const Camera& camera) const;
+    void updatePerFrameUBO(const Camera& camera, const Transform& cameraTransform) const;
     void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall) const;
 
     VulkanPerFrameUBO perFrameUBO_;

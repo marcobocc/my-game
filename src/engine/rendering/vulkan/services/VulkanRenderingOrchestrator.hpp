@@ -31,14 +31,14 @@ public:
     ~VulkanRenderingOrchestrator();
 
     void enqueueForDrawing(const Renderer&, const Transform&) const;
-    bool renderFrame(const Camera& camera);
+    bool renderFrame(const Camera& camera, const Transform& cameraTransform);
 
 private:
     // Frame stages
     bool acquireImage(uint32_t& imageIndex);
     VkCommandBuffer beginFrame() const;
     void prepareSceneCanvas(VkCommandBuffer cmd, uint32_t imageIndex) const;
-    void recordCommands(VkCommandBuffer, uint32_t imageIndex, const Camera& camera);
+    void recordCommands(VkCommandBuffer, uint32_t imageIndex, const Camera& camera, const Transform& cameraTransform);
     void endFrame(VkCommandBuffer, uint32_t imageIndex);
     void submit(VkCommandBuffer, uint32_t imageIndex);
 

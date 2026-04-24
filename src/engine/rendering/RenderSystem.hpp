@@ -16,10 +16,10 @@ public:
             backend_.draw(renderer, transform);
         }
 
-        auto cameras = scene.getObjectsWith<Camera>();
+        auto cameras = scene.getObjectsWith<Camera, Transform>();
         if (!cameras.empty()) {
-            const auto& [camEntity, camera] = cameras.front();
-            backend_.renderFrame(camera);
+            const auto& [camEntity, camera, transform] = cameras.front();
+            backend_.renderFrame(camera, transform);
         } else {
             throw std::runtime_error("No camera found");
         }

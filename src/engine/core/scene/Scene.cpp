@@ -6,6 +6,7 @@
 #include "../../assets/BuiltinAssetNames.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Renderer.hpp"
+#include "core/objects/components/Transform.hpp"
 
 Scene::Scene() : componentStorage_(std::make_unique<ComponentStorage>()) {}
 
@@ -57,13 +58,13 @@ std::string Scene::createRectangle2D(const _createMesh_Options& options) {
 std::string Scene::createCamera(const _createCamera_Options& options) {
     auto [objectName, created] = createEmptyObject();
     auto& obj = getObject(objectName);
+
+    auto& transform = obj.add<Transform>();
+    transform.position = options.position;
+    transform.rotation = options.rotation;
+
     auto& camera = obj.add<Camera>();
-    camera = Camera{.position = options.position,
-                    .forward = options.forward,
-                    .up = options.up,
-                    .fov = options.fov,
-                    .aspect = options.aspect,
-                    .nearPlane = options.nearPlane,
-                    .farPlane = options.farPlane};
+    camera = Camera{
+            .fov = options.fov, .aspect = options.aspect, .nearPlane = options.nearPlane, .farPlane = options.farPlane};
     return objectName;
 }

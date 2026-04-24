@@ -39,8 +39,7 @@ public:
     // ------------------------------------------------------------------------------
     struct _createCamera_Options {
         glm::vec3 position{DEFAULT_POSITION};
-        glm::vec3 forward{DEFAULT_FORWARD};
-        glm::vec3 up{DEFAULT_UP};
+        glm::quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
         float fov{DEFAULT_FOV};
         float aspect{DEFAULT_ASPECT};
         float nearPlane{DEFAULT_NEAR_PLANE};

@@ -11,4 +11,6 @@ void VulkanGraphicsBackend::draw(const Renderer& renderer, const Transform& tran
     renderer_.enqueueForDrawing(renderer, transform);
 }
 
-void VulkanGraphicsBackend::renderFrame(const Camera& camera) const { renderer_.renderFrame(camera); }
+void VulkanGraphicsBackend::renderFrame(const Camera& camera, const Transform& cameraTransform) const {
+    renderer_.renderFrame(camera, cameraTransform);
+}

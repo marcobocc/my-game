@@ -32,12 +32,12 @@ void VulkanRenderingOrchestrator::enqueueForDrawing(const Renderer& renderer, co
     sceneRenderer_.enqueueForDrawing(renderer, transform);
 }
 
-bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera) {
+bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transform& cameraTransform) {
     waitForCurrentFrame();
     uint32_t imageIndex = 0;
     if (!acquireImage(imageIndex)) return false;
     VkCommandBuffer cmd = beginFrame();
-    recordCommands(cmd, imageIndex, camera);
+    recordCommands(cmd, imageIndex, camera, cameraTransform);
     endFrame(cmd, imageIndex);
     advanceFrame();
     return true;
@@ -163,10 +163,13 @@ void VulkanRenderingOrchestrator::prepareSceneCanvas(VkCommandBuffer cmd, uint32
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
-void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const Camera& camera) {
+void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
+                                                 uint32_t imageIndex,
+                                                 const Camera& camera,
+                                                 const Transform& cameraTransform) {
     transitionToRenderLayouts(cmd, imageIndex);
     prepareSceneCanvas(cmd, imageIndex);
-    sceneRenderer_.drawScene(cmd, camera);
+    sceneRenderer_.drawScene(cmd, camera, cameraTransform);
     vkCmdEndRendering(cmd);
     imguiRenderer_.recordUIPass(cmd, imageIndex);
 }

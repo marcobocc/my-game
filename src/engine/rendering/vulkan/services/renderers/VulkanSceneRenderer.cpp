@@ -46,8 +46,8 @@ void VulkanSceneRenderer::createPerFrameUBO() {
                                                                   uboSize);
 }
 
-void VulkanSceneRenderer::updatePerFrameUBO(const Camera& camera) const {
-    glm::mat4 data[2] = {camera.getViewMatrix(), camera.getProjectionMatrix()};
+void VulkanSceneRenderer::updatePerFrameUBO(const Camera& camera, const Transform& cameraTransform) const {
+    glm::mat4 data[2] = {cameraTransform.getViewMatrix(), camera.getProjectionMatrix()};
     updateBuffer(vulkanContext_.device, perFrameUBO_.buffer, data, sizeof(data));
 }
 
@@ -55,8 +55,8 @@ void VulkanSceneRenderer::enqueueForDrawing(const Renderer& renderer, const Tran
     drawQueue_.push_back({renderer, transform});
 }
 
-void VulkanSceneRenderer::drawScene(VkCommandBuffer cmd, const Camera& camera) {
-    updatePerFrameUBO(camera);
+void VulkanSceneRenderer::drawScene(VkCommandBuffer cmd, const Camera& camera, const Transform& cameraTransform) {
+    updatePerFrameUBO(camera, cameraTransform);
     for (const auto& drawCall: drawQueue_)
         renderEntity(cmd, drawCall);
     drawQueue_.clear();

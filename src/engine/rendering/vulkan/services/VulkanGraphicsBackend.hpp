@@ -46,7 +46,7 @@ public:
     VulkanGraphicsBackend(VulkanContext& context, VulkanRenderingOrchestrator& renderer);
 
     void draw(const Renderer& renderer, const Transform& transform) const;
-    void renderFrame(const Camera& camera) const;
+    void renderFrame(const Camera& camera, const Transform& cameraTransform) const;
 
 private:
     VulkanContext& context_;
