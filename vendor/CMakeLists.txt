@@ -27,3 +27,11 @@ set(STB_DIR ${VENDOR_DIR}/stb)
 set(STB_SOURCES ${STB_DIR}/stb_image_impl.cpp)
 add_library(stb STATIC ${STB_SOURCES})
 target_include_directories(stb PUBLIC ${STB_DIR})
+
+# -------------------------------------------------------------------------
+# spirv-reflect
+# -------------------------------------------------------------------------
+set(SPIRV_REFLECT_DIR ${VENDOR_DIR}/spirv_reflect)
+set(SPIRV_REFLECT_SOURCES ${SPIRV_REFLECT_DIR}/spirv_reflect.h ${SPIRV_REFLECT_DIR}/spirv_reflect.cpp)
+add_library(spirv_reflect STATIC ${SPIRV_REFLECT_SOURCES})
+target_include_directories(spirv_reflect PUBLIC ${SPIRV_REFLECT_DIR})

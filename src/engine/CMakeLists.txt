@@ -23,6 +23,7 @@ target_link_libraries(GameEngineLib PUBLIC
     imgui
     stb
     nlohmann_json::nlohmann_json
+    spirv_reflect
 )
 
 # On macOS, link MoltenVK explicitly
