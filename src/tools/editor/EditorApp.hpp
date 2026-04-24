@@ -52,6 +52,7 @@ private:
     void setupScene() {
         cameraId_ = scene_.createCamera({.position = computeCameraPosition()});
         scene_.createCube({});
+        engine_.getRendererSettings().enableGrid = true;
     }
 
     glm::vec3 computeCameraPosition() const {
@@ -124,6 +125,9 @@ private:
         if (input.isKeyDown(GLFW_KEY_S)) move -= forward;
         if (input.isKeyDown(GLFW_KEY_A)) move -= right;
         if (input.isKeyDown(GLFW_KEY_D)) move += right;
+        if (input.isKeyPressed(GLFW_KEY_G))
+            engine_.getRendererSettings().enableGrid = !engine_.getRendererSettings().enableGrid;
+
         if (input.isKeyPressed(GLFW_KEY_F)) {
             orbitTarget_ = {0.0f, 0.0f, 0.0f};
             orbitDistance_ = INITIAL_ORBIT_DISTANCE;
