@@ -6,12 +6,6 @@
 #include "rendering/vulkan/core/shaders.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 
-// --- Push constants ---
-struct PushConstants {
-    glm::mat4 modelMatrix;
-    glm::vec4 baseColor;
-};
-
 class VulkanPipelineCache {
 public:
     explicit VulkanPipelineCache(const VulkanContext& context) : context_(context) {}
@@ -92,8 +86,7 @@ private:
                                                          vertexInputState_,
                                                          descriptorSetLayouts,
                                                          VK_FORMAT_B8G8R8A8_UNORM,
-                                                         VK_FORMAT_D32_SFLOAT,
-                                                         sizeof(PushConstants));
+                                                         VK_FORMAT_D32_SFLOAT);
 
         auto [it, _] = cache_.emplace(shader.getName(), std::move(pipeline));
         return it->second;

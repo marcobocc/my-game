@@ -72,10 +72,14 @@ void VulkanSceneRenderer::renderEntity(VkCommandBuffer cmd, const DrawCall& draw
     vkCmdBindDescriptorSets(
             cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &texturesDescriptorSet, 0, nullptr);
 
-    PushConstants pushConstants{
-            .modelMatrix = drawCall.transform.getModelMatrix(),
-            .baseColor = drawCall.renderer.baseColorOverride.value_or(material->getBaseColor()),
-    };
+    // --- Push constants ---
+    struct PushConstants {
+        glm::mat4 modelMatrix;
+        glm::vec4 baseColor;
+    } pushConstants;
+    pushConstants.modelMatrix = drawCall.transform.getModelMatrix(),
+    pushConstants.baseColor = drawCall.renderer.baseColorOverride.value_or(material->getBaseColor()),
+
     vkCmdPushConstants(cmd,
                        pipeline->layout,
                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,

@@ -1,9 +1,11 @@
 #pragma once
+#include <span>
 #include <utility>
 #include <vector>
 #include <volk.h>
 #include "assets/types/shader/Shader.hpp"
 #include "error_handling.hpp"
+#include "spirv_reflect.h"
 #include "structs.hpp"
 
 inline std::pair<VkShaderModule, VkPipelineShaderStageCreateInfo>
@@ -25,13 +27,35 @@ createShader(VkDevice device, const std::vector<char>& bytecode, VkShaderStageFl
     return {module, stageInfo};
 }
 
+inline uint32_t getPushConstantSize(const std::vector<char>& bytecode) {
+    SpvReflectShaderModule module{};
+    if (bytecode.size() % sizeof(uint32_t) != 0) {
+        throw std::runtime_error("Invalid SPIR-V size");
+    }
+    std::vector<uint32_t> spirv(bytecode.size() / sizeof(uint32_t));
+    std::memcpy(spirv.data(), bytecode.data(), bytecode.size());
+    SpvReflectResult result = spvReflectCreateShaderModule(spirv.size() * sizeof(uint32_t), spirv.data(), &module);
+    if (result != SPV_REFLECT_RESULT_SUCCESS) {
+        return 0;
+    }
+    uint32_t count = 0;
+    result = spvReflectEnumeratePushConstantBlocks(&module, &count, nullptr);
+    uint32_t size = 0;
+    if (result == SPV_REFLECT_RESULT_SUCCESS && count > 0) {
+        std::vector<SpvReflectBlockVariable*> blocks(count);
+        spvReflectEnumeratePushConstantBlocks(&module, &count, blocks.data());
+        size = blocks[0]->size; // first block only
+    }
+    spvReflectDestroyShaderModule(&module);
+    return size;
+}
+
 inline VulkanPipeline createGraphicsPipeline(VkDevice device,
                                              const Shader& shader,
                                              const VkPipelineVertexInputStateCreateInfo& vertexInput,
                                              const std::vector<VkDescriptorSetLayout>& setLayouts,
                                              VkFormat colorFormat,
-                                             VkFormat depthFormat,
-                                             uint32_t pushConstantSize) {
+                                             VkFormat depthFormat) {
     auto [vertModule, vertStage] = createShader(device, shader.getVertexBytecode(), VK_SHADER_STAGE_VERTEX_BIT);
     auto [fragModule, fragStage] = createShader(device, shader.getFragmentBytecode(), VK_SHADER_STAGE_FRAGMENT_BIT);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages{vertStage, fragStage};
@@ -40,14 +64,14 @@ inline VulkanPipeline createGraphicsPipeline(VkDevice device,
     pipeline.descriptorSetLayouts = setLayouts;
     pipeline.colorFormat = colorFormat;
     pipeline.depthFormat = depthFormat;
-    pipeline.pushConstantSize = pushConstantSize;
+    pipeline.pushConstantSize = getPushConstantSize(shader.getVertexBytecode());
 
     VkPushConstantRange push{};
     VkPushConstantRange* pushPtr = nullptr;
-    if (pushConstantSize > 0) {
+    if (pipeline.pushConstantSize > 0) {
         push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         push.offset = 0;
-        push.size = pushConstantSize;
+        push.size = pipeline.pushConstantSize;
         pushPtr = &push;
     }
 
