@@ -25,6 +25,7 @@ struct ShaderDescriptor {
     bool disableDepthTest;
     bool disableDepthWrite;
     bool enableAlphaBlend;
+    bool noVertexInput;
 
     static ShaderDescriptor fromFile(const std::filesystem::path& path, const std::string& name) {
         auto j = JsonUtils::loadJson(path);
@@ -34,7 +35,8 @@ struct ShaderDescriptor {
                 .disableCull = JsonUtils::getOptional<bool>(j, "disableCull", false),
                 .disableDepthTest = JsonUtils::getOptional<bool>(j, "disableDepthTest", false),
                 .disableDepthWrite = JsonUtils::getOptional<bool>(j, "disableDepthWrite", false),
-                .enableAlphaBlend = JsonUtils::getOptional<bool>(j, "enableAlphaBlend", false)};
+                .enableAlphaBlend = JsonUtils::getOptional<bool>(j, "enableAlphaBlend", false),
+                .noVertexInput = JsonUtils::getOptional<bool>(j, "noVertexInput", false)};
     }
 };
 

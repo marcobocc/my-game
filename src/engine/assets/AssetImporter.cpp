@@ -100,7 +100,8 @@ bool AssetImporter::importShader(const std::filesystem::path& file, const std::s
                                                      def.disableCull,
                                                      def.disableDepthTest,
                                                      def.disableDepthWrite,
-                                                     def.enableAlphaBlend));
+                                                     def.enableAlphaBlend,
+                                                     def.noVertexInput));
     return true;
 }
 

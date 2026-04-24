@@ -3,6 +3,7 @@
 #include "VulkanCommandManager.hpp"
 #include "VulkanSwapchainManager.hpp"
 #include "core/GameWindow.hpp"
+#include "renderers/VulkanGridRenderer.hpp"
 #include "renderers/VulkanImguiRenderer.hpp"
 #include "renderers/VulkanSceneRenderer.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
@@ -10,12 +11,14 @@
 VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanContext& context,
                                                          VulkanSceneRenderer& sceneRenderer,
+                                                         VulkanGridRenderer& gridRenderer,
                                                          VulkanImguiRenderer& imguiRenderer,
                                                          VulkanCommandManager& commandManager,
                                                          VulkanSwapchainManager& swapchainManager) :
     window_(window),
     context_(context),
     sceneRenderer_(sceneRenderer),
+    gridRenderer_(gridRenderer),
     imguiRenderer_(imguiRenderer),
     commandManager_(commandManager),
     swapchainManager_(swapchainManager) {
@@ -170,6 +173,7 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
     transitionToRenderLayouts(cmd, imageIndex);
     prepareSceneCanvas(cmd, imageIndex);
     sceneRenderer_.drawScene(cmd, camera, cameraTransform);
+    gridRenderer_.drawGrid(cmd, camera, cameraTransform);
     vkCmdEndRendering(cmd);
     imguiRenderer_.recordUIPass(cmd, imageIndex);
 }

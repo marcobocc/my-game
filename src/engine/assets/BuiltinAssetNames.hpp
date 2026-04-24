@@ -9,3 +9,6 @@ static constexpr auto EMPTY_TEXTURE = "_white1x1.tex";
 
 // --- Materials ---
 static constexpr auto SOLID_COLOR_MATERIAL = "_solid_color.mat";
+
+// --- Shaders ---
+static constexpr auto GRID_SHADER = "_grid.shad";

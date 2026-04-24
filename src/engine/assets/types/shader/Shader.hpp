@@ -11,14 +11,16 @@ public:
            bool disableCull,
            bool disableDepthTest,
            bool disableDepthWrite,
-           bool enableAlphaBlend) :
+           bool enableAlphaBlend,
+           bool noVertexInput = false) :
         Asset(name),
         vertexBytecode_(std::move(vertexBytecode)),
         fragmentBytecode_(std::move(fragmentBytecode)),
         disableCull(disableCull),
         disableDepthTest(disableDepthTest),
         disableDepthWrite(disableDepthWrite),
-        enableAlphaBlend(enableAlphaBlend) {}
+        enableAlphaBlend(enableAlphaBlend),
+        noVertexInput(noVertexInput) {}
 
     const std::vector<char>& getVertexBytecode() const { return vertexBytecode_; }
     const std::vector<char>& getFragmentBytecode() const { return fragmentBytecode_; }
@@ -26,6 +28,7 @@ public:
     bool depthTestDisabled() const { return disableDepthTest; }
     bool depthWriteDisabled() const { return disableDepthWrite; }
     bool alphaBlendEnabled() const { return enableAlphaBlend; }
+    bool hasNoVertexInput() const { return noVertexInput; }
 
 private:
     std::vector<char> vertexBytecode_;
@@ -34,4 +37,5 @@ private:
     bool disableDepthTest;
     bool disableDepthWrite;
     bool enableAlphaBlend;
+    bool noVertexInput;
 };

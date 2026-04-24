@@ -13,6 +13,7 @@ class GameWindow;
 struct VulkanContext;
 class VulkanCommandManager;
 class VulkanSceneRenderer;
+class VulkanGridRenderer;
 class VulkanImguiRenderer;
 class VulkanSwapchainManager;
 
@@ -24,6 +25,7 @@ public:
     VulkanRenderingOrchestrator(GameWindow& window,
                                 VulkanContext& context,
                                 VulkanSceneRenderer& sceneRenderer,
+                                VulkanGridRenderer& gridRenderer,
                                 VulkanImguiRenderer& imguiRenderer,
                                 VulkanCommandManager& commandManager,
                                 VulkanSwapchainManager& swapchainManager);
@@ -66,6 +68,7 @@ private:
     GameWindow& window_;
     VulkanContext& context_;
     VulkanSceneRenderer& sceneRenderer_;
+    VulkanGridRenderer& gridRenderer_;
     VulkanImguiRenderer& imguiRenderer_;
     VulkanCommandManager& commandManager_;
     VulkanSwapchainManager& swapchainManager_;

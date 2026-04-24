@@ -64,7 +64,8 @@ inline VulkanPipeline createGraphicsPipeline(VkDevice device,
     pipeline.descriptorSetLayouts = setLayouts;
     pipeline.colorFormat = colorFormat;
     pipeline.depthFormat = depthFormat;
-    pipeline.pushConstantSize = getPushConstantSize(shader.getVertexBytecode());
+    pipeline.pushConstantSize = std::max(getPushConstantSize(shader.getVertexBytecode()),
+                                         getPushConstantSize(shader.getFragmentBytecode()));
 
     VkPushConstantRange push{};
     VkPushConstantRange* pushPtr = nullptr;

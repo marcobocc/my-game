@@ -1,5 +1,8 @@
 #pragma once
 #include <GLFW/glfw3.h>
+#include "assets/AssetManager.hpp"
+#include "assets/BuiltinAssetNames.hpp"
+#include "assets/types/shader/Shader.hpp"
 #include "core/initialization.hpp"
 #include "core/structs.hpp"
 #include "rendering/vulkan/services/VulkanCommandManager.hpp"
@@ -11,6 +14,7 @@
 #include "services/VulkanGraphicsBackend.hpp"
 #include "services/VulkanRenderingOrchestrator.hpp"
 #include "services/debug/VulkanDebugMessenger.hpp"
+#include "services/renderers/VulkanGridRenderer.hpp"
 #include "services/renderers/VulkanImguiRenderer.hpp"
 #include "services/renderers/VulkanSceneRenderer.hpp"
 
@@ -52,10 +56,19 @@ public:
         materialCache_(vulkanContext_, pipelineCache_, textureCache_, assetManager),
         resourcesManager_(meshBuffersCache_, textureCache_, pipelineCache_, materialCache_),
         sceneRenderer_(vulkanContext_, resourcesManager_, assetManager),
+        gridRenderer_(vulkanContext_, assetManager),
         imguiRenderer_(vulkanContext_, swapchainManager_, window, userInterface),
-        renderingOrchestrator_(
-                window, vulkanContext_, sceneRenderer_, imguiRenderer_, commandManager_, swapchainManager_),
-        graphicsBackend_(vulkanContext_, renderingOrchestrator_) {}
+        renderingOrchestrator_(window,
+                               vulkanContext_,
+                               sceneRenderer_,
+                               gridRenderer_,
+                               imguiRenderer_,
+                               commandManager_,
+                               swapchainManager_),
+        graphicsBackend_(vulkanContext_, renderingOrchestrator_) {
+        assetManager.get<Shader>(GRID_SHADER);
+        gridRenderer_.init(GRID_SHADER);
+    }
 
     VulkanGraphicsBackend& graphicsBackend() { return graphicsBackend_; }
 
@@ -73,6 +86,7 @@ private:
     VulkanResourcesManager resourcesManager_;
 
     VulkanSceneRenderer sceneRenderer_;
+    VulkanGridRenderer gridRenderer_;
     VulkanImguiRenderer imguiRenderer_;
     VulkanRenderingOrchestrator renderingOrchestrator_;
 

@@ -23,31 +23,34 @@ private:
     VulkanPipeline& load(const Shader& shader) {
         // --- Vertex inputs ---
         VkVertexInputBindingDescription vertexBinding_{};
-        vertexBinding_.binding = 0;
-        vertexBinding_.stride = sizeof(float) * Vertex_WithLayout_PositionUv::VERTEX_STRIDE;
-        vertexBinding_.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
         std::vector<VkVertexInputAttributeDescription> vertexAttributes_;
-        uint32_t location = 0;
-        for (const auto& [offset, componentCount]: Vertex_WithLayout_PositionUv::VERTEX_ATTRIBS) {
-            VkFormat format = VK_FORMAT_UNDEFINED;
-            if (componentCount == 2) format = VK_FORMAT_R32G32_SFLOAT;
-            if (componentCount == 3) format = VK_FORMAT_R32G32B32_SFLOAT;
-            if (componentCount == 4) format = VK_FORMAT_R32G32B32A32_SFLOAT;
-            VkVertexInputAttributeDescription desc{};
-            desc.location = location++;
-            desc.binding = 0;
-            desc.format = format;
-            desc.offset = static_cast<uint32_t>(offset * sizeof(float));
-            vertexAttributes_.push_back(desc);
-        }
-
         VkPipelineVertexInputStateCreateInfo vertexInputState_{};
         vertexInputState_.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputState_.vertexBindingDescriptionCount = 1;
-        vertexInputState_.pVertexBindingDescriptions = &vertexBinding_;
-        vertexInputState_.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributes_.size());
-        vertexInputState_.pVertexAttributeDescriptions = vertexAttributes_.data();
+
+        if (!shader.hasNoVertexInput()) {
+            vertexBinding_.binding = 0;
+            vertexBinding_.stride = sizeof(float) * Vertex_WithLayout_PositionUv::VERTEX_STRIDE;
+            vertexBinding_.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+            uint32_t location = 0;
+            for (const auto& [offset, componentCount]: Vertex_WithLayout_PositionUv::VERTEX_ATTRIBS) {
+                VkFormat format = VK_FORMAT_UNDEFINED;
+                if (componentCount == 2) format = VK_FORMAT_R32G32_SFLOAT;
+                if (componentCount == 3) format = VK_FORMAT_R32G32B32_SFLOAT;
+                if (componentCount == 4) format = VK_FORMAT_R32G32B32A32_SFLOAT;
+                VkVertexInputAttributeDescription desc{};
+                desc.location = location++;
+                desc.binding = 0;
+                desc.format = format;
+                desc.offset = static_cast<uint32_t>(offset * sizeof(float));
+                vertexAttributes_.push_back(desc);
+            }
+
+            vertexInputState_.vertexBindingDescriptionCount = 1;
+            vertexInputState_.pVertexBindingDescriptions = &vertexBinding_;
+            vertexInputState_.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributes_.size());
+            vertexInputState_.pVertexAttributeDescriptions = vertexAttributes_.data();
+        }
 
         // --- Frame UBO set layout ---
         VkDescriptorSetLayoutBinding frameUboLayoutBinding{};
