@@ -40,6 +40,12 @@ public:
             for (const auto& handler: self->windowResizeHandlers_)
                 handler(newWidth, newHeight, oldWidth, oldHeight);
         });
+        glfwSetScrollCallback(window_, [](GLFWwindow* win, double /*xoffset*/, double yoffset) {
+            auto* self = static_cast<GameWindow*>(glfwGetWindowUserPointer(win));
+            if (!self) return;
+            for (const auto& handler: self->scrollHandlers_)
+                handler(yoffset);
+        });
     }
 
     ~GameWindow() {
@@ -63,6 +69,21 @@ public:
         windowResizeHandlers_.push_back(std::move(handler));
     }
 
+    void onScroll(std::function<void(double)> handler) { scrollHandlers_.push_back(std::move(handler)); }
+
+    static constexpr int KEY_FIRST = GLFW_KEY_SPACE;
+    static constexpr int KEY_LAST = GLFW_KEY_LAST;
+    static constexpr int MOUSE_BUTTON_FIRST = GLFW_MOUSE_BUTTON_1;
+    static constexpr int MOUSE_BUTTON_LAST = GLFW_MOUSE_BUTTON_LAST;
+
+    bool isKeyPressed(int key) const { return glfwGetKey(window_, key) == GLFW_PRESS; }
+    bool isMouseButtonPressed(int button) const { return glfwGetMouseButton(window_, button) == GLFW_PRESS; }
+    std::pair<double, double> getMousePosition() const {
+        double x = 0.0, y = 0.0;
+        glfwGetCursorPos(window_, &x, &y);
+        return {x, y};
+    }
+
     SceneViewport getSceneViewport() const { return sceneViewport_; }
     void setSceneViewport(SceneViewport viewport) { sceneViewport_ = viewport; }
 
@@ -76,4 +97,5 @@ private:
     std::pair<int, int> logicalSize_{};
     SceneViewport sceneViewport_{};
     std::vector<std::function<void(int, int, int, int)>> windowResizeHandlers_;
+    std::vector<std::function<void(double)>> scrollHandlers_;
 };

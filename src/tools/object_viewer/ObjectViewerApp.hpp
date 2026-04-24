@@ -27,7 +27,7 @@ public:
 
     void run() {
         engine_.run([this](double deltaTime) {
-            if (engine_.getInputSystem().isKeyPressed(GLFW_KEY_ESCAPE)) engine_.requestClose();
+            if (engine_.getInputSystem().isKeyDown(GLFW_KEY_ESCAPE)) engine_.requestClose();
             update(deltaTime);
         });
     }
@@ -51,7 +51,7 @@ private:
         auto& input = engine_.getInputSystem();
         auto [mouseX, mouseY] = input.getMousePosition();
 
-        if (input.isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT) && isInsideSceneViewport(mouseX, mouseY)) {
+        if (input.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) && isInsideSceneViewport(mouseX, mouseY)) {
             if (wasDragging_) {
                 float dx = static_cast<float>(mouseX - lastMouseX_);
                 float dy = static_cast<float>(mouseY - lastMouseY_);
