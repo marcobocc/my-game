@@ -18,7 +18,8 @@ void GameEngine::initialize(const std::filesystem::path& assetsPath) {
     assetImporter_ = std::make_unique<AssetImporter>(assetsPath, *assetStorage_);
     assetManager_ = std::make_unique<AssetManager>(*assetImporter_, *assetStorage_);
     scene_ = std::make_unique<Scene>();
-    vulkanWiringContainer_ = std::make_unique<VulkanWiringContainer>(window_, *assetManager_, *userInterface_);
+    vulkanWiringContainer_ =
+            std::make_unique<VulkanWiringContainer>(window_, *assetManager_, *userInterface_, rendererSettings_);
     renderSystem_ = std::make_unique<RenderSystem>(vulkanWiringContainer_->graphicsBackend());
     inputSystem_ = std::make_unique<InputSystem>(window_);
     lastFrameTime_ = window_.getTime();

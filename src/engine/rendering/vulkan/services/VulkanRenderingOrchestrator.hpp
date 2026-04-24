@@ -5,6 +5,7 @@
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
+#include "rendering/RendererSettings.hpp"
 
 // ----------------------------------------------------------------------------
 // Forward definitions
@@ -28,7 +29,8 @@ public:
                                 VulkanGridRenderer& gridRenderer,
                                 VulkanImguiRenderer& imguiRenderer,
                                 VulkanCommandManager& commandManager,
-                                VulkanSwapchainManager& swapchainManager);
+                                VulkanSwapchainManager& swapchainManager,
+                                RendererSettings& settings);
 
     ~VulkanRenderingOrchestrator();
 
@@ -72,4 +74,5 @@ private:
     VulkanImguiRenderer& imguiRenderer_;
     VulkanCommandManager& commandManager_;
     VulkanSwapchainManager& swapchainManager_;
+    RendererSettings& settings_;
 };

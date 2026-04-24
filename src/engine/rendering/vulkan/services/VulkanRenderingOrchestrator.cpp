@@ -14,14 +14,16 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanGridRenderer& gridRenderer,
                                                          VulkanImguiRenderer& imguiRenderer,
                                                          VulkanCommandManager& commandManager,
-                                                         VulkanSwapchainManager& swapchainManager) :
+                                                         VulkanSwapchainManager& swapchainManager,
+                                                         RendererSettings& settings) :
     window_(window),
     context_(context),
     sceneRenderer_(sceneRenderer),
     gridRenderer_(gridRenderer),
     imguiRenderer_(imguiRenderer),
     commandManager_(commandManager),
-    swapchainManager_(swapchainManager) {
+    swapchainManager_(swapchainManager),
+    settings_(settings) {
     initFrameSync();
     window_.onWindowResize([this](int, int, int, int) { swapchainManager_.recreate(context_); });
 }
@@ -173,7 +175,7 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
     transitionToRenderLayouts(cmd, imageIndex);
     prepareSceneCanvas(cmd, imageIndex);
     sceneRenderer_.drawScene(cmd, camera, cameraTransform);
-    gridRenderer_.drawGrid(cmd, camera, cameraTransform);
+    if (settings_.enableGrid) gridRenderer_.drawGrid(cmd, camera, cameraTransform);
     vkCmdEndRendering(cmd);
     imguiRenderer_.recordUIPass(cmd, imageIndex);
 }

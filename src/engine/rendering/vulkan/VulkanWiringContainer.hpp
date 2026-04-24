@@ -5,6 +5,7 @@
 #include "assets/types/shader/Shader.hpp"
 #include "core/initialization.hpp"
 #include "core/structs.hpp"
+#include "rendering/RendererSettings.hpp"
 #include "rendering/vulkan/services/VulkanCommandManager.hpp"
 #include "resources/VulkanMaterialCache.hpp"
 #include "resources/VulkanMeshBuffersCache.hpp"
@@ -45,7 +46,10 @@
 */
 class VulkanWiringContainer {
 public:
-    VulkanWiringContainer(GameWindow& window, AssetManager& assetManager, UserInterface& userInterface) :
+    VulkanWiringContainer(GameWindow& window,
+                          AssetManager& assetManager,
+                          UserInterface& userInterface,
+                          RendererSettings& settings) :
         vulkanContext_(initVulkanContext()),
         debugMessenger_(vulkanContext_),
         swapchainManager_(window, vulkanContext_),
@@ -64,7 +68,8 @@ public:
                                gridRenderer_,
                                imguiRenderer_,
                                commandManager_,
-                               swapchainManager_),
+                               swapchainManager_,
+                               settings),
         graphicsBackend_(vulkanContext_, renderingOrchestrator_) {
         assetManager.get<Shader>(GRID_SHADER);
         gridRenderer_.init(GRID_SHADER);

@@ -6,6 +6,7 @@
 #include "core/input/InputSystem.hpp"
 #include "core/ui/UserInterface.hpp"
 #include "rendering/RenderSystem.hpp"
+#include "rendering/RendererSettings.hpp"
 #include "rendering/vulkan/VulkanWiringContainer.hpp"
 #include "scene/Scene.hpp"
 
@@ -25,6 +26,7 @@ public:
     AssetManager& getAssetManager() const { return *assetManager_; }
     InputSystem& getInputSystem() const { return *inputSystem_; }
     Scene& getScene() const { return *scene_; }
+    RendererSettings& getRendererSettings() { return rendererSettings_; }
 
     void run(const GameLoopFunc& gameLoopFunc);
     void requestClose() const;
@@ -34,6 +36,7 @@ private:
     bool shouldClose() const;
 
     GameWindow& window_;
+    RendererSettings rendererSettings_;
     std::unique_ptr<UserInterface> userInterface_;
     std::unique_ptr<VulkanWiringContainer> vulkanWiringContainer_;
     std::unique_ptr<RenderSystem> renderSystem_;
