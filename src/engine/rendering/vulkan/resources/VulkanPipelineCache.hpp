@@ -27,12 +27,6 @@ public:
 
 private:
     VulkanPipeline& load(const Shader& shader) {
-        auto [vertModule, vertStage] =
-                createShader(context_.device, shader.getVertexBytecode(), VK_SHADER_STAGE_VERTEX_BIT);
-        auto [fragModule, fragStage] =
-                createShader(context_.device, shader.getFragmentBytecode(), VK_SHADER_STAGE_FRAGMENT_BIT);
-        std::vector<VkPipelineShaderStageCreateInfo> shaderStages{vertStage, fragStage};
-
         // --- Vertex inputs ---
         VkVertexInputBindingDescription vertexBinding_{};
         vertexBinding_.binding = 0;
@@ -94,7 +88,7 @@ private:
 
         // --- Create pipeline ---
         VulkanPipeline pipeline = createGraphicsPipeline(context_.device,
-                                                         shaderStages,
+                                                         shader,
                                                          vertexInputState_,
                                                          descriptorSetLayouts,
                                                          VK_FORMAT_B8G8R8A8_UNORM,

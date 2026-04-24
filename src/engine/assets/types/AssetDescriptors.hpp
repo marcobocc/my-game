@@ -21,12 +21,20 @@ struct ShaderDescriptor {
     std::string name;
     std::string vertexShader;
     std::string fragmentShader;
+    bool disableCull;
+    bool disableDepthTest;
+    bool disableDepthWrite;
+    bool enableAlphaBlend;
 
     static ShaderDescriptor fromFile(const std::filesystem::path& path, const std::string& name) {
         auto j = JsonUtils::loadJson(path);
         return {.name = name,
                 .vertexShader = JsonUtils::getRequired<std::string>(j, "vertexShader"),
-                .fragmentShader = JsonUtils::getRequired<std::string>(j, "fragmentShader")};
+                .fragmentShader = JsonUtils::getRequired<std::string>(j, "fragmentShader"),
+                .disableCull = JsonUtils::getOptional<bool>(j, "disableCull", false),
+                .disableDepthTest = JsonUtils::getOptional<bool>(j, "disableDepthTest", false),
+                .disableDepthWrite = JsonUtils::getOptional<bool>(j, "disableDepthWrite", false),
+                .enableAlphaBlend = JsonUtils::getOptional<bool>(j, "enableAlphaBlend", false)};
     }
 };
 

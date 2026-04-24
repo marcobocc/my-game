@@ -2,6 +2,7 @@
 #include <utility>
 #include <vector>
 #include <volk.h>
+#include "assets/types/shader/Shader.hpp"
 #include "error_handling.hpp"
 #include "structs.hpp"
 
@@ -25,12 +26,16 @@ createShader(VkDevice device, const std::vector<char>& bytecode, VkShaderStageFl
 }
 
 inline VulkanPipeline createGraphicsPipeline(VkDevice device,
-                                             const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages,
+                                             const Shader& shader,
                                              const VkPipelineVertexInputStateCreateInfo& vertexInput,
                                              const std::vector<VkDescriptorSetLayout>& setLayouts,
                                              VkFormat colorFormat,
                                              VkFormat depthFormat,
                                              uint32_t pushConstantSize) {
+    auto [vertModule, vertStage] = createShader(device, shader.getVertexBytecode(), VK_SHADER_STAGE_VERTEX_BIT);
+    auto [fragModule, fragStage] = createShader(device, shader.getFragmentBytecode(), VK_SHADER_STAGE_FRAGMENT_BIT);
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages{vertStage, fragStage};
+
     VulkanPipeline pipeline{};
     pipeline.descriptorSetLayouts = setLayouts;
     pipeline.colorFormat = colorFormat;
@@ -75,7 +80,10 @@ inline VulkanPipeline createGraphicsPipeline(VkDevice device,
     VkPipelineRasterizationStateCreateInfo raster{};
     raster.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     raster.polygonMode = VK_POLYGON_MODE_FILL;
-    raster.cullMode = VK_CULL_MODE_BACK_BIT;
+    // We use a counter-clockwise convention, but we flip Vulkan Y-axis
+    // to have a right-handed coordinate system. By flipping Vulkan Y-axis,
+    // internally vertices appear as if they are clockwise.
+    raster.cullMode = shader.cullDisabled() ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
     raster.frontFace = VK_FRONT_FACE_CLOCKWISE;
     raster.lineWidth = 1.0f;
 
@@ -85,13 +93,22 @@ inline VulkanPipeline createGraphicsPipeline(VkDevice device,
 
     VkPipelineDepthStencilStateCreateInfo depth{};
     depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.depthTestEnable = VK_TRUE;
-    depth.depthWriteEnable = VK_TRUE;
+    depth.depthTestEnable = shader.depthTestDisabled() ? VK_FALSE : VK_TRUE;
+    depth.depthWriteEnable = shader.depthWriteDisabled() ? VK_FALSE : VK_TRUE;
     depth.depthCompareOp = VK_COMPARE_OP_LESS;
 
     VkPipelineColorBlendAttachmentState blendAttachment{};
     blendAttachment.colorWriteMask =
             VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    if (shader.alphaBlendEnabled()) {
+        blendAttachment.blendEnable = VK_TRUE;
+        blendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        blendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        blendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+        blendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        blendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        blendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    }
 
     VkPipelineColorBlendStateCreateInfo blend{};
     blend.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

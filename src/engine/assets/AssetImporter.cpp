@@ -94,7 +94,13 @@ bool AssetImporter::importShader(const std::filesystem::path& file, const std::s
         return false;
     }
     storage_.insert<Shader>(name,
-                            std::make_unique<Shader>(name, std::move(vertexBytecode), std::move(fragmentBytecode)));
+                            std::make_unique<Shader>(name,
+                                                     std::move(vertexBytecode),
+                                                     std::move(fragmentBytecode),
+                                                     def.disableCull,
+                                                     def.disableDepthTest,
+                                                     def.disableDepthWrite,
+                                                     def.enableAlphaBlend));
     return true;
 }
 
