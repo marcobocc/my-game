@@ -113,8 +113,10 @@ public:
         vkCmdBeginRendering(cmd, &renderingInfo);
 
         VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = static_cast<float>(height_);
         viewport.width = static_cast<float>(width_);
-        viewport.height = static_cast<float>(height_);
+        viewport.height = -static_cast<float>(height_);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(cmd, 0, 1, &viewport);
