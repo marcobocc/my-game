@@ -32,6 +32,7 @@ public:
 
     void requestPick(uint32_t x, uint32_t y) const;
     std::optional<std::string> getPickResult() const;
+    void outline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
 
     void run(const GameLoopFunc& gameLoopFunc);
     void requestClose() const;

@@ -12,6 +12,10 @@ void VulkanGraphicsBackend::draw(const Renderer& renderer, const Transform& tran
     renderer_.enqueueForDrawing(renderer, transform, std::move(objectId));
 }
 
+void VulkanGraphicsBackend::outline(const Renderer& renderer, const Transform& transform, std::string objectId) const {
+    renderer_.enqueueForOutline(renderer, transform, std::move(objectId));
+}
+
 void VulkanGraphicsBackend::renderFrame(const Camera& camera, const Transform& cameraTransform) const {
     renderer_.renderFrame(camera, cameraTransform);
 }

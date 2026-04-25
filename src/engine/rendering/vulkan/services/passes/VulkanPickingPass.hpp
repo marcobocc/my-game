@@ -297,7 +297,7 @@ private:
     }
 
     void createPipeline() {
-        const Shader* shader = assetManager_.get<Shader>(PICKING_SHADER);
+        const Shader* shader = assetManager_.get<Shader>(OBJECT_ID_SHADER);
         if (!shader) return;
 
         VkVertexInputBindingDescription vertexBinding{};

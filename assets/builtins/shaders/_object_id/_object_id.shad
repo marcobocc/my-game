@@ -1,0 +1,4 @@
+{
+  "vertexShader": "_object_id.vert.spv",
+  "fragmentShader": "_object_id.frag.spv"
+}

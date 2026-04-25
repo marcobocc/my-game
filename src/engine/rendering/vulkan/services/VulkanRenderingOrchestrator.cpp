@@ -4,6 +4,7 @@
 #include "VulkanSwapchainManager.hpp"
 #include "core/GameWindow.hpp"
 #include "passes/VulkanGridPass.hpp"
+#include "passes/VulkanOutlinePass.hpp"
 #include "passes/VulkanPickingPass.hpp"
 #include "passes/VulkanScenePass.hpp"
 #include "passes/VulkanUIPass.hpp"
@@ -13,6 +14,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanContext& context,
                                                          VulkanScenePass& scenePass,
                                                          VulkanGridPass& gridPass,
+                                                         VulkanOutlinePass& outlinePass,
                                                          VulkanPickingPass& pickingPass,
                                                          VulkanUIPass& uiPass,
                                                          VulkanCommandManager& commandManager,
@@ -22,6 +24,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     context_(context),
     scenePass_(scenePass),
     gridPass_(gridPass),
+    outlinePass_(outlinePass),
     pickingPass_(pickingPass),
     uiPass_(uiPass),
     commandManager_(commandManager),
@@ -32,6 +35,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
         swapchainManager_.recreate(context_);
         const auto& extent = swapchainManager_.swapchain().swapchainExtent;
         pickingPass_.resize(extent.width, extent.height);
+        outlinePass_.resize(extent.width, extent.height);
     });
 }
 
@@ -44,6 +48,12 @@ void VulkanRenderingOrchestrator::enqueueForDrawing(const Renderer& renderer,
                                                     const Transform& transform,
                                                     std::string objectId) const {
     scenePass_.enqueueForDrawing(renderer, transform, std::move(objectId));
+}
+
+void VulkanRenderingOrchestrator::enqueueForOutline(const Renderer& renderer,
+                                                    const Transform& transform,
+                                                    std::string objectId) const {
+    outlinePass_.enqueueForOutline(renderer, transform, std::move(objectId));
 }
 
 bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transform& cameraTransform) {
@@ -135,6 +145,7 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                                                  const Transform& cameraTransform) {
     pickingPass_.record(cmd, scenePass_.getDrawQueue(), camera, cameraTransform);
     scenePass_.record(cmd, imageIndex, camera, cameraTransform);
+    outlinePass_.record(cmd, imageIndex, swapchainManager_.swapchain(), camera, cameraTransform);
     if (settings_.enableGrid) gridPass_.record(cmd, imageIndex, camera, cameraTransform);
     uiPass_.record(cmd, imageIndex);
 }

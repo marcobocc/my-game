@@ -52,3 +52,7 @@ void GameEngine::requestPick(uint32_t x, uint32_t y) const {
 std::optional<std::string> GameEngine::getPickResult() const {
     return vulkanWiringContainer_->graphicsBackend().getPickResult();
 }
+
+void GameEngine::outline(const Renderer& renderer, const Transform& transform, std::string objectId) const {
+    vulkanWiringContainer_->graphicsBackend().outline(renderer, transform, std::move(objectId));
+}

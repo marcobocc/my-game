@@ -14,6 +14,7 @@ struct VulkanContext;
 class VulkanCommandManager;
 class VulkanScenePass;
 class VulkanGridPass;
+class VulkanOutlinePass;
 class VulkanPickingPass;
 class VulkanUIPass;
 class VulkanSwapchainManager;
@@ -24,6 +25,7 @@ public:
                                 VulkanContext& context,
                                 VulkanScenePass& scenePass,
                                 VulkanGridPass& gridPass,
+                                VulkanOutlinePass& outlinePass,
                                 VulkanPickingPass& pickingPass,
                                 VulkanUIPass& uiPass,
                                 VulkanCommandManager& commandManager,
@@ -33,6 +35,7 @@ public:
     ~VulkanRenderingOrchestrator();
 
     void enqueueForDrawing(const Renderer&, const Transform&, std::string objectId) const;
+    void enqueueForOutline(const Renderer&, const Transform&, std::string objectId) const;
     bool renderFrame(const Camera& camera, const Transform& cameraTransform);
 
     void requestPick(uint32_t x, uint32_t y);
@@ -63,6 +66,7 @@ private:
     VulkanContext& context_;
     VulkanScenePass& scenePass_;
     VulkanGridPass& gridPass_;
+    VulkanOutlinePass& outlinePass_;
     VulkanPickingPass& pickingPass_;
     VulkanUIPass& uiPass_;
     VulkanCommandManager& commandManager_;

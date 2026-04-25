@@ -48,6 +48,7 @@ public:
     VulkanGraphicsBackend(VulkanContext& context, VulkanRenderingOrchestrator& renderer);
 
     void draw(const Renderer& renderer, const Transform& transform, std::string objectId) const;
+    void outline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
     void renderFrame(const Camera& camera, const Transform& cameraTransform) const;
     void requestPick(uint32_t x, uint32_t y) const;
     std::optional<std::string> getPickResult() const;
