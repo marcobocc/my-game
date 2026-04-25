@@ -1,8 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
 #include "assets/AssetManager.hpp"
-#include "assets/BuiltinAssetNames.hpp"
-#include "assets/types/shader/Shader.hpp"
 #include "core/initialization.hpp"
 #include "core/structs.hpp"
 #include "rendering/RendererSettings.hpp"
@@ -15,10 +13,10 @@
 #include "services/VulkanGraphicsBackend.hpp"
 #include "services/VulkanRenderingOrchestrator.hpp"
 #include "services/debug/VulkanDebugMessenger.hpp"
-#include "services/renderers/VulkanGridRenderer.hpp"
-#include "services/renderers/VulkanImguiRenderer.hpp"
-#include "services/renderers/VulkanPickingRenderer.hpp"
-#include "services/renderers/VulkanSceneRenderer.hpp"
+#include "services/passes/VulkanGridPass.hpp"
+#include "services/passes/VulkanPickingPass.hpp"
+#include "services/passes/VulkanScenePass.hpp"
+#include "services/passes/VulkanUIPass.hpp"
 
 /*
     VulkanWiringContainer
@@ -60,28 +58,20 @@ public:
         textureCache_(vulkanContext_),
         materialCache_(vulkanContext_, pipelineCache_, textureCache_, assetManager),
         resourcesManager_(meshBuffersCache_, textureCache_, pipelineCache_, materialCache_),
-        sceneRenderer_(vulkanContext_, resourcesManager_, assetManager),
-        gridRenderer_(vulkanContext_, assetManager),
-        pickingRenderer_(vulkanContext_, assetManager),
-        imguiRenderer_(vulkanContext_, swapchainManager_, window, userInterface),
+        scenePass_(vulkanContext_, resourcesManager_, assetManager, window, swapchainManager_),
+        gridPass_(vulkanContext_, assetManager, swapchainManager_),
+        pickingPass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
+        uiPass_(vulkanContext_, swapchainManager_, window, userInterface),
         renderingOrchestrator_(window,
                                vulkanContext_,
-                               sceneRenderer_,
-                               gridRenderer_,
-                               pickingRenderer_,
-                               imguiRenderer_,
+                               scenePass_,
+                               gridPass_,
+                               pickingPass_,
+                               uiPass_,
                                commandManager_,
                                swapchainManager_,
                                settings),
-        graphicsBackend_(vulkanContext_, renderingOrchestrator_) {
-        assetManager.get<Shader>(GRID_SHADER);
-        gridRenderer_.init(GRID_SHADER);
-
-        assetManager.get<Shader>(PICKING_SHADER);
-        const auto& extent = swapchainManager_.swapchain().swapchainExtent;
-        pickingRenderer_.setResourcesManager(resourcesManager_);
-        pickingRenderer_.init(extent.width, extent.height);
-    }
+        graphicsBackend_(vulkanContext_, renderingOrchestrator_) {}
 
     VulkanGraphicsBackend& graphicsBackend() { return graphicsBackend_; }
 
@@ -98,10 +88,10 @@ private:
     VulkanMaterialCache materialCache_;
     VulkanResourcesManager resourcesManager_;
 
-    VulkanSceneRenderer sceneRenderer_;
-    VulkanGridRenderer gridRenderer_;
-    VulkanPickingRenderer pickingRenderer_;
-    VulkanImguiRenderer imguiRenderer_;
+    VulkanScenePass scenePass_;
+    VulkanGridPass gridPass_;
+    VulkanPickingPass pickingPass_;
+    VulkanUIPass uiPass_;
     VulkanRenderingOrchestrator renderingOrchestrator_;
 
     VulkanGraphicsBackend graphicsBackend_;

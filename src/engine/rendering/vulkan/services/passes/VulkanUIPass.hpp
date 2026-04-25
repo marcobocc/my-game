@@ -1,20 +1,20 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "../../core/structs.hpp"
 #include "core/ui/UserInterface.hpp"
+#include "rendering/vulkan/core/structs.hpp"
 
 class VulkanSwapchainManager;
 class GameWindow;
 
-class VulkanImguiRenderer {
+class VulkanUIPass {
 public:
-    VulkanImguiRenderer(const VulkanContext& vulkanContext,
-                        VulkanSwapchainManager& swapchainManager,
-                        GameWindow& window,
-                        UserInterface& userInterface);
-    ~VulkanImguiRenderer();
+    VulkanUIPass(const VulkanContext& vulkanContext,
+                 VulkanSwapchainManager& swapchainManager,
+                 GameWindow& window,
+                 UserInterface& userInterface);
+    ~VulkanUIPass();
 
-    void recordUIPass(VkCommandBuffer cmd, uint32_t imageIndex);
+    void record(VkCommandBuffer cmd, uint32_t imageIndex);
 
 private:
     VulkanSwapchainManager& swapchainManager_;

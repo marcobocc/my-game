@@ -2,28 +2,24 @@
 #include <string>
 #include <vector>
 #include "assets/AssetManager.hpp"
+#include "core/GameWindow.hpp"
 #include "core/objects/components/Camera.hpp"
-#include "core/objects/components/Renderer.hpp"
-#include "core/objects/components/Transform.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 #include "rendering/vulkan/resources/VulkanResourcesManager.hpp"
 
-struct DrawCall {
-    const Renderer& renderer;
-    const Transform& transform;
-    std::string objectId;
-};
+class VulkanSwapchainManager;
 
-class VulkanSceneRenderer {
+class VulkanScenePass {
 public:
-    VulkanSceneRenderer(const VulkanContext& vulkanContext,
-                        VulkanResourcesManager& resourcesManager,
-                        AssetManager& assetManager);
-
-    ~VulkanSceneRenderer();
+    VulkanScenePass(const VulkanContext& context,
+                    VulkanResourcesManager& resourcesManager,
+                    AssetManager& assetManager,
+                    GameWindow& window,
+                    VulkanSwapchainManager& swapchainManager);
+    ~VulkanScenePass();
 
     void enqueueForDrawing(const Renderer&, const Transform&, std::string objectId);
-    void drawScene(VkCommandBuffer cmd, const Camera& camera, const Transform& cameraTransform);
+    void record(VkCommandBuffer cmd, uint32_t imageIndex, const Camera& camera, const Transform& cameraTransform);
     const std::vector<DrawCall>& getDrawQueue() const { return drawQueue_; }
 
 private:
@@ -31,11 +27,17 @@ private:
     void updatePerFrameUBO(const Camera& camera, const Transform& cameraTransform) const;
     void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall) const;
 
+    void transitionColorAttachment(VkCommandBuffer cmd, VkImage image) const;
+    void transitionDepthAttachment(VkCommandBuffer cmd, VkImage image) const;
+    void beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const;
+
     VulkanPerFrameUBO perFrameUBO_;
     VkDescriptorSetLayout perFrameUBOLayout_ = VK_NULL_HANDLE;
     std::vector<DrawCall> drawQueue_;
 
     AssetManager& assetManager_;
     VulkanResourcesManager& resourcesManager_;
-    VulkanContext& vulkanContext_;
+    VulkanContext& context_;
+    GameWindow& window_;
+    VulkanSwapchainManager& swapchainManager_;
 };

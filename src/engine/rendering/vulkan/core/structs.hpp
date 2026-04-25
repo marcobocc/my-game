@@ -1,6 +1,9 @@
 #pragma once
+#include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "core/objects/components/Renderer.hpp"
+#include "core/objects/components/Transform.hpp"
 
 // ------------------------------------------------------------------------
 // Device/instance structs
@@ -85,4 +88,14 @@ struct VulkanMaterial {
 struct VulkanPerFrameUBO {
     VulkanBuffer buffer;
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+};
+
+// ------------------------------------------------------------------------
+// Draw call
+// ------------------------------------------------------------------------
+
+struct DrawCall {
+    const Renderer& renderer;
+    const Transform& transform;
+    std::string objectId;
 };

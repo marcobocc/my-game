@@ -3,27 +3,27 @@
 #include "VulkanCommandManager.hpp"
 #include "VulkanSwapchainManager.hpp"
 #include "core/GameWindow.hpp"
-#include "renderers/VulkanGridRenderer.hpp"
-#include "renderers/VulkanImguiRenderer.hpp"
-#include "renderers/VulkanPickingRenderer.hpp"
-#include "renderers/VulkanSceneRenderer.hpp"
+#include "passes/VulkanGridPass.hpp"
+#include "passes/VulkanPickingPass.hpp"
+#include "passes/VulkanScenePass.hpp"
+#include "passes/VulkanUIPass.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
 
 VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanContext& context,
-                                                         VulkanSceneRenderer& sceneRenderer,
-                                                         VulkanGridRenderer& gridRenderer,
-                                                         VulkanPickingRenderer& pickingRenderer,
-                                                         VulkanImguiRenderer& imguiRenderer,
+                                                         VulkanScenePass& scenePass,
+                                                         VulkanGridPass& gridPass,
+                                                         VulkanPickingPass& pickingPass,
+                                                         VulkanUIPass& uiPass,
                                                          VulkanCommandManager& commandManager,
                                                          VulkanSwapchainManager& swapchainManager,
                                                          RendererSettings& settings) :
     window_(window),
     context_(context),
-    sceneRenderer_(sceneRenderer),
-    gridRenderer_(gridRenderer),
-    pickingRenderer_(pickingRenderer),
-    imguiRenderer_(imguiRenderer),
+    scenePass_(scenePass),
+    gridPass_(gridPass),
+    pickingPass_(pickingPass),
+    uiPass_(uiPass),
     commandManager_(commandManager),
     swapchainManager_(swapchainManager),
     settings_(settings) {
@@ -31,7 +31,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     window_.onWindowResize([this](int, int, int, int) {
         swapchainManager_.recreate(context_);
         const auto& extent = swapchainManager_.swapchain().swapchainExtent;
-        pickingRenderer_.resize(extent.width, extent.height);
+        pickingPass_.resize(extent.width, extent.height);
     });
 }
 
@@ -43,15 +43,13 @@ VulkanRenderingOrchestrator::~VulkanRenderingOrchestrator() {
 void VulkanRenderingOrchestrator::enqueueForDrawing(const Renderer& renderer,
                                                     const Transform& transform,
                                                     std::string objectId) const {
-    sceneRenderer_.enqueueForDrawing(renderer, transform, std::move(objectId));
+    scenePass_.enqueueForDrawing(renderer, transform, std::move(objectId));
 }
 
 bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transform& cameraTransform) {
     waitForCurrentFrame();
-    if (pickResultReady_) {
-        pickResultReady_ = false;
-        pendingPickResult_ = pickingRenderer_.resolvePickedObject();
-    }
+    pickingPass_.resolvePickResult();
+
     uint32_t imageIndex = 0;
     if (!acquireImage(imageIndex)) return false;
     VkCommandBuffer cmd = beginFrame();
@@ -61,15 +59,9 @@ bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transf
     return true;
 }
 
-void VulkanRenderingOrchestrator::requestPick(uint32_t x, uint32_t y) {
-    hasPendingPickRequest_ = true;
-    pendingPickX_ = x;
-    pendingPickY_ = y;
-}
+void VulkanRenderingOrchestrator::requestPick(uint32_t x, uint32_t y) { pickingPass_.requestPick(x, y); }
 
-std::optional<std::string> VulkanRenderingOrchestrator::getPickResult() {
-    return std::exchange(pendingPickResult_, std::nullopt);
-}
+std::optional<std::string> VulkanRenderingOrchestrator::getPickResult() { return pickingPass_.getPickResult(); }
 
 // ------------------- Frame sync -------------------
 
@@ -137,78 +129,14 @@ VkCommandBuffer VulkanRenderingOrchestrator::beginFrame() const {
     return cmd;
 }
 
-void VulkanRenderingOrchestrator::prepareSceneCanvas(VkCommandBuffer cmd, uint32_t imageIndex) const {
-    const VulkanSwapchain& swapchain = swapchainManager_.swapchain();
-    const SceneViewport sv = window_.getSceneViewport();
-    const auto [scaleX, scaleY] = window_.getContentScale();
-    const int framebufferX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
-    const int framebufferY = static_cast<int>(static_cast<float>(sv.y) * scaleY);
-    const int framebufferWidth = static_cast<int>(static_cast<float>(sv.width) * scaleX);
-    const int framebufferHeight = static_cast<int>(static_cast<float>(sv.height) * scaleY);
-
-    VkClearValue clearColor{};
-    clearColor.color = {{0.1f, 0.1f, 0.1f, 1.0f}};
-    VkClearValue clearDepth{};
-    clearDepth.depthStencil = {1.0f, 0};
-
-    VkRenderingAttachmentInfo colorAttachment{};
-    colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    colorAttachment.imageView = swapchain.swapchainImageViews[imageIndex];
-    colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.clearValue = clearColor;
-
-    VkRenderingAttachmentInfo depthAttachment{};
-    depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depthAttachment.imageView = swapchain.depthBuffer.view;
-    depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.clearValue = clearDepth;
-
-    VkRenderingInfo renderingInfo{};
-    renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-    renderingInfo.renderArea = {{0, 0}, swapchain.swapchainExtent};
-    renderingInfo.layerCount = 1;
-    renderingInfo.colorAttachmentCount = 1;
-    renderingInfo.pColorAttachments = &colorAttachment;
-    renderingInfo.pDepthAttachment = &depthAttachment;
-
-    vkCmdBeginRendering(cmd, &renderingInfo);
-
-    VkViewport viewport{};
-    viewport.x = static_cast<float>(framebufferX);
-    viewport.y = static_cast<float>(framebufferY + framebufferHeight);
-    viewport.width = static_cast<float>(framebufferWidth);
-    viewport.height = -static_cast<float>(framebufferHeight);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
-
-    VkRect2D scissor{{framebufferX, framebufferY},
-                     {static_cast<uint32_t>(framebufferWidth), static_cast<uint32_t>(framebufferHeight)}};
-    vkCmdSetScissor(cmd, 0, 1, &scissor);
-}
-
 void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                                                  uint32_t imageIndex,
                                                  const Camera& camera,
                                                  const Transform& cameraTransform) {
-    pickingRenderer_.setDrawQueue(sceneRenderer_.getDrawQueue());
-    pickingRenderer_.drawPickingPass(cmd, camera, cameraTransform);
-    if (hasPendingPickRequest_) {
-        pickingRenderer_.requestPixelReadback(cmd, pendingPickX_, pendingPickY_);
-        hasPendingPickRequest_ = false;
-        pickResultReady_ = true;
-    }
-
-    transitionToRenderLayouts(cmd, imageIndex);
-    prepareSceneCanvas(cmd, imageIndex);
-    sceneRenderer_.drawScene(cmd, camera, cameraTransform);
-    if (settings_.enableGrid) gridRenderer_.drawGrid(cmd, camera, cameraTransform);
-    vkCmdEndRendering(cmd);
-    imguiRenderer_.recordUIPass(cmd, imageIndex);
+    pickingPass_.record(cmd, scenePass_.getDrawQueue(), camera, cameraTransform);
+    scenePass_.record(cmd, imageIndex, camera, cameraTransform);
+    if (settings_.enableGrid) gridPass_.record(cmd, imageIndex, camera, cameraTransform);
+    uiPass_.record(cmd, imageIndex);
 }
 
 void VulkanRenderingOrchestrator::endFrame(VkCommandBuffer cmd, uint32_t imageIndex) {
@@ -218,85 +146,8 @@ void VulkanRenderingOrchestrator::endFrame(VkCommandBuffer cmd, uint32_t imageIn
     commandManager_.endFrame();
 }
 
-void VulkanRenderingOrchestrator::submit(VkCommandBuffer cmd, uint32_t imageIndex) {
-    const auto& frame = currentFrame();
-    commandManager_.submitCommandBuffer(cmd, frame.imageAvailable, frame.renderFinished, frame.inFlightFence);
-    swapchainManager_.present(context_.graphicsQueue, frame.renderFinished, imageIndex);
-}
-
-// ------------------- Transitions -------------------
-
-void VulkanRenderingOrchestrator::transitionToRenderLayouts(VkCommandBuffer cmd, uint32_t imageIndex) const {
-    VkImage color = swapchainManager_.swapchain().swapchainImages[imageIndex];
-    VkImage depth = swapchainManager_.swapchain().depthBuffer.image;
-    transitionColorAttachment(cmd, color);
-    transitionDepthAttachment(cmd, depth);
-}
-
 void VulkanRenderingOrchestrator::transitionToPresent(VkCommandBuffer cmd, uint32_t imageIndex) const {
     VkImage image = swapchainManager_.swapchain().swapchainImages[imageIndex];
-    transitionToPresent(cmd, image);
-}
-
-void VulkanRenderingOrchestrator::transitionColorAttachment(VkCommandBuffer cmd, VkImage image) {
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-
-    vkCmdPipelineBarrier(cmd,
-                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                         0,
-                         0,
-                         nullptr,
-                         0,
-                         nullptr,
-                         1,
-                         &barrier);
-}
-
-void VulkanRenderingOrchestrator::transitionDepthAttachment(VkCommandBuffer cmd, VkImage image) {
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-
-    vkCmdPipelineBarrier(cmd,
-                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                         VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                         0,
-                         0,
-                         nullptr,
-                         0,
-                         nullptr,
-                         1,
-                         &barrier);
-}
-
-void VulkanRenderingOrchestrator::transitionToPresent(VkCommandBuffer cmd, VkImage image) {
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -306,13 +157,7 @@ void VulkanRenderingOrchestrator::transitionToPresent(VkCommandBuffer cmd, VkIma
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = image;
-
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-
+    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
     vkCmdPipelineBarrier(cmd,
                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
@@ -323,4 +168,10 @@ void VulkanRenderingOrchestrator::transitionToPresent(VkCommandBuffer cmd, VkIma
                          nullptr,
                          1,
                          &barrier);
+}
+
+void VulkanRenderingOrchestrator::submit(VkCommandBuffer cmd, uint32_t imageIndex) {
+    const auto& frame = currentFrame();
+    commandManager_.submitCommandBuffer(cmd, frame.imageAvailable, frame.renderFinished, frame.inFlightFence);
+    swapchainManager_.present(context_.graphicsQueue, frame.renderFinished, imageIndex);
 }

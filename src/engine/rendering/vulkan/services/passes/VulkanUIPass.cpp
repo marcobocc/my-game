@@ -1,16 +1,15 @@
-#include "rendering/vulkan/services/renderers/VulkanImguiRenderer.hpp"
+#include "VulkanUIPass.hpp"
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
-#include <iostream>
 #include <volk.h>
-#include "../VulkanSwapchainManager.hpp"
 #include "core/GameWindow.hpp"
+#include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
 
-VulkanImguiRenderer::VulkanImguiRenderer(const VulkanContext& vulkanContext,
-                                         VulkanSwapchainManager& swapchainManager,
-                                         GameWindow& window,
-                                         UserInterface& userInterface) :
+VulkanUIPass::VulkanUIPass(const VulkanContext& vulkanContext,
+                           VulkanSwapchainManager& swapchainManager,
+                           GameWindow& window,
+                           UserInterface& userInterface) :
     swapchainManager_(swapchainManager),
     swapchainImageFormat_(swapchainManager.swapchain().swapchainImageFormat),
     userInterface_(userInterface) {
@@ -38,13 +37,13 @@ VulkanImguiRenderer::VulkanImguiRenderer(const VulkanContext& vulkanContext,
     ImGui_ImplVulkan_Init(&initInfo);
 }
 
-VulkanImguiRenderer::~VulkanImguiRenderer() {
+VulkanUIPass::~VulkanUIPass() {
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-void VulkanImguiRenderer::recordUIPass(VkCommandBuffer cmd, uint32_t imageIndex) {
+void VulkanUIPass::record(VkCommandBuffer cmd, uint32_t imageIndex) {
     beginRendering(cmd, imageIndex);
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -58,7 +57,7 @@ void VulkanImguiRenderer::recordUIPass(VkCommandBuffer cmd, uint32_t imageIndex)
     endRendering(cmd);
 }
 
-void VulkanImguiRenderer::beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const {
+void VulkanUIPass::beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const {
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     colorAttachment.imageView = swapchainManager_.swapchain().swapchainImageViews[imageIndex];
@@ -82,4 +81,4 @@ void VulkanImguiRenderer::beginRendering(VkCommandBuffer cmd, uint32_t imageInde
     vkCmdBeginRendering(cmd, &renderInfo);
 }
 
-void VulkanImguiRenderer::endRendering(VkCommandBuffer cmd) { vkCmdEndRendering(cmd); }
+void VulkanUIPass::endRendering(VkCommandBuffer cmd) { vkCmdEndRendering(cmd); }

@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <volk.h>
-#include "VulkanSceneRenderer.hpp"
 #include "assets/AssetManager.hpp"
 #include "assets/BuiltinAssetNames.hpp"
 #include "assets/types/mesh/Mesh.hpp"
@@ -16,22 +15,25 @@
 #include "rendering/vulkan/core/shaders.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 #include "rendering/vulkan/resources/VulkanResourcesManager.hpp"
+#include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
 
-class VulkanPickingRenderer {
+class VulkanPickingPass {
 public:
-    VulkanPickingRenderer(const VulkanContext& context, AssetManager& assetManager) :
+    VulkanPickingPass(const VulkanContext& context,
+                      AssetManager& assetManager,
+                      VulkanResourcesManager& resourcesManager,
+                      VulkanSwapchainManager& swapchainManager) :
         context_(context),
-        assetManager_(assetManager) {}
-
-    ~VulkanPickingRenderer() { destroyResources(); }
-
-    void init(uint32_t width, uint32_t height) {
-        width_ = width;
-        height_ = height;
+        assetManager_(assetManager),
+        resourcesManager_(resourcesManager),
+        width_(swapchainManager.swapchain().swapchainExtent.width),
+        height_(swapchainManager.swapchain().swapchainExtent.height) {
         createImages();
         createPipeline();
         createReadbackBuffer();
     }
+
+    ~VulkanPickingPass() { destroyResources(); }
 
     void resize(uint32_t width, uint32_t height) {
         vkDeviceWaitIdle(context_.device);
@@ -45,13 +47,20 @@ public:
         }
     }
 
-    // Called once per frame with the full draw queue before rendering.
-    void setDrawQueue(const std::vector<DrawCall>& drawQueue) { drawQueue_ = &drawQueue; }
+    void requestPick(uint32_t x, uint32_t y) {
+        hasPendingPickRequest_ = true;
+        pendingPickX_ = x;
+        pendingPickY_ = y;
+    }
 
-    void drawPickingPass(VkCommandBuffer cmd, const Camera& camera, const Transform& cameraTransform) {
-        if (!drawQueue_ || pipeline_.pipeline == VK_NULL_HANDLE) return;
+    std::optional<std::string> getPickResult() { return std::exchange(pendingPickResult_, std::nullopt); }
 
-        // Transition color image to color attachment
+    void record(VkCommandBuffer cmd,
+                const std::vector<DrawCall>& drawQueue,
+                const Camera& camera,
+                const Transform& cameraTransform) {
+        if (pipeline_.pipeline == VK_NULL_HANDLE) return;
+
         transitionImage(cmd,
                         colorImage_,
                         VK_IMAGE_LAYOUT_UNDEFINED,
@@ -73,7 +82,7 @@ public:
                         VK_IMAGE_ASPECT_DEPTH_BIT);
 
         VkClearValue clearId{};
-        clearId.color.uint32[0] = 0xFFFFFFFF; // sentinel = no object
+        clearId.color.uint32[0] = 0xFFFFFFFF;
         VkClearValue clearDepth{};
         clearDepth.depthStencil = {1.0f, 0};
 
@@ -116,14 +125,12 @@ public:
         vkCmdBindDescriptorSets(
                 cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.layout, 0, 1, &perFrameUBODescriptorSet_, 0, nullptr);
 
-        // Update UBO with current camera matrices
         glm::mat4 uboData[2] = {cameraTransform.getViewMatrix(), camera.getProjectionMatrix()};
         updateBuffer(context_.device, perFrameUBOBuffer_, uboData, sizeof(uboData));
 
         objectIdMap_.clear();
-        for (uint32_t i = 0; i < static_cast<uint32_t>(drawQueue_->size()); ++i) {
-            const DrawCall& dc = (*drawQueue_)[i];
-            uint32_t id = i + 1; // 0 = no object
+        for (uint32_t i = 0; i < static_cast<uint32_t>(drawQueue.size()); ++i) {
+            const DrawCall& dc = drawQueue[i];
             objectIdMap_.push_back(dc.objectId);
 
             struct PickPush {
@@ -131,7 +138,7 @@ public:
                 uint32_t objectId;
             } push;
             push.model = dc.transform.getModelMatrix();
-            push.objectId = id;
+            push.objectId = i + 1; // 0 = no object
 
             vkCmdPushConstants(cmd,
                                pipeline_.layout,
@@ -141,7 +148,7 @@ public:
                                &push);
 
             const Mesh* mesh = assetManager_.get<Mesh>(dc.renderer.meshName);
-            const auto& meshBuffers = resourcesManager_->getMesh(*mesh);
+            const auto& meshBuffers = resourcesManager_.getMesh(*mesh);
             VkDeviceSize offset = 0;
             vkCmdBindVertexBuffers(cmd, 0, 1, &meshBuffers.vertexBuffer.buffer, &offset);
             vkCmdBindIndexBuffer(cmd, meshBuffers.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
@@ -153,7 +160,6 @@ public:
 
         vkCmdEndRendering(cmd);
 
-        // Transition color image for transfer
         transitionImage(cmd,
                         colorImage_,
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -163,31 +169,28 @@ public:
                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                         VK_PIPELINE_STAGE_TRANSFER_BIT,
                         VK_IMAGE_ASPECT_COLOR_BIT);
+
+        if (hasPendingPickRequest_) {
+            uint32_t x = std::min(pendingPickX_, width_ - 1);
+            uint32_t y = std::min(pendingPickY_, height_ - 1);
+
+            VkBufferImageCopy region{};
+            region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.imageSubresource.layerCount = 1;
+            region.imageOffset = {static_cast<int32_t>(x), static_cast<int32_t>(y), 0};
+            region.imageExtent = {1, 1, 1};
+            vkCmdCopyImageToBuffer(
+                    cmd, colorImage_, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readbackBuffer_.buffer, 1, &region);
+
+            hasPendingPickRequest_ = false;
+            pickResultPending_ = true;
+        }
     }
 
-    // Call after drawPickingPass, before endFrame. Copies one pixel to the readback buffer.
-    void requestPixelReadback(VkCommandBuffer cmd, uint32_t x, uint32_t y) {
-        pendingPickX_ = std::min(x, width_ - 1);
-        pendingPickY_ = std::min(y, height_ - 1);
-        hasPendingReadback_ = true;
-
-        VkBufferImageCopy region{};
-        region.bufferOffset = 0;
-        region.bufferRowLength = 0;
-        region.bufferImageHeight = 0;
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.imageSubresource.layerCount = 1;
-        region.imageOffset = {static_cast<int32_t>(pendingPickX_), static_cast<int32_t>(pendingPickY_), 0};
-        region.imageExtent = {1, 1, 1};
-
-        vkCmdCopyImageToBuffer(
-                cmd, colorImage_, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readbackBuffer_.buffer, 1, &region);
-    }
-
-    // Call after frame fence is signaled (GPU done). Returns the object ID at the picked pixel.
-    std::optional<std::string> resolvePickedObject() {
-        if (!hasPendingReadback_) return std::nullopt;
-        hasPendingReadback_ = false;
+    // Call after the frame fence is signaled. Resolves and returns the picked object ID if ready.
+    void resolvePickResult() {
+        if (!pickResultPending_) return;
+        pickResultPending_ = false;
 
         uint32_t id = 0;
         void* mapped = nullptr;
@@ -195,17 +198,17 @@ public:
         std::memcpy(&id, mapped, sizeof(uint32_t));
         vkUnmapMemory(context_.device, readbackBuffer_.memory);
 
-        if (id == 0 || id == 0xFFFFFFFF) return std::nullopt;
-        uint32_t index = id - 1;
-        if (index >= objectIdMap_.size()) return std::nullopt;
-        return objectIdMap_[index];
+        if (id == 0 || id == 0xFFFFFFFF || (id - 1) >= objectIdMap_.size()) {
+            pendingPickResult_ = std::nullopt;
+            return;
+        }
+        pendingPickResult_ = objectIdMap_[id - 1];
     }
 
-    void setResourcesManager(VulkanResourcesManager& rm) { resourcesManager_ = &rm; }
+    bool hasPickResultPending() const { return pickResultPending_; }
 
 private:
     void createImages() {
-        // Color image: R32_UINT for packed object ID
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -238,7 +241,6 @@ private:
         viewInfo.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         vkCreateImageView(context_.device, &viewInfo, nullptr, &colorImageView_);
 
-        // Depth image
         imageInfo.format = VK_FORMAT_D32_SFLOAT;
         imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         vkCreateImage(context_.device, &imageInfo, nullptr, &depthImage_);
@@ -255,7 +257,6 @@ private:
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         vkCreateImageView(context_.device, &viewInfo, nullptr, &depthImageView_);
 
-        // Per-frame UBO (camera matrices)
         constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * 2;
         perFrameUBOBuffer_ = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
 
@@ -390,7 +391,7 @@ private:
 
     const VulkanContext& context_;
     AssetManager& assetManager_;
-    VulkanResourcesManager* resourcesManager_ = nullptr;
+    VulkanResourcesManager& resourcesManager_;
 
     uint32_t width_ = 0;
     uint32_t height_ = 0;
@@ -410,10 +411,11 @@ private:
     VulkanPipeline pipeline_{};
     VulkanBuffer readbackBuffer_{};
 
-    const std::vector<DrawCall>* drawQueue_ = nullptr;
     std::vector<std::string> objectIdMap_;
 
-    bool hasPendingReadback_ = false;
+    bool hasPendingPickRequest_ = false;
     uint32_t pendingPickX_ = 0;
     uint32_t pendingPickY_ = 0;
+    bool pickResultPending_ = false;
+    std::optional<std::string> pendingPickResult_;
 };
