@@ -21,7 +21,11 @@ public:
 
     VulkanTexture& getTexture(const Texture& texture) const { return textureCache_.get(texture); }
 
-    VulkanPipeline& getPipeline(const Shader& shader) const { return pipelineCache_.get(shader); }
+    VulkanPipeline& getPipeline(const Shader& shader,
+                                VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
+                                VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) const {
+        return pipelineCache_.get(shader, colorFormat, depthFormat);
+    }
 
     VulkanMaterial& getMaterial(const Material& material) { return materialCache_.get(material); }
 

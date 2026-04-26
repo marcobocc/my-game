@@ -5,26 +5,25 @@
 #include "assets/AssetManager.hpp"
 #include "assets/BuiltinAssetNames.hpp"
 #include "assets/types/shader/Shader.hpp"
-#include "rendering/vulkan/core/shaders.hpp"
 #include "rendering/vulkan/core/structs.hpp"
+#include "rendering/vulkan/resources/VulkanResourcesManager.hpp"
 #include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
 
 class VulkanOutlinePass {
 public:
     VulkanOutlinePass(const VulkanContext& context,
                       AssetManager& assetManager,
+                      VulkanResourcesManager& resourcesManager,
                       VulkanSwapchainManager& swapchainManager) :
         context_(context),
         assetManager_(assetManager),
+        resourcesManager_(resourcesManager),
         width_(swapchainManager.swapchain().swapchainExtent.width),
         height_(swapchainManager.swapchain().swapchainExtent.height),
         swapchainImageFormat_(swapchainManager.swapchain().swapchainImageFormat) {
         const uint32_t frameCount = static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size());
-        createDescriptorLayout(frameCount);
-        createPipeline();
+        initPipeline(frameCount);
     }
-
-    ~VulkanOutlinePass() { destroyResources(); }
 
     void resize(uint32_t width, uint32_t height) {
         width_ = width;
@@ -35,25 +34,22 @@ public:
         outlineQueue_.push_back({renderer, transform, std::move(objectId)});
     }
 
-    // objectIdBufferImageView and objectIdBufferSampler come from VulkanObjectIdPass
     void record(VkCommandBuffer cmd,
                 uint32_t imageIndex,
                 const VulkanSwapchain& swapchain,
-                VkImageView objectIdBufferImageView,
+                VkImageView objectIdImageView,
                 VkSampler objectIdBufferSampler) {
         if (outlineQueue_.empty()) return;
-
-        updateDescriptor(imageIndex, objectIdBufferImageView, objectIdBufferSampler);
+        updateDescriptor(imageIndex, objectIdImageView, objectIdBufferSampler);
         recordCompositePass(cmd, imageIndex, swapchain);
-
         outlineQueue_.clear();
     }
 
 private:
-    void updateDescriptor(uint32_t imageIndex, VkImageView objectIdBufferImageView, VkSampler objectIdBufferSampler) {
+    void updateDescriptor(uint32_t imageIndex, VkImageView objectIdImageView, VkSampler objectIdBufferSampler) {
         VkDescriptorImageInfo imageInfo{};
         imageInfo.sampler = objectIdBufferSampler;
-        imageInfo.imageView = objectIdBufferImageView;
+        imageInfo.imageView = objectIdImageView;
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         VkWriteDescriptorSet write{};
@@ -88,35 +84,34 @@ private:
         } push;
         push.texelSize = {1.0f / static_cast<float>(width_), 1.0f / static_cast<float>(height_)};
 
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.pipeline);
-        vkCmdBindDescriptorSets(
-                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.layout, 0, 1, &descriptorSets_[imageIndex], 0, nullptr);
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
+        vkCmdBindDescriptorSets(cmd,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                pipeline_->layout,
+                                0,
+                                1,
+                                &descriptorSets_[imageIndex],
+                                0,
+                                nullptr);
         vkCmdPushConstants(cmd,
-                           pipeline_.layout,
+                           pipeline_->layout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                            0,
                            sizeof(OutlinePush),
                            &push);
         vkCmdDraw(cmd, 3, 1, 0, 0);
-
         vkCmdEndRendering(cmd);
     }
 
-    void createDescriptorLayout(uint32_t frameCount) {
-        VkDescriptorSetLayoutBinding samplerBinding{};
-        samplerBinding.binding = 0;
-        samplerBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerBinding.descriptorCount = 1;
-        samplerBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    void initPipeline(uint32_t frameCount) {
+        const Shader* shader = assetManager_.get<Shader>(OUTLINE_SHADER);
+        if (!shader) return;
 
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = 1;
-        layoutInfo.pBindings = &samplerBinding;
-        vkCreateDescriptorSetLayout(context_.device, &layoutInfo, nullptr, &descriptorLayout_);
+        pipeline_ = &resourcesManager_.getPipeline(*shader, swapchainImageFormat_, VK_FORMAT_UNDEFINED);
+        VkDescriptorSetLayout samplerLayout = pipeline_->descriptorSetLayouts[0];
 
         descriptorSets_.resize(frameCount);
-        std::vector<VkDescriptorSetLayout> layouts(frameCount, descriptorLayout_);
+        std::vector<VkDescriptorSetLayout> layouts(frameCount, samplerLayout);
 
         VkDescriptorSetAllocateInfo dsAlloc{};
         dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -126,39 +121,15 @@ private:
         vkAllocateDescriptorSets(context_.device, &dsAlloc, descriptorSets_.data());
     }
 
-    void createPipeline() {
-        const Shader* shader = assetManager_.get<Shader>(OUTLINE_SHADER);
-        if (!shader) return;
-
-        VkPipelineVertexInputStateCreateInfo vertexInputState{};
-        vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-        pipeline_ = createGraphicsPipeline(context_.device,
-                                           *shader,
-                                           vertexInputState,
-                                           {descriptorLayout_},
-                                           swapchainImageFormat_,
-                                           VK_FORMAT_UNDEFINED);
-    }
-
-    void destroyResources() {
-        if (descriptorLayout_ != VK_NULL_HANDLE)
-            vkDestroyDescriptorSetLayout(context_.device, descriptorLayout_, nullptr);
-        if (pipeline_.pipeline != VK_NULL_HANDLE) vkDestroyPipeline(context_.device, pipeline_.pipeline, nullptr);
-        if (pipeline_.layout != VK_NULL_HANDLE) vkDestroyPipelineLayout(context_.device, pipeline_.layout, nullptr);
-    }
-
     const VulkanContext& context_;
     AssetManager& assetManager_;
+    VulkanResourcesManager& resourcesManager_;
 
     uint32_t width_ = 0;
     uint32_t height_ = 0;
     VkFormat swapchainImageFormat_ = VK_FORMAT_UNDEFINED;
 
-    VkDescriptorSetLayout descriptorLayout_ = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet> descriptorSets_;
-
-    VulkanPipeline pipeline_{};
-
+    VulkanPipeline* pipeline_ = nullptr;
     std::vector<DrawCall> outlineQueue_;
 };

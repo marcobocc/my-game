@@ -3,30 +3,28 @@
 #include <volk.h>
 #include "assets/AssetManager.hpp"
 #include "assets/BuiltinAssetNames.hpp"
-#include "assets/types/shader/Shader.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Transform.hpp"
-#include "rendering/vulkan/core/shaders.hpp"
 #include "rendering/vulkan/core/structs.hpp"
+#include "rendering/vulkan/resources/VulkanResourcesManager.hpp"
 #include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
 
 class VulkanGridPass {
 public:
-    VulkanGridPass(const VulkanContext& context, AssetManager& assetManager, VulkanSwapchainManager& swapchainManager) :
-        context_(context),
+    VulkanGridPass(AssetManager& assetManager,
+                   VulkanResourcesManager& resourcesManager,
+                   VulkanSwapchainManager& swapchainManager) :
         assetManager_(assetManager),
+        resourcesManager_(resourcesManager),
         swapchainManager_(swapchainManager) {
-        init();
+        initPipeline();
     }
 
-    ~VulkanGridPass() {
-        if (pipeline_.pipeline != VK_NULL_HANDLE) vkDestroyPipeline(context_.device, pipeline_.pipeline, nullptr);
-        if (pipeline_.layout != VK_NULL_HANDLE) vkDestroyPipelineLayout(context_.device, pipeline_.layout, nullptr);
-    }
+    ~VulkanGridPass() = default;
 
     void
     record(VkCommandBuffer cmd, uint32_t imageIndex, const Camera& camera, const Transform& cameraTransform) const {
-        if (pipeline_.pipeline == VK_NULL_HANDLE) return;
+        if (pipeline_ == nullptr) return;
 
         const VulkanSwapchain& swapchain = swapchainManager_.swapchain();
 
@@ -59,7 +57,7 @@ public:
             glm::vec3 cameraPos;
             float pad = 0.0f;
             glm::mat4 viewProj;
-        } pc;
+        } pc{};
 
         glm::mat4 view = cameraTransform.getViewMatrix();
         glm::mat4 proj = camera.getProjectionMatrix();
@@ -67,9 +65,9 @@ public:
         pc.invViewProj = glm::inverse(pc.viewProj);
         pc.cameraPos = cameraTransform.position;
 
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.pipeline);
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
         vkCmdPushConstants(cmd,
-                           pipeline_.layout,
+                           pipeline_->layout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                            0,
                            sizeof(GridPushConstants),
@@ -80,19 +78,14 @@ public:
     }
 
 private:
-    void init() {
+    void initPipeline() {
         const Shader* shader = assetManager_.get<Shader>(GRID_SHADER);
         if (!shader) return;
-
-        VkPipelineVertexInputStateCreateInfo vertexInputState{};
-        vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-
-        pipeline_ = createGraphicsPipeline(
-                context_.device, *shader, vertexInputState, {}, VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_D32_SFLOAT);
+        pipeline_ = &resourcesManager_.getPipeline(*shader);
     }
 
-    const VulkanContext& context_;
     AssetManager& assetManager_;
+    VulkanResourcesManager& resourcesManager_;
     VulkanSwapchainManager& swapchainManager_;
-    VulkanPipeline pipeline_{};
+    VulkanPipeline* pipeline_ = nullptr; // owned by VulkanPipelineCache
 };

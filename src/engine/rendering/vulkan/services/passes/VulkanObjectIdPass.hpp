@@ -6,13 +6,11 @@
 #include "assets/AssetManager.hpp"
 #include "assets/BuiltinAssetNames.hpp"
 #include "assets/types/mesh/Mesh.hpp"
-#include "assets/types/mesh/details/VertexLayouts.hpp"
 #include "assets/types/shader/Shader.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "rendering/vulkan/core/buffers.hpp"
 #include "rendering/vulkan/core/memory.hpp"
-#include "rendering/vulkan/core/shaders.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 #include "rendering/vulkan/resources/VulkanResourcesManager.hpp"
 #include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
@@ -29,8 +27,8 @@ public:
         width_(swapchainManager.swapchain().swapchainExtent.width),
         height_(swapchainManager.swapchain().swapchainExtent.height) {
         createImages();
-        createPipeline();
         createReadbackBuffer();
+        initPipeline();
     }
 
     ~VulkanObjectIdPass() { destroyResources(); }
@@ -84,7 +82,7 @@ public:
                 const std::vector<DrawCall>& drawQueue,
                 const Camera& camera,
                 const Transform& cameraTransform) {
-        if (pipeline_.pipeline == VK_NULL_HANDLE) return;
+        if (pipeline_ == nullptr) return;
 
         transitionImage(cmd,
                         objectIdBufferImage_,
@@ -148,9 +146,9 @@ public:
         VkRect2D scissor{{0, 0}, {width_, height_}};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.pipeline);
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
         vkCmdBindDescriptorSets(
-                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.layout, 0, 1, &perFrameUBODescriptorSet_, 0, nullptr);
+                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->layout, 0, 1, &perFrameUBODescriptorSet_, 0, nullptr);
 
         glm::mat4 uboData[2] = {cameraTransform.getViewMatrix(), camera.getProjectionMatrix()};
         updateBuffer(context_.device, perFrameUBOBuffer_, uboData, sizeof(uboData));
@@ -168,7 +166,7 @@ public:
             push.objectId = i + 1; // 0 = no object
 
             vkCmdPushConstants(cmd,
-                               pipeline_.layout,
+                               pipeline_->layout,
                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                                0,
                                sizeof(ObjectIdPush),
@@ -292,26 +290,25 @@ private:
 
         constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * 2;
         perFrameUBOBuffer_ = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
+    }
 
-        VkDescriptorSetLayoutBinding uboBinding{};
-        uboBinding.binding = 0;
-        uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboBinding.descriptorCount = 1;
-        uboBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    void initPipeline() {
+        const Shader* shader = assetManager_.get<Shader>(OBJECT_ID_SHADER);
+        if (!shader) return;
 
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = 1;
-        layoutInfo.pBindings = &uboBinding;
-        vkCreateDescriptorSetLayout(context_.device, &layoutInfo, nullptr, &perFrameUBOLayout_);
+        pipeline_ = &resourcesManager_.getPipeline(*shader, VK_FORMAT_R32_UINT, VK_FORMAT_D32_SFLOAT);
+
+        // set 0 is the per-frame UBO, reflected from the shader
+        VkDescriptorSetLayout uboLayout = pipeline_->descriptorSetLayouts[0];
 
         VkDescriptorSetAllocateInfo dsAlloc{};
         dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
         dsAlloc.descriptorPool = context_.descriptorPool;
         dsAlloc.descriptorSetCount = 1;
-        dsAlloc.pSetLayouts = &perFrameUBOLayout_;
+        dsAlloc.pSetLayouts = &uboLayout;
         vkAllocateDescriptorSets(context_.device, &dsAlloc, &perFrameUBODescriptorSet_);
 
+        constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * 2;
         VkDescriptorBufferInfo bufInfo{};
         bufInfo.buffer = perFrameUBOBuffer_.buffer;
         bufInfo.offset = 0;
@@ -325,44 +322,6 @@ private:
         write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         write.pBufferInfo = &bufInfo;
         vkUpdateDescriptorSets(context_.device, 1, &write, 0, nullptr);
-    }
-
-    void createPipeline() {
-        const Shader* shader = assetManager_.get<Shader>(OBJECT_ID_SHADER);
-        if (!shader) return;
-
-        VkVertexInputBindingDescription vertexBinding{};
-        vertexBinding.binding = 0;
-        vertexBinding.stride = sizeof(float) * Vertex_WithLayout_PositionUv::VERTEX_STRIDE;
-        vertexBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        std::vector<VkVertexInputAttributeDescription> vertexAttribs;
-        uint32_t location = 0;
-        for (const auto& [offset, componentCount]: Vertex_WithLayout_PositionUv::VERTEX_ATTRIBS) {
-            VkFormat format = VK_FORMAT_UNDEFINED;
-            if (componentCount == 2) format = VK_FORMAT_R32G32_SFLOAT;
-            if (componentCount == 3) format = VK_FORMAT_R32G32B32_SFLOAT;
-            VkVertexInputAttributeDescription desc{};
-            desc.location = location++;
-            desc.binding = 0;
-            desc.format = format;
-            desc.offset = static_cast<uint32_t>(offset * sizeof(float));
-            vertexAttribs.push_back(desc);
-        }
-
-        VkPipelineVertexInputStateCreateInfo vertexInputState{};
-        vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputState.vertexBindingDescriptionCount = 1;
-        vertexInputState.pVertexBindingDescriptions = &vertexBinding;
-        vertexInputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttribs.size());
-        vertexInputState.pVertexAttributeDescriptions = vertexAttribs.data();
-
-        pipeline_ = createGraphicsPipeline(context_.device,
-                                           *shader,
-                                           vertexInputState,
-                                           {perFrameUBOLayout_},
-                                           VK_FORMAT_R32_UINT,
-                                           VK_FORMAT_D32_SFLOAT);
     }
 
     void createReadbackBuffer() {
@@ -383,8 +342,6 @@ private:
         if (depthImageView_ != VK_NULL_HANDLE) vkDestroyImageView(context_.device, depthImageView_, nullptr);
         if (depthImage_ != VK_NULL_HANDLE) vkDestroyImage(context_.device, depthImage_, nullptr);
         if (depthMemory_ != VK_NULL_HANDLE) vkFreeMemory(context_.device, depthMemory_, nullptr);
-        if (perFrameUBOLayout_ != VK_NULL_HANDLE)
-            vkDestroyDescriptorSetLayout(context_.device, perFrameUBOLayout_, nullptr);
         destroyBuffer(context_.device, perFrameUBOBuffer_);
         objectIdBufferSampler_ = VK_NULL_HANDLE;
         objectIdBufferImageView_ = VK_NULL_HANDLE;
@@ -393,14 +350,11 @@ private:
         depthImageView_ = VK_NULL_HANDLE;
         depthImage_ = VK_NULL_HANDLE;
         depthMemory_ = VK_NULL_HANDLE;
-        perFrameUBOLayout_ = VK_NULL_HANDLE;
         perFrameUBODescriptorSet_ = VK_NULL_HANDLE;
     }
 
     void destroyResources() {
         destroyImages();
-        if (pipeline_.pipeline != VK_NULL_HANDLE) vkDestroyPipeline(context_.device, pipeline_.pipeline, nullptr);
-        if (pipeline_.layout != VK_NULL_HANDLE) vkDestroyPipelineLayout(context_.device, pipeline_.layout, nullptr);
         destroyBuffer(context_.device, readbackBuffer_);
     }
 
@@ -443,10 +397,9 @@ private:
     VkImageView depthImageView_ = VK_NULL_HANDLE;
 
     VulkanBuffer perFrameUBOBuffer_{};
-    VkDescriptorSetLayout perFrameUBOLayout_ = VK_NULL_HANDLE;
     VkDescriptorSet perFrameUBODescriptorSet_ = VK_NULL_HANDLE;
 
-    VulkanPipeline pipeline_{};
+    VulkanPipeline* pipeline_ = nullptr;
     VulkanBuffer readbackBuffer_{};
 
     std::vector<std::string> objectIdMap_;

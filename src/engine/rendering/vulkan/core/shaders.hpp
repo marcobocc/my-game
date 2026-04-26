@@ -1,12 +1,9 @@
 #pragma once
-#include <span>
-#include <utility>
+#include <map>
 #include <vector>
 #include <volk.h>
-#include "assets/types/shader/Shader.hpp"
 #include "error_handling.hpp"
 #include "spirv_reflect.h"
-#include "structs.hpp"
 
 inline std::pair<VkShaderModule, VkPipelineShaderStageCreateInfo>
 createShader(VkDevice device, const std::vector<char>& bytecode, VkShaderStageFlagBits stage) {
@@ -50,119 +47,68 @@ inline uint32_t getPushConstantSize(const std::vector<char>& bytecode) {
     return size;
 }
 
-inline VulkanPipeline createGraphicsPipeline(VkDevice device,
-                                             const Shader& shader,
-                                             const VkPipelineVertexInputStateCreateInfo& vertexInput,
-                                             const std::vector<VkDescriptorSetLayout>& setLayouts,
-                                             VkFormat colorFormat,
-                                             VkFormat depthFormat) {
-    auto [vertModule, vertStage] = createShader(device, shader.getVertexBytecode(), VK_SHADER_STAGE_VERTEX_BIT);
-    auto [fragModule, fragStage] = createShader(device, shader.getFragmentBytecode(), VK_SHADER_STAGE_FRAGMENT_BIT);
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages{vertStage, fragStage};
+inline std::vector<VkDescriptorSetLayout> reflectDescriptorSetLayouts(VkDevice device,
+                                                                      const std::vector<char>& vertBytecode,
+                                                                      const std::vector<char>& fragBytecode) {
+    struct ReflectedBinding {
+        VkDescriptorType descriptorType = {};
+        VkShaderStageFlags stageFlags = 0;
+    };
+    struct StageSource {
+        const std::vector<char>& bytecode;
+        VkShaderStageFlagBits stage;
+    };
+    const StageSource sources[] = {{vertBytecode, VK_SHADER_STAGE_VERTEX_BIT},
+                                   {fragBytecode, VK_SHADER_STAGE_FRAGMENT_BIT}};
 
-    VulkanPipeline pipeline{};
-    pipeline.descriptorSetLayouts = setLayouts;
-    pipeline.colorFormat = colorFormat;
-    pipeline.depthFormat = depthFormat;
-    pipeline.pushConstantSize = std::max(getPushConstantSize(shader.getVertexBytecode()),
-                                         getPushConstantSize(shader.getFragmentBytecode()));
+    // set -> binding -> merged info
+    std::map<uint32_t, std::map<uint32_t, ReflectedBinding>> sets;
 
-    VkPushConstantRange push{};
-    VkPushConstantRange* pushPtr = nullptr;
-    if (pipeline.pushConstantSize > 0) {
-        push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        push.offset = 0;
-        push.size = pipeline.pushConstantSize;
-        pushPtr = &push;
+    for (const auto& [bytecode, stage]: sources) {
+        SpvReflectShaderModule spvModule{};
+        std::vector<uint32_t> spirv(bytecode.size() / sizeof(uint32_t));
+        std::memcpy(spirv.data(), bytecode.data(), bytecode.size());
+        if (spvReflectCreateShaderModule(spirv.size() * sizeof(uint32_t), spirv.data(), &spvModule) !=
+            SPV_REFLECT_RESULT_SUCCESS)
+            continue;
+
+        uint32_t count = 0;
+        spvReflectEnumerateDescriptorSets(&spvModule, &count, nullptr);
+        std::vector<SpvReflectDescriptorSet*> spvSets(count);
+        spvReflectEnumerateDescriptorSets(&spvModule, &count, spvSets.data());
+
+        for (const auto* spvSet: spvSets) {
+            auto& bindingMap = sets[spvSet->set];
+            for (uint32_t b = 0; b < spvSet->binding_count; ++b) {
+                const auto* spvBinding = spvSet->bindings[b];
+                auto& entry = bindingMap[spvBinding->binding];
+                entry.descriptorType = static_cast<VkDescriptorType>(spvBinding->descriptor_type);
+                entry.stageFlags |= stage;
+            }
+        }
+        spvReflectDestroyShaderModule(&spvModule);
     }
 
-    VkPipelineLayoutCreateInfo layoutInfo{};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    layoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
-    layoutInfo.pSetLayouts = setLayouts.data();
-    layoutInfo.pushConstantRangeCount = pushPtr ? 1 : 0;
-    layoutInfo.pPushConstantRanges = pushPtr;
-
-    throwIfUnsuccessful(vkCreatePipelineLayout(device, &layoutInfo, nullptr, &pipeline.layout),
-                        "Failed to create pipeline layout");
-
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
-    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-    VkPipelineViewportStateCreateInfo viewportState{};
-    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewportState.viewportCount = 1;
-    viewportState.scissorCount = 1;
-
-    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-
-    VkPipelineDynamicStateCreateInfo dynamicState{};
-    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamicState.dynamicStateCount = 2;
-    dynamicState.pDynamicStates = dynamicStates;
-
-    VkPipelineRasterizationStateCreateInfo raster{};
-    raster.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    raster.polygonMode = VK_POLYGON_MODE_FILL;
-    // We use a counter-clockwise convention, but we flip Vulkan Y-axis
-    // to have a right-handed coordinate system. By flipping Vulkan Y-axis,
-    // internally vertices appear as if they are clockwise.
-    raster.cullMode = shader.cullDisabled() ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
-    raster.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    raster.lineWidth = 1.0f;
-
-    VkPipelineMultisampleStateCreateInfo msaa{};
-    msaa.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    msaa.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-    VkPipelineDepthStencilStateCreateInfo depth{};
-    depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depth.depthTestEnable = shader.depthTestDisabled() ? VK_FALSE : VK_TRUE;
-    depth.depthWriteEnable = shader.depthWriteDisabled() ? VK_FALSE : VK_TRUE;
-    depth.depthCompareOp = VK_COMPARE_OP_LESS;
-
-    VkPipelineColorBlendAttachmentState blendAttachment{};
-    blendAttachment.colorWriteMask =
-            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    if (shader.alphaBlendEnabled()) {
-        blendAttachment.blendEnable = VK_TRUE;
-        blendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-        blendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-        blendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
-        blendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-        blendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-        blendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+    std::vector<VkDescriptorSetLayout> layouts;
+    layouts.reserve(sets.size());
+    for (const auto& [setIndex, bindingMap]: sets) {
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
+        bindings.reserve(bindingMap.size());
+        for (const auto& [bindingIndex, info]: bindingMap) {
+            VkDescriptorSetLayoutBinding b{};
+            b.binding = bindingIndex;
+            b.descriptorType = info.descriptorType;
+            b.descriptorCount = 1;
+            b.stageFlags = info.stageFlags;
+            bindings.push_back(b);
+        }
+        VkDescriptorSetLayoutCreateInfo layoutInfo{};
+        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+        layoutInfo.pBindings = bindings.data();
+        VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+        vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &layout);
+        layouts.push_back(layout);
     }
-
-    VkPipelineColorBlendStateCreateInfo blend{};
-    blend.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    blend.attachmentCount = 1;
-    blend.pAttachments = &blendAttachment;
-
-    VkPipelineRenderingCreateInfo rendering{};
-    rendering.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-    rendering.colorAttachmentCount = 1;
-    rendering.pColorAttachmentFormats = &colorFormat;
-    rendering.depthAttachmentFormat = depthFormat;
-
-    VkGraphicsPipelineCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    info.pNext = &rendering;
-    info.stageCount = static_cast<uint32_t>(shaderStages.size());
-    info.pStages = shaderStages.data();
-    info.pVertexInputState = &vertexInput;
-    info.pInputAssemblyState = &inputAssembly;
-    info.pViewportState = &viewportState;
-    info.pRasterizationState = &raster;
-    info.pMultisampleState = &msaa;
-    info.pDepthStencilState = &depth;
-    info.pColorBlendState = &blend;
-    info.pDynamicState = &dynamicState;
-    info.layout = pipeline.layout;
-
-    throwIfUnsuccessful(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &info, nullptr, &pipeline.pipeline),
-                        "Failed to create graphics pipeline");
-
-    return pipeline;
+    return layouts;
 }
