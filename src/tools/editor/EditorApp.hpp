@@ -3,6 +3,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "core/GameEngine.hpp"
+#include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
 
 class EditorApp {
@@ -38,6 +39,7 @@ private:
     GameEngine engine_;
     Scene& scene_;
     std::string cameraId_{};
+    std::optional<std::string> selectedObjectId_{};
 
     glm::vec3 orbitTarget_{0.0f, 0.0f, 0.0f};
     float orbitDistance_ = INITIAL_ORBIT_DISTANCE;
@@ -150,11 +152,22 @@ private:
             auto [scaleX, scaleY] = window_.getContentScale();
             auto x = static_cast<uint32_t>(mouseX * scaleX);
             auto y = static_cast<uint32_t>(mouseY * scaleY);
-            engine_.requestPick(x, y);
+            engine_.getPickingSystem().requestPick(x, y);
         }
         wasLeftDown_ = leftDown;
 
-        if (auto picked = engine_.getPickResult()) printf("Picked object: %s\n", picked->c_str());
+        if (auto picked = engine_.getPickingSystem().getPickResult()) {
+            if (selectedObjectId_ == picked)
+                selectedObjectId_ = std::nullopt;
+            else
+                selectedObjectId_ = std::move(picked);
+        }
+
+        if (selectedObjectId_) {
+            auto& obj = scene_.getObject(*selectedObjectId_);
+            if (obj.has<Renderer>() && obj.has<Transform>())
+                engine_.outline(obj.get<Renderer>(), obj.get<Transform>(), *selectedObjectId_);
+        }
 
         applyCameraTransform();
     }
