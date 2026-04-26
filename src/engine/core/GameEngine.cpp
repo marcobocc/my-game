@@ -37,6 +37,7 @@ void GameEngine::run(const GameLoopFunc& gameLoopFunc) {
 
         window_.pollEvents();
         inputSystem_->update();
+        physicsSystem_->update();
 
         gameLoopFunc(deltaTime);
         renderSystem_->update(*scene_);
