@@ -14,8 +14,8 @@ struct VulkanContext;
 class VulkanCommandManager;
 class VulkanScenePass;
 class VulkanGridPass;
+class VulkanObjectIdPass;
 class VulkanOutlinePass;
-class VulkanPickingPass;
 class VulkanUIPass;
 class VulkanSwapchainManager;
 
@@ -25,8 +25,8 @@ public:
                                 VulkanContext& context,
                                 VulkanScenePass& scenePass,
                                 VulkanGridPass& gridPass,
+                                VulkanObjectIdPass& objectIdPass,
                                 VulkanOutlinePass& outlinePass,
-                                VulkanPickingPass& pickingPass,
                                 VulkanUIPass& uiPass,
                                 VulkanCommandManager& commandManager,
                                 VulkanSwapchainManager& swapchainManager,
@@ -66,8 +66,8 @@ private:
     VulkanContext& context_;
     VulkanScenePass& scenePass_;
     VulkanGridPass& gridPass_;
+    VulkanObjectIdPass& objectIdPass_;
     VulkanOutlinePass& outlinePass_;
-    VulkanPickingPass& pickingPass_;
     VulkanUIPass& uiPass_;
     VulkanCommandManager& commandManager_;
     VulkanSwapchainManager& swapchainManager_;

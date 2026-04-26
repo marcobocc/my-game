@@ -17,12 +17,12 @@
 #include "rendering/vulkan/resources/VulkanResourcesManager.hpp"
 #include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
 
-class VulkanPickingPass {
+class VulkanObjectIdPass {
 public:
-    VulkanPickingPass(const VulkanContext& context,
-                      AssetManager& assetManager,
-                      VulkanResourcesManager& resourcesManager,
-                      VulkanSwapchainManager& swapchainManager) :
+    VulkanObjectIdPass(const VulkanContext& context,
+                       AssetManager& assetManager,
+                       VulkanResourcesManager& resourcesManager,
+                       VulkanSwapchainManager& swapchainManager) :
         context_(context),
         assetManager_(assetManager),
         resourcesManager_(resourcesManager),
@@ -33,7 +33,7 @@ public:
         createReadbackBuffer();
     }
 
-    ~VulkanPickingPass() { destroyResources(); }
+    ~VulkanObjectIdPass() { destroyResources(); }
 
     void resize(uint32_t width, uint32_t height) {
         vkDeviceWaitIdle(context_.device);
@@ -47,6 +47,7 @@ public:
         }
     }
 
+    // Picking API
     void requestPick(uint32_t x, uint32_t y) {
         hasPendingPickRequest_ = true;
         pendingPickX_ = x;
@@ -55,6 +56,30 @@ public:
 
     std::optional<std::string> getPickResult() { return std::exchange(pendingPickResult_, std::nullopt); }
 
+    bool hasPickResultPending() const { return pickResultPending_; }
+
+    void resolvePickResult() {
+        if (!pickResultPending_) return;
+        pickResultPending_ = false;
+
+        uint32_t objectId = 0;
+        void* mapped = nullptr;
+        vkMapMemory(context_.device, readbackBuffer_.memory, 0, sizeof(uint32_t), 0, &mapped);
+        std::memcpy(&objectId, mapped, sizeof(uint32_t));
+        vkUnmapMemory(context_.device, readbackBuffer_.memory);
+
+        if (objectId == 0 || objectId == 0xFFFFFFFF || (objectId - 1) >= objectIdMap_.size()) {
+            pendingPickResult_ = std::nullopt;
+            return;
+        }
+        pendingPickResult_ = objectIdMap_[objectId - 1];
+    }
+
+    // Accessors for the outline pass to reuse the object id buffer
+    VkImage objectIdBufferImage() const { return objectIdBufferImage_; }
+    VkImageView objectIdBufferImageView() const { return objectIdBufferImageView_; }
+    VkSampler objectIdBufferSampler() const { return objectIdBufferSampler_; }
+
     void record(VkCommandBuffer cmd,
                 const std::vector<DrawCall>& drawQueue,
                 const Camera& camera,
@@ -62,7 +87,7 @@ public:
         if (pipeline_.pipeline == VK_NULL_HANDLE) return;
 
         transitionImage(cmd,
-                        colorImage_,
+                        objectIdBufferImage_,
                         VK_IMAGE_LAYOUT_UNDEFINED,
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                         0,
@@ -81,18 +106,18 @@ public:
                         VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
                         VK_IMAGE_ASPECT_DEPTH_BIT);
 
-        VkClearValue clearId{};
-        clearId.color.uint32[0] = 0xFFFFFFFF;
+        VkClearValue clearObjectId{};
+        clearObjectId.color.uint32[0] = 0xFFFFFFFF;
         VkClearValue clearDepth{};
         clearDepth.depthStencil = {1.0f, 0};
 
         VkRenderingAttachmentInfo colorAttachment{};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        colorAttachment.imageView = colorImageView_;
+        colorAttachment.imageView = objectIdBufferImageView_;
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.clearValue = clearId;
+        colorAttachment.clearValue = clearObjectId;
 
         VkRenderingAttachmentInfo depthAttachment{};
         depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -135,7 +160,7 @@ public:
             const DrawCall& dc = drawQueue[i];
             objectIdMap_.push_back(dc.objectId);
 
-            struct PickPush {
+            struct ObjectIdPush {
                 glm::mat4 model;
                 uint32_t objectId;
             } push;
@@ -146,7 +171,7 @@ public:
                                pipeline_.layout,
                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                                0,
-                               sizeof(PickPush),
+                               sizeof(ObjectIdPush),
                                &push);
 
             const Mesh* mesh = assetManager_.get<Mesh>(dc.renderer.meshName);
@@ -162,8 +187,9 @@ public:
 
         vkCmdEndRendering(cmd);
 
+        // Transition to TRANSFER_SRC for picking readback, then to SHADER_READ for outline
         transitionImage(cmd,
-                        colorImage_,
+                        objectIdBufferImage_,
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -181,33 +207,28 @@ public:
             region.imageSubresource.layerCount = 1;
             region.imageOffset = {static_cast<int32_t>(x), static_cast<int32_t>(y), 0};
             region.imageExtent = {1, 1, 1};
-            vkCmdCopyImageToBuffer(
-                    cmd, colorImage_, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, readbackBuffer_.buffer, 1, &region);
+            vkCmdCopyImageToBuffer(cmd,
+                                   objectIdBufferImage_,
+                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                   readbackBuffer_.buffer,
+                                   1,
+                                   &region);
 
             hasPendingPickRequest_ = false;
             pickResultPending_ = true;
         }
+
+        // Leave image in SHADER_READ_ONLY_OPTIMAL for the outline pass to sample
+        transitionImage(cmd,
+                        objectIdBufferImage_,
+                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                        VK_ACCESS_TRANSFER_READ_BIT,
+                        VK_ACCESS_SHADER_READ_BIT,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT,
+                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                        VK_IMAGE_ASPECT_COLOR_BIT);
     }
-
-    // Call after the frame fence is signaled. Resolves and returns the picked object ID if ready.
-    void resolvePickResult() {
-        if (!pickResultPending_) return;
-        pickResultPending_ = false;
-
-        uint32_t id = 0;
-        void* mapped = nullptr;
-        vkMapMemory(context_.device, readbackBuffer_.memory, 0, sizeof(uint32_t), 0, &mapped);
-        std::memcpy(&id, mapped, sizeof(uint32_t));
-        vkUnmapMemory(context_.device, readbackBuffer_.memory);
-
-        if (id == 0 || id == 0xFFFFFFFF || (id - 1) >= objectIdMap_.size()) {
-            pendingPickResult_ = std::nullopt;
-            return;
-        }
-        pendingPickResult_ = objectIdMap_[id - 1];
-    }
-
-    bool hasPickResultPending() const { return pickResultPending_; }
 
 private:
     void createImages() {
@@ -220,28 +241,29 @@ private:
         imageInfo.format = VK_FORMAT_R32_UINT;
         imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        imageInfo.usage =
+                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-        vkCreateImage(context_.device, &imageInfo, nullptr, &colorImage_);
+        vkCreateImage(context_.device, &imageInfo, nullptr, &objectIdBufferImage_);
 
         VkMemoryRequirements memReq{};
-        vkGetImageMemoryRequirements(context_.device, colorImage_, &memReq);
+        vkGetImageMemoryRequirements(context_.device, objectIdBufferImage_, &memReq);
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memReq.size;
         allocInfo.memoryTypeIndex =
                 getMemoryType(context_.physicalDevice, memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        vkAllocateMemory(context_.device, &allocInfo, nullptr, &colorMemory_);
-        vkBindImageMemory(context_.device, colorImage_, colorMemory_, 0);
+        vkAllocateMemory(context_.device, &allocInfo, nullptr, &objectIdBufferMemory_);
+        vkBindImageMemory(context_.device, objectIdBufferImage_, objectIdBufferMemory_, 0);
 
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = colorImage_;
+        viewInfo.image = objectIdBufferImage_;
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = VK_FORMAT_R32_UINT;
         viewInfo.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-        vkCreateImageView(context_.device, &viewInfo, nullptr, &colorImageView_);
+        vkCreateImageView(context_.device, &viewInfo, nullptr, &objectIdBufferImageView_);
 
         imageInfo.format = VK_FORMAT_D32_SFLOAT;
         imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -258,6 +280,15 @@ private:
         viewInfo.format = VK_FORMAT_D32_SFLOAT;
         viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         vkCreateImageView(context_.device, &viewInfo, nullptr, &depthImageView_);
+
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = VK_FILTER_NEAREST;
+        samplerInfo.minFilter = VK_FILTER_NEAREST;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        vkCreateSampler(context_.device, &samplerInfo, nullptr, &objectIdBufferSampler_);
 
         constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * 2;
         perFrameUBOBuffer_ = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
@@ -343,18 +374,22 @@ private:
     }
 
     void destroyImages() {
-        if (colorImageView_ != VK_NULL_HANDLE) vkDestroyImageView(context_.device, colorImageView_, nullptr);
-        if (colorImage_ != VK_NULL_HANDLE) vkDestroyImage(context_.device, colorImage_, nullptr);
-        if (colorMemory_ != VK_NULL_HANDLE) vkFreeMemory(context_.device, colorMemory_, nullptr);
+        if (objectIdBufferSampler_ != VK_NULL_HANDLE)
+            vkDestroySampler(context_.device, objectIdBufferSampler_, nullptr);
+        if (objectIdBufferImageView_ != VK_NULL_HANDLE)
+            vkDestroyImageView(context_.device, objectIdBufferImageView_, nullptr);
+        if (objectIdBufferImage_ != VK_NULL_HANDLE) vkDestroyImage(context_.device, objectIdBufferImage_, nullptr);
+        if (objectIdBufferMemory_ != VK_NULL_HANDLE) vkFreeMemory(context_.device, objectIdBufferMemory_, nullptr);
         if (depthImageView_ != VK_NULL_HANDLE) vkDestroyImageView(context_.device, depthImageView_, nullptr);
         if (depthImage_ != VK_NULL_HANDLE) vkDestroyImage(context_.device, depthImage_, nullptr);
         if (depthMemory_ != VK_NULL_HANDLE) vkFreeMemory(context_.device, depthMemory_, nullptr);
         if (perFrameUBOLayout_ != VK_NULL_HANDLE)
             vkDestroyDescriptorSetLayout(context_.device, perFrameUBOLayout_, nullptr);
         destroyBuffer(context_.device, perFrameUBOBuffer_);
-        colorImageView_ = VK_NULL_HANDLE;
-        colorImage_ = VK_NULL_HANDLE;
-        colorMemory_ = VK_NULL_HANDLE;
+        objectIdBufferSampler_ = VK_NULL_HANDLE;
+        objectIdBufferImageView_ = VK_NULL_HANDLE;
+        objectIdBufferImage_ = VK_NULL_HANDLE;
+        objectIdBufferMemory_ = VK_NULL_HANDLE;
         depthImageView_ = VK_NULL_HANDLE;
         depthImage_ = VK_NULL_HANDLE;
         depthMemory_ = VK_NULL_HANDLE;
@@ -398,9 +433,10 @@ private:
     uint32_t width_ = 0;
     uint32_t height_ = 0;
 
-    VkImage colorImage_ = VK_NULL_HANDLE;
-    VkDeviceMemory colorMemory_ = VK_NULL_HANDLE;
-    VkImageView colorImageView_ = VK_NULL_HANDLE;
+    VkImage objectIdBufferImage_ = VK_NULL_HANDLE;
+    VkDeviceMemory objectIdBufferMemory_ = VK_NULL_HANDLE;
+    VkImageView objectIdBufferImageView_ = VK_NULL_HANDLE;
+    VkSampler objectIdBufferSampler_ = VK_NULL_HANDLE;
 
     VkImage depthImage_ = VK_NULL_HANDLE;
     VkDeviceMemory depthMemory_ = VK_NULL_HANDLE;

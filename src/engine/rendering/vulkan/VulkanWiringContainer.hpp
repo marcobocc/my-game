@@ -14,8 +14,8 @@
 #include "services/VulkanRenderingOrchestrator.hpp"
 #include "services/debug/VulkanDebugMessenger.hpp"
 #include "services/passes/VulkanGridPass.hpp"
+#include "services/passes/VulkanObjectIdPass.hpp"
 #include "services/passes/VulkanOutlinePass.hpp"
-#include "services/passes/VulkanPickingPass.hpp"
 #include "services/passes/VulkanScenePass.hpp"
 #include "services/passes/VulkanUIPass.hpp"
 
@@ -61,15 +61,15 @@ public:
         resourcesManager_(meshBuffersCache_, textureCache_, pipelineCache_, materialCache_),
         scenePass_(vulkanContext_, resourcesManager_, assetManager, window, swapchainManager_),
         gridPass_(vulkanContext_, assetManager, swapchainManager_),
-        outlinePass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
-        pickingPass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
+        objectIdPass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
+        outlinePass_(vulkanContext_, assetManager, swapchainManager_),
         uiPass_(vulkanContext_, swapchainManager_, window, userInterface),
         renderingOrchestrator_(window,
                                vulkanContext_,
                                scenePass_,
                                gridPass_,
+                               objectIdPass_,
                                outlinePass_,
-                               pickingPass_,
                                uiPass_,
                                commandManager_,
                                swapchainManager_,
@@ -93,8 +93,8 @@ private:
 
     VulkanScenePass scenePass_;
     VulkanGridPass gridPass_;
+    VulkanObjectIdPass objectIdPass_;
     VulkanOutlinePass outlinePass_;
-    VulkanPickingPass pickingPass_;
     VulkanUIPass uiPass_;
     VulkanRenderingOrchestrator renderingOrchestrator_;
 

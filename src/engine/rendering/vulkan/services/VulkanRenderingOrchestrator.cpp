@@ -4,8 +4,8 @@
 #include "VulkanSwapchainManager.hpp"
 #include "core/GameWindow.hpp"
 #include "passes/VulkanGridPass.hpp"
+#include "passes/VulkanObjectIdPass.hpp"
 #include "passes/VulkanOutlinePass.hpp"
-#include "passes/VulkanPickingPass.hpp"
 #include "passes/VulkanScenePass.hpp"
 #include "passes/VulkanUIPass.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
@@ -14,8 +14,8 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanContext& context,
                                                          VulkanScenePass& scenePass,
                                                          VulkanGridPass& gridPass,
+                                                         VulkanObjectIdPass& objectIdPass,
                                                          VulkanOutlinePass& outlinePass,
-                                                         VulkanPickingPass& pickingPass,
                                                          VulkanUIPass& uiPass,
                                                          VulkanCommandManager& commandManager,
                                                          VulkanSwapchainManager& swapchainManager,
@@ -24,8 +24,8 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     context_(context),
     scenePass_(scenePass),
     gridPass_(gridPass),
+    objectIdPass_(objectIdPass),
     outlinePass_(outlinePass),
-    pickingPass_(pickingPass),
     uiPass_(uiPass),
     commandManager_(commandManager),
     swapchainManager_(swapchainManager),
@@ -34,7 +34,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     window_.onWindowResize([this](int, int, int, int) {
         swapchainManager_.recreate(context_);
         const auto& extent = swapchainManager_.swapchain().swapchainExtent;
-        pickingPass_.resize(extent.width, extent.height);
+        objectIdPass_.resize(extent.width, extent.height);
         outlinePass_.resize(extent.width, extent.height);
     });
 }
@@ -58,7 +58,7 @@ void VulkanRenderingOrchestrator::enqueueForOutline(const Renderer& renderer,
 
 bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transform& cameraTransform) {
     waitForCurrentFrame();
-    pickingPass_.resolvePickResult();
+    objectIdPass_.resolvePickResult();
 
     uint32_t imageIndex = 0;
     if (!acquireImage(imageIndex)) return false;
@@ -69,9 +69,9 @@ bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transf
     return true;
 }
 
-void VulkanRenderingOrchestrator::requestPick(uint32_t x, uint32_t y) { pickingPass_.requestPick(x, y); }
+void VulkanRenderingOrchestrator::requestPick(uint32_t x, uint32_t y) { objectIdPass_.requestPick(x, y); }
 
-std::optional<std::string> VulkanRenderingOrchestrator::getPickResult() { return pickingPass_.getPickResult(); }
+std::optional<std::string> VulkanRenderingOrchestrator::getPickResult() { return objectIdPass_.getPickResult(); }
 
 // ------------------- Frame sync -------------------
 
@@ -143,9 +143,13 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                                                  uint32_t imageIndex,
                                                  const Camera& camera,
                                                  const Transform& cameraTransform) {
-    pickingPass_.record(cmd, scenePass_.getDrawQueue(), camera, cameraTransform);
+    objectIdPass_.record(cmd, scenePass_.getDrawQueue(), camera, cameraTransform);
     scenePass_.record(cmd, imageIndex, camera, cameraTransform);
-    outlinePass_.record(cmd, imageIndex, swapchainManager_.swapchain(), camera, cameraTransform);
+    outlinePass_.record(cmd,
+                        imageIndex,
+                        swapchainManager_.swapchain(),
+                        objectIdPass_.objectIdBufferImageView(),
+                        objectIdPass_.objectIdBufferSampler());
     if (settings_.enableGrid) gridPass_.record(cmd, imageIndex, camera, cameraTransform);
     uiPass_.record(cmd, imageIndex);
 }
