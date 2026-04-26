@@ -4,6 +4,7 @@
 #include <string>
 #include "assets/AssetImporter.hpp"
 #include "core/GameWindow.hpp"
+#include "core/Time.hpp"
 #include "core/input/InputSystem.hpp"
 #include "core/picking/PickingSystem.hpp"
 #include "core/ui/UserInterface.hpp"
@@ -55,6 +56,6 @@ private:
     std::unique_ptr<AssetImporter> assetImporter_;
     std::unique_ptr<AssetManager> assetManager_;
 
+    std::unique_ptr<Time> time_;
     GameLoopFunc updateFunction_;
-    double lastFrameTime_;
 };

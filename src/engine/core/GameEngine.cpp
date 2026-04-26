@@ -1,7 +1,7 @@
 #include "GameEngine.hpp"
 
 
-GameEngine::GameEngine(GameWindow& window, std::filesystem::path assetsPath) : window_(window), lastFrameTime_(0.0) {
+GameEngine::GameEngine(GameWindow& window, std::filesystem::path assetsPath) : window_(window) {
     initialize(assetsPath);
 }
 
@@ -26,14 +26,13 @@ void GameEngine::initialize(const std::filesystem::path& assetsPath) {
     pickingSystem_ = std::make_unique<PickingSystem>(vulkanWiringContainer_->graphicsBackend().pickingBackend());
     renderSystem_ = std::make_unique<RenderSystem>(vulkanWiringContainer_->graphicsBackend());
     inputSystem_ = std::make_unique<InputSystem>(window_);
-    lastFrameTime_ = window_.getTime();
+    time_ = std::make_unique<Time>([this] { return static_cast<float>(window_.getTime()); });
 }
 
 void GameEngine::run(const GameLoopFunc& gameLoopFunc) {
     while (!shouldClose()) {
-        double currentTime = window_.getTime();
-        double deltaTime = currentTime - lastFrameTime_;
-        lastFrameTime_ = currentTime;
+        time_->beginFrame();
+        float deltaTime = time_->getGameDeltaTime();
 
         window_.pollEvents();
         inputSystem_->update();
@@ -41,6 +40,7 @@ void GameEngine::run(const GameLoopFunc& gameLoopFunc) {
 
         gameLoopFunc(deltaTime);
         renderSystem_->update(*scene_);
+        time_->endFrame();
     }
 }
 
