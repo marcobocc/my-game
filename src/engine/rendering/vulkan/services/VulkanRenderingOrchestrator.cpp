@@ -1,6 +1,7 @@
 #include "VulkanRenderingOrchestrator.hpp"
 #include <volk.h>
 #include "VulkanCommandManager.hpp"
+#include "VulkanPickingBackend.hpp"
 #include "VulkanSwapchainManager.hpp"
 #include "core/GameWindow.hpp"
 #include "passes/VulkanGridPass.hpp"
@@ -15,6 +16,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanScenePass& scenePass,
                                                          VulkanGridPass& gridPass,
                                                          VulkanObjectIdPass& objectIdPass,
+                                                         VulkanPickingBackend& pickingBackend,
                                                          VulkanOutlinePass& outlinePass,
                                                          VulkanUIPass& uiPass,
                                                          VulkanCommandManager& commandManager,
@@ -25,6 +27,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     scenePass_(scenePass),
     gridPass_(gridPass),
     objectIdPass_(objectIdPass),
+    pickingBackend_(pickingBackend),
     outlinePass_(outlinePass),
     uiPass_(uiPass),
     commandManager_(commandManager),
@@ -58,7 +61,7 @@ void VulkanRenderingOrchestrator::enqueueForOutline(const Renderer& renderer,
 
 bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transform& cameraTransform) {
     waitForCurrentFrame();
-    objectIdPass_.resolvePickResult();
+    pickingBackend_.processReadback(objectIdPass_.getObjectIdMap());
 
     uint32_t imageIndex = 0;
     if (!acquireImage(imageIndex)) return false;
@@ -68,10 +71,6 @@ bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transf
     advanceFrame();
     return true;
 }
-
-void VulkanRenderingOrchestrator::requestPick(uint32_t x, uint32_t y) { objectIdPass_.requestPick(x, y); }
-
-std::optional<std::string> VulkanRenderingOrchestrator::getPickResult() { return objectIdPass_.getPickResult(); }
 
 // ------------------- Frame sync -------------------
 
@@ -143,7 +142,14 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                                                  uint32_t imageIndex,
                                                  const Camera& camera,
                                                  const Transform& cameraTransform) {
+    // Object ID pass leaves image in TRANSFER_SRC_OPTIMAL for the picking backend.
     objectIdPass_.record(cmd, scenePass_.getDrawQueue(), camera, cameraTransform);
+    pickingBackend_.recordReadback(
+            cmd, objectIdPass_.objectIdBufferImage(), objectIdPass_.width(), objectIdPass_.height());
+
+    // Transition object ID image to SHADER_READ_ONLY_OPTIMAL for the outline pass.
+    transitionObjectIdToShaderRead(cmd);
+
     scenePass_.record(cmd, imageIndex, camera, cameraTransform);
     outlinePass_.record(cmd,
                         imageIndex,
@@ -159,6 +165,29 @@ void VulkanRenderingOrchestrator::endFrame(VkCommandBuffer cmd, uint32_t imageIn
     VulkanCommandManager::endCommandBuffer(cmd);
     submit(cmd, imageIndex);
     commandManager_.endFrame();
+}
+
+void VulkanRenderingOrchestrator::transitionObjectIdToShaderRead(VkCommandBuffer cmd) const {
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = objectIdPass_.objectIdBufferImage();
+    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    vkCmdPipelineBarrier(cmd,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                         0,
+                         0,
+                         nullptr,
+                         0,
+                         nullptr,
+                         1,
+                         &barrier);
 }
 
 void VulkanRenderingOrchestrator::transitionToPresent(VkCommandBuffer cmd, uint32_t imageIndex) const {

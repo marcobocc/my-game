@@ -1,11 +1,11 @@
 #pragma once
 #include <functional>
 #include <memory>
-#include <optional>
 #include <string>
 #include "assets/AssetImporter.hpp"
 #include "core/GameWindow.hpp"
 #include "core/input/InputSystem.hpp"
+#include "core/picking/PickingSystem.hpp"
 #include "core/ui/UserInterface.hpp"
 #include "rendering/RenderSystem.hpp"
 #include "rendering/RendererSettings.hpp"
@@ -27,11 +27,10 @@ public:
     UserInterface& getUserInterface() const { return *userInterface_; }
     AssetManager& getAssetManager() const { return *assetManager_; }
     InputSystem& getInputSystem() const { return *inputSystem_; }
+    PickingSystem& getPickingSystem() const { return *pickingSystem_; }
     Scene& getScene() const { return *scene_; }
     RendererSettings& getRendererSettings() { return rendererSettings_; }
 
-    void requestPick(uint32_t x, uint32_t y) const;
-    std::optional<std::string> getPickResult() const;
     void outline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
 
     void run(const GameLoopFunc& gameLoopFunc);
@@ -47,6 +46,7 @@ private:
     std::unique_ptr<VulkanWiringContainer> vulkanWiringContainer_;
     std::unique_ptr<RenderSystem> renderSystem_;
     std::unique_ptr<InputSystem> inputSystem_;
+    std::unique_ptr<PickingSystem> pickingSystem_;
     std::unique_ptr<Scene> scene_;
     std::unique_ptr<AssetStorage> assetStorage_;
     std::unique_ptr<AssetImporter> assetImporter_;

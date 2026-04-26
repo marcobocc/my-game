@@ -1,6 +1,4 @@
 #pragma once
-#include <optional>
-#include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "../core/structs.hpp"
@@ -15,6 +13,7 @@ class VulkanCommandManager;
 class VulkanScenePass;
 class VulkanGridPass;
 class VulkanObjectIdPass;
+class VulkanPickingBackend;
 class VulkanOutlinePass;
 class VulkanUIPass;
 class VulkanSwapchainManager;
@@ -26,6 +25,7 @@ public:
                                 VulkanScenePass& scenePass,
                                 VulkanGridPass& gridPass,
                                 VulkanObjectIdPass& objectIdPass,
+                                VulkanPickingBackend& pickingBackend,
                                 VulkanOutlinePass& outlinePass,
                                 VulkanUIPass& uiPass,
                                 VulkanCommandManager& commandManager,
@@ -38,9 +38,6 @@ public:
     void enqueueForOutline(const Renderer&, const Transform&, std::string objectId) const;
     bool renderFrame(const Camera& camera, const Transform& cameraTransform);
 
-    void requestPick(uint32_t x, uint32_t y);
-    std::optional<std::string> getPickResult();
-
 private:
     bool acquireImage(uint32_t& imageIndex);
     VkCommandBuffer beginFrame() const;
@@ -48,6 +45,7 @@ private:
     void endFrame(VkCommandBuffer, uint32_t imageIndex);
     void submit(VkCommandBuffer, uint32_t imageIndex);
     void transitionToPresent(VkCommandBuffer cmd, uint32_t imageIndex) const;
+    void transitionObjectIdToShaderRead(VkCommandBuffer cmd) const;
 
     struct FrameSync {
         VkFence inFlightFence = VK_NULL_HANDLE;
@@ -67,6 +65,7 @@ private:
     VulkanScenePass& scenePass_;
     VulkanGridPass& gridPass_;
     VulkanObjectIdPass& objectIdPass_;
+    VulkanPickingBackend& pickingBackend_;
     VulkanOutlinePass& outlinePass_;
     VulkanUIPass& uiPass_;
     VulkanCommandManager& commandManager_;

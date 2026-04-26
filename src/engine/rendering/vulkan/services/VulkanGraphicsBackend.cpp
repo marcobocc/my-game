@@ -1,10 +1,13 @@
 #include "VulkanGraphicsBackend.hpp"
-#include <optional>
 #include "VulkanRenderingOrchestrator.hpp"
+#include "rendering/IPickingBackend.hpp"
 
-VulkanGraphicsBackend::VulkanGraphicsBackend(VulkanContext& context, VulkanRenderingOrchestrator& renderer) :
+VulkanGraphicsBackend::VulkanGraphicsBackend(VulkanContext& context,
+                                             VulkanRenderingOrchestrator& renderer,
+                                             IPickingBackend& pickingBackend) :
     context_(context),
-    renderer_(renderer) {}
+    renderer_(renderer),
+    pickingBackend_(pickingBackend) {}
 
 VulkanGraphicsBackend::~VulkanGraphicsBackend() = default;
 
@@ -20,6 +23,4 @@ void VulkanGraphicsBackend::renderFrame(const Camera& camera, const Transform& c
     renderer_.renderFrame(camera, cameraTransform);
 }
 
-void VulkanGraphicsBackend::requestPick(uint32_t x, uint32_t y) const { renderer_.requestPick(x, y); }
-
-std::optional<std::string> VulkanGraphicsBackend::getPickResult() const { return renderer_.getPickResult(); }
+IPickingBackend& VulkanGraphicsBackend::pickingBackend() const { return pickingBackend_; }

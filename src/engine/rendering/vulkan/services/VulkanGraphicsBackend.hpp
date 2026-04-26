@@ -1,9 +1,9 @@
 #pragma once
-#include <optional>
 #include <string>
 
 struct VulkanContext;
 class VulkanRenderingOrchestrator;
+class IPickingBackend;
 struct Renderer;
 struct Transform;
 struct Camera;
@@ -45,15 +45,17 @@ public:
     VulkanGraphicsBackend& operator=(VulkanGraphicsBackend&&) = delete;
 
     ~VulkanGraphicsBackend();
-    VulkanGraphicsBackend(VulkanContext& context, VulkanRenderingOrchestrator& renderer);
+    VulkanGraphicsBackend(VulkanContext& context,
+                          VulkanRenderingOrchestrator& renderer,
+                          IPickingBackend& pickingBackend);
 
     void draw(const Renderer& renderer, const Transform& transform, std::string objectId) const;
     void outline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
     void renderFrame(const Camera& camera, const Transform& cameraTransform) const;
-    void requestPick(uint32_t x, uint32_t y) const;
-    std::optional<std::string> getPickResult() const;
+    IPickingBackend& pickingBackend() const;
 
 private:
     VulkanContext& context_;
     VulkanRenderingOrchestrator& renderer_;
+    IPickingBackend& pickingBackend_;
 };

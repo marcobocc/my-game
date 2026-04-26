@@ -11,6 +11,7 @@
 #include "resources/VulkanResourcesManager.hpp"
 #include "resources/VulkanTextureCache.hpp"
 #include "services/VulkanGraphicsBackend.hpp"
+#include "services/VulkanPickingBackend.hpp"
 #include "services/VulkanRenderingOrchestrator.hpp"
 #include "services/debug/VulkanDebugMessenger.hpp"
 #include "services/passes/VulkanGridPass.hpp"
@@ -62,6 +63,7 @@ public:
         scenePass_(vulkanContext_, resourcesManager_, assetManager, window, swapchainManager_),
         gridPass_(assetManager, resourcesManager_, swapchainManager_),
         objectIdPass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
+        pickingBackend_(vulkanContext_),
         outlinePass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
         uiPass_(vulkanContext_, swapchainManager_, window, userInterface),
         renderingOrchestrator_(window,
@@ -69,12 +71,13 @@ public:
                                scenePass_,
                                gridPass_,
                                objectIdPass_,
+                               pickingBackend_,
                                outlinePass_,
                                uiPass_,
                                commandManager_,
                                swapchainManager_,
                                settings),
-        graphicsBackend_(vulkanContext_, renderingOrchestrator_) {}
+        graphicsBackend_(vulkanContext_, renderingOrchestrator_, pickingBackend_) {}
 
     VulkanGraphicsBackend& graphicsBackend() { return graphicsBackend_; }
 
@@ -94,6 +97,7 @@ private:
     VulkanScenePass scenePass_;
     VulkanGridPass gridPass_;
     VulkanObjectIdPass objectIdPass_;
+    VulkanPickingBackend pickingBackend_;
     VulkanOutlinePass outlinePass_;
     VulkanUIPass uiPass_;
     VulkanRenderingOrchestrator renderingOrchestrator_;

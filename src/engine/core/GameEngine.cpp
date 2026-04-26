@@ -1,6 +1,4 @@
 #include "GameEngine.hpp"
-#include <optional>
-#include <string>
 
 
 GameEngine::GameEngine(GameWindow& window, std::filesystem::path assetsPath) : window_(window), lastFrameTime_(0.0) {
@@ -9,6 +7,7 @@ GameEngine::GameEngine(GameWindow& window, std::filesystem::path assetsPath) : w
 
 GameEngine::~GameEngine() {
     inputSystem_.reset();
+    pickingSystem_.reset();
     renderSystem_.reset();
     vulkanWiringContainer_.reset();
     scene_.reset();
@@ -22,6 +21,7 @@ void GameEngine::initialize(const std::filesystem::path& assetsPath) {
     scene_ = std::make_unique<Scene>();
     vulkanWiringContainer_ =
             std::make_unique<VulkanWiringContainer>(window_, *assetManager_, *userInterface_, rendererSettings_);
+    pickingSystem_ = std::make_unique<PickingSystem>(vulkanWiringContainer_->graphicsBackend().pickingBackend());
     renderSystem_ = std::make_unique<RenderSystem>(vulkanWiringContainer_->graphicsBackend());
     inputSystem_ = std::make_unique<InputSystem>(window_);
     lastFrameTime_ = window_.getTime();
@@ -44,14 +44,6 @@ void GameEngine::run(const GameLoopFunc& gameLoopFunc) {
 bool GameEngine::shouldClose() const { return window_.shouldClose(); }
 
 void GameEngine::requestClose() const { window_.requestClose(); }
-
-void GameEngine::requestPick(uint32_t x, uint32_t y) const {
-    vulkanWiringContainer_->graphicsBackend().requestPick(x, y);
-}
-
-std::optional<std::string> GameEngine::getPickResult() const {
-    return vulkanWiringContainer_->graphicsBackend().getPickResult();
-}
 
 void GameEngine::outline(const Renderer& renderer, const Transform& transform, std::string objectId) const {
     vulkanWiringContainer_->graphicsBackend().outline(renderer, transform, std::move(objectId));

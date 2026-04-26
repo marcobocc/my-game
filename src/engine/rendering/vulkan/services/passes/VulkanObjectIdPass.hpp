@@ -1,5 +1,4 @@
 #pragma once
-#include <optional>
 #include <string>
 #include <vector>
 #include <volk.h>
@@ -27,11 +26,10 @@ public:
         width_(swapchainManager.swapchain().swapchainExtent.width),
         height_(swapchainManager.swapchain().swapchainExtent.height) {
         createImages();
-        createReadbackBuffer();
         initPipeline();
     }
 
-    ~VulkanObjectIdPass() { destroyResources(); }
+    ~VulkanObjectIdPass() { destroyImages(); }
 
     void resize(uint32_t width, uint32_t height) {
         vkDeviceWaitIdle(context_.device);
@@ -39,39 +37,12 @@ public:
         width_ = width;
         height_ = height;
         createImages();
-        if (readbackBuffer_.buffer != VK_NULL_HANDLE) {
-            destroyBuffer(context_.device, readbackBuffer_);
-            createReadbackBuffer();
-        }
     }
 
-    // Picking API
-    void requestPick(uint32_t x, uint32_t y) {
-        hasPendingPickRequest_ = true;
-        pendingPickX_ = x;
-        pendingPickY_ = y;
-    }
+    uint32_t width() const { return width_; }
+    uint32_t height() const { return height_; }
 
-    std::optional<std::string> getPickResult() { return std::exchange(pendingPickResult_, std::nullopt); }
-
-    bool hasPickResultPending() const { return pickResultPending_; }
-
-    void resolvePickResult() {
-        if (!pickResultPending_) return;
-        pickResultPending_ = false;
-
-        uint32_t objectId = 0;
-        void* mapped = nullptr;
-        vkMapMemory(context_.device, readbackBuffer_.memory, 0, sizeof(uint32_t), 0, &mapped);
-        std::memcpy(&objectId, mapped, sizeof(uint32_t));
-        vkUnmapMemory(context_.device, readbackBuffer_.memory);
-
-        if (objectId == 0 || objectId == 0xFFFFFFFF || (objectId - 1) >= objectIdMap_.size()) {
-            pendingPickResult_ = std::nullopt;
-            return;
-        }
-        pendingPickResult_ = objectIdMap_[objectId - 1];
-    }
+    const std::vector<std::string>& getObjectIdMap() const { return objectIdMap_; }
 
     // Accessors for the outline pass to reuse the object id buffer
     VkImage objectIdBufferImage() const { return objectIdBufferImage_; }
@@ -185,7 +156,8 @@ public:
 
         vkCmdEndRendering(cmd);
 
-        // Transition to TRANSFER_SRC for picking readback, then to SHADER_READ for outline
+        // Transition to TRANSFER_SRC so the picking backend can copy a pixel if needed,
+        // then leave in SHADER_READ_ONLY_OPTIMAL for the outline pass to sample.
         transitionImage(cmd,
                         objectIdBufferImage_,
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -194,37 +166,6 @@ public:
                         VK_ACCESS_TRANSFER_READ_BIT,
                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                         VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        VK_IMAGE_ASPECT_COLOR_BIT);
-
-        if (hasPendingPickRequest_) {
-            uint32_t x = std::min(pendingPickX_, width_ - 1);
-            uint32_t y = std::min(pendingPickY_, height_ - 1);
-
-            VkBufferImageCopy region{};
-            region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            region.imageSubresource.layerCount = 1;
-            region.imageOffset = {static_cast<int32_t>(x), static_cast<int32_t>(y), 0};
-            region.imageExtent = {1, 1, 1};
-            vkCmdCopyImageToBuffer(cmd,
-                                   objectIdBufferImage_,
-                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                   readbackBuffer_.buffer,
-                                   1,
-                                   &region);
-
-            hasPendingPickRequest_ = false;
-            pickResultPending_ = true;
-        }
-
-        // Leave image in SHADER_READ_ONLY_OPTIMAL for the outline pass to sample
-        transitionImage(cmd,
-                        objectIdBufferImage_,
-                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                        VK_ACCESS_TRANSFER_READ_BIT,
-                        VK_ACCESS_SHADER_READ_BIT,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                         VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
@@ -324,14 +265,6 @@ private:
         vkUpdateDescriptorSets(context_.device, 1, &write, 0, nullptr);
     }
 
-    void createReadbackBuffer() {
-        readbackBuffer_ = createBuffer(context_.device,
-                                       context_.physicalDevice,
-                                       sizeof(uint32_t),
-                                       VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    }
-
     void destroyImages() {
         if (objectIdBufferSampler_ != VK_NULL_HANDLE)
             vkDestroySampler(context_.device, objectIdBufferSampler_, nullptr);
@@ -351,11 +284,6 @@ private:
         depthImage_ = VK_NULL_HANDLE;
         depthMemory_ = VK_NULL_HANDLE;
         perFrameUBODescriptorSet_ = VK_NULL_HANDLE;
-    }
-
-    void destroyResources() {
-        destroyImages();
-        destroyBuffer(context_.device, readbackBuffer_);
     }
 
     static void transitionImage(VkCommandBuffer cmd,
@@ -400,13 +328,6 @@ private:
     VkDescriptorSet perFrameUBODescriptorSet_ = VK_NULL_HANDLE;
 
     VulkanPipeline* pipeline_ = nullptr;
-    VulkanBuffer readbackBuffer_{};
 
     std::vector<std::string> objectIdMap_;
-
-    bool hasPendingPickRequest_ = false;
-    uint32_t pendingPickX_ = 0;
-    uint32_t pendingPickY_ = 0;
-    bool pickResultPending_ = false;
-    std::optional<std::string> pendingPickResult_;
 };
