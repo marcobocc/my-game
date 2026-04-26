@@ -37,6 +37,7 @@ public:
         width_ = width;
         height_ = height;
         createImages();
+        updateDescriptorSet();
     }
 
     uint32_t width() const { return width_; }
@@ -236,18 +237,22 @@ private:
     void initPipeline() {
         const Shader* shader = assetManager_.get<Shader>(OBJECT_ID_SHADER);
         if (!shader) return;
-
         pipeline_ = &resourcesManager_.getPipeline(*shader, VK_FORMAT_R32_UINT, VK_FORMAT_D32_SFLOAT);
+        updateDescriptorSet();
+    }
 
-        // set 0 is the per-frame UBO, reflected from the shader
-        VkDescriptorSetLayout uboLayout = pipeline_->descriptorSetLayouts[0];
+    void updateDescriptorSet() {
+        if (pipeline_ == nullptr) return;
 
-        VkDescriptorSetAllocateInfo dsAlloc{};
-        dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        dsAlloc.descriptorPool = context_.descriptorPool;
-        dsAlloc.descriptorSetCount = 1;
-        dsAlloc.pSetLayouts = &uboLayout;
-        vkAllocateDescriptorSets(context_.device, &dsAlloc, &perFrameUBODescriptorSet_);
+        if (perFrameUBODescriptorSet_ == VK_NULL_HANDLE) {
+            VkDescriptorSetLayout uboLayout = pipeline_->descriptorSetLayouts[0];
+            VkDescriptorSetAllocateInfo dsAlloc{};
+            dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            dsAlloc.descriptorPool = context_.descriptorPool;
+            dsAlloc.descriptorSetCount = 1;
+            dsAlloc.pSetLayouts = &uboLayout;
+            vkAllocateDescriptorSets(context_.device, &dsAlloc, &perFrameUBODescriptorSet_);
+        }
 
         constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * 2;
         VkDescriptorBufferInfo bufInfo{};
