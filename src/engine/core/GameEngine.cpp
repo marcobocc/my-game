@@ -8,6 +8,7 @@ GameEngine::GameEngine(GameWindow& window, std::filesystem::path assetsPath) : w
 GameEngine::~GameEngine() {
     inputSystem_.reset();
     pickingSystem_.reset();
+    physicsSystem_.reset();
     renderSystem_.reset();
     vulkanWiringContainer_.reset();
     scene_.reset();
@@ -19,6 +20,7 @@ void GameEngine::initialize(const std::filesystem::path& assetsPath) {
     assetImporter_ = std::make_unique<AssetImporter>(assetsPath, *assetStorage_);
     assetManager_ = std::make_unique<AssetManager>(*assetImporter_, *assetStorage_);
     scene_ = std::make_unique<Scene>();
+    physicsSystem_ = std::make_unique<PhysicsSystem>(*scene_);
     vulkanWiringContainer_ =
             std::make_unique<VulkanWiringContainer>(window_, *assetManager_, *userInterface_, rendererSettings_);
     pickingSystem_ = std::make_unique<PickingSystem>(vulkanWiringContainer_->graphicsBackend().pickingBackend());

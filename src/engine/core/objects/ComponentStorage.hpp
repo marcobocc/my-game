@@ -4,6 +4,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <vector>
+#include "core/objects/components/BoxCollider.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
@@ -81,4 +82,4 @@ namespace detail {
     };
 } // namespace detail
 
-using ComponentStorage = detail::ComponentStorage<Transform, Camera, Renderer>;
+using ComponentStorage = detail::ComponentStorage<Transform, Camera, Renderer, BoxCollider>;

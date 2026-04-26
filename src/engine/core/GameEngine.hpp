@@ -7,6 +7,7 @@
 #include "core/input/InputSystem.hpp"
 #include "core/picking/PickingSystem.hpp"
 #include "core/ui/UserInterface.hpp"
+#include "physics/PhysicsSystem.hpp"
 #include "rendering/RenderSystem.hpp"
 #include "rendering/RendererSettings.hpp"
 #include "rendering/vulkan/VulkanWiringContainer.hpp"
@@ -28,6 +29,7 @@ public:
     AssetManager& getAssetManager() const { return *assetManager_; }
     InputSystem& getInputSystem() const { return *inputSystem_; }
     PickingSystem& getPickingSystem() const { return *pickingSystem_; }
+    PhysicsSystem& getPhysicsSystem() const { return *physicsSystem_; }
     Scene& getScene() const { return *scene_; }
     RendererSettings& getRendererSettings() { return rendererSettings_; }
 
@@ -47,6 +49,7 @@ private:
     std::unique_ptr<RenderSystem> renderSystem_;
     std::unique_ptr<InputSystem> inputSystem_;
     std::unique_ptr<PickingSystem> pickingSystem_;
+    std::unique_ptr<PhysicsSystem> physicsSystem_;
     std::unique_ptr<Scene> scene_;
     std::unique_ptr<AssetStorage> assetStorage_;
     std::unique_ptr<AssetImporter> assetImporter_;
