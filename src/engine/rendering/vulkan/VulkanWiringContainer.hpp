@@ -14,6 +14,7 @@
 #include "services/VulkanPickingBackend.hpp"
 #include "services/VulkanRenderingOrchestrator.hpp"
 #include "services/debug/VulkanDebugMessenger.hpp"
+#include "services/passes/VulkanGizmoPass.hpp"
 #include "services/passes/VulkanGridPass.hpp"
 #include "services/passes/VulkanObjectIdPass.hpp"
 #include "services/passes/VulkanOutlinePass.hpp"
@@ -62,6 +63,7 @@ public:
         resourcesManager_(meshBuffersCache_, textureCache_, pipelineCache_, materialCache_),
         scenePass_(vulkanContext_, resourcesManager_, assetManager, window, swapchainManager_),
         gridPass_(assetManager, resourcesManager_, swapchainManager_),
+        gizmoPass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
         objectIdPass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
         pickingBackend_(vulkanContext_),
         outlinePass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
@@ -70,6 +72,7 @@ public:
                                vulkanContext_,
                                scenePass_,
                                gridPass_,
+                               gizmoPass_,
                                objectIdPass_,
                                pickingBackend_,
                                outlinePass_,
@@ -96,6 +99,7 @@ private:
 
     VulkanScenePass scenePass_;
     VulkanGridPass gridPass_;
+    VulkanGizmoPass gizmoPass_;
     VulkanObjectIdPass objectIdPass_;
     VulkanPickingBackend pickingBackend_;
     VulkanOutlinePass outlinePass_;

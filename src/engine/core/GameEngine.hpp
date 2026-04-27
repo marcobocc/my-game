@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <glm/vec3.hpp>
 #include <memory>
 #include <string>
 #include "assets/AssetImporter.hpp"
@@ -35,6 +36,7 @@ public:
     RendererSettings& getRendererSettings() { return rendererSettings_; }
 
     void outline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
+    void submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const;
 
     void run(const GameLoopFunc& gameLoopFunc);
     void requestClose() const;

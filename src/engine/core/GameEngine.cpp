@@ -1,4 +1,5 @@
 #include "GameEngine.hpp"
+#include <glm/vec3.hpp>
 
 
 GameEngine::GameEngine(GameWindow& window, std::filesystem::path assetsPath) : window_(window) {
@@ -50,4 +51,8 @@ void GameEngine::requestClose() const { window_.requestClose(); }
 
 void GameEngine::outline(const Renderer& renderer, const Transform& transform, std::string objectId) const {
     vulkanWiringContainer_->graphicsBackend().outline(renderer, transform, std::move(objectId));
+}
+
+void GameEngine::submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const {
+    vulkanWiringContainer_->graphicsBackend().submitGizmoLine(from, to, color);
 }

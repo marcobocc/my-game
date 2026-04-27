@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/vec3.hpp>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "../core/structs.hpp"
@@ -12,6 +13,7 @@ struct VulkanContext;
 class VulkanCommandManager;
 class VulkanScenePass;
 class VulkanGridPass;
+class VulkanGizmoPass;
 class VulkanObjectIdPass;
 class VulkanPickingBackend;
 class VulkanOutlinePass;
@@ -24,6 +26,7 @@ public:
                                 VulkanContext& context,
                                 VulkanScenePass& scenePass,
                                 VulkanGridPass& gridPass,
+                                VulkanGizmoPass& gizmoPass,
                                 VulkanObjectIdPass& objectIdPass,
                                 VulkanPickingBackend& pickingBackend,
                                 VulkanOutlinePass& outlinePass,
@@ -36,6 +39,7 @@ public:
 
     void enqueueForDrawing(const Renderer&, const Transform&, std::string objectId) const;
     void enqueueForOutline(const Renderer&, const Transform&, std::string objectId) const;
+    void submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const;
     bool renderFrame(const Camera& camera, const Transform& cameraTransform);
 
 private:
@@ -64,6 +68,7 @@ private:
     VulkanContext& context_;
     VulkanScenePass& scenePass_;
     VulkanGridPass& gridPass_;
+    VulkanGizmoPass& gizmoPass_;
     VulkanObjectIdPass& objectIdPass_;
     VulkanPickingBackend& pickingBackend_;
     VulkanOutlinePass& outlinePass_;

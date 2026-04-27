@@ -26,6 +26,8 @@ struct ShaderDescriptor {
     bool disableDepthWrite;
     bool enableAlphaBlend;
     bool noVertexInput;
+    bool lineTopology;
+    bool positionColorVertexLayout;
 
     static ShaderDescriptor fromFile(const std::filesystem::path& path, const std::string& name) {
         auto j = JsonUtils::loadJson(path);
@@ -36,7 +38,9 @@ struct ShaderDescriptor {
                 .disableDepthTest = JsonUtils::getOptional<bool>(j, "disableDepthTest", false),
                 .disableDepthWrite = JsonUtils::getOptional<bool>(j, "disableDepthWrite", false),
                 .enableAlphaBlend = JsonUtils::getOptional<bool>(j, "enableAlphaBlend", false),
-                .noVertexInput = JsonUtils::getOptional<bool>(j, "noVertexInput", false)};
+                .noVertexInput = JsonUtils::getOptional<bool>(j, "noVertexInput", false),
+                .lineTopology = JsonUtils::getOptional<bool>(j, "lineTopology", false),
+                .positionColorVertexLayout = JsonUtils::getOptional<bool>(j, "positionColorVertexLayout", false)};
     }
 };
 

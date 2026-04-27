@@ -1,9 +1,11 @@
 #include "VulkanRenderingOrchestrator.hpp"
+#include <glm/vec3.hpp>
 #include <volk.h>
 #include "VulkanCommandManager.hpp"
 #include "VulkanPickingBackend.hpp"
 #include "VulkanSwapchainManager.hpp"
 #include "core/GameWindow.hpp"
+#include "passes/VulkanGizmoPass.hpp"
 #include "passes/VulkanGridPass.hpp"
 #include "passes/VulkanObjectIdPass.hpp"
 #include "passes/VulkanOutlinePass.hpp"
@@ -15,6 +17,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanContext& context,
                                                          VulkanScenePass& scenePass,
                                                          VulkanGridPass& gridPass,
+                                                         VulkanGizmoPass& gizmoPass,
                                                          VulkanObjectIdPass& objectIdPass,
                                                          VulkanPickingBackend& pickingBackend,
                                                          VulkanOutlinePass& outlinePass,
@@ -26,6 +29,7 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     context_(context),
     scenePass_(scenePass),
     gridPass_(gridPass),
+    gizmoPass_(gizmoPass),
     objectIdPass_(objectIdPass),
     pickingBackend_(pickingBackend),
     outlinePass_(outlinePass),
@@ -57,6 +61,10 @@ void VulkanRenderingOrchestrator::enqueueForOutline(const Renderer& renderer,
                                                     const Transform& transform,
                                                     std::string objectId) const {
     outlinePass_.enqueueForOutline(renderer, transform, std::move(objectId));
+}
+
+void VulkanRenderingOrchestrator::submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const {
+    gizmoPass_.submitLine(from, to, color);
 }
 
 bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transform& cameraTransform) {
@@ -158,6 +166,7 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                         objectIdPass_.objectIdBufferSampler(),
                         window_);
     if (settings_.enableGrid) gridPass_.record(cmd, imageIndex, camera, cameraTransform);
+    gizmoPass_.record(cmd, imageIndex, camera, cameraTransform, window_);
     uiPass_.record(cmd, imageIndex);
 }
 

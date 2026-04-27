@@ -1,4 +1,5 @@
 #include "VulkanGraphicsBackend.hpp"
+#include <glm/vec3.hpp>
 #include "VulkanRenderingOrchestrator.hpp"
 #include "rendering/IPickingBackend.hpp"
 
@@ -17,6 +18,10 @@ void VulkanGraphicsBackend::draw(const Renderer& renderer, const Transform& tran
 
 void VulkanGraphicsBackend::outline(const Renderer& renderer, const Transform& transform, std::string objectId) const {
     renderer_.enqueueForOutline(renderer, transform, std::move(objectId));
+}
+
+void VulkanGraphicsBackend::submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const {
+    renderer_.submitGizmoLine(from, to, color);
 }
 
 void VulkanGraphicsBackend::renderFrame(const Camera& camera, const Transform& cameraTransform) const {

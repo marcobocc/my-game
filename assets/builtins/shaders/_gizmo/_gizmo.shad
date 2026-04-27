@@ -1,0 +1,7 @@
+{
+  "vertexShader": "_gizmo.vert.spv",
+  "fragmentShader": "_gizmo.frag.spv",
+  "disableCull": true,
+  "lineTopology": true,
+  "positionColorVertexLayout": true
+}

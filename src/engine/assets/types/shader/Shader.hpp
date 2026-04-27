@@ -12,7 +12,9 @@ public:
            bool disableDepthTest,
            bool disableDepthWrite,
            bool enableAlphaBlend,
-           bool noVertexInput = false) :
+           bool noVertexInput = false,
+           bool lineTopology = false,
+           bool positionColorVertexLayout = false) :
         Asset(name),
         vertexBytecode_(std::move(vertexBytecode)),
         fragmentBytecode_(std::move(fragmentBytecode)),
@@ -20,7 +22,9 @@ public:
         disableDepthTest(disableDepthTest),
         disableDepthWrite(disableDepthWrite),
         enableAlphaBlend(enableAlphaBlend),
-        noVertexInput(noVertexInput) {}
+        noVertexInput(noVertexInput),
+        lineTopology(lineTopology),
+        positionColorVertexLayout(positionColorVertexLayout) {}
 
     const std::vector<char>& getVertexBytecode() const { return vertexBytecode_; }
     const std::vector<char>& getFragmentBytecode() const { return fragmentBytecode_; }
@@ -29,6 +33,8 @@ public:
     bool depthWriteDisabled() const { return disableDepthWrite; }
     bool alphaBlendEnabled() const { return enableAlphaBlend; }
     bool hasNoVertexInput() const { return noVertexInput; }
+    bool hasLineTopology() const { return lineTopology; }
+    bool hasPositionColorVertexLayout() const { return positionColorVertexLayout; }
 
 private:
     std::vector<char> vertexBytecode_;
@@ -38,4 +44,6 @@ private:
     bool disableDepthWrite;
     bool enableAlphaBlend;
     bool noVertexInput;
+    bool lineTopology;
+    bool positionColorVertexLayout;
 };

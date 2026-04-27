@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/vec3.hpp>
 #include <string>
 
 struct VulkanContext;
@@ -51,6 +52,7 @@ public:
 
     void draw(const Renderer& renderer, const Transform& transform, std::string objectId) const;
     void outline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
+    void submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const;
     void renderFrame(const Camera& camera, const Transform& cameraTransform) const;
     IPickingBackend& pickingBackend() const;
 

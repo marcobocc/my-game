@@ -101,7 +101,9 @@ bool AssetImporter::importShader(const std::filesystem::path& file, const std::s
                                                      def.disableDepthTest,
                                                      def.disableDepthWrite,
                                                      def.enableAlphaBlend,
-                                                     def.noVertexInput));
+                                                     def.noVertexInput,
+                                                     def.lineTopology,
+                                                     def.positionColorVertexLayout));
     return true;
 }
 

@@ -14,3 +14,4 @@ static constexpr auto SOLID_COLOR_MATERIAL = "_solid_color.mat";
 static constexpr auto GRID_SHADER = "_grid.shad";
 static constexpr auto OBJECT_ID_SHADER = "_object_id.shad";
 static constexpr auto OUTLINE_SHADER = "_outline.shad";
+static constexpr auto GIZMO_SHADER = "_gizmo.shad";
