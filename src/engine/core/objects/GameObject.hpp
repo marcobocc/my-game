@@ -22,6 +22,8 @@ public:
         return componentStorage_.hasComponent<T>(name);
     }
 
+    const std::string& getName() const { return name; }
+
 private:
     ComponentStorage& componentStorage_;
     std::string name;

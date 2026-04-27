@@ -21,7 +21,15 @@ void Scene::destroyObject(const std::string& name) {
     gameObjects_.erase(name);
 }
 
+void Scene::clear() {
+    for (auto& [name, _]: gameObjects_)
+        componentStorage_->destroyAllComponents(name);
+    gameObjects_.clear();
+}
+
 GameObject& Scene::getObject(const std::string& name) { return gameObjects_.at(name); }
+
+const std::unordered_map<std::string, GameObject>& Scene::getObjects() const { return gameObjects_; }
 
 std::string Scene::generateName() {
     static size_t counter = 0;

@@ -15,12 +15,15 @@ public:
 
     std::pair<std::string, bool> createEmptyObject(std::string name = "");
     void destroyObject(const std::string& name);
+    void clear();
     GameObject& getObject(const std::string& name);
 
     template<typename... Components>
     auto getObjectsWith() const {
         return componentStorage_->query<Components...>();
     }
+
+    const std::unordered_map<std::string, GameObject>& getObjects() const;
 
     // ------------------------------------------------------------------------------
     // createMesh
