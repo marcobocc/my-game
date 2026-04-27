@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 #include "EditorMenuBar.hpp"
+#include "InspectorPanel.hpp"
 #include "core/GameEngine.hpp"
 #include "core/scene/SceneSerializer.hpp"
 #include "utils/JsonUtils.hpp"
@@ -20,6 +21,8 @@ public:
         menuBar_->onSave = [this] { saveScene(*scenePath); };
         menuBar_->onSaveAs = [this] { openSaveDialog(); };
         menuBar_->onOpen = [this] { openLoadDialog(); };
+        engine_.getUserInterface().emplace<InspectorPanel>(
+                &selectedObjectId, &engine_.getScene(), &engine_.getAssetManager());
     }
 
     void saveScene(const std::filesystem::path& path) {

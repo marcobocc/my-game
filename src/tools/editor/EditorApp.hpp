@@ -6,6 +6,7 @@
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "ui/EditorController.hpp"
+#include "ui/InspectorPanel.hpp"
 
 class EditorApp {
 public:
@@ -24,7 +25,11 @@ public:
         window_(windowWidth, windowHeight, "Editor"),
         engine_(window_, assetsPath),
         controller_(engine_) {
-        window_.onWindowResize([this](int newW, int newH, int, int) { window_.setSceneViewport({0, 0, newW, newH}); });
+        auto [w, h] = window_.getLogicalSize();
+        window_.setSceneViewport({0, 0, static_cast<int>(w * (1.0f - InspectorPanel::PANEL_WIDTH_RATIO)), h});
+        window_.onWindowResize([this](int newW, int newH, int, int) {
+            window_.setSceneViewport({0, 0, static_cast<int>(newW * (1.0f - InspectorPanel::PANEL_WIDTH_RATIO)), newH});
+        });
         setupScene();
     }
 
