@@ -30,6 +30,10 @@
     {
       "name": "nlohmann-json",
       "default-features": true
+    },
+    {
+      "name": "nativefiledialog-extended",
+      "default-features": true
     }
   ]
 }
