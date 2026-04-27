@@ -143,7 +143,7 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                                                  const Camera& camera,
                                                  const Transform& cameraTransform) {
     // Object ID pass leaves image in TRANSFER_SRC_OPTIMAL for the picking backend.
-    objectIdPass_.record(cmd, scenePass_.getDrawQueue(), camera, cameraTransform);
+    objectIdPass_.record(cmd, scenePass_.getDrawQueue(), camera, cameraTransform, window_);
     pickingBackend_.recordReadback(
             cmd, objectIdPass_.objectIdBufferImage(), objectIdPass_.width(), objectIdPass_.height());
 
@@ -155,7 +155,8 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                         imageIndex,
                         swapchainManager_.swapchain(),
                         objectIdPass_.objectIdBufferImageView(),
-                        objectIdPass_.objectIdBufferSampler());
+                        objectIdPass_.objectIdBufferSampler(),
+                        window_);
     if (settings_.enableGrid) gridPass_.record(cmd, imageIndex, camera, cameraTransform);
     uiPass_.record(cmd, imageIndex);
 }

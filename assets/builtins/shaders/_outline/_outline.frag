@@ -7,12 +7,15 @@ layout(set = 0, binding = 0) uniform usampler2D idBuffer;
 
 layout(push_constant) uniform Push {
     vec2 texelSize;
+    vec2 uvOffset;
+    vec2 uvScale;
 } pc;
 
 void main() {
-    vec2 flippedUV = vec2(uv.x, 1.0 - uv.y);
+    // Remap screen UV [0,1] into the sub-region of the object ID texture that was rendered into
+    vec2 mappedUV = pc.uvOffset + vec2(uv.x, 1.0 - uv.y) * pc.uvScale;
 
-    uint centerID = texture(idBuffer, flippedUV).r;
+    uint centerID = texture(idBuffer, mappedUV).r;
 
     if (centerID == 0u) {
         discard;
@@ -24,7 +27,7 @@ void main() {
         for (float y = -radius; y <= radius; y++) {
             if (x == 0.0 && y == 0.0) continue;
             vec2 offset = vec2(x, y) * pc.texelSize;
-            if (texture(idBuffer, flippedUV + offset).r != centerID) {
+            if (texture(idBuffer, mappedUV + offset).r != centerID) {
                 isEdge = true;
                 break;
             }

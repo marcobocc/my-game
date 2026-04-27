@@ -6,6 +6,7 @@
 #include "assets/BuiltinAssetNames.hpp"
 #include "assets/types/mesh/Mesh.hpp"
 #include "assets/types/shader/Shader.hpp"
+#include "core/GameWindow.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "rendering/vulkan/core/buffers.hpp"
@@ -53,7 +54,8 @@ public:
     void record(VkCommandBuffer cmd,
                 const std::vector<DrawCall>& drawQueue,
                 const Camera& camera,
-                const Transform& cameraTransform) {
+                const Transform& cameraTransform,
+                const GameWindow& window) {
         if (pipeline_ == nullptr) return;
 
         transitionImage(cmd,
@@ -107,15 +109,22 @@ public:
 
         vkCmdBeginRendering(cmd, &renderingInfo);
 
+        const SceneViewport sv = window.getSceneViewport();
+        const auto [scaleX, scaleY] = window.getContentScale();
+        const int fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
+        const int fbY = static_cast<int>(static_cast<float>(sv.y) * scaleY);
+        const int fbW = static_cast<int>(static_cast<float>(sv.width) * scaleX);
+        const int fbH = static_cast<int>(static_cast<float>(sv.height) * scaleY);
+
         VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = static_cast<float>(height_);
-        viewport.width = static_cast<float>(width_);
-        viewport.height = -static_cast<float>(height_);
+        viewport.x = static_cast<float>(fbX);
+        viewport.y = static_cast<float>(fbY + fbH);
+        viewport.width = static_cast<float>(fbW);
+        viewport.height = -static_cast<float>(fbH);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(cmd, 0, 1, &viewport);
-        VkRect2D scissor{{0, 0}, {width_, height_}};
+        VkRect2D scissor{{fbX, fbY}, {static_cast<uint32_t>(fbW), static_cast<uint32_t>(fbH)}};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);

@@ -5,6 +5,7 @@
 #include "assets/AssetManager.hpp"
 #include "assets/BuiltinAssetNames.hpp"
 #include "assets/types/shader/Shader.hpp"
+#include "core/GameWindow.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 #include "rendering/vulkan/resources/VulkanResourcesManager.hpp"
 #include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
@@ -38,10 +39,11 @@ public:
                 uint32_t imageIndex,
                 const VulkanSwapchain& swapchain,
                 VkImageView objectIdImageView,
-                VkSampler objectIdBufferSampler) {
+                VkSampler objectIdBufferSampler,
+                const GameWindow& window) {
         if (outlineQueue_.empty()) return;
         updateDescriptor(imageIndex, objectIdImageView, objectIdBufferSampler);
-        recordCompositePass(cmd, imageIndex, swapchain);
+        recordCompositePass(cmd, imageIndex, swapchain, window);
         outlineQueue_.clear();
     }
 
@@ -62,7 +64,17 @@ private:
         vkUpdateDescriptorSets(context_.device, 1, &write, 0, nullptr);
     }
 
-    void recordCompositePass(VkCommandBuffer cmd, uint32_t imageIndex, const VulkanSwapchain& swapchain) {
+    void recordCompositePass(VkCommandBuffer cmd,
+                             uint32_t imageIndex,
+                             const VulkanSwapchain& swapchain,
+                             const GameWindow& window) {
+        const SceneViewport sv = window.getSceneViewport();
+        const auto [scaleX, scaleY] = window.getContentScale();
+        const int fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
+        const int fbY = static_cast<int>(static_cast<float>(sv.y) * scaleY);
+        const int fbW = static_cast<int>(static_cast<float>(sv.width) * scaleX);
+        const int fbH = static_cast<int>(static_cast<float>(sv.height) * scaleY);
+
         VkRenderingAttachmentInfo colorAttachment{};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colorAttachment.imageView = swapchain.swapchainImageViews[imageIndex];
@@ -79,10 +91,27 @@ private:
 
         vkCmdBeginRendering(cmd, &renderingInfo);
 
+        VkViewport viewport{};
+        viewport.x = static_cast<float>(fbX);
+        viewport.y = static_cast<float>(fbY + fbH);
+        viewport.width = static_cast<float>(fbW);
+        viewport.height = -static_cast<float>(fbH);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+        VkRect2D scissor{{fbX, fbY}, {static_cast<uint32_t>(fbW), static_cast<uint32_t>(fbH)}};
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+        const float fw = static_cast<float>(width_);
+        const float fh = static_cast<float>(height_);
         struct OutlinePush {
             glm::vec2 texelSize;
+            glm::vec2 uvOffset;
+            glm::vec2 uvScale;
         } push;
-        push.texelSize = {1.0f / static_cast<float>(width_), 1.0f / static_cast<float>(height_)};
+        push.texelSize = {1.0f / fw, 1.0f / fh};
+        push.uvOffset = {static_cast<float>(fbX) / fw, static_cast<float>(fbY) / fh};
+        push.uvScale = {static_cast<float>(fbW) / fw, static_cast<float>(fbH) / fh};
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
         vkCmdBindDescriptorSets(cmd,
