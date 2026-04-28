@@ -8,10 +8,11 @@
 
 struct ParsedData {
     struct Index {
-        int p = -1, uv = -1;
+        int p = -1, uv = -1, n = -1;
     };
     std::vector<glm::vec3> positions;
     std::vector<glm::vec2> uvs;
+    std::vector<glm::vec3> normals;
     std::vector<std::vector<Index>> faces;
 };
 
@@ -29,6 +30,7 @@ ParsedData::Index parseFaceVertex(const std::string& s) {
         return out;
     }
     if (second > first + 1) out.uv = std::stoi(s.substr(first + 1, second - first - 1)) - 1;
+    if (second + 1 < s.size()) out.n = std::stoi(s.substr(second + 1)) - 1;
     return out;
 }
 
@@ -50,6 +52,10 @@ ParsedData parseObjData(const std::filesystem::path& path) {
             glm::vec2 uv;
             ss >> uv.x >> uv.y;
             data.uvs.push_back(uv);
+        } else if (tag == "vn") {
+            glm::vec3 n;
+            ss >> n.x >> n.y >> n.z;
+            data.normals.push_back(n);
         } else if (tag == "f") {
             std::vector<ParsedData::Index> face;
             std::string token;
@@ -66,26 +72,53 @@ std::unique_ptr<Mesh> buildMesh(const ParsedData& data, bool reverseWinding, con
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> colors;
     std::vector<glm::vec2> uvs;
+    std::vector<glm::vec3> normals;
     std::vector<uint32_t> indices;
+
     uint32_t idx = 0;
     for (const auto& face: data.faces) {
         for (size_t i = 1; i + 1 < face.size(); ++i) {
-            const auto triangle = {face[0], face[i], face[i + 1]};
-            for (const auto& v: triangle) {
+            const auto& v0 = face[0];
+            const auto& v1 = face[i];
+            const auto& v2 = face[i + 1];
+
+            const glm::vec3& p0 = data.positions[v0.p];
+            const glm::vec3& p1 = data.positions[v1.p];
+            const glm::vec3& p2 = data.positions[v2.p];
+
+            glm::vec3 faceNormal = glm::normalize(glm::cross(p1 - p0, p2 - p0));
+            const auto processVertex = [&](const auto& v) {
                 positions.push_back(data.positions[v.p]);
-                if (!data.uvs.empty()) {
-                    uvs.push_back(v.uv >= 0 && v.uv < static_cast<int>(data.uvs.size()) ? data.uvs[v.uv]
-                                                                                        : glm::vec2(0.0f));
+
+                if (!data.uvs.empty() && v.uv >= 0 && v.uv < static_cast<int>(data.uvs.size())) {
+                    uvs.push_back(data.uvs[v.uv]);
+                } else {
+                    uvs.emplace_back(0.0f);
                 }
+
+                if (!data.normals.empty() && v.n >= 0 && v.n < static_cast<int>(data.normals.size())) {
+                    normals.push_back(data.normals[v.n]);
+                } else {
+                    normals.push_back(faceNormal);
+                }
+
                 indices.push_back(idx++);
-            }
+            };
+
+            processVertex(v0);
+            processVertex(v1);
+            processVertex(v2);
         }
     }
+
     if (reverseWinding) {
-        for (size_t i = 0; i + 2 < indices.size(); i += 3)
+        for (size_t i = 0; i + 2 < indices.size(); i += 3) {
             std::swap(indices[i + 1], indices[i + 2]);
+        }
     }
-    return std::make_unique<Mesh>(name, std::move(positions), std::move(uvs), std::move(colors), std::move(indices));
+
+    return std::make_unique<Mesh>(
+            name, std::move(positions), std::move(uvs), std::move(colors), std::move(indices), std::move(normals));
 }
 
 namespace importing {
