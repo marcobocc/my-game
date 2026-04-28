@@ -5,7 +5,7 @@ static constexpr auto PRIMITIVE_GEOMETRY_CUBE = "builtins/meshes/_cube.mesh";
 static constexpr auto PRIMITIVE_GEOMETRY_RECTANGLE2D = "builtins/meshes/_rectangle2d.mesh";
 
 // --- Textures ---
-static constexpr auto EMPTY_TEXTURE = "builtins/textures/_white1x1.tex";
+static constexpr auto EMPTY_TEXTURE = "builtins/textures/_white1x1.jpg";
 
 // --- Materials ---
 static constexpr auto SOLID_COLOR_MATERIAL = "builtins/materials/_solid_color.mat";

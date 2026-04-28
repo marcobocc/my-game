@@ -44,16 +44,6 @@ struct ShaderDescriptor {
     }
 };
 
-struct TextureDescriptor {
-    std::string name;
-    std::string image;
-
-    static TextureDescriptor fromFile(const std::filesystem::path& absolutePath, const std::string& name) {
-        auto j = JsonUtils::loadJson(absolutePath);
-        return {.name = name, .image = JsonUtils::getRequired<std::string>(j, "image")};
-    }
-};
-
 struct MaterialDescriptor {
     std::string name;
     std::string shaderName;

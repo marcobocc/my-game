@@ -42,7 +42,7 @@ bool AssetImporter::import(const std::filesystem::path& relativePath) {
     bool importSuccessful = false;
     if (ext == ".mesh") importSuccessful = importMesh(relativePath);
     if (ext == ".shad") importSuccessful = importShader(relativePath);
-    if (ext == ".tex") importSuccessful = importTexture(relativePath);
+    if (ext == ".jpg" || ext == ".png") importSuccessful = importTexture(relativePath);
     if (ext == ".mat") importSuccessful = importMaterial(relativePath);
 
     if (!importSuccessful) {
@@ -106,8 +106,7 @@ bool AssetImporter::importShader(const std::filesystem::path& relativePath) cons
 
 bool AssetImporter::importTexture(const std::filesystem::path& relativePath) const {
     const std::string name = relativePath.string();
-    TextureDescriptor def = TextureDescriptor::fromFile(toAbsolutePath(relativePath), name);
-    auto imageFilePath = toAbsolutePath(def.image);
+    auto imageFilePath = toAbsolutePath(relativePath);
     int w, h, c;
     stbi_set_flip_vertically_on_load(1);
     unsigned char* data = stbi_load(imageFilePath.c_str(), &w, &h, &c, 4);
@@ -125,6 +124,13 @@ bool AssetImporter::importTexture(const std::filesystem::path& relativePath) con
 bool AssetImporter::importMaterial(const std::filesystem::path& relativePath) const {
     const std::string name = relativePath.string();
     MaterialDescriptor def = MaterialDescriptor::fromFile(toAbsolutePath(relativePath), name);
+    bool textureImported = importTexture(def.textureName);
+    if (!textureImported) {
+        LOG4CXX_ERROR(LOGGER,
+                      "Failed to import texture: " << std::filesystem::path(def.textureName)
+                                                   << " required by material: " << name);
+        return false;
+    }
     storage_.insert<Material>(name, std::make_unique<Material>(name, def.shaderName, def.baseColor, def.textureName));
     return true;
 }
