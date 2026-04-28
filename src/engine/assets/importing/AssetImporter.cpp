@@ -8,6 +8,7 @@
 #include "assets/AssetStorage.hpp"
 #include "assets/types/Material.hpp"
 #include "assets/types/Mesh.hpp"
+#include "assets/types/Model.hpp"
 #include "assets/types/Shader.hpp"
 #include "assets/types/Texture.hpp"
 #include "importing.hpp"
@@ -23,7 +24,7 @@ std::filesystem::path AssetImporter::toAbsolutePath(const std::filesystem::path&
 }
 
 void AssetImporter::searchAssets() {
-    static constexpr std::array knownExtensions = {".shad", ".mesh", ".tex", ".mat"};
+    static constexpr std::array knownExtensions = {".shad", ".mesh", ".tex", ".mat", ".model"};
     LOG4CXX_INFO(LOGGER, "Searching for assets in: " << root_);
     for (const auto& file: std::filesystem::recursive_directory_iterator(root_)) {
         auto extension = file.path().extension().string();
@@ -44,6 +45,7 @@ bool AssetImporter::import(const std::filesystem::path& relativePath) {
     if (ext == ".shad") importSuccessful = importShader(relativePath);
     if (ext == ".jpg" || ext == ".png") importSuccessful = importTexture(relativePath);
     if (ext == ".mat") importSuccessful = importMaterial(relativePath);
+    if (ext == ".model") importSuccessful = importModel(relativePath);
 
     if (!importSuccessful) {
         LOG4CXX_WARN(LOGGER, "Failed to import asset: " << relativePath);
@@ -132,5 +134,20 @@ bool AssetImporter::importMaterial(const std::filesystem::path& relativePath) co
         return false;
     }
     storage_.insert<Material>(name, std::make_unique<Material>(name, def.shaderName, def.baseColor, def.textureName));
+    return true;
+}
+
+bool AssetImporter::importModel(const std::filesystem::path& relativePath) const {
+    const std::string name = relativePath.string();
+    ModelDescriptor def = ModelDescriptor::fromFile(toAbsolutePath(relativePath), name);
+    if (!importMesh(def.meshName)) {
+        LOG4CXX_ERROR(LOGGER, "Failed to import mesh: " << def.meshName << " required by model: " << name);
+        return false;
+    }
+    if (!importMaterial(def.materialName)) {
+        LOG4CXX_ERROR(LOGGER, "Failed to import material: " << def.materialName << " required by model: " << name);
+        return false;
+    }
+    storage_.insert<Model>(name, std::make_unique<Model>(name, def.meshName, def.materialName));
     return true;
 }

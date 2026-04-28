@@ -21,6 +21,7 @@ private:
     bool importShader(const std::filesystem::path& relativePath) const;
     bool importTexture(const std::filesystem::path& relativePath) const;
     bool importMaterial(const std::filesystem::path& relativePath) const;
+    bool importModel(const std::filesystem::path& relativePath) const;
 
     AssetStorage& storage_;
     std::unordered_set<std::filesystem::path> availableAssetFiles_;

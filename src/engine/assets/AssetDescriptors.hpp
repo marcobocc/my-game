@@ -59,3 +59,16 @@ struct MaterialDescriptor {
                 .textureName = JsonUtils::getOptional<std::string>(j, "textureName", EMPTY_TEXTURE)};
     }
 };
+
+struct ModelDescriptor {
+    std::string name;
+    std::string meshName;
+    std::string materialName;
+
+    static ModelDescriptor fromFile(const std::filesystem::path& absolutePath, const std::string& name) {
+        auto j = JsonUtils::loadJson(absolutePath);
+        return {.name = name,
+                .meshName = JsonUtils::getRequired<std::string>(j, "meshName"),
+                .materialName = JsonUtils::getRequired<std::string>(j, "materialName")};
+    }
+};
