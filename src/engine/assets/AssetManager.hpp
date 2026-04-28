@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 #include "AssetStorage.hpp"
 #include "importing/AssetImporter.hpp"
 
@@ -13,6 +14,10 @@ public:
         bool importSuccessful = assetImporter_.import(name);
         if (!importSuccessful) throw std::runtime_error("Could not load asset: " + name);
         return storage_.get<T>(name);
+    }
+
+    std::vector<std::string> getAvailableAssets(const std::string& extension) const {
+        return assetImporter_.getAvailableAssets(extension);
     }
 
 private:

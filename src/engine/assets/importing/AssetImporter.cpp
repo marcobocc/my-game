@@ -35,6 +35,14 @@ void AssetImporter::searchAssets() {
     }
 }
 
+std::vector<std::string> AssetImporter::getAvailableAssets(const std::string& extension) const {
+    std::vector<std::string> result;
+    for (const auto& path: availableAssetFiles_) {
+        if (path.extension() == extension) result.emplace_back(path.string());
+    }
+    return result;
+}
+
 bool AssetImporter::import(const std::filesystem::path& relativePath) {
     auto it = availableAssetFiles_.find(relativePath);
     if (it == availableAssetFiles_.end()) throw std::runtime_error("Asset not found: " + relativePath.string());

@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <log4cxx/logger.h>
 #include <unordered_set>
+#include <vector>
 
 class AssetStorage;
 
@@ -11,6 +12,7 @@ class AssetImporter {
 public:
     explicit AssetImporter(const std::filesystem::path& root, AssetStorage& cache);
     bool import(const std::filesystem::path& relativePath);
+    std::vector<std::string> getAvailableAssets(const std::string& extension) const;
 
 private:
     void searchAssets();
