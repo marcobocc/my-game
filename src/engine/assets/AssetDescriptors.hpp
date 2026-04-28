@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <glm/vec4.hpp>
 #include <string>
+#include "BuiltinAssetNames.hpp"
 #include "utils/JsonUtils.hpp"
 
 struct MeshDescriptor {
@@ -53,8 +54,8 @@ struct MaterialDescriptor {
     static MaterialDescriptor fromFile(const std::filesystem::path& absolutePath, const std::string& name) {
         auto j = JsonUtils::loadJson(absolutePath);
         return {.name = name,
-                .shaderName = JsonUtils::getOptional<std::string>(j, "shaderName", "unlit_textured.shad"),
+                .shaderName = JsonUtils::getOptional<std::string>(j, "shaderName", GBUFFER_SHADER),
                 .baseColor = JsonUtils::getOptional<glm::vec4>(j, "baseColor", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f}),
-                .textureName = JsonUtils::getOptional<std::string>(j, "textureName", "white1x1.tex")};
+                .textureName = JsonUtils::getOptional<std::string>(j, "textureName", EMPTY_TEXTURE)};
     }
 };
