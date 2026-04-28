@@ -28,35 +28,34 @@ void AssetImporter::searchAssets() {
     for (const auto& file: std::filesystem::recursive_directory_iterator(root_)) {
         auto extension = file.path().extension().string();
         if (std::ranges::find(knownExtensions, extension) == knownExtensions.end()) continue;
-        auto name = std::filesystem::relative(file.path(), root_).string();
-        auto absolutePath = toAbsolutePath(file.path());
-        auto [it, inserted] = availableAssetFiles_.emplace(name, absolutePath);
-        LOG4CXX_INFO(LOGGER, "Discovered asset: " << it->first);
+        auto relativePath = std::filesystem::relative(file.path(), root_).string();
+        auto [it, inserted] = availableAssetFiles_.emplace(relativePath);
+        LOG4CXX_INFO(LOGGER, "Discovered asset: " << *it);
     }
 }
 
-bool AssetImporter::import(const std::string& name) {
-    auto it = availableAssetFiles_.find(name);
-    if (it == availableAssetFiles_.end()) throw std::runtime_error("Asset not found: " + name);
-    const auto& path = it->second;
-    auto ext = path.extension().string();
+bool AssetImporter::import(const std::filesystem::path& relativePath) {
+    auto it = availableAssetFiles_.find(relativePath);
+    if (it == availableAssetFiles_.end()) throw std::runtime_error("Asset not found: " + relativePath.string());
+    auto ext = relativePath.extension().string();
 
     bool importSuccessful = false;
-    if (ext == ".mesh") importSuccessful = importMesh(path, name);
-    if (ext == ".shad") importSuccessful = importShader(path, name);
-    if (ext == ".tex") importSuccessful = importTexture(path, name);
-    if (ext == ".mat") importSuccessful = importMaterial(path, name);
+    if (ext == ".mesh") importSuccessful = importMesh(relativePath);
+    if (ext == ".shad") importSuccessful = importShader(relativePath);
+    if (ext == ".tex") importSuccessful = importTexture(relativePath);
+    if (ext == ".mat") importSuccessful = importMaterial(relativePath);
 
     if (!importSuccessful) {
-        LOG4CXX_WARN(LOGGER, "Failed to import asset: " << name);
+        LOG4CXX_WARN(LOGGER, "Failed to import asset: " << relativePath);
         return false;
     }
-    LOG4CXX_INFO(LOGGER, "Successfully imported asset from disk: " << name);
+    LOG4CXX_INFO(LOGGER, "Successfully imported asset from disk: " << relativePath);
     return true;
 }
 
-bool AssetImporter::importMesh(const std::filesystem::path& file, const std::string& name) const {
-    MeshDescriptor def = MeshDescriptor::fromFile(file, name);
+bool AssetImporter::importMesh(const std::filesystem::path& relativePath) const {
+    const std::string name = relativePath.string();
+    MeshDescriptor def = MeshDescriptor::fromFile(toAbsolutePath(relativePath), name);
     auto meshFilePath = toAbsolutePath(def.meshFile);
     if (meshFilePath.extension() == ".obj") {
         storage_.insert<Mesh>(name, importing::importObjFile(meshFilePath, !def.ccw, name));
@@ -66,8 +65,9 @@ bool AssetImporter::importMesh(const std::filesystem::path& file, const std::str
     return false;
 }
 
-bool AssetImporter::importShader(const std::filesystem::path& file, const std::string& name) const {
-    ShaderDescriptor def = ShaderDescriptor::fromFile(file, name);
+bool AssetImporter::importShader(const std::filesystem::path& relativePath) const {
+    const std::string name = relativePath.string();
+    ShaderDescriptor def = ShaderDescriptor::fromFile(toAbsolutePath(relativePath), name);
     auto readFile = [&](const std::filesystem::path& path) -> std::vector<char> {
         std::ifstream f(path, std::ios::binary | std::ios::ate);
         if (!f) throw std::runtime_error("Failed to open shader file: " + path.string());
@@ -104,8 +104,9 @@ bool AssetImporter::importShader(const std::filesystem::path& file, const std::s
     return true;
 }
 
-bool AssetImporter::importTexture(const std::filesystem::path& file, const std::string& name) const {
-    TextureDescriptor def = TextureDescriptor::fromFile(file, name);
+bool AssetImporter::importTexture(const std::filesystem::path& relativePath) const {
+    const std::string name = relativePath.string();
+    TextureDescriptor def = TextureDescriptor::fromFile(toAbsolutePath(relativePath), name);
     auto imageFilePath = toAbsolutePath(def.image);
     int w, h, c;
     stbi_set_flip_vertically_on_load(1);
@@ -121,8 +122,9 @@ bool AssetImporter::importTexture(const std::filesystem::path& file, const std::
     return true;
 }
 
-bool AssetImporter::importMaterial(const std::filesystem::path& file, const std::string& name) const {
-    MaterialDescriptor def = MaterialDescriptor::fromFile(file, name);
+bool AssetImporter::importMaterial(const std::filesystem::path& relativePath) const {
+    const std::string name = relativePath.string();
+    MaterialDescriptor def = MaterialDescriptor::fromFile(toAbsolutePath(relativePath), name);
     storage_.insert<Material>(name, std::make_unique<Material>(name, def.shaderName, def.baseColor, def.textureName));
     return true;
 }

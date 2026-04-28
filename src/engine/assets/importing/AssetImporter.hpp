@@ -1,8 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <log4cxx/logger.h>
-#include <string>
-#include <unordered_map>
+#include <unordered_set>
 
 class AssetStorage;
 
@@ -11,19 +10,19 @@ class AssetImporter {
 
 public:
     explicit AssetImporter(const std::filesystem::path& root, AssetStorage& cache);
-    bool import(const std::string& name);
+    bool import(const std::filesystem::path& relativePath);
 
 private:
     void searchAssets();
     std::filesystem::path
     toAbsolutePath(const std::filesystem::path& relativePath) const; // Relative to assets root folder
 
-    bool importMesh(const std::filesystem::path& file, const std::string& name) const;
-    bool importShader(const std::filesystem::path& file, const std::string& name) const;
-    bool importTexture(const std::filesystem::path& file, const std::string& name) const;
-    bool importMaterial(const std::filesystem::path& file, const std::string& name) const;
+    bool importMesh(const std::filesystem::path& relativePath) const;
+    bool importShader(const std::filesystem::path& relativePath) const;
+    bool importTexture(const std::filesystem::path& relativePath) const;
+    bool importMaterial(const std::filesystem::path& relativePath) const;
 
     AssetStorage& storage_;
-    std::unordered_map<std::string, std::filesystem::path> availableAssetFiles_;
+    std::unordered_set<std::filesystem::path> availableAssetFiles_;
     std::filesystem::path root_;
 };
