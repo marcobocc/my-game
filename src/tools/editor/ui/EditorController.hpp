@@ -22,7 +22,8 @@ public:
         menuBar_->onSave = [this] { saveScene(*scenePath); };
         menuBar_->onSaveAs = [this] { openSaveDialog(); };
         menuBar_->onOpen = [this] { openLoadDialog(); };
-        engine_.getUserInterface().emplace<HierarchyPanel>(&selectedObjectId, &engine_.getScene());
+        engine_.getUserInterface().emplace<HierarchyPanel>(
+                &selectedObjectId, &engine_.getScene(), &engine_.getAssetManager());
         engine_.getUserInterface().emplace<InspectorPanel>(
                 &selectedObjectId, &engine_.getScene(), &engine_.getAssetManager());
     }
