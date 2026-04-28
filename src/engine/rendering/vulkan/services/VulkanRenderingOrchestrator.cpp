@@ -255,7 +255,8 @@ void VulkanRenderingOrchestrator::setupGraph() {
                                 swapchainManager_.swapchain(),
                                 graph.getImageView(objectIdColorHandle_),
                                 graph.getSampler(objectIdColorHandle_),
-                                window_);
+                                window_,
+                                objectIdPass_.getObjectIdMap());
         };
         graph_.addPass(std::move(n));
     }

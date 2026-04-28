@@ -40,10 +40,13 @@ public:
                 const VulkanSwapchain& swapchain,
                 VkImageView objectIdImageView,
                 VkSampler objectIdBufferSampler,
-                const GameWindow& window) {
+                const GameWindow& window,
+                const std::vector<std::string>& objectIdMap) {
         if (outlineQueue_.empty()) return;
+        uint32_t targetId = resolveTargetId(objectIdMap);
+        if (targetId == 0) return;
         updateDescriptor(imageIndex, objectIdImageView, objectIdBufferSampler);
-        recordCompositePass(cmd, imageIndex, swapchain, window);
+        recordCompositePass(cmd, imageIndex, swapchain, window, targetId);
         outlineQueue_.clear();
     }
 
@@ -64,10 +67,19 @@ private:
         vkUpdateDescriptorSets(context_.device, 1, &write, 0, nullptr);
     }
 
+    uint32_t resolveTargetId(const std::vector<std::string>& objectIdMap) const {
+        const auto& targetObjectId = outlineQueue_.front().objectId;
+        for (uint32_t i = 0; i < static_cast<uint32_t>(objectIdMap.size()); ++i) {
+            if (objectIdMap[i] == targetObjectId) return i + 1;
+        }
+        return 0;
+    }
+
     void recordCompositePass(VkCommandBuffer cmd,
                              uint32_t imageIndex,
                              const VulkanSwapchain& swapchain,
-                             const GameWindow& window) {
+                             const GameWindow& window,
+                             uint32_t targetId) {
         const SceneViewport sv = window.getSceneViewport();
         const auto [scaleX, scaleY] = window.getContentScale();
         const int fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
@@ -108,10 +120,12 @@ private:
             glm::vec2 texelSize;
             glm::vec2 uvOffset;
             glm::vec2 uvScale;
+            uint32_t targetId;
         } push;
         push.texelSize = {1.0f / fw, 1.0f / fh};
         push.uvOffset = {static_cast<float>(fbX) / fw, static_cast<float>(fbY) / fh};
         push.uvScale = {static_cast<float>(fbW) / fw, static_cast<float>(fbH) / fh};
+        push.targetId = targetId;
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
         vkCmdBindDescriptorSets(cmd,
