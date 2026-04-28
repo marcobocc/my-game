@@ -5,6 +5,7 @@ layout(location = 0) out vec2 outUV;
 layout(push_constant) uniform Push {
     vec2 uvOffset;
     vec2 uvScale;
+    uint enableLighting;
 } pc;
 
 void main() {

@@ -4,6 +4,12 @@ layout(location = 0) in vec2 inUV;
 
 layout(location = 0) out vec4 outColor;
 
+layout(push_constant) uniform Push {
+    vec2 uvOffset;
+    vec2 uvScale;
+    uint enableLighting;
+} pc;
+
 layout(set = 0, binding = 0) uniform sampler2D albedoSampler;
 layout(set = 0, binding = 1) uniform sampler2D normalSampler;
 
@@ -14,6 +20,11 @@ void main() {
     vec4 albedoSample = texture(albedoSampler, inUV);
     if (albedoSample.a == 0.0) {
         outColor = vec4(0.1, 0.1, 0.1, 1.0);
+        return;
+    }
+
+    if (pc.enableLighting == 0) {
+        outColor = vec4(albedoSample.rgb, 1.0);
         return;
     }
 

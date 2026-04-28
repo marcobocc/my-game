@@ -32,7 +32,8 @@ public:
                 int fbX,
                 int fbY,
                 int fbW,
-                int fbH) {
+                int fbH,
+                bool enableLighting = true) {
         if (pipeline_ == nullptr) return;
         updateDescriptor(imageIndex, albedoView, albedoSampler, normalView, normalSampler);
 
@@ -71,9 +72,11 @@ public:
         struct LightingPush {
             glm::vec2 uvOffset;
             glm::vec2 uvScale;
+            uint32_t enableLighting;
         } push{};
         push.uvOffset = {static_cast<float>(fbX) / scW, static_cast<float>(fbY) / scH};
         push.uvScale = {static_cast<float>(fbW) / scW, static_cast<float>(fbH) / scH};
+        push.enableLighting = enableLighting ? 1 : 0;
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
         vkCmdBindDescriptorSets(cmd,

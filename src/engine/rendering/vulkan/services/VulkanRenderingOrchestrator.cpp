@@ -229,7 +229,8 @@ void VulkanRenderingOrchestrator::setupGraph() {
                                  fbX,
                                  fbY,
                                  fbW,
-                                 fbH);
+                                 fbH,
+                                 settings_.enableLighting);
         };
         graph_.addPass(std::move(n));
     }
