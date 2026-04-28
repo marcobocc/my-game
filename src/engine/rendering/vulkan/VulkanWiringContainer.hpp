@@ -14,11 +14,12 @@
 #include "services/VulkanPickingBackend.hpp"
 #include "services/VulkanRenderingOrchestrator.hpp"
 #include "services/debug/VulkanDebugMessenger.hpp"
+#include "services/passes/VulkanGeometryPass.hpp"
 #include "services/passes/VulkanGizmoPass.hpp"
 #include "services/passes/VulkanGridPass.hpp"
+#include "services/passes/VulkanLightingPass.hpp"
 #include "services/passes/VulkanObjectIdPass.hpp"
 #include "services/passes/VulkanOutlinePass.hpp"
-#include "services/passes/VulkanScenePass.hpp"
 #include "services/passes/VulkanUIPass.hpp"
 
 /*
@@ -61,7 +62,12 @@ public:
         textureCache_(vulkanContext_),
         materialCache_(vulkanContext_, pipelineCache_, textureCache_, assetManager),
         resourcesManager_(meshBuffersCache_, textureCache_, pipelineCache_, materialCache_),
-        scenePass_(vulkanContext_, resourcesManager_, assetManager, window),
+        geometryPass_(vulkanContext_, resourcesManager_, assetManager, window),
+        lightingPass_(vulkanContext_,
+                      assetManager,
+                      resourcesManager_,
+                      swapchainManager_.swapchain().swapchainImageFormat,
+                      static_cast<uint32_t>(swapchainManager_.swapchain().swapchainImages.size())),
         gridPass_(assetManager, resourcesManager_, swapchainManager_),
         gizmoPass_(vulkanContext_, assetManager, resourcesManager_, swapchainManager_),
         objectIdPass_(vulkanContext_, assetManager, resourcesManager_),
@@ -76,7 +82,8 @@ public:
         uiPass_(vulkanContext_, swapchainManager_, window, userInterface),
         renderingOrchestrator_(window,
                                vulkanContext_,
-                               scenePass_,
+                               geometryPass_,
+                               lightingPass_,
                                gridPass_,
                                gizmoPass_,
                                objectIdPass_,
@@ -103,7 +110,8 @@ private:
     VulkanMaterialCache materialCache_;
     VulkanResourcesManager resourcesManager_;
 
-    VulkanScenePass scenePass_;
+    VulkanGeometryPass geometryPass_;
+    VulkanLightingPass lightingPass_;
     VulkanGridPass gridPass_;
     VulkanGizmoPass gizmoPass_;
     VulkanObjectIdPass objectIdPass_;

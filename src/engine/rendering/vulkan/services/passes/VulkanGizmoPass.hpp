@@ -44,7 +44,8 @@ public:
                 uint32_t imageIndex,
                 const Camera& camera,
                 const Transform& cameraTransform,
-                const GameWindow& window) {
+                const GameWindow& window,
+                VkImageView depthView) {
         if (pipeline_ == nullptr || lineVertices_.empty()) return;
 
         const VulkanSwapchain& swapchain = swapchainManager_.swapchain();
@@ -68,7 +69,7 @@ public:
 
         VkRenderingAttachmentInfo depthAttachment{};
         depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        depthAttachment.imageView = swapchain.depthBuffer.view;
+        depthAttachment.imageView = depthView;
         depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

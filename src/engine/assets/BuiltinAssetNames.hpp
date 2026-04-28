@@ -15,3 +15,5 @@ static constexpr auto GRID_SHADER = "_grid.shad";
 static constexpr auto OBJECT_ID_SHADER = "_object_id.shad";
 static constexpr auto OUTLINE_SHADER = "_outline.shad";
 static constexpr auto GIZMO_SHADER = "_gizmo.shad";
+static constexpr auto GBUFFER_SHADER = "_gbuffer.shad";
+static constexpr auto LIGHTING_SHADER = "_lighting.shad";

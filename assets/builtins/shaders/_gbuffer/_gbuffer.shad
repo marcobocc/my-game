@@ -1,0 +1,4 @@
+{
+  "vertexShader": "_gbuffer.vert.spv",
+  "fragmentShader": "_gbuffer.frag.spv"
+}

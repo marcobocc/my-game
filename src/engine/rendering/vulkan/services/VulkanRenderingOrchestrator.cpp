@@ -5,11 +5,12 @@
 #include "VulkanPickingBackend.hpp"
 #include "VulkanSwapchainManager.hpp"
 #include "core/GameWindow.hpp"
+#include "passes/VulkanGeometryPass.hpp"
 #include "passes/VulkanGizmoPass.hpp"
 #include "passes/VulkanGridPass.hpp"
+#include "passes/VulkanLightingPass.hpp"
 #include "passes/VulkanObjectIdPass.hpp"
 #include "passes/VulkanOutlinePass.hpp"
-#include "passes/VulkanScenePass.hpp"
 #include "passes/VulkanUIPass.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
 #include "rendering/vulkan/rendergraph/RenderGraph.hpp"
@@ -17,7 +18,8 @@
 
 VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanContext& context,
-                                                         VulkanScenePass& scenePass,
+                                                         VulkanGeometryPass& geometryPass,
+                                                         VulkanLightingPass& lightingPass,
                                                          VulkanGridPass& gridPass,
                                                          VulkanGizmoPass& gizmoPass,
                                                          VulkanObjectIdPass& objectIdPass,
@@ -29,7 +31,8 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          RendererSettings& settings) :
     window_(window),
     context_(context),
-    scenePass_(scenePass),
+    geometryPass_(geometryPass),
+    lightingPass_(lightingPass),
     gridPass_(gridPass),
     gizmoPass_(gizmoPass),
     objectIdPass_(objectIdPass),
@@ -57,8 +60,8 @@ VulkanRenderingOrchestrator::~VulkanRenderingOrchestrator() {
 
 void VulkanRenderingOrchestrator::enqueueForDrawing(const Renderer& renderer,
                                                     const Transform& transform,
-                                                    std::string objectId) const {
-    scenePass_.enqueueForDrawing(renderer, transform, std::move(objectId));
+                                                    std::string objectId) {
+    drawQueue_.push_back({renderer, transform, std::move(objectId)});
 }
 
 void VulkanRenderingOrchestrator::enqueueForOutline(const Renderer& renderer,
@@ -92,9 +95,6 @@ void VulkanRenderingOrchestrator::setupGraph() {
     swapchainColorHandle_ =
             graph_.importImage("swapchain_color", sc.swapchainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-    swapchainDepthHandle_ =
-            graph_.importImage("swapchain_depth", sc.depthBuffer.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-
     objectIdColorHandle_ = graph_.createTransientImage(
             "objectid_color",
             VK_FORMAT_R32_UINT,
@@ -126,7 +126,7 @@ void VulkanRenderingOrchestrator::setupGraph() {
                         VK_PIPELINE_STAGE_TRANSFER_BIT}};
         n.execute = [this](VkCommandBuffer cmd, const RenderGraph& graph) {
             objectIdPass_.record(cmd,
-                                 scenePass_.getDrawQueue(),
+                                 drawQueue_,
                                  *currentCamera_,
                                  *currentCameraTransform_,
                                  window_,
@@ -145,17 +145,25 @@ void VulkanRenderingOrchestrator::setupGraph() {
         graph_.addPass(std::move(n));
     }
 
-    // --- Scene pass ---
+    gbufferAlbedoHandle_ =
+            graph_.createTransientImage("gbuffer_albedo",
+                                        VK_FORMAT_R8G8B8A8_UNORM,
+                                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+
+    gbufferDepthHandle_ = graph_.createTransientImage(
+            "gbuffer_depth", VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    // --- Geometry pass (G-buffer) ---
     {
         RenderPassNode n;
-        n.name = "ScenePass";
+        n.name = "GeometryPass";
         n.writes = {
-                {swapchainColorHandle_,
+                {gbufferAlbedoHandle_,
                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                  VK_IMAGE_ASPECT_COLOR_BIT},
-                {swapchainDepthHandle_,
+                {gbufferDepthHandle_,
                  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
                  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
                  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
@@ -163,12 +171,49 @@ void VulkanRenderingOrchestrator::setupGraph() {
         };
         n.execute = [this](VkCommandBuffer cmd, const RenderGraph& graph) {
             const VkExtent2D extent = swapchainManager_.swapchain().swapchainExtent;
-            scenePass_.record(cmd,
-                              graph.getImageView(swapchainColorHandle_),
-                              graph.getImageView(swapchainDepthHandle_),
-                              extent,
-                              *currentCamera_,
-                              *currentCameraTransform_);
+            geometryPass_.record(cmd,
+                                 graph.getImageView(gbufferAlbedoHandle_),
+                                 graph.getImageView(gbufferDepthHandle_),
+                                 extent,
+                                 *currentCamera_,
+                                 *currentCameraTransform_,
+                                 drawQueue_);
+        };
+        graph_.addPass(std::move(n));
+    }
+
+    // --- Lighting pass ---
+    {
+        RenderPassNode n;
+        n.name = "LightingPass";
+        n.reads = {{gbufferAlbedoHandle_,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_SHADER_READ_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.writes = {{swapchainColorHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd, const RenderGraph& graph) {
+            const VkExtent2D extent = swapchainManager_.swapchain().swapchainExtent;
+            const SceneViewport sv = window_.getSceneViewport();
+            const auto [scaleX, scaleY] = window_.getContentScale();
+            const int fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
+            const int fbY = static_cast<int>(static_cast<float>(sv.y) * scaleY);
+            const int fbW = static_cast<int>(static_cast<float>(sv.width) * scaleX);
+            const int fbH = static_cast<int>(static_cast<float>(sv.height) * scaleY);
+            lightingPass_.record(cmd,
+                                 currentImageIndex_,
+                                 graph.getImageView(swapchainColorHandle_),
+                                 extent,
+                                 graph.getImageView(gbufferAlbedoHandle_),
+                                 graph.getSampler(gbufferAlbedoHandle_),
+                                 fbX,
+                                 fbY,
+                                 fbW,
+                                 fbH);
         };
         graph_.addPass(std::move(n));
     }
@@ -182,8 +227,6 @@ void VulkanRenderingOrchestrator::setupGraph() {
                     VK_ACCESS_SHADER_READ_BIT,
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     VK_IMAGE_ASPECT_COLOR_BIT}};
-        // Swapchain color is already COLOR_ATTACHMENT from ScenePass — no new write entry needed,
-        // but we must declare it so the graph knows this pass touches it.
         n.writes = {{swapchainColorHandle_,
                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -204,14 +247,23 @@ void VulkanRenderingOrchestrator::setupGraph() {
     {
         RenderPassNode n;
         n.name = "GridPass";
+        n.reads = {{gbufferDepthHandle_,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT}};
         n.writes = {{swapchainColorHandle_,
                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                      VK_IMAGE_ASPECT_COLOR_BIT}};
-        n.execute = [this](VkCommandBuffer cmd, const RenderGraph&) {
+        n.execute = [this](VkCommandBuffer cmd, const RenderGraph& graph) {
             if (!settings_.enableGrid) return;
-            gridPass_.record(cmd, currentImageIndex_, *currentCamera_, *currentCameraTransform_);
+            gridPass_.record(cmd,
+                             currentImageIndex_,
+                             *currentCamera_,
+                             *currentCameraTransform_,
+                             graph.getImageView(gbufferDepthHandle_));
         };
         graph_.addPass(std::move(n));
     }
@@ -220,13 +272,23 @@ void VulkanRenderingOrchestrator::setupGraph() {
     {
         RenderPassNode n;
         n.name = "GizmoPass";
+        n.reads = {{gbufferDepthHandle_,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT}};
         n.writes = {{swapchainColorHandle_,
                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                      VK_IMAGE_ASPECT_COLOR_BIT}};
-        n.execute = [this](VkCommandBuffer cmd, const RenderGraph&) {
-            gizmoPass_.record(cmd, currentImageIndex_, *currentCamera_, *currentCameraTransform_, window_);
+        n.execute = [this](VkCommandBuffer cmd, const RenderGraph& graph) {
+            gizmoPass_.record(cmd,
+                              currentImageIndex_,
+                              *currentCamera_,
+                              *currentCameraTransform_,
+                              window_,
+                              graph.getImageView(gbufferDepthHandle_));
         };
         graph_.addPass(std::move(n));
     }
@@ -335,9 +397,7 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
 
     const VulkanSwapchain& sc = swapchainManager_.swapchain();
     graph_.setImportedImage(swapchainColorHandle_, sc.swapchainImages[imageIndex], sc.swapchainImageViews[imageIndex]);
-    graph_.setImportedImage(swapchainDepthHandle_, sc.depthBuffer.image, sc.depthBuffer.view);
     graph_.resetLayout(swapchainColorHandle_);
-    graph_.resetLayout(swapchainDepthHandle_);
 
     graph_.execute(cmd);
 }
@@ -346,6 +406,7 @@ void VulkanRenderingOrchestrator::endFrame(VkCommandBuffer cmd, uint32_t imageIn
     VulkanCommandManager::endCommandBuffer(cmd);
     submit(cmd, imageIndex);
     commandManager_.endFrame();
+    drawQueue_.clear();
 }
 
 void VulkanRenderingOrchestrator::submit(VkCommandBuffer cmd, uint32_t imageIndex) {

@@ -133,29 +133,38 @@ uint32_t RenderGraph::getHeight(ResourceHandle handle) const {
 void RenderGraph::sortPasses() {
     const size_t n = passes_.size();
 
-    // For each resource handle, track which pass index last wrote it.
-    // A pass that reads a resource depends on whichever pass wrote it last.
+    // Build adjacency list and in-degree table incrementally so that each pass
+    // depends on the immediately preceding writer of every resource it reads or
+    // writes (write-after-write / read-after-write).  A flat pre-scan would
+    // point all readers at the *final* writer, breaking chains like
+    // Lighting → Grid → Gizmo → UI that all write the same swapchain image.
     std::unordered_map<uint32_t, size_t> lastWriter; // resource index -> pass index
+    std::vector<std::unordered_set<size_t>> adj(n);
+    std::vector<size_t> inDegree(n, 0);
+
+    auto addEdge = [&](size_t producer, size_t consumer) {
+        if (producer == consumer) return;
+        if (adj[producer].insert(consumer).second) ++inDegree[consumer];
+    };
+
     for (size_t i = 0; i < n; ++i) {
+        // Read dependency: this pass must run after whoever last wrote the resource.
+        for (const auto& usage: passes_[i].reads) {
+            auto it = lastWriter.find(usage.handle.index);
+            if (it != lastWriter.end()) addEdge(it->second, i);
+        }
+        // Write-after-write dependency: if another pass already wrote this resource,
+        // this pass must run after it so the ordering is well-defined.
+        for (const auto& usage: passes_[i].writes) {
+            auto it = lastWriter.find(usage.handle.index);
+            if (it != lastWriter.end()) addEdge(it->second, i);
+        }
+
+        // Update lastWriter *after* edges are built for this pass.
         for (const auto& usage: passes_[i].writes)
             lastWriter[usage.handle.index] = i;
         for (const auto& ep: passes_[i].epilogues)
             lastWriter[ep.handle.index] = i;
-    }
-
-    // Build adjacency list and in-degree table.
-    std::vector<std::unordered_set<size_t>> adj(n); // adj[i] = set of passes that depend on i
-    std::vector<size_t> inDegree(n, 0);
-
-    for (size_t i = 0; i < n; ++i) {
-        for (const auto& usage: passes_[i].reads) {
-            auto it = lastWriter.find(usage.handle.index);
-            if (it == lastWriter.end()) continue; // imported resource with no producer — fine
-            size_t producer = it->second;
-            if (producer == i) continue;
-            if (adj[producer].insert(i).second) // only count the edge once
-                ++inDegree[i];
-        }
     }
 
     // Kahn's algorithm.

@@ -11,7 +11,8 @@
 
 class GameWindow;
 class VulkanCommandManager;
-class VulkanScenePass;
+class VulkanGeometryPass;
+class VulkanLightingPass;
 class VulkanGridPass;
 class VulkanGizmoPass;
 class VulkanObjectIdPass;
@@ -24,7 +25,8 @@ class VulkanRenderingOrchestrator {
 public:
     VulkanRenderingOrchestrator(GameWindow& window,
                                 VulkanContext& context,
-                                VulkanScenePass& scenePass,
+                                VulkanGeometryPass& geometryPass,
+                                VulkanLightingPass& lightingPass,
                                 VulkanGridPass& gridPass,
                                 VulkanGizmoPass& gizmoPass,
                                 VulkanObjectIdPass& objectIdPass,
@@ -37,7 +39,7 @@ public:
 
     ~VulkanRenderingOrchestrator();
 
-    void enqueueForDrawing(const Renderer&, const Transform&, std::string objectId) const;
+    void enqueueForDrawing(const Renderer&, const Transform&, std::string objectId);
     void enqueueForOutline(const Renderer&, const Transform&, std::string objectId) const;
     void submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const;
     bool renderFrame(const Camera& camera, const Transform& cameraTransform);
@@ -70,7 +72,8 @@ private:
 
     GameWindow& window_;
     VulkanContext& context_;
-    VulkanScenePass& scenePass_;
+    VulkanGeometryPass& geometryPass_;
+    VulkanLightingPass& lightingPass_;
     VulkanGridPass& gridPass_;
     VulkanGizmoPass& gizmoPass_;
     VulkanObjectIdPass& objectIdPass_;
@@ -81,10 +84,13 @@ private:
     VulkanSwapchainManager& swapchainManager_;
     RendererSettings& settings_;
 
+    std::vector<DrawCall> drawQueue_;
+
     RenderGraph graph_;
 
     ResourceHandle swapchainColorHandle_;
-    ResourceHandle swapchainDepthHandle_;
+    ResourceHandle gbufferAlbedoHandle_;
+    ResourceHandle gbufferDepthHandle_;
     ResourceHandle objectIdColorHandle_;
     ResourceHandle objectIdDepthHandle_;
 };

@@ -21,12 +21,21 @@ public:
         assetManager_(assetManager) {}
 
     VulkanMaterial& get(const Material& material) {
-        const std::string key = material.getShaderName() + "|" + material.getTextureName();
+        return get(material, std::span<const VkFormat>{}, VK_FORMAT_D32_SFLOAT);
+    }
+
+    VulkanMaterial& get(const Material& material, std::span<const VkFormat> colorFormats, VkFormat depthFormat) {
+        std::string key = material.getShaderName() + "|" + material.getTextureName();
+        for (VkFormat f: colorFormats)
+            key += "|" + std::to_string(static_cast<int>(f));
+        key += "|" + std::to_string(static_cast<int>(depthFormat));
+
         auto it = cache_.find(key);
         if (it != cache_.end()) return it->second;
 
         const Shader* shader = assetManager_.get<Shader>(material.getShaderName());
-        VulkanPipeline& pipeline = pipelineCache_.get(*shader);
+        VulkanPipeline& pipeline = colorFormats.empty() ? pipelineCache_.get(*shader)
+                                                        : pipelineCache_.get(*shader, colorFormats, depthFormat);
         VkDescriptorSet descriptorSet = createTexturesDescriptorSet(pipeline, material);
         auto [inserted, _] = cache_.emplace(key,
                                             VulkanMaterial{

@@ -1,4 +1,4 @@
 {
-  "shaderName": "_unlit_textured.shad",
+  "shaderName": "_gbuffer.shad",
   "textureName": "_white1x1.tex"
 }

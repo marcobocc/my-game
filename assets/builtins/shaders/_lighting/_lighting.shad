@@ -1,0 +1,8 @@
+{
+  "vertexShader": "_lighting.vert.spv",
+  "fragmentShader": "_lighting.frag.spv",
+  "noVertexInput": true,
+  "disableDepthTest": true,
+  "disableDepthWrite": true,
+  "disableCull": true
+}

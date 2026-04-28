@@ -1,4 +1,6 @@
 #pragma once
+#include <span>
+#include <volk.h>
 #include "VulkanMaterialCache.hpp"
 #include "VulkanMeshBuffersCache.hpp"
 #include "VulkanPipelineCache.hpp"
@@ -28,6 +30,11 @@ public:
     }
 
     VulkanMaterial& getMaterial(const Material& material) { return materialCache_.get(material); }
+
+    VulkanMaterial&
+    getMaterial(const Material& material, std::span<const VkFormat> colorFormats, VkFormat depthFormat) {
+        return materialCache_.get(material, colorFormats, depthFormat);
+    }
 
 private:
     VulkanMeshBuffersCache& meshBuffersCache_;

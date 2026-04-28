@@ -15,10 +15,16 @@ class VulkanPipelineCache {
 public:
     explicit VulkanPipelineCache(const VulkanContext& context) : context_(context) {}
 
+    // Single color attachment convenience overload.
     VulkanPipeline& get(const Shader& shader,
                         VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
                         VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) {
-        CacheKey key{shader.getName(), colorFormat, depthFormat};
+        return get(shader, std::span<const VkFormat>{&colorFormat, 1}, depthFormat);
+    }
+
+    VulkanPipeline&
+    get(const Shader& shader, std::span<const VkFormat> colorFormats, VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) {
+        CacheKey key{shader.getName(), {colorFormats.begin(), colorFormats.end()}, depthFormat};
         auto it = cache_.find(key);
         if (it != cache_.end()) return it->second;
 
@@ -66,7 +72,6 @@ public:
         VulkanPipeline pipeline{};
         pipeline.descriptorSetLayouts =
                 reflectDescriptorSetLayouts(context_.device, shader.getVertexBytecode(), shader.getFragmentBytecode());
-        pipeline.colorFormat = colorFormat;
         pipeline.depthFormat = depthFormat;
         pipeline.pushConstantSize = std::max(getPushConstantSize(shader.getVertexBytecode()),
                                              getPushConstantSize(shader.getFragmentBytecode()));
@@ -134,16 +139,17 @@ public:
             blendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
             blendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
         }
+        std::vector<VkPipelineColorBlendAttachmentState> blendAttachments(colorFormats.size(), blendAttachment);
 
         VkPipelineColorBlendStateCreateInfo blend{};
         blend.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        blend.attachmentCount = 1;
-        blend.pAttachments = &blendAttachment;
+        blend.attachmentCount = static_cast<uint32_t>(blendAttachments.size());
+        blend.pAttachments = blendAttachments.data();
 
         VkPipelineRenderingCreateInfo rendering{};
         rendering.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-        rendering.colorAttachmentCount = 1;
-        rendering.pColorAttachmentFormats = &colorFormat;
+        rendering.colorAttachmentCount = static_cast<uint32_t>(colorFormats.size());
+        rendering.pColorAttachmentFormats = colorFormats.data();
         rendering.depthAttachmentFormat = depthFormat;
 
         VkGraphicsPipelineCreateInfo info{};
@@ -174,7 +180,7 @@ public:
     void clear() { cache_.clear(); }
 
 private:
-    using CacheKey = std::tuple<std::string, VkFormat, VkFormat>;
+    using CacheKey = std::tuple<std::string, std::vector<VkFormat>, VkFormat>;
 
     const VulkanContext& context_;
     std::map<CacheKey, VulkanPipeline> cache_;
