@@ -4,11 +4,15 @@
 #include <unordered_map>
 #include <utility>
 #include "../../assets/BuiltinAssetNames.hpp"
+#include "assets/AssetManager.hpp"
+#include "assets/types/Model.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
 
-Scene::Scene() : componentStorage_(std::make_unique<ComponentStorage>()) {}
+Scene::Scene(AssetManager& assetManager) :
+    assetManager_(assetManager),
+    componentStorage_(std::make_unique<ComponentStorage>()) {}
 
 std::pair<std::string, bool> Scene::createEmptyObject(std::string name) {
     if (name.empty()) name = generateName();
@@ -61,6 +65,12 @@ std::string Scene::createCube(const _createMesh_Options& options) {
 
 std::string Scene::createRectangle2D(const _createMesh_Options& options) {
     return createMesh(PRIMITIVE_GEOMETRY_RECTANGLE2D, options);
+}
+
+std::string Scene::createModel(const std::string& modelName, const _createModel_Options& options) {
+    auto* model = assetManager_.get<Model>(modelName);
+    return createMesh(model->getMeshName(),
+                      {.position = options.position, .scale = options.scale, .materialName = model->getMaterialName()});
 }
 
 std::string Scene::createCamera(const _createCamera_Options& options) {

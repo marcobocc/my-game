@@ -9,9 +9,11 @@
 #include "core/objects/GameObject.hpp"
 #include "core/scene/DefaultOptions.hpp"
 
+class AssetManager;
+
 class Scene {
 public:
-    Scene();
+    explicit Scene(AssetManager& assetManager);
 
     std::pair<std::string, bool> createEmptyObject(std::string name = "");
     void destroyObject(const std::string& name);
@@ -38,6 +40,15 @@ public:
     std::string createRectangle2D(const _createMesh_Options& options);
 
     // ------------------------------------------------------------------------------
+    // createModel
+    // ------------------------------------------------------------------------------
+    struct _createModel_Options {
+        glm::vec3 position{DEFAULT_POSITION};
+        glm::vec3 scale{DEFAULT_SCALE};
+    };
+    std::string createModel(const std::string& modelName, const _createModel_Options& options);
+
+    // ------------------------------------------------------------------------------
     // createCamera
     // ------------------------------------------------------------------------------
     struct _createCamera_Options {
@@ -51,6 +62,7 @@ public:
     std::string createCamera(const _createCamera_Options& options);
 
 private:
+    AssetManager& assetManager_;
     std::unique_ptr<ComponentStorage> componentStorage_;
     std::unordered_map<std::string, GameObject> gameObjects_{};
     static std::string generateName();
