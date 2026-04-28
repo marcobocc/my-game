@@ -1,6 +1,7 @@
 #include "AssetImporter.hpp"
 #include <array>
 #include <fstream>
+#include <glm/glm.hpp>
 #include <ranges>
 #include <stdexcept>
 #include "AssetStorage.hpp"
@@ -8,7 +9,7 @@
 #include "types/AssetDescriptors.hpp"
 #include "types/material/Material.hpp"
 #include "types/mesh/Mesh.hpp"
-#include "types/mesh/details/ObjFileParser.hpp"
+#include "types/mesh/details/importing.hpp"
 #include "types/shader/Shader.hpp"
 #include "types/texture/Texture.hpp"
 
@@ -56,12 +57,7 @@ bool AssetImporter::importMesh(const std::filesystem::path& file, const std::str
     MeshDescriptor def = MeshDescriptor::fromFile(file, name);
     auto meshFilePath = file.parent_path() / def.meshFile;
     if (meshFilePath.extension() == ".obj") {
-        auto [vertices, indices] = ObjFileParser::parseFile(meshFilePath);
-        if (!def.ccw) {
-            for (size_t i = 0; i + 2 < indices.size(); i += 3)
-                std::swap(indices[i + 1], indices[i + 2]);
-        }
-        storage_.insert<Mesh>(name, std::make_unique<Mesh>(name, vertices, indices));
+        storage_.insert<Mesh>(name, importing::importObjFile(meshFilePath, !def.ccw, name));
         return true;
     }
     LOG4CXX_ERROR(LOGGER, "Unsupported mesh extension: " << meshFilePath.extension() << " in " << meshFilePath);

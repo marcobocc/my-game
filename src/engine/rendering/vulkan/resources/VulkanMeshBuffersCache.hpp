@@ -3,6 +3,7 @@
 #include "assets/types/mesh/Mesh.hpp"
 #include "rendering/vulkan/core/buffers.hpp"
 #include "rendering/vulkan/core/structs.hpp"
+#include "rendering/vulkan/resources/VulkanVertexLayouts.hpp"
 
 struct VulkanMeshBuffers {
     VulkanBuffer vertexBuffer;
@@ -17,15 +18,17 @@ public:
         auto it = cache_.find(meshAsset.getName());
         if (it != cache_.end()) return it->second;
 
+        const std::vector<float> packedVertices = packMeshData(meshAsset);
+
         constexpr VkMemoryPropertyFlags hostVisible =
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         VulkanMeshBuffers meshBuffers = {
                 .vertexBuffer = createBuffer(context_.device,
                                              context_.physicalDevice,
-                                             meshAsset.getVertices().size() * sizeof(float),
+                                             packedVertices.size() * sizeof(float),
                                              VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                              hostVisible,
-                                             meshAsset.getVertices().data()),
+                                             packedVertices.data()),
                 .indexBuffer = createBuffer(context_.device,
                                             context_.physicalDevice,
                                             meshAsset.getIndices().size() * sizeof(uint32_t),

@@ -5,11 +5,11 @@
 #include <tuple>
 #include <vector>
 #include <volk.h>
-#include "assets/types/mesh/details/VertexLayouts.hpp"
 #include "assets/types/shader/Shader.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
 #include "rendering/vulkan/core/shaders.hpp"
 #include "rendering/vulkan/core/structs.hpp"
+#include "rendering/vulkan/resources/VulkanVertexLayouts.hpp"
 
 class VulkanPipelineCache {
 public:
@@ -29,12 +29,8 @@ public:
         vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
         if (!shader.hasNoVertexInput()) {
-            const uint32_t stride = shader.hasPositionColorVertexLayout()
-                                            ? Vertex_WithLayout_PositionColor::VERTEX_STRIDE
-                                            : Vertex_WithLayout_PositionUv::VERTEX_STRIDE;
-            const auto& attribs = shader.hasPositionColorVertexLayout()
-                                          ? std::span(Vertex_WithLayout_PositionColor::VERTEX_ATTRIBS)
-                                          : std::span(Vertex_WithLayout_PositionUv::VERTEX_ATTRIBS);
+            constexpr uint32_t stride = VertexLayout_PositionUv::VERTEX_STRIDE;
+            constexpr auto& attribs = VertexLayout_PositionUv::VERTEX_ATTRIBS;
             vertexBinding.binding = 0;
             vertexBinding.stride = sizeof(float) * stride;
             vertexBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
