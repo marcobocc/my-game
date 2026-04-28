@@ -2,7 +2,7 @@
 #include <array>
 #include <glm/glm.hpp>
 #include <vector>
-#include "assets/types/mesh/Mesh.hpp"
+#include "assets/types/Mesh.hpp"
 
 struct VertexAttribute {
     uint32_t offset;

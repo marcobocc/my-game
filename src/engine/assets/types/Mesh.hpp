@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
-#include "assets/types/base/Asset.hpp"
+#include "Asset.hpp"
 
 class Mesh final : public Asset {
 public:

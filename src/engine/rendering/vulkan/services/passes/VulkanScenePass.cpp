@@ -1,7 +1,7 @@
 #include "VulkanScenePass.hpp"
 #include <volk.h>
-#include "assets/types/material/Material.hpp"
-#include "assets/types/mesh/Mesh.hpp"
+#include "../../../../assets/types/Material.hpp"
+#include "../../../../assets/types/Mesh.hpp"
 #include "rendering/vulkan/core/buffers.hpp"
 #include "rendering/vulkan/core/descriptors.hpp"
 #include "rendering/vulkan/core/structs.hpp"

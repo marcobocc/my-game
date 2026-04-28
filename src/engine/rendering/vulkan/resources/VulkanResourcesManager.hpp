@@ -3,8 +3,8 @@
 #include "VulkanMeshBuffersCache.hpp"
 #include "VulkanPipelineCache.hpp"
 #include "VulkanTextureCache.hpp"
-#include "assets/types/material/Material.hpp"
-#include "assets/types/shader/Shader.hpp"
+#include "assets/types/Material.hpp"
+#include "assets/types/Shader.hpp"
 
 class VulkanResourcesManager {
 public:

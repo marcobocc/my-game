@@ -5,7 +5,7 @@
 #include "VulkanPipelineCache.hpp"
 #include "VulkanTextureCache.hpp"
 #include "assets/AssetManager.hpp"
-#include "assets/types/material/Material.hpp"
+#include "assets/types/Material.hpp"
 #include "rendering/vulkan/core/descriptors.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 

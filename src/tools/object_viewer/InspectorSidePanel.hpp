@@ -2,8 +2,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include <string>
+#include "../../engine/assets/types/Material.hpp"
 #include "assets/AssetManager.hpp"
-#include "assets/types/material/Material.hpp"
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "core/scene/Scene.hpp"

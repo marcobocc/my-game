@@ -5,7 +5,7 @@
 #include <tuple>
 #include <vector>
 #include <volk.h>
-#include "assets/types/shader/Shader.hpp"
+#include "assets/types/Shader.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
 #include "rendering/vulkan/core/shaders.hpp"
 #include "rendering/vulkan/core/structs.hpp"

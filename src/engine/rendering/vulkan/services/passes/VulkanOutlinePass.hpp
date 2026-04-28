@@ -2,9 +2,9 @@
 #include <string>
 #include <vector>
 #include <volk.h>
+#include "../../../../assets/types/Shader.hpp"
 #include "assets/AssetManager.hpp"
 #include "assets/BuiltinAssetNames.hpp"
-#include "assets/types/shader/Shader.hpp"
 #include "core/GameWindow.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 #include "rendering/vulkan/resources/VulkanResourcesManager.hpp"

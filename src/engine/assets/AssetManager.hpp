@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
-#include "AssetImporter.hpp"
 #include "AssetStorage.hpp"
+#include "importing/AssetImporter.hpp"
 
 class AssetManager {
 public:

@@ -4,7 +4,7 @@
 #include <volk.h>
 #include "assets/AssetManager.hpp"
 #include "assets/BuiltinAssetNames.hpp"
-#include "assets/types/shader/Shader.hpp"
+#include "assets/types/Shader.hpp"
 #include "core/GameWindow.hpp"
 #include "core/objects/components/Camera.hpp"
 #include "core/objects/components/Transform.hpp"

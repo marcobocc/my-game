@@ -3,7 +3,7 @@
 #include <glm/vec3.hpp>
 #include <memory>
 #include <string>
-#include "assets/AssetImporter.hpp"
+#include "../assets/importing/AssetImporter.hpp"
 #include "core/GameWindow.hpp"
 #include "core/Time.hpp"
 #include "core/input/InputSystem.hpp"

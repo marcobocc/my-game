@@ -4,14 +4,14 @@
 #include <glm/glm.hpp>
 #include <ranges>
 #include <stdexcept>
-#include "AssetStorage.hpp"
+#include "assets/AssetDescriptors.hpp"
+#include "assets/AssetStorage.hpp"
+#include "assets/types/Material.hpp"
+#include "assets/types/Mesh.hpp"
+#include "assets/types/Shader.hpp"
+#include "assets/types/Texture.hpp"
+#include "importing.hpp"
 #include "stb_image.h"
-#include "types/AssetDescriptors.hpp"
-#include "types/material/Material.hpp"
-#include "types/mesh/Mesh.hpp"
-#include "types/mesh/details/importing.hpp"
-#include "types/shader/Shader.hpp"
-#include "types/texture/Texture.hpp"
 
 AssetImporter::AssetImporter(const std::filesystem::path& root, AssetStorage& cache) : storage_(cache) {
     searchAssets(root);

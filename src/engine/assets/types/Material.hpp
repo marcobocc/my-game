@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/vec4.hpp>
 #include <string>
-#include "assets/types/base/Asset.hpp"
+#include "Asset.hpp"
 
 class Material final : public Asset {
 public:

@@ -1,7 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include <vulkan/vulkan.h>
-#include "assets/types/texture/Texture.hpp"
+#include "assets/types/Texture.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 
