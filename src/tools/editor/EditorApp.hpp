@@ -6,6 +6,7 @@
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
 #include "ui/EditorController.hpp"
+#include "ui/HierarchyPanel.hpp"
 #include "ui/InspectorPanel.hpp"
 
 class EditorApp {
@@ -26,10 +27,9 @@ public:
         engine_(window_, assetsPath),
         controller_(engine_) {
         auto [w, h] = window_.getLogicalSize();
-        window_.setSceneViewport({0, 0, static_cast<int>(w * (1.0f - InspectorPanel::PANEL_WIDTH_RATIO)), h});
-        window_.onWindowResize([this](int newW, int newH, int, int) {
-            window_.setSceneViewport({0, 0, static_cast<int>(newW * (1.0f - InspectorPanel::PANEL_WIDTH_RATIO)), newH});
-        });
+        window_.setSceneViewport(computeSceneViewport(w, h));
+        window_.onWindowResize(
+                [this](int newW, int newH, int, int) { window_.setSceneViewport(computeSceneViewport(newW, newH)); });
         setupScene();
     }
 
@@ -55,6 +55,12 @@ private:
     bool wasOrbiting_ = false;
     bool wasPanning_ = false;
     bool wasLeftDown_ = false;
+
+    static SceneViewport computeSceneViewport(int w, int h) {
+        int left = static_cast<int>(static_cast<float>(w) * HierarchyPanel::PANEL_WIDTH_RATIO);
+        int right = static_cast<int>(static_cast<float>(w) * (1.0f - InspectorPanel::PANEL_WIDTH_RATIO));
+        return {left, 0, right - left, h};
+    }
 
     void setupScene() {
         controller_.cameraId = engine_.getScene().createCamera({.position = computeCameraPosition()});
