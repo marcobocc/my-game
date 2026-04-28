@@ -1,6 +1,6 @@
 {
-  "vertexShader": "_grid.vert.spv",
-  "fragmentShader": "_grid.frag.spv",
+  "vertexShader": "builtins/shaders/_grid/_grid.vert.spv",
+  "fragmentShader": "builtins/shaders/_grid/_grid.frag.spv",
   "disableCull": true,
   "enableAlphaBlend": true,
   "noVertexInput": true

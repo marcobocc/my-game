@@ -14,7 +14,9 @@ public:
     bool import(const std::string& name);
 
 private:
-    void searchAssets(const std::filesystem::path& root);
+    void searchAssets();
+    std::filesystem::path
+    toAbsolutePath(const std::filesystem::path& relativePath) const; // Relative to assets root folder
 
     bool importMesh(const std::filesystem::path& file, const std::string& name) const;
     bool importShader(const std::filesystem::path& file, const std::string& name) const;
@@ -23,4 +25,5 @@ private:
 
     AssetStorage& storage_;
     std::unordered_map<std::string, std::filesystem::path> availableAssetFiles_;
+    std::filesystem::path root_;
 };

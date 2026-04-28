@@ -13,23 +13,25 @@
 #include "importing.hpp"
 #include "stb_image.h"
 
-AssetImporter::AssetImporter(const std::filesystem::path& root, AssetStorage& cache) : storage_(cache) {
-    searchAssets(root);
+AssetImporter::AssetImporter(const std::filesystem::path& root, AssetStorage& cache) : storage_(cache), root_(root) {
+    searchAssets();
 }
 
-void AssetImporter::searchAssets(const std::filesystem::path& root) {
+std::filesystem::path AssetImporter::toAbsolutePath(const std::filesystem::path& relativePath) const {
+    if (relativePath.is_absolute()) return relativePath;
+    return root_ / relativePath;
+}
+
+void AssetImporter::searchAssets() {
     static constexpr std::array knownExtensions = {".shad", ".mesh", ".tex", ".mat"};
-    LOG4CXX_INFO(LOGGER, "Searching for for assets in: " << root);
-    for (const auto& file: std::filesystem::recursive_directory_iterator(root)) {
+    LOG4CXX_INFO(LOGGER, "Searching for assets in: " << root_);
+    for (const auto& file: std::filesystem::recursive_directory_iterator(root_)) {
         auto extension = file.path().extension().string();
         if (std::ranges::find(knownExtensions, extension) == knownExtensions.end()) continue;
-        auto name = file.path().filename().string();
-        auto [it, inserted] = availableAssetFiles_.emplace(name, file.path());
-        if (!inserted) {
-            LOG4CXX_ERROR(LOGGER, "Duplicate asset " << name << " at " << file.path());
-            continue;
-        }
-        LOG4CXX_INFO(LOGGER, "Discovered asset: " << name);
+        auto name = std::filesystem::relative(file.path(), root_).string();
+        auto absolutePath = toAbsolutePath(file.path());
+        auto [it, inserted] = availableAssetFiles_.emplace(name, absolutePath);
+        LOG4CXX_INFO(LOGGER, "Discovered asset: " << it->first);
     }
 }
 
@@ -55,7 +57,7 @@ bool AssetImporter::import(const std::string& name) {
 
 bool AssetImporter::importMesh(const std::filesystem::path& file, const std::string& name) const {
     MeshDescriptor def = MeshDescriptor::fromFile(file, name);
-    auto meshFilePath = file.parent_path() / def.meshFile;
+    auto meshFilePath = toAbsolutePath(def.meshFile);
     if (meshFilePath.extension() == ".obj") {
         storage_.insert<Mesh>(name, importing::importObjFile(meshFilePath, !def.ccw, name));
         return true;
@@ -66,7 +68,6 @@ bool AssetImporter::importMesh(const std::filesystem::path& file, const std::str
 
 bool AssetImporter::importShader(const std::filesystem::path& file, const std::string& name) const {
     ShaderDescriptor def = ShaderDescriptor::fromFile(file, name);
-    auto assetFolder = file.parent_path();
     auto readFile = [&](const std::filesystem::path& path) -> std::vector<char> {
         std::ifstream f(path, std::ios::binary | std::ios::ate);
         if (!f) throw std::runtime_error("Failed to open shader file: " + path.string());
@@ -78,13 +79,13 @@ bool AssetImporter::importShader(const std::filesystem::path& file, const std::s
     };
     std::vector<char> vertexBytecode, fragmentBytecode;
     try {
-        vertexBytecode = readFile(assetFolder / def.vertexShader);
+        vertexBytecode = readFile(toAbsolutePath(def.vertexShader));
     } catch (const std::exception& e) {
         LOG4CXX_ERROR(LOGGER, e.what());
         return false;
     }
     try {
-        fragmentBytecode = readFile(assetFolder / def.fragmentShader);
+        fragmentBytecode = readFile(toAbsolutePath(def.fragmentShader));
     } catch (const std::exception& e) {
         LOG4CXX_ERROR(LOGGER, e.what());
         return false;
@@ -105,7 +106,7 @@ bool AssetImporter::importShader(const std::filesystem::path& file, const std::s
 
 bool AssetImporter::importTexture(const std::filesystem::path& file, const std::string& name) const {
     TextureDescriptor def = TextureDescriptor::fromFile(file, name);
-    auto imageFilePath = file.parent_path() / def.image;
+    auto imageFilePath = toAbsolutePath(def.image);
     int w, h, c;
     stbi_set_flip_vertically_on_load(1);
     unsigned char* data = stbi_load(imageFilePath.c_str(), &w, &h, &c, 4);

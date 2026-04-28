@@ -1,6 +1,6 @@
 {
-  "vertexShader": "_lighting.vert.spv",
-  "fragmentShader": "_lighting.frag.spv",
+  "vertexShader": "builtins/shaders/_lighting/_lighting.vert.spv",
+  "fragmentShader": "builtins/shaders/_lighting/_lighting.frag.spv",
   "noVertexInput": true,
   "disableDepthTest": true,
   "disableDepthWrite": true,

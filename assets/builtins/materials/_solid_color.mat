@@ -1,4 +1,4 @@
 {
-  "shaderName": "_gbuffer.shad",
-  "textureName": "_white1x1.tex"
+  "shaderName": "builtins/shaders/_gbuffer/_gbuffer.shad",
+  "textureName": "builtins/textures/_white1x1.tex"
 }
