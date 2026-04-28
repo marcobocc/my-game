@@ -86,9 +86,9 @@ public:
 
         VkViewport viewport{};
         viewport.x = static_cast<float>(fbX);
-        viewport.y = static_cast<float>(fbY + fbH);
+        viewport.y = static_cast<float>(fbY);
         viewport.width = static_cast<float>(fbW);
-        viewport.height = -static_cast<float>(fbH);
+        viewport.height = static_cast<float>(fbH);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(cmd, 0, 1, &viewport);

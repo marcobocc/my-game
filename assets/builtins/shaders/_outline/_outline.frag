@@ -13,7 +13,7 @@ layout(push_constant) uniform Push {
 
 void main() {
     // Remap screen UV [0,1] into the sub-region of the object ID texture that was rendered into
-    vec2 mappedUV = pc.uvOffset + vec2(uv.x, 1.0 - uv.y) * pc.uvScale;
+    vec2 mappedUV = pc.uvOffset + uv * pc.uvScale;
 
     uint centerID = texture(idBuffer, mappedUV).r;
 

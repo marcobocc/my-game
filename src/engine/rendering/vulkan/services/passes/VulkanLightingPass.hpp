@@ -53,23 +53,17 @@ public:
         renderingInfo.pColorAttachments = &colorAttachment;
         vkCmdBeginRendering(cmd, &renderingInfo);
 
-        // Match GeometryPass: Y-flipped viewport restricted to the scene region so
-        // that UV (0,0) in the lighting shader maps to the same pixel GeometryPass
-        // wrote to — without this the gbuffer is sampled with both axes inverted.
         VkViewport viewport{};
         viewport.x = static_cast<float>(fbX);
-        viewport.y = static_cast<float>(fbY + fbH);
+        viewport.y = static_cast<float>(fbY);
         viewport.width = static_cast<float>(fbW);
-        viewport.height = -static_cast<float>(fbH);
+        viewport.height = static_cast<float>(fbH);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(cmd, 0, 1, &viewport);
         VkRect2D scissor{{fbX, fbY}, {static_cast<uint32_t>(fbW), static_cast<uint32_t>(fbH)}};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-        // The gbuffer is full swapchain-sized; scene content lives in the
-        // [fbX,fbY,fbW,fbH] sub-region.  Push a UV offset+scale so the
-        // fullscreen triangle samples only that sub-region.
         const float scW = static_cast<float>(swapchainExtent.width);
         const float scH = static_cast<float>(swapchainExtent.height);
         struct LightingPush {
@@ -88,14 +82,12 @@ public:
                                 &descriptorSets_[imageIndex],
                                 0,
                                 nullptr);
-        if (pipeline_->pushConstantSize >= sizeof(LightingPush)) {
-            vkCmdPushConstants(cmd,
-                               pipeline_->layout,
-                               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                               0,
-                               sizeof(LightingPush),
-                               &push);
-        }
+        vkCmdPushConstants(cmd,
+                           pipeline_->layout,
+                           VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                           0,
+                           sizeof(LightingPush),
+                           &push);
         vkCmdDraw(cmd, 3, 1, 0, 0);
         vkCmdEndRendering(cmd);
     }

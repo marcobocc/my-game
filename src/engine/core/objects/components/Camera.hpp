@@ -8,5 +8,10 @@ struct Camera {
     float nearPlane = 0.1f;
     float farPlane = 100.0f;
 
-    glm::mat4 getProjectionMatrix() const { return glm::perspective(glm::radians(fov), aspect, nearPlane, farPlane); }
+    glm::mat4 getProjectionMatrix() const {
+        glm::mat4 proj = glm::perspective(glm::radians(fov), aspect, nearPlane, farPlane);
+        proj[1][1] *= -1.0f; // Vulkan NDC has Y pointing down; flip here so the Vulkan backend uses plain
+                             // positive-height viewports
+        return proj;
+    }
 };
