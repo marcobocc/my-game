@@ -26,17 +26,34 @@ struct VertexLayout_PositionUv {
             {{POSITION_OFFSET, POSITION_COMPONENTS}, {UV_OFFSET, UV_COMPONENTS}}};
 };
 
+struct VertexLayout_PositionNormalUv {
+    static constexpr uint32_t POSITION_OFFSET = 0;
+    static constexpr uint32_t POSITION_COMPONENTS = 3;
+    static constexpr uint32_t NORMAL_OFFSET = 3;
+    static constexpr uint32_t NORMAL_COMPONENTS = 3;
+    static constexpr uint32_t UV_OFFSET = 6;
+    static constexpr uint32_t UV_COMPONENTS = 2;
+    static constexpr uint32_t VERTEX_STRIDE = 8;
+    static constexpr std::array<VertexAttribute, 3> VERTEX_ATTRIBS = {
+            {{POSITION_OFFSET, POSITION_COMPONENTS}, {NORMAL_OFFSET, NORMAL_COMPONENTS}, {UV_OFFSET, UV_COMPONENTS}}};
+};
+
 inline std::vector<float> packMeshData(const Mesh& mesh) {
     std::vector<float> data;
     const auto& positions = mesh.getPositions();
+    const auto& normals = mesh.getNormals();
     const auto& uvs = mesh.getUvs();
 
-    data.reserve(positions.size() * VertexLayout_PositionUv::VERTEX_STRIDE);
+    data.reserve(positions.size() * VertexLayout_PositionNormalUv::VERTEX_STRIDE);
     for (size_t i = 0; i < positions.size(); ++i) {
         data.push_back(positions[i].x);
         data.push_back(positions[i].y);
         data.push_back(positions[i].z);
-        const glm::vec2 uv = (i < uvs.size()) ? uvs[i] : glm::vec2(0.0f);
+        const glm::vec3 normal = i < normals.size() ? normals[i] : glm::vec3(0.0f, 1.0f, 0.0f);
+        data.push_back(normal.x);
+        data.push_back(normal.y);
+        data.push_back(normal.z);
+        const glm::vec2 uv = i < uvs.size() ? uvs[i] : glm::vec2(0.0f);
         data.push_back(uv.x);
         data.push_back(uv.y);
     }

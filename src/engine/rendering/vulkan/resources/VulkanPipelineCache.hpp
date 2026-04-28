@@ -35,8 +35,8 @@ public:
         vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
         if (!shader.hasNoVertexInput()) {
-            constexpr uint32_t stride = VertexLayout_PositionUv::VERTEX_STRIDE;
-            constexpr auto& attribs = VertexLayout_PositionUv::VERTEX_ATTRIBS;
+            constexpr uint32_t stride = VertexLayout_PositionNormalUv::VERTEX_STRIDE;
+            constexpr auto& attribs = VertexLayout_PositionNormalUv::VERTEX_ATTRIBS;
             vertexBinding.binding = 0;
             vertexBinding.stride = sizeof(float) * stride;
             vertexBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;

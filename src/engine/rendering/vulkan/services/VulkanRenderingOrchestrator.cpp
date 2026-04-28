@@ -149,7 +149,10 @@ void VulkanRenderingOrchestrator::setupGraph() {
             graph_.createTransientImage("gbuffer_albedo",
                                         VK_FORMAT_R8G8B8A8_UNORM,
                                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-
+    gbufferNormalHandle_ =
+            graph_.createTransientImage("gbuffer_normal",
+                                        VK_FORMAT_R16G16B16A16_SFLOAT,
+                                        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
     gbufferDepthHandle_ = graph_.createTransientImage(
             "gbuffer_depth", VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
@@ -159,6 +162,11 @@ void VulkanRenderingOrchestrator::setupGraph() {
         n.name = "GeometryPass";
         n.writes = {
                 {gbufferAlbedoHandle_,
+                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                 VK_IMAGE_ASPECT_COLOR_BIT},
+                {gbufferNormalHandle_,
                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -173,6 +181,7 @@ void VulkanRenderingOrchestrator::setupGraph() {
             const VkExtent2D extent = swapchainManager_.swapchain().swapchainExtent;
             geometryPass_.record(cmd,
                                  graph.getImageView(gbufferAlbedoHandle_),
+                                 graph.getImageView(gbufferNormalHandle_),
                                  graph.getImageView(gbufferDepthHandle_),
                                  extent,
                                  *currentCamera_,
@@ -187,6 +196,11 @@ void VulkanRenderingOrchestrator::setupGraph() {
         RenderPassNode n;
         n.name = "LightingPass";
         n.reads = {{gbufferAlbedoHandle_,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_SHADER_READ_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    VK_IMAGE_ASPECT_COLOR_BIT},
+                   {gbufferNormalHandle_,
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     VK_ACCESS_SHADER_READ_BIT,
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -210,6 +224,8 @@ void VulkanRenderingOrchestrator::setupGraph() {
                                  extent,
                                  graph.getImageView(gbufferAlbedoHandle_),
                                  graph.getSampler(gbufferAlbedoHandle_),
+                                 graph.getImageView(gbufferNormalHandle_),
+                                 graph.getSampler(gbufferNormalHandle_),
                                  fbX,
                                  fbY,
                                  fbW,

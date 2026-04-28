@@ -14,6 +14,7 @@
 class VulkanGeometryPass {
 public:
     static constexpr VkFormat ALBEDO_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
+    static constexpr VkFormat NORMAL_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
     static constexpr VkFormat DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT;
 
     VulkanGeometryPass(const VulkanContext& context,
@@ -34,12 +35,13 @@ public:
 
     void record(VkCommandBuffer cmd,
                 VkImageView albedoView,
+                VkImageView normalView,
                 VkImageView depthView,
                 VkExtent2D extent,
                 const Camera& camera,
                 const Transform& cameraTransform,
                 const std::vector<DrawCall>& drawQueue) {
-        beginRendering(cmd, albedoView, depthView, extent);
+        beginRendering(cmd, albedoView, normalView, depthView, extent);
         updatePerFrameUBO(camera, cameraTransform);
         for (const auto& drawCall: drawQueue)
             renderEntity(cmd, drawCall);
@@ -73,7 +75,7 @@ private:
 
     void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall) const {
         const Material* material = assetManager_.get<Material>(drawCall.renderer.materialName);
-        static constexpr std::array colorFormats{ALBEDO_FORMAT};
+        static constexpr std::array<VkFormat, 2> colorFormats{ALBEDO_FORMAT, NORMAL_FORMAT};
         auto [pipeline, texturesDescriptorSet] = resourcesManager_.getMaterial(*material, colorFormats, DEPTH_FORMAT);
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
@@ -106,7 +108,11 @@ private:
             vkCmdDraw(cmd, static_cast<uint32_t>(mesh->getVertexCount()), 1, 0, 0);
     }
 
-    void beginRendering(VkCommandBuffer cmd, VkImageView albedoView, VkImageView depthView, VkExtent2D extent) const {
+    void beginRendering(VkCommandBuffer cmd,
+                        VkImageView albedoView,
+                        VkImageView normalView,
+                        VkImageView depthView,
+                        VkExtent2D extent) const {
         const SceneViewport sv = window_.getSceneViewport();
         const auto [scaleX, scaleY] = window_.getContentScale();
         const int fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
@@ -116,16 +122,25 @@ private:
 
         VkClearValue clearAlbedo{};
         clearAlbedo.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
+        VkClearValue clearNormal{};
+        clearNormal.color = {{0.5f, 0.5f, 1.0f, 1.0f}};
         VkClearValue clearDepth{};
         clearDepth.depthStencil = {1.0f, 0};
 
-        VkRenderingAttachmentInfo colorAttachment{};
-        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        colorAttachment.imageView = albedoView;
-        colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.clearValue = clearAlbedo;
+        VkRenderingAttachmentInfo colorAttachments[2] = {};
+        colorAttachments[0].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        colorAttachments[0].imageView = albedoView;
+        colorAttachments[0].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachments[0].clearValue = clearAlbedo;
+
+        colorAttachments[1].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        colorAttachments[1].imageView = normalView;
+        colorAttachments[1].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachments[1].clearValue = clearNormal;
 
         VkRenderingAttachmentInfo depthAttachment{};
         depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -139,8 +154,8 @@ private:
         renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
         renderingInfo.renderArea = {{0, 0}, extent};
         renderingInfo.layerCount = 1;
-        renderingInfo.colorAttachmentCount = 1;
-        renderingInfo.pColorAttachments = &colorAttachment;
+        renderingInfo.colorAttachmentCount = 2;
+        renderingInfo.pColorAttachments = colorAttachments;
         renderingInfo.pDepthAttachment = &depthAttachment;
         vkCmdBeginRendering(cmd, &renderingInfo);
 

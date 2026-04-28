@@ -27,12 +27,14 @@ public:
                 VkExtent2D swapchainExtent,
                 VkImageView albedoView,
                 VkSampler albedoSampler,
+                VkImageView normalView,
+                VkSampler normalSampler,
                 int fbX,
                 int fbY,
                 int fbW,
                 int fbH) {
         if (pipeline_ == nullptr) return;
-        updateDescriptor(imageIndex, albedoView, albedoSampler);
+        updateDescriptor(imageIndex, albedoView, albedoSampler, normalView, normalSampler);
 
         VkClearValue clearColor{};
         clearColor.color = {{0.1f, 0.1f, 0.1f, 1.0f}};
@@ -93,20 +95,34 @@ public:
     }
 
 private:
-    void updateDescriptor(uint32_t imageIndex, VkImageView albedoView, VkSampler albedoSampler) {
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.sampler = albedoSampler;
-        imageInfo.imageView = albedoView;
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    void updateDescriptor(uint32_t imageIndex,
+                          VkImageView albedoView,
+                          VkSampler albedoSampler,
+                          VkImageView normalView,
+                          VkSampler normalSampler) {
+        VkDescriptorImageInfo imageInfos[2] = {};
+        imageInfos[0].sampler = albedoSampler;
+        imageInfos[0].imageView = albedoView;
+        imageInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfos[1].sampler = normalSampler;
+        imageInfos[1].imageView = normalView;
+        imageInfos[1].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        VkWriteDescriptorSet write{};
-        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet = descriptorSets_[imageIndex];
-        write.dstBinding = 0;
-        write.descriptorCount = 1;
-        write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        write.pImageInfo = &imageInfo;
-        vkUpdateDescriptorSets(context_.device, 1, &write, 0, nullptr);
+        VkWriteDescriptorSet writes[2] = {};
+        writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writes[0].dstSet = descriptorSets_[imageIndex];
+        writes[0].dstBinding = 0;
+        writes[0].descriptorCount = 1;
+        writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writes[0].pImageInfo = &imageInfos[0];
+
+        writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writes[1].dstSet = descriptorSets_[imageIndex];
+        writes[1].dstBinding = 1;
+        writes[1].descriptorCount = 1;
+        writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writes[1].pImageInfo = &imageInfos[1];
+        vkUpdateDescriptorSets(context_.device, 2, writes, 0, nullptr);
     }
 
     void initPipeline(uint32_t frameCount) {

@@ -90,6 +90,7 @@ private:
 
     ResourceHandle swapchainColorHandle_;
     ResourceHandle gbufferAlbedoHandle_;
+    ResourceHandle gbufferNormalHandle_;
     ResourceHandle gbufferDepthHandle_;
     ResourceHandle objectIdColorHandle_;
     ResourceHandle objectIdDepthHandle_;
