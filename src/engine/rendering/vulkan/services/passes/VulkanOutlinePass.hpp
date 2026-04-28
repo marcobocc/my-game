@@ -8,21 +8,21 @@
 #include "core/GameWindow.hpp"
 #include "rendering/vulkan/core/structs.hpp"
 #include "rendering/vulkan/resources/VulkanResourcesManager.hpp"
-#include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
-
 class VulkanOutlinePass {
 public:
     VulkanOutlinePass(const VulkanContext& context,
                       AssetManager& assetManager,
                       VulkanResourcesManager& resourcesManager,
-                      VulkanSwapchainManager& swapchainManager) :
+                      VkFormat swapchainImageFormat,
+                      uint32_t frameCount,
+                      uint32_t width,
+                      uint32_t height) :
         context_(context),
         assetManager_(assetManager),
         resourcesManager_(resourcesManager),
-        width_(swapchainManager.swapchain().swapchainExtent.width),
-        height_(swapchainManager.swapchain().swapchainExtent.height),
-        swapchainImageFormat_(swapchainManager.swapchain().swapchainImageFormat) {
-        const uint32_t frameCount = static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size());
+        width_(width),
+        height_(height),
+        swapchainImageFormat_(swapchainImageFormat) {
         initPipeline(frameCount);
     }
 

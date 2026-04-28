@@ -12,6 +12,8 @@
 #include "passes/VulkanScenePass.hpp"
 #include "passes/VulkanUIPass.hpp"
 #include "rendering/vulkan/core/error_handling.hpp"
+#include "rendering/vulkan/rendergraph/RenderGraph.hpp"
+#include "rendering/vulkan/rendergraph/RenderPassNode.hpp"
 
 VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanContext& context,
@@ -36,12 +38,14 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
     uiPass_(uiPass),
     commandManager_(commandManager),
     swapchainManager_(swapchainManager),
-    settings_(settings) {
+    settings_(settings),
+    graph_(context, swapchainManager) {
     initFrameSync();
+    setupGraph();
     window_.onWindowResize([this](int, int, int, int) {
         swapchainManager_.recreate(context_);
         const auto& extent = swapchainManager_.swapchain().swapchainExtent;
-        objectIdPass_.resize(extent.width, extent.height);
+        graph_.onResize(extent.width, extent.height);
         outlinePass_.resize(extent.width, extent.height);
     });
 }
@@ -78,6 +82,181 @@ bool VulkanRenderingOrchestrator::renderFrame(const Camera& camera, const Transf
     endFrame(cmd, imageIndex);
     advanceFrame();
     return true;
+}
+
+// ------------------- Graph setup -------------------
+
+void VulkanRenderingOrchestrator::setupGraph() {
+    const VulkanSwapchain& sc = swapchainManager_.swapchain();
+
+    swapchainColorHandle_ =
+            graph_.importImage("swapchain_color", sc.swapchainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+
+    swapchainDepthHandle_ =
+            graph_.importImage("swapchain_depth", sc.depthBuffer.format, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    objectIdColorHandle_ = graph_.createTransientImage(
+            "objectid_color",
+            VK_FORMAT_R32_UINT,
+            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+
+    objectIdDepthHandle_ = graph_.createTransientImage(
+            "objectid_depth", VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    // --- ObjectId pass ---
+    {
+        RenderPassNode n;
+        n.name = "ObjectIdPass";
+        n.writes = {
+                {objectIdColorHandle_,
+                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                 VK_IMAGE_ASPECT_COLOR_BIT},
+                {objectIdDepthHandle_,
+                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                 VK_IMAGE_ASPECT_DEPTH_BIT},
+        };
+        // The pass itself transitions objectId color to TRANSFER_SRC at the end of record().
+        n.epilogues = {{objectIdColorHandle_,
+                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                        VK_ACCESS_TRANSFER_READ_BIT,
+                        VK_PIPELINE_STAGE_TRANSFER_BIT}};
+        n.execute = [this](VkCommandBuffer cmd, const RenderGraph& graph) {
+            objectIdPass_.record(cmd,
+                                 scenePass_.getDrawQueue(),
+                                 *currentCamera_,
+                                 *currentCameraTransform_,
+                                 window_,
+                                 graph.getImage(objectIdColorHandle_),
+                                 graph.getImageView(objectIdColorHandle_),
+                                 graph.getImageView(objectIdDepthHandle_),
+                                 graph.getWidth(objectIdColorHandle_),
+                                 graph.getHeight(objectIdColorHandle_));
+        };
+        n.postExecute = [this](VkCommandBuffer cmd, const RenderGraph& graph) {
+            pickingBackend_.recordReadback(cmd,
+                                           graph.getImage(objectIdColorHandle_),
+                                           graph.getWidth(objectIdColorHandle_),
+                                           graph.getHeight(objectIdColorHandle_));
+        };
+        graph_.addPass(std::move(n));
+    }
+
+    // --- Scene pass ---
+    {
+        RenderPassNode n;
+        n.name = "ScenePass";
+        n.writes = {
+                {swapchainColorHandle_,
+                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                 VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                 VK_IMAGE_ASPECT_COLOR_BIT},
+                {swapchainDepthHandle_,
+                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                 VK_IMAGE_ASPECT_DEPTH_BIT},
+        };
+        n.execute = [this](VkCommandBuffer cmd, const RenderGraph& graph) {
+            const VkExtent2D extent = swapchainManager_.swapchain().swapchainExtent;
+            scenePass_.record(cmd,
+                              graph.getImageView(swapchainColorHandle_),
+                              graph.getImageView(swapchainDepthHandle_),
+                              extent,
+                              *currentCamera_,
+                              *currentCameraTransform_);
+        };
+        graph_.addPass(std::move(n));
+    }
+
+    // --- Outline pass ---
+    {
+        RenderPassNode n;
+        n.name = "OutlinePass";
+        n.reads = {{objectIdColorHandle_,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_SHADER_READ_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    VK_IMAGE_ASPECT_COLOR_BIT}};
+        // Swapchain color is already COLOR_ATTACHMENT from ScenePass — no new write entry needed,
+        // but we must declare it so the graph knows this pass touches it.
+        n.writes = {{swapchainColorHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd, const RenderGraph& graph) {
+            outlinePass_.record(cmd,
+                                currentImageIndex_,
+                                swapchainManager_.swapchain(),
+                                graph.getImageView(objectIdColorHandle_),
+                                graph.getSampler(objectIdColorHandle_),
+                                window_);
+        };
+        graph_.addPass(std::move(n));
+    }
+
+    // --- Grid pass ---
+    {
+        RenderPassNode n;
+        n.name = "GridPass";
+        n.writes = {{swapchainColorHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd, const RenderGraph&) {
+            if (!settings_.enableGrid) return;
+            gridPass_.record(cmd, currentImageIndex_, *currentCamera_, *currentCameraTransform_);
+        };
+        graph_.addPass(std::move(n));
+    }
+
+    // --- Gizmo pass ---
+    {
+        RenderPassNode n;
+        n.name = "GizmoPass";
+        n.writes = {{swapchainColorHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd, const RenderGraph&) {
+            gizmoPass_.record(cmd, currentImageIndex_, *currentCamera_, *currentCameraTransform_, window_);
+        };
+        graph_.addPass(std::move(n));
+    }
+
+    // --- UI pass ---
+    {
+        RenderPassNode n;
+        n.name = "UIPass";
+        n.writes = {{swapchainColorHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd, const RenderGraph&) { uiPass_.record(cmd, currentImageIndex_); };
+        graph_.addPass(std::move(n));
+    }
+
+    // --- Present node: transitions swapchain color to PRESENT_SRC_KHR ---
+    {
+        RenderPassNode n;
+        n.name = "Present";
+        n.reads = {{swapchainColorHandle_,
+                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                    0,
+                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                    VK_IMAGE_ASPECT_COLOR_BIT}};
+        graph_.addPass(std::move(n));
+    }
+
+    graph_.build();
 }
 
 // ------------------- Frame sync -------------------
@@ -150,78 +329,23 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                                                  uint32_t imageIndex,
                                                  const Camera& camera,
                                                  const Transform& cameraTransform) {
-    // Object ID pass leaves image in TRANSFER_SRC_OPTIMAL for the picking backend.
-    objectIdPass_.record(cmd, scenePass_.getDrawQueue(), camera, cameraTransform, window_);
-    pickingBackend_.recordReadback(
-            cmd, objectIdPass_.objectIdBufferImage(), objectIdPass_.width(), objectIdPass_.height());
+    currentCamera_ = &camera;
+    currentCameraTransform_ = &cameraTransform;
+    currentImageIndex_ = imageIndex;
 
-    // Transition object ID image to SHADER_READ_ONLY_OPTIMAL for the outline pass.
-    transitionObjectIdToShaderRead(cmd);
+    const VulkanSwapchain& sc = swapchainManager_.swapchain();
+    graph_.setImportedImage(swapchainColorHandle_, sc.swapchainImages[imageIndex], sc.swapchainImageViews[imageIndex]);
+    graph_.setImportedImage(swapchainDepthHandle_, sc.depthBuffer.image, sc.depthBuffer.view);
+    graph_.resetLayout(swapchainColorHandle_);
+    graph_.resetLayout(swapchainDepthHandle_);
 
-    scenePass_.record(cmd, imageIndex, camera, cameraTransform);
-    outlinePass_.record(cmd,
-                        imageIndex,
-                        swapchainManager_.swapchain(),
-                        objectIdPass_.objectIdBufferImageView(),
-                        objectIdPass_.objectIdBufferSampler(),
-                        window_);
-    if (settings_.enableGrid) gridPass_.record(cmd, imageIndex, camera, cameraTransform);
-    gizmoPass_.record(cmd, imageIndex, camera, cameraTransform, window_);
-    uiPass_.record(cmd, imageIndex);
+    graph_.execute(cmd);
 }
 
 void VulkanRenderingOrchestrator::endFrame(VkCommandBuffer cmd, uint32_t imageIndex) {
-    transitionToPresent(cmd, imageIndex);
     VulkanCommandManager::endCommandBuffer(cmd);
     submit(cmd, imageIndex);
     commandManager_.endFrame();
-}
-
-void VulkanRenderingOrchestrator::transitionObjectIdToShaderRead(VkCommandBuffer cmd) const {
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = objectIdPass_.objectIdBufferImage();
-    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    vkCmdPipelineBarrier(cmd,
-                         VK_PIPELINE_STAGE_TRANSFER_BIT,
-                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                         0,
-                         0,
-                         nullptr,
-                         0,
-                         nullptr,
-                         1,
-                         &barrier);
-}
-
-void VulkanRenderingOrchestrator::transitionToPresent(VkCommandBuffer cmd, uint32_t imageIndex) const {
-    VkImage image = swapchainManager_.swapchain().swapchainImages[imageIndex];
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    barrier.dstAccessMask = 0;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    vkCmdPipelineBarrier(cmd,
-                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                         0,
-                         0,
-                         nullptr,
-                         0,
-                         nullptr,
-                         1,
-                         &barrier);
 }
 
 void VulkanRenderingOrchestrator::submit(VkCommandBuffer cmd, uint32_t imageIndex) {

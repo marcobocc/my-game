@@ -5,18 +5,15 @@
 #include "rendering/vulkan/core/buffers.hpp"
 #include "rendering/vulkan/core/descriptors.hpp"
 #include "rendering/vulkan/core/structs.hpp"
-#include "rendering/vulkan/services/VulkanSwapchainManager.hpp"
 
 VulkanScenePass::VulkanScenePass(const VulkanContext& context,
                                  VulkanResourcesManager& resourcesManager,
                                  AssetManager& assetManager,
-                                 GameWindow& window,
-                                 VulkanSwapchainManager& swapchainManager) :
+                                 GameWindow& window) :
     assetManager_(assetManager),
     resourcesManager_(resourcesManager),
     context_(const_cast<VulkanContext&>(context)),
-    window_(window),
-    swapchainManager_(swapchainManager) {
+    window_(window) {
     createPerFrameUBO();
 }
 
@@ -54,14 +51,12 @@ void VulkanScenePass::enqueueForDrawing(const Renderer& renderer, const Transfor
 }
 
 void VulkanScenePass::record(VkCommandBuffer cmd,
-                             uint32_t imageIndex,
+                             VkImageView colorView,
+                             VkImageView depthView,
+                             VkExtent2D extent,
                              const Camera& camera,
                              const Transform& cameraTransform) {
-    const VulkanSwapchain& swapchain = swapchainManager_.swapchain();
-    transitionColorAttachment(cmd, swapchain.swapchainImages[imageIndex]);
-    transitionDepthAttachment(cmd, swapchain.depthBuffer.image);
-
-    beginRendering(cmd, imageIndex);
+    beginRendering(cmd, colorView, depthView, extent);
 
     updatePerFrameUBO(camera, cameraTransform);
     for (const auto& drawCall: drawQueue_)
@@ -107,8 +102,10 @@ void VulkanScenePass::renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall
     vkCmdDraw(cmd, static_cast<uint32_t>(mesh->getVertexCount()), 1, 0, 0);
 }
 
-void VulkanScenePass::beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const {
-    const VulkanSwapchain& swapchain = swapchainManager_.swapchain();
+void VulkanScenePass::beginRendering(VkCommandBuffer cmd,
+                                     VkImageView colorView,
+                                     VkImageView depthView,
+                                     VkExtent2D extent) const {
     const SceneViewport sv = window_.getSceneViewport();
     const auto [scaleX, scaleY] = window_.getContentScale();
     const int fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
@@ -123,7 +120,7 @@ void VulkanScenePass::beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) c
 
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    colorAttachment.imageView = swapchain.swapchainImageViews[imageIndex];
+    colorAttachment.imageView = colorView;
     colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -131,7 +128,7 @@ void VulkanScenePass::beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) c
 
     VkRenderingAttachmentInfo depthAttachment{};
     depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depthAttachment.imageView = swapchain.depthBuffer.view;
+    depthAttachment.imageView = depthView;
     depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -139,7 +136,7 @@ void VulkanScenePass::beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) c
 
     VkRenderingInfo renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-    renderingInfo.renderArea = {{0, 0}, swapchain.swapchainExtent};
+    renderingInfo.renderArea = {{0, 0}, extent};
     renderingInfo.layerCount = 1;
     renderingInfo.colorAttachmentCount = 1;
     renderingInfo.pColorAttachments = &colorAttachment;
@@ -158,50 +155,4 @@ void VulkanScenePass::beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) c
 
     VkRect2D scissor{{fbX, fbY}, {static_cast<uint32_t>(fbW), static_cast<uint32_t>(fbH)}};
     vkCmdSetScissor(cmd, 0, 1, &scissor);
-}
-
-void VulkanScenePass::transitionColorAttachment(VkCommandBuffer cmd, VkImage image) const {
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    vkCmdPipelineBarrier(cmd,
-                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                         0,
-                         0,
-                         nullptr,
-                         0,
-                         nullptr,
-                         1,
-                         &barrier);
-}
-
-void VulkanScenePass::transitionDepthAttachment(VkCommandBuffer cmd, VkImage image) const {
-    VkImageMemoryBarrier barrier{};
-    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    barrier.srcAccessMask = 0;
-    barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = image;
-    barrier.subresourceRange = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
-    vkCmdPipelineBarrier(cmd,
-                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                         VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                         0,
-                         0,
-                         nullptr,
-                         0,
-                         nullptr,
-                         1,
-                         &barrier);
 }
