@@ -34,10 +34,7 @@ public:
     }
 
     void run() {
-        engine_.run([this](double deltaTime) {
-            if (engine_.getInputSystem().isKeyDown(GLFW_KEY_ESCAPE)) engine_.requestClose();
-            update(deltaTime);
-        });
+        engine_.run([this](double deltaTime) { update(deltaTime); });
     }
 
 private:
