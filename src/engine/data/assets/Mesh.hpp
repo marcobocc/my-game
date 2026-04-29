@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include "Asset.hpp"
+#include "core/math/AABB.hpp"
 
 class Mesh final : public Asset {
 public:
@@ -17,7 +18,8 @@ public:
         uvs_(std::move(uvs)),
         colors_(std::move(colors)),
         indices_(std::move(indices)),
-        normals_(std::move(normals)) {}
+        normals_(std::move(normals)),
+        aabb_(positions_) {}
 
     bool hasIndices() const { return !indices_.empty(); }
     bool hasUvs() const { return !uvs_.empty(); }
@@ -30,6 +32,7 @@ public:
     const std::vector<glm::vec3>& getColors() const { return colors_; }
     const std::vector<uint32_t>& getIndices() const { return indices_; }
     const std::vector<glm::vec3>& getNormals() const { return normals_; }
+    AABB getAABB() const { return aabb_; }
 
 private:
     std::vector<glm::vec3> positions_;
@@ -37,4 +40,5 @@ private:
     std::vector<glm::vec3> colors_;
     std::vector<uint32_t> indices_;
     std::vector<glm::vec3> normals_;
+    AABB aabb_;
 };
