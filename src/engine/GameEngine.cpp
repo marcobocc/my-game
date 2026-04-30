@@ -1,6 +1,4 @@
 #include "GameEngine.hpp"
-#include "core/math/AABB.hpp"
-#include "core/math/BVH.hpp"
 #include "data/assets/Mesh.hpp"
 #include "data/components/Camera.hpp"
 #include "data/settings/RendererSettings.hpp"
@@ -12,6 +10,8 @@
 #include "systems/rendering/RenderSystem.hpp"
 #include "systems/rendering/vulkan/VulkanGraphicsBackend.hpp"
 #include "systems/scene/SceneSerializer.hpp"
+#include "utils/math/AABB.hpp"
+#include "utils/math/BVH.hpp"
 
 GameEngine::GameEngine(GameWindow& window,
                        TimeManager& time,

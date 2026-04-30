@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 #include "Asset.hpp"
-#include "core/math/AABB.hpp"
+#include "utils/math/AABB.hpp"
 
 class Mesh final : public Asset {
 public:
