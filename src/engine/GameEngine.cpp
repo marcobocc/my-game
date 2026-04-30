@@ -1,5 +1,6 @@
 #include "GameEngine.hpp"
 #include "core/math/AABB.hpp"
+#include "core/math/BVH.hpp"
 #include "data/assets/Mesh.hpp"
 #include "data/settings/RendererSettings.hpp"
 #include "systems/assets/AssetManager.hpp"
@@ -153,6 +154,30 @@ void GameEngine::GIZMOS_DrawObjectTransform(const std::string& objectId, float a
         GIZMOS_DrawLine(position, position + right, {1.0f, 0.0f, 0.0f});
         GIZMOS_DrawLine(position, position + up, {0.0f, 1.0f, 0.0f});
         GIZMOS_DrawLine(position, position + forward, {0.0f, 0.0f, 1.0f});
+    }
+}
+
+void GameEngine::GIZMOS_DrawBVH(const glm::vec3& color) const {
+    std::vector<Item> items;
+    for (const auto& [id, object]: scene_.getObjects()) {
+        if (object.has<Transform>() && object.has<Renderer>()) {
+            auto transform = object.get<Transform>();
+            auto renderer = object.get<Renderer>();
+            auto* mesh = assetManager_.get<Mesh>(renderer.meshName);
+            if (!mesh) continue;
+            auto aabb = mesh->getAABB().applyTransform(transform.getModelMatrix());
+            items.push_back({aabb, id});
+        }
+    }
+    if (items.empty()) return;
+    BVH bvh;
+    bvh.build(std::move(items));
+    for (const auto& node: bvh.nodes) {
+        GIZMOS_DrawAABB(node.bounds, color);
+        if (node.isLeaf()) {
+            for (uint32_t i = node.begin; i < node.begin + node.count; i++)
+                GIZMOS_DrawAABB(bvh.items[i].aabb, color);
+        }
     }
 }
 
