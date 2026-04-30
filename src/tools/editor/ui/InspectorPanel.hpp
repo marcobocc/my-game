@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
-#include <unordered_set>
+#include "../controllers/EditorGizmosController.hpp"
 #include "GameEngine.hpp"
 #include "data/assets/Material.hpp"
 #include "data/components/BoxCollider.hpp"
@@ -15,10 +15,10 @@ class InspectorPanel : public ImguiWidget {
 public:
     InspectorPanel(const std::optional<std::string>* selectedObjectId,
                    GameEngine& engine,
-                   std::unordered_set<std::string>& aabbGizmoEnabled) :
+                   EditorGizmosController& gizmos) :
         selectedObjectId_(selectedObjectId),
         engine_(engine),
-        aabbGizmoEnabled_(aabbGizmoEnabled) {}
+        gizmos_(gizmos) {}
 
     void draw() const override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -53,7 +53,7 @@ public:
 private:
     const std::optional<std::string>* selectedObjectId_;
     GameEngine& engine_;
-    std::unordered_set<std::string>& aabbGizmoEnabled_;
+    EditorGizmosController& gizmos_;
 
     static float childHeight(int rows) {
         return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y * 2.0f;
@@ -99,12 +99,12 @@ private:
             float col[4] = {color.r, color.g, color.b, color.a};
             if (ImGui::ColorEdit4("Base color", col)) r.baseColorOverride = glm::vec4(col[0], col[1], col[2], col[3]);
         }
-        bool showAABB = aabbGizmoEnabled_.contains(objectId);
+        bool showAABB = gizmos_.isAABBEnabled(objectId);
         if (ImGui::Checkbox("Show Mesh Bounding Box", &showAABB)) {
             if (showAABB)
-                aabbGizmoEnabled_.insert(objectId);
+                gizmos_.enableAABB(objectId);
             else
-                aabbGizmoEnabled_.erase(objectId);
+                gizmos_.disableAABB(objectId);
         }
         ImGui::EndChild();
     }
