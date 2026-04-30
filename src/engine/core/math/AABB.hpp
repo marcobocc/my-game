@@ -25,13 +25,12 @@ struct AABB {
                 {max.x, max.y, max.z}};
     }
 
-    glm::vec3 getCentroid() const {
-        return (min + max) * 0.5f;
-    }
+    glm::vec3 getCentroid() const { return (min + max) * 0.5f; }
 
     AABB applyTransform(const glm::mat4& transform) const {
         auto corners = getCorners();
-        std::vector<glm::vec3> newCorners(corners.size());
+        std::vector<glm::vec3> newCorners;
+        newCorners.reserve(corners.size());
         for (auto& c: corners) {
             newCorners.push_back(transform * glm::vec4(c, 1.0f));
         }
