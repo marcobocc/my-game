@@ -6,8 +6,15 @@
 #include "vulkan/VulkanGraphicsBackend.hpp"
 
 class RenderSystem {
+    inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("RenderSystem");
+
 public:
     explicit RenderSystem(VulkanGraphicsBackend& backend) : backend_(backend) {}
+
+    void setActiveCamera(const Camera& camera, const Transform& cameraTransform) {
+        activeCamera_ = &camera;
+        activeCameraTransform_ = &cameraTransform;
+    }
 
     void update(const Scene& scene) {
         auto drawables = scene.getObjectsWith<Renderer, Transform>();
@@ -15,16 +22,23 @@ public:
             if (!renderer.enabled) continue;
             backend_.draw(renderer, transform, entity);
         }
-
-        auto cameras = scene.getObjectsWith<Camera, Transform>();
-        if (!cameras.empty()) {
-            const auto& [camEntity, camera, transform] = cameras.front();
-            backend_.renderFrame(camera, transform);
-        } else {
-            throw std::runtime_error("No camera found");
-        }
+        backend_.renderFrame(getActiveCamera(), getActiveCameraTransform());
     }
 
 private:
+    Camera getActiveCamera() const {
+        if (activeCamera_ != nullptr) return *activeCamera_;
+        LOG4CXX_WARN(LOGGER, "Active camera not set for RenderSystem. Using default camera.");
+        return Camera();
+    }
+
+    Transform getActiveCameraTransform() const {
+        if (activeCamera_ != nullptr) return *activeCameraTransform_;
+        LOG4CXX_WARN(LOGGER, "Active camera transform not set for RenderSystem. Using default camera transform.");
+        return Transform();
+    }
+
     VulkanGraphicsBackend& backend_;
+    const Camera* activeCamera_ = nullptr;
+    const Transform* activeCameraTransform_ = nullptr;
 };

@@ -2,6 +2,7 @@
 #include "core/math/AABB.hpp"
 #include "core/math/BVH.hpp"
 #include "data/assets/Mesh.hpp"
+#include "data/components/Camera.hpp"
 #include "data/settings/RendererSettings.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/core/TimeManager.hpp"
@@ -79,6 +80,10 @@ std::optional<std::string> GameEngine::getPickResult() const { return pickingSys
 // --------------------------------------------------------
 // Rendering API
 // --------------------------------------------------------
+
+void GameEngine::setActiveCamera(const Camera& camera, const Transform& transform) {
+    renderSystem_.setActiveCamera(camera, transform);
+}
 
 void GameEngine::enableWorldGrid() { rendererSettings_.enableGrid = true; }
 void GameEngine::disableWorldGrid() { rendererSettings_.enableGrid = false; }

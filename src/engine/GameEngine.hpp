@@ -14,6 +14,7 @@
 #include "systems/ui/UserInterface.hpp"
 
 struct AABB;
+struct Camera;
 struct Renderer;
 struct Transform;
 struct RendererSettings;
@@ -80,6 +81,8 @@ public:
     // --------------------------------------------------------
     // Rendering API
     // --------------------------------------------------------
+    void setActiveCamera(const Camera& camera, const Transform& transform);
+
     void enableWorldGrid();
     void disableWorldGrid();
     void toggleWorldGrid();
