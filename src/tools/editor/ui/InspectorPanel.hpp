@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include "../controllers/EditorGizmosController.hpp"
+#include "../controllers/SceneMutationsController.hpp"
 #include "GameEngine.hpp"
 #include "data/assets/Material.hpp"
 #include "data/components/BoxCollider.hpp"
@@ -15,10 +16,12 @@ class InspectorPanel : public ImguiWidget {
 public:
     InspectorPanel(const std::optional<std::string>* selectedObjectId,
                    GameEngine& engine,
-                   EditorGizmosController& gizmos) :
+                   EditorGizmosController& gizmos,
+                   SceneMutationsController& mutations) :
         selectedObjectId_(selectedObjectId),
         engine_(engine),
-        gizmos_(gizmos) {}
+        gizmos_(gizmos),
+        mutations_(mutations) {}
 
     void draw() const override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -54,9 +57,17 @@ private:
     const std::optional<std::string>* selectedObjectId_;
     GameEngine& engine_;
     EditorGizmosController& gizmos_;
+    SceneMutationsController& mutations_;
+    mutable std::optional<glm::vec4> colorBeforeEdit_;
 
     static float childHeight(int rows) {
         return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y * 2.0f;
+    }
+
+    template<typename T>
+    void trackDrag(T& target) const {
+        if (ImGui::IsItemActivated()) mutations_.beginEdit(target);
+        if (ImGui::IsItemDeactivatedAfterEdit()) mutations_.commitEdit(target);
     }
 
     void drawObject(GameObject& obj) const {
@@ -67,7 +78,7 @@ private:
         if (obj.has<BoxCollider>()) drawBoxCollider(obj.get<BoxCollider>());
     }
 
-    static void drawTransform(Transform& t) {
+    void drawTransform(Transform& t) const {
         if (!ImGui::BeginChild("Transform", {0, childHeight(4)}, true)) {
             ImGui::EndChild();
             return;
@@ -75,9 +86,12 @@ private:
         ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "Transform");
         ImGui::Spacing();
         ImGui::DragFloat3("Position", &t.position.x, 0.01f);
+        trackDrag(t.position);
         glm::vec3 euler = glm::degrees(glm::eulerAngles(t.rotation));
         if (ImGui::DragFloat3("Rotation", &euler.x, 0.5f)) t.rotation = glm::quat(glm::radians(euler));
+        trackDrag(t.rotation);
         ImGui::DragFloat3("Scale", &t.scale.x, 0.01f);
+        trackDrag(t.scale);
         ImGui::EndChild();
     }
 
@@ -97,7 +111,15 @@ private:
                 ImGui::TextDisabled("Texture: none");
             glm::vec4 color = r.baseColorOverride.value_or(mat->getBaseColor());
             float col[4] = {color.r, color.g, color.b, color.a};
+            auto colorBefore = r.baseColorOverride;
             if (ImGui::ColorEdit4("Base color", col)) r.baseColorOverride = glm::vec4(col[0], col[1], col[2], col[3]);
+            if (ImGui::IsItemActivated()) colorBeforeEdit_ = colorBefore;
+            if (ImGui::IsItemDeactivatedAfterEdit()) {
+                auto oldVal = colorBeforeEdit_;
+                auto newVal = r.baseColorOverride;
+                auto* ptr = &r.baseColorOverride;
+                mutations_.undoHistory().push([ptr, oldVal] { *ptr = oldVal; }, [ptr, newVal] { *ptr = newVal; });
+            }
         }
         bool showAABB = gizmos_.isAABBEnabled(objectId);
         if (ImGui::Checkbox("Show Mesh Bounding Box", &showAABB)) {
@@ -109,7 +131,7 @@ private:
         ImGui::EndChild();
     }
 
-    static void drawBoxCollider(BoxCollider& b) {
+    void drawBoxCollider(BoxCollider& b) const {
         if (!ImGui::BeginChild("BoxCollider", {0, childHeight(3)}, true)) {
             ImGui::EndChild();
             return;
@@ -117,7 +139,9 @@ private:
         ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "Box Collider");
         ImGui::Spacing();
         ImGui::DragFloat3("Center", &b.center.x, 0.01f);
+        trackDrag(b.center);
         ImGui::DragFloat3("Half Extents", &b.halfExtents.x, 0.01f);
+        trackDrag(b.halfExtents);
         ImGui::EndChild();
     }
 };

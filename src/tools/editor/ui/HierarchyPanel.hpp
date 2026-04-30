@@ -2,6 +2,7 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
+#include "../controllers/SceneMutationsController.hpp"
 #include "GameEngine.hpp"
 #include "systems/ui/ImguiWidget.hpp"
 
@@ -9,9 +10,12 @@ class HierarchyPanel : public ImguiWidget {
 public:
     static constexpr float PANEL_WIDTH_RATIO = 0.15f;
 
-    HierarchyPanel(std::optional<std::string>* selectedObjectId, GameEngine& engine) :
+    HierarchyPanel(std::optional<std::string>* selectedObjectId,
+                   GameEngine& engine,
+                   SceneMutationsController& mutations) :
         selectedObjectId_(selectedObjectId),
-        engine_(engine) {}
+        engine_(engine),
+        mutations_(mutations) {}
 
     void draw() const override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -49,6 +53,7 @@ public:
 private:
     std::optional<std::string>* selectedObjectId_;
     GameEngine& engine_;
+    SceneMutationsController& mutations_;
 
     void drawAddObject() const {
         if (!ImGui::CollapsingHeader("Add Object")) return;
@@ -56,11 +61,11 @@ private:
         ImGui::Indent();
         if (ImGui::CollapsingHeader("Primitives")) {
             if (ImGui::Selectable("  Cube")) {
-                auto id = engine_.createCube({});
+                auto id = mutations_.createCube({});
                 *selectedObjectId_ = id;
             }
             if (ImGui::Selectable("  Rectangle 2D")) {
-                auto id = engine_.createRectangle2D({});
+                auto id = mutations_.createRectangle2D({});
                 *selectedObjectId_ = id;
             }
         }
@@ -72,7 +77,7 @@ private:
             } else {
                 for (const auto& modelName: models) {
                     if (ImGui::Selectable(("  " + modelName).c_str())) {
-                        auto id = engine_.createModel(modelName, {});
+                        auto id = mutations_.createModel(modelName, {});
                         *selectedObjectId_ = id;
                     }
                 }

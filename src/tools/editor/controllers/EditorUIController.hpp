@@ -8,6 +8,7 @@
 #include "../ui/InspectorPanel.hpp"
 #include "EditorGizmosController.hpp"
 #include "GameEngine.hpp"
+#include "SceneMutationsController.hpp"
 #include "utils/JsonUtils.hpp"
 
 class EditorUIController {
@@ -15,14 +16,17 @@ public:
     std::optional<std::string> selectedObjectId{};
     std::optional<std::filesystem::path> scenePath{};
     EditorGizmosController gizmos;
+    SceneMutationsController mutations;
 
-    explicit EditorUIController(GameEngine& engine) : engine_(engine), gizmos(engine) {
+    explicit EditorUIController(GameEngine& engine) : engine_(engine), gizmos(engine), mutations(engine) {
         menuBar_ = engine_.emplaceWidget<EditorMenuBar>();
         menuBar_->onSave = [this] { saveScene(*scenePath); };
         menuBar_->onSaveAs = [this] { openSaveDialog(); };
         menuBar_->onOpen = [this] { openLoadDialog(); };
-        engine_.emplaceWidget<HierarchyPanel>(&selectedObjectId, engine_);
-        engine_.emplaceWidget<InspectorPanel>(&selectedObjectId, engine_, gizmos);
+        menuBar_->onUndo = [this] { mutations.undoHistory().undo(); };
+        menuBar_->onRedo = [this] { mutations.undoHistory().redo(); };
+        engine_.emplaceWidget<HierarchyPanel>(&selectedObjectId, engine_, mutations);
+        engine_.emplaceWidget<InspectorPanel>(&selectedObjectId, engine_, gizmos, mutations);
     }
 
     void saveScene(const std::filesystem::path& path) {

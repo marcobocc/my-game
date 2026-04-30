@@ -59,8 +59,15 @@ private:
         auto [mouseX, mouseY] = engine_.getMousePosition();
 
         bool ctrlHeld = engine_.isKeyDown(GLFW_KEY_LEFT_CONTROL) || engine_.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
+        bool shiftHeld = engine_.isKeyDown(GLFW_KEY_LEFT_SHIFT) || engine_.isKeyDown(GLFW_KEY_RIGHT_SHIFT);
         if (ctrlHeld && engine_.isKeyPressed(GLFW_KEY_S) && controller_.scenePath)
             controller_.saveScene(*controller_.scenePath);
+        if (ctrlHeld && engine_.isKeyPressed(GLFW_KEY_Z)) {
+            if (shiftHeld)
+                controller_.mutations.undoHistory().redo();
+            else
+                controller_.mutations.undoHistory().undo();
+        }
 
         if (engine_.isKeyPressed(GLFW_KEY_G)) engine_.toggleWorldGrid();
         if (engine_.isKeyPressed(GLFW_KEY_L)) engine_.toggleLighting();
