@@ -16,6 +16,16 @@ struct VertexLayout_PositionOnly {
     static constexpr std::array<VertexAttribute, 1> VERTEX_ATTRIBS = {{{POSITION_OFFSET, POSITION_COMPONENTS}}};
 };
 
+struct VertexLayout_PositionColor {
+    static constexpr uint32_t POSITION_OFFSET = 0;
+    static constexpr uint32_t POSITION_COMPONENTS = 3;
+    static constexpr uint32_t COLOR_OFFSET = 3;
+    static constexpr uint32_t COLOR_COMPONENTS = 3;
+    static constexpr uint32_t VERTEX_STRIDE = 6;
+    static constexpr std::array<VertexAttribute, 2> VERTEX_ATTRIBS = {
+            {{POSITION_OFFSET, POSITION_COMPONENTS}, {COLOR_OFFSET, COLOR_COMPONENTS}}};
+};
+
 struct VertexLayout_PositionUv {
     static constexpr uint32_t POSITION_OFFSET = 0;
     static constexpr uint32_t POSITION_COMPONENTS = 3;
