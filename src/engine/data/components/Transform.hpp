@@ -17,13 +17,13 @@ struct Transform {
         return translate * rotate * scaleMat;
     }
 
-    glm::vec3 getForward() const { return glm::normalize(rotation * glm::vec3(0.0f, 0.0f, -1.0f)); }
-
     glm::vec3 getRight() const { return glm::normalize(rotation * glm::vec3(1.0f, 0.0f, 0.0f)); }
 
     glm::vec3 getUp() const { return glm::normalize(rotation * glm::vec3(0.0f, 1.0f, 0.0f)); }
 
+    glm::vec3 getForward() const { return glm::normalize(rotation * glm::vec3(0.0f, 0.0f, 1.0f)); }
+
     glm::vec3 getLookAt() const { return position + getForward(); }
 
-    glm::mat4 getViewMatrix() const { return glm::lookAt(position, getLookAt(), getUp()); }
+    glm::mat4 getViewMatrix() const { return glm::lookAt(position, position - getForward(), getUp()); }
 };
