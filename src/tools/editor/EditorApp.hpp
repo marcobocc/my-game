@@ -68,6 +68,7 @@ private:
 
         if (engine_.isKeyPressed(GLFW_KEY_G)) engine_.toggleWorldGrid();
         if (engine_.isKeyPressed(GLFW_KEY_L)) engine_.toggleLighting();
+        if (engine_.isKeyPressed(GLFW_KEY_B)) controller_.gizmos.toggleBVH();
 
         bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
         if (leftDown && !wasLeftDown_) {
