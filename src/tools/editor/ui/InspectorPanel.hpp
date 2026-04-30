@@ -3,20 +3,18 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
-#include "../../../engine/assets/types/Material.hpp"
-#include "assets/AssetManager.hpp"
+#include "assets/types/Material.hpp"
+#include "core/GameEngine.hpp"
 #include "core/objects/components/BoxCollider.hpp"
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
-#include "core/scene/Scene.hpp"
 #include "core/ui/ImguiWidget.hpp"
 
 class InspectorPanel : public ImguiWidget {
 public:
-    InspectorPanel(const std::optional<std::string>* selectedObjectId, Scene* scene, AssetManager* assetManager) :
+    InspectorPanel(const std::optional<std::string>* selectedObjectId, GameEngine& engine) :
         selectedObjectId_(selectedObjectId),
-        scene_(scene),
-        assetManager_(assetManager) {}
+        engine_(engine) {}
 
     void draw() const override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -40,7 +38,7 @@ public:
         if (!selectedObjectId_ || !selectedObjectId_->has_value()) {
             ImGui::TextDisabled("No object selected");
         } else {
-            drawObject(scene_->getObject(**selectedObjectId_));
+            drawObject(engine_.getObject(**selectedObjectId_));
         }
 
         ImGui::End();
@@ -50,8 +48,7 @@ public:
 
 private:
     const std::optional<std::string>* selectedObjectId_;
-    Scene* scene_;
-    AssetManager* assetManager_;
+    GameEngine& engine_;
 
     static float childHeight(int rows) {
         return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y * 2.0f;
@@ -88,7 +85,7 @@ private:
         ImGui::Spacing();
         ImGui::Text("Mesh: %s", r.meshName.c_str());
         ImGui::Text("Material: %s", r.materialName.c_str());
-        if (const Material* mat = assetManager_->get<Material>(r.materialName)) {
+        if (const Material* mat = engine_.getAsset<Material>(r.materialName)) {
             if (!mat->getTextureName().empty())
                 ImGui::Text("Texture: %s", mat->getTextureName().c_str());
             else

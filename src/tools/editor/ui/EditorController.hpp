@@ -1,14 +1,12 @@
 #pragma once
 #include <fstream>
 #include <nfd.hpp>
-#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include "EditorMenuBar.hpp"
 #include "HierarchyPanel.hpp"
 #include "InspectorPanel.hpp"
 #include "core/GameEngine.hpp"
-#include "core/scene/SceneSerializer.hpp"
 #include "utils/JsonUtils.hpp"
 
 class EditorController {
@@ -18,27 +16,25 @@ public:
     std::string cameraId{};
 
     explicit EditorController(GameEngine& engine) : engine_(engine) {
-        menuBar_ = engine_.getUserInterface().emplace<EditorMenuBar>();
+        menuBar_ = engine_.emplaceWidget<EditorMenuBar>();
         menuBar_->onSave = [this] { saveScene(*scenePath); };
         menuBar_->onSaveAs = [this] { openSaveDialog(); };
         menuBar_->onOpen = [this] { openLoadDialog(); };
-        engine_.getUserInterface().emplace<HierarchyPanel>(
-                &selectedObjectId, &engine_.getScene(), &engine_.getAssetManager());
-        engine_.getUserInterface().emplace<InspectorPanel>(
-                &selectedObjectId, &engine_.getScene(), &engine_.getAssetManager());
+        engine_.emplaceWidget<HierarchyPanel>(&selectedObjectId, engine_);
+        engine_.emplaceWidget<InspectorPanel>(&selectedObjectId, engine_);
     }
 
     void saveScene(const std::filesystem::path& path) {
         std::ofstream f(path);
         if (!f) return;
-        f << SceneSerializer::serializeScene(engine_.getScene()).dump(4);
+        f << engine_.serializeScene().dump(4);
         scenePath = path;
         menuBar_->sceneName = path.filename().string();
     }
 
     void loadScene(const std::filesystem::path& path) {
         try {
-            SceneSerializer::deserializeScene(JsonUtils::loadJson(path), engine_.getScene());
+            engine_.deserializeScene(JsonUtils::loadJson(path));
             scenePath = path;
             menuBar_->sceneName = path.filename().string();
             selectedObjectId = std::nullopt;

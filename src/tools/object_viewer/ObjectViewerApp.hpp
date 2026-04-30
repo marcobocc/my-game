@@ -2,8 +2,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "InspectorSidePanel.hpp"
-#include "core/GameEngine.hpp"
+#include "core/GameEngineWiringContainer.hpp"
 #include "core/objects/components/Transform.hpp"
+#include "rendering/RendererSettings.hpp"
 
 class ObjectViewerApp {
 public:
@@ -12,8 +13,8 @@ public:
 
     ObjectViewerApp(unsigned int windowWidth, unsigned int windowHeight, const std::filesystem::path& assetsPath) :
         window_(windowWidth, windowHeight, "Object Viewer"),
-        engine_(window_, assetsPath),
-        scene_(engine_.getScene()) {
+        wiringContainer_(window_, assetsPath),
+        engine_(wiringContainer_.gameEngine()) {
         auto [w, h] = window_.getLogicalSize();
         window_.setSceneViewport({0, 0, static_cast<int>(static_cast<float>(w) * SCENE_WIDTH_RATIO), h});
         window_.onWindowResize([this](int newW, int newH, int, int) {
@@ -21,21 +22,21 @@ public:
         });
 
         setupScene();
-        engine_.getUserInterface().emplace<InspectorSidePanel>(
-                &objectId_, &scene_, &engine_.getAssetManager(), SCENE_WIDTH_RATIO);
+        engine_.emplaceWidget<InspectorSidePanel>(&objectId_, engine_, SCENE_WIDTH_RATIO);
     }
 
     void run() {
         engine_.run([this](double deltaTime) {
-            if (engine_.getInputSystem().isKeyDown(GLFW_KEY_ESCAPE)) engine_.requestClose();
+            if (engine_.isKeyDown(GLFW_KEY_ESCAPE)) engine_.requestClose();
             update(deltaTime);
         });
     }
 
 private:
     GameWindow window_;
-    GameEngine engine_;
-    Scene& scene_;
+    RendererSettings rendererSettings_;
+    GameEngineWiringContainer wiringContainer_;
+    GameEngine& engine_;
     std::string objectId_{};
     glm::quat rotation_{1.0f, 0.0f, 0.0f, 0.0f};
     double lastMouseX_ = 0.0;
@@ -43,15 +44,14 @@ private:
     bool wasDragging_ = false;
 
     void setupScene() {
-        scene_.createCamera({.position = glm::vec3(0.0f, 0.0f, 4.0f)});
-        objectId_ = scene_.createCube({});
+        engine_.createCamera({.position = glm::vec3(0.0f, 0.0f, 4.0f)});
+        objectId_ = engine_.createCube({});
     }
 
     void update(double /*deltaTime*/) {
-        auto& input = engine_.getInputSystem();
-        auto [mouseX, mouseY] = input.getMousePosition();
+        auto [mouseX, mouseY] = engine_.getMousePosition();
 
-        if (input.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) && isInsideSceneViewport(mouseX, mouseY)) {
+        if (engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT) && isInsideSceneViewport(mouseX, mouseY)) {
             if (wasDragging_) {
                 float dx = static_cast<float>(mouseX - lastMouseX_);
                 float dy = static_cast<float>(mouseY - lastMouseY_);
@@ -67,7 +67,7 @@ private:
         lastMouseX_ = mouseX;
         lastMouseY_ = mouseY;
 
-        engine_.getScene().getObject(objectId_).get<Transform>().rotation = rotation_;
+        engine_.getObject(objectId_).get<Transform>().rotation = rotation_;
     }
 
     bool isInsideSceneViewport(double mouseX, double mouseY) const {

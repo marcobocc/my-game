@@ -2,9 +2,10 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "core/GameEngine.hpp"
+#include "core/GameEngineWiringContainer.hpp"
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
+#include "rendering/RendererSettings.hpp"
 #include "ui/EditorController.hpp"
 #include "ui/HierarchyPanel.hpp"
 #include "ui/InspectorPanel.hpp"
@@ -24,7 +25,8 @@ public:
 
     EditorApp(unsigned int windowWidth, unsigned int windowHeight, const std::filesystem::path& assetsPath) :
         window_(windowWidth, windowHeight, "Editor"),
-        engine_(window_, assetsPath),
+        wiringContainer_(window_, assetsPath),
+        engine_(wiringContainer_.gameEngine()),
         controller_(engine_) {
         auto [w, h] = window_.getLogicalSize();
         window_.setSceneViewport(computeSceneViewport(w, h));
@@ -39,7 +41,9 @@ public:
 
 private:
     GameWindow window_;
-    GameEngine engine_;
+    RendererSettings rendererSettings_;
+    GameEngineWiringContainer wiringContainer_;
+    GameEngine& engine_;
     EditorController controller_;
 
     glm::vec3 orbitTarget_{0.0f, 0.0f, 0.0f};
@@ -60,9 +64,9 @@ private:
     }
 
     void setupScene() {
-        controller_.cameraId = engine_.getScene().createCamera({.position = computeCameraPosition()});
-        engine_.getScene().createCube({});
-        engine_.getRendererSettings().enableGrid = true;
+        controller_.cameraId = engine_.createCamera({.position = computeCameraPosition()});
+        engine_.createCube({});
+        engine_.enableWorldGrid();
     }
 
     glm::vec3 computeCameraPosition() const {
@@ -74,7 +78,7 @@ private:
     }
 
     void applyCameraTransform() {
-        auto& t = engine_.getScene().getObject(controller_.cameraId).get<Transform>();
+        auto& t = engine_.getObject(controller_.cameraId).get<Transform>();
         t.position = computeCameraPosition();
         glm::vec3 forward = glm::normalize(orbitTarget_ - t.position);
         glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
@@ -83,7 +87,7 @@ private:
     }
 
     void resetOrbitFromCamera() {
-        glm::vec3 pos = engine_.getScene().getObject(controller_.cameraId).get<Transform>().position;
+        glm::vec3 pos = engine_.getObject(controller_.cameraId).get<Transform>().position;
         orbitTarget_ = {0.0f, 0.0f, 0.0f};
         orbitDistance_ = glm::length(pos);
         orbitPitch_ = std::asin(pos.y / orbitDistance_);
@@ -91,16 +95,14 @@ private:
     }
 
     void update(double deltaTime) {
-        auto& input = engine_.getInputSystem();
-        auto& scene = engine_.getScene();
-        auto [mouseX, mouseY] = input.getMousePosition();
+        auto [mouseX, mouseY] = engine_.getMousePosition();
 
-        bool ctrlHeld = input.isKeyDown(GLFW_KEY_LEFT_CONTROL) || input.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
-        if (ctrlHeld && input.isKeyPressed(GLFW_KEY_S) && controller_.scenePath)
+        bool ctrlHeld = engine_.isKeyDown(GLFW_KEY_LEFT_CONTROL) || engine_.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
+        if (ctrlHeld && engine_.isKeyPressed(GLFW_KEY_S) && controller_.scenePath)
             controller_.saveScene(*controller_.scenePath);
 
-        if (scene.getObjects().find(controller_.cameraId) == scene.getObjects().end()) {
-            controller_.cameraId = scene.createCamera({.position = computeCameraPosition()});
+        if (engine_.getObjects().find(controller_.cameraId) == engine_.getObjects().end()) {
+            controller_.cameraId = engine_.createCamera({.position = computeCameraPosition()});
         } else if (controller_.scenePath) {
             static std::optional<std::filesystem::path> lastSyncedPath{};
             if (lastSyncedPath != controller_.scenePath) {
@@ -109,8 +111,8 @@ private:
             }
         }
 
-        bool rightDown = input.isMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT);
-        bool middleDown = input.isMouseButtonDown(GLFW_MOUSE_BUTTON_MIDDLE);
+        bool rightDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT);
+        bool middleDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_MIDDLE);
 
         if (rightDown) {
             if (wasOrbiting_) {
@@ -142,7 +144,7 @@ private:
             wasPanning_ = false;
         }
 
-        double scroll = input.getScrollDelta();
+        double scroll = engine_.getScrollDelta();
         if (scroll != 0.0)
             orbitDistance_ =
                     std::max(MIN_ORBIT_DISTANCE, orbitDistance_ - static_cast<float>(scroll) * ZOOM_SENSITIVITY);
@@ -151,15 +153,13 @@ private:
         glm::vec3 forward = glm::normalize(orbitTarget_ - camPos);
         glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
         glm::vec3 move{0.0f};
-        if (input.isKeyDown(GLFW_KEY_W)) move += forward;
-        if (input.isKeyDown(GLFW_KEY_S)) move -= forward;
-        if (input.isKeyDown(GLFW_KEY_A)) move -= right;
-        if (input.isKeyDown(GLFW_KEY_D)) move += right;
-        if (input.isKeyPressed(GLFW_KEY_G))
-            engine_.getRendererSettings().enableGrid = !engine_.getRendererSettings().enableGrid;
-        if (input.isKeyPressed(GLFW_KEY_L))
-            engine_.getRendererSettings().enableLighting = !engine_.getRendererSettings().enableLighting;
-        if (input.isKeyPressed(GLFW_KEY_F)) {
+        if (engine_.isKeyDown(GLFW_KEY_W)) move += forward;
+        if (engine_.isKeyDown(GLFW_KEY_S)) move -= forward;
+        if (engine_.isKeyDown(GLFW_KEY_A)) move -= right;
+        if (engine_.isKeyDown(GLFW_KEY_D)) move += right;
+        if (engine_.isKeyPressed(GLFW_KEY_G)) engine_.toggleWorldGrid();
+        if (engine_.isKeyPressed(GLFW_KEY_L)) engine_.toggleLighting();
+        if (engine_.isKeyPressed(GLFW_KEY_F)) {
             orbitTarget_ = {0.0f, 0.0f, 0.0f};
             orbitDistance_ = INITIAL_ORBIT_DISTANCE;
             orbitYaw_ = INITIAL_ORBIT_YAW;
@@ -167,28 +167,27 @@ private:
         }
 
         if (glm::length(move) > 0.0f) {
-            float speed = input.isKeyDown(GLFW_KEY_LEFT_SHIFT) ? FLY_SPEED * SPRINT_MULTIPLIER : FLY_SPEED;
+            float speed = engine_.isKeyDown(GLFW_KEY_LEFT_SHIFT) ? FLY_SPEED * SPRINT_MULTIPLIER : FLY_SPEED;
             orbitTarget_ += glm::normalize(move) * speed * static_cast<float>(deltaTime);
         }
 
         lastMouseX_ = mouseX;
         lastMouseY_ = mouseY;
 
-        bool leftDown = input.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
+        bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
         if (leftDown && !wasLeftDown_) {
             auto [scaleX, scaleY] = window_.getContentScale();
-            engine_.getPickingSystem().requestPick(static_cast<uint32_t>(mouseX * scaleX),
-                                                   static_cast<uint32_t>(mouseY * scaleY));
+            engine_.requestPick(static_cast<uint32_t>(mouseX * scaleX), static_cast<uint32_t>(mouseY * scaleY));
         }
         wasLeftDown_ = leftDown;
 
-        if (auto picked = engine_.getPickingSystem().getPickResult())
+        if (auto picked = engine_.getPickResult())
             controller_.selectedObjectId = (controller_.selectedObjectId == picked) ? std::nullopt : std::move(picked);
 
         if (controller_.selectedObjectId) {
-            auto& obj = scene.getObject(*controller_.selectedObjectId);
+            auto& obj = engine_.getObject(*controller_.selectedObjectId);
             if (obj.has<Renderer>() && obj.has<Transform>())
-                engine_.outline(obj.get<Renderer>(), obj.get<Transform>(), *controller_.selectedObjectId);
+                engine_.drawObjectOutline(obj.get<Renderer>(), obj.get<Transform>(), *controller_.selectedObjectId);
         }
 
         applyCameraTransform();

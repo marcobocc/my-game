@@ -2,18 +2,16 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
-#include "assets/AssetManager.hpp"
-#include "core/scene/Scene.hpp"
+#include "core/GameEngine.hpp"
 #include "core/ui/ImguiWidget.hpp"
 
 class HierarchyPanel : public ImguiWidget {
 public:
     static constexpr float PANEL_WIDTH_RATIO = 0.15f;
 
-    HierarchyPanel(std::optional<std::string>* selectedObjectId, Scene* scene, AssetManager* assetManager) :
+    HierarchyPanel(std::optional<std::string>* selectedObjectId, GameEngine& engine) :
         selectedObjectId_(selectedObjectId),
-        scene_(scene),
-        assetManager_(assetManager) {}
+        engine_(engine) {}
 
     void draw() const override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -34,7 +32,7 @@ public:
         ImGui::Separator();
         ImGui::Spacing();
 
-        for (const auto& [id, obj]: scene_->getObjects()) {
+        for (const auto& [id, obj]: engine_.getObjects()) {
             bool isSelected = selectedObjectId_->has_value() && **selectedObjectId_ == id;
             if (ImGui::Selectable(id.c_str(), isSelected))
                 *selectedObjectId_ = (isSelected) ? std::nullopt : std::optional<std::string>(id);
@@ -50,8 +48,7 @@ public:
 
 private:
     std::optional<std::string>* selectedObjectId_;
-    Scene* scene_;
-    AssetManager* assetManager_;
+    GameEngine& engine_;
 
     void drawAddObject() const {
         if (!ImGui::CollapsingHeader("Add Object")) return;
@@ -59,23 +56,23 @@ private:
         ImGui::Indent();
         if (ImGui::CollapsingHeader("Primitives")) {
             if (ImGui::Selectable("  Cube")) {
-                auto id = scene_->createCube({});
+                auto id = engine_.createCube({});
                 *selectedObjectId_ = id;
             }
             if (ImGui::Selectable("  Rectangle 2D")) {
-                auto id = scene_->createRectangle2D({});
+                auto id = engine_.createRectangle2D({});
                 *selectedObjectId_ = id;
             }
         }
 
         if (ImGui::CollapsingHeader("Models")) {
-            auto models = assetManager_->getAvailableAssets(".model");
+            auto models = engine_.getAvailableAssets(".model");
             if (models.empty()) {
                 ImGui::TextDisabled("  No models found");
             } else {
                 for (const auto& modelName: models) {
                     if (ImGui::Selectable(("  " + modelName).c_str())) {
-                        auto id = scene_->createModel(modelName, {});
+                        auto id = engine_.createModel(modelName, {});
                         *selectedObjectId_ = id;
                     }
                 }

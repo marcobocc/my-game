@@ -2,30 +2,24 @@
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include <string>
-#include "../../engine/assets/types/Material.hpp"
-#include "assets/AssetManager.hpp"
+#include "assets/types/Material.hpp"
+#include "core/GameEngine.hpp"
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"
-#include "core/scene/Scene.hpp"
 #include "core/ui/ImguiWidget.hpp"
 
 class InspectorSidePanel : public ImguiWidget {
 public:
-    InspectorSidePanel(std::string* currentActiveObjectId,
-                       Scene* scene,
-                       AssetManager* assetManager,
-                       float sceneWidthRatio) :
+    InspectorSidePanel(std::string* currentActiveObjectId, GameEngine& engine, float sceneWidthRatio) :
         currentActiveObjectId_(currentActiveObjectId),
-        scene_(scene),
-        assetManager_(assetManager),
+        engine_(engine),
         sceneWidthRatio_(sceneWidthRatio) {}
 
     void draw() const override { drawDockspace(); }
 
 private:
     std::string* currentActiveObjectId_;
-    Scene* scene_;
-    AssetManager* assetManager_;
+    GameEngine& engine_;
     float sceneWidthRatio_;
 
     void drawDockspace() const {
@@ -60,7 +54,7 @@ private:
     }
 
     void drawInspectorPanel() const {
-        auto& obj = scene_->getObject(*currentActiveObjectId_);
+        auto& obj = engine_.getObject(*currentActiveObjectId_);
 
         if (ImGui::BeginChild("TransformPanel", ImVec2(0, childHeight(5)), true)) {
             ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.2f, 1.0f), "Transform");
@@ -84,20 +78,16 @@ private:
             if (obj.has<Renderer>()) {
                 auto& renderer = obj.get<Renderer>();
 
-                // --- Describe mesh ---
                 ImGui::Text("Mesh: %s", renderer.meshName.c_str());
 
-                // --- Describe material ---
-                const Material* mat = assetManager_->get<Material>(renderer.materialName);
+                const Material* mat = engine_.getAsset<Material>(renderer.materialName);
                 ImGui::Text("Material: %s", renderer.materialName.c_str());
 
-                // --- Describe textures ---
                 if (!mat->getTextureName().empty())
                     ImGui::Text("Texture: %s", mat->getTextureName().c_str());
                 else
                     ImGui::TextDisabled("Texture: none");
 
-                // --- Describe base color ---
                 glm::vec4 color = renderer.baseColorOverride.value_or(mat->getBaseColor());
                 float col[4] = {color.r, color.g, color.b, color.a};
                 if (ImGui::ColorEdit4("Base color", col))

@@ -1,63 +1,137 @@
 #pragma once
 #include <functional>
-#include <glm/vec3.hpp>
-#include <memory>
+#include <glm/glm.hpp>
+#include <nlohmann/json.hpp>
+#include <optional>
 #include <string>
-#include "../assets/importing/AssetImporter.hpp"
-#include "core/GameWindow.hpp"
-#include "core/Time.hpp"
-#include "core/input/InputSystem.hpp"
-#include "core/picking/PickingSystem.hpp"
-#include "core/ui/UserInterface.hpp"
-#include "physics/PhysicsSystem.hpp"
-#include "rendering/RenderSystem.hpp"
-#include "rendering/RendererSettings.hpp"
-#include "rendering/vulkan/VulkanWiringContainer.hpp"
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include "../assets/AssetManager.hpp"
+#include "GameWindow.hpp"
+#include "objects/GameObject.hpp"
 #include "scene/Scene.hpp"
+#include "ui/UserInterface.hpp"
 
+struct Renderer;
+struct Transform;
+struct RendererSettings;
+class InputSystem;
+class PickingSystem;
+class PhysicsSystem;
+class RenderSystem;
+class Time;
+class VulkanGraphicsBackend;
+
+/*
+    GameEngine (Facade)
+
+    Purpose:
+    --------------------------------------------------
+    High-level facade and API for the game engine
+
+    Responsibilities:
+    --------------------------------------------------
+    - Provide the API for all game engine operations
+    - Forward calls to underlying engine systems
+    - Hide internal engine complexity and modularity
+      from the application layer
+
+    This class is not responsible for:
+    --------------------------------------------------
+    - Creating or owning engine subsystems
+    - Subsystem wiring or composition
+    - Managing dependencies lifetime
+*/
 class GameEngine {
 public:
-    using GameLoopFunc = std::function<void(double deltaTime)>;
+    explicit GameEngine(GameWindow& window,
+                        Time& time,
+                        UserInterface& userInterface,
+                        AssetManager& assetManager,
+                        InputSystem& inputSystem,
+                        PickingSystem& pickingSystem,
+                        PhysicsSystem& physicsSystem,
+                        Scene& scene,
+                        RenderSystem& renderSystem,
+                        RendererSettings& rendererSettings,
+                        VulkanGraphicsBackend& graphicsBackend);
 
-    GameEngine(const GameEngine&) = delete;
-    GameEngine& operator=(const GameEngine&) = delete;
-    GameEngine(GameEngine&&) = delete;
-    GameEngine& operator=(GameEngine&&) = delete;
-
-    explicit GameEngine(GameWindow& window, std::filesystem::path assetsPath);
-    ~GameEngine();
-
-    UserInterface& getUserInterface() const { return *userInterface_; }
-    AssetManager& getAssetManager() const { return *assetManager_; }
-    InputSystem& getInputSystem() const { return *inputSystem_; }
-    PickingSystem& getPickingSystem() const { return *pickingSystem_; }
-    PhysicsSystem& getPhysicsSystem() const { return *physicsSystem_; }
-    Scene& getScene() const { return *scene_; }
-    RendererSettings& getRendererSettings() { return rendererSettings_; }
-
-    void outline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
-    void submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const;
-
-    void run(const GameLoopFunc& gameLoopFunc);
+    // --------------------------------------------------------
+    // Game Loop
+    // --------------------------------------------------------
+    void run(const std::function<void(double deltaTime)>& gameLoopFunc);
     void requestClose() const;
 
+    // --------------------------------------------------------
+    // Input API
+    // --------------------------------------------------------
+    std::pair<double, double> getMousePosition() const;
+    double getScrollDelta() const;
+
+    bool isKeyDown(int key) const;
+    bool isKeyPressed(int key) const;
+    bool isMouseButtonDown(int button) const;
+
+    void requestPick(uint32_t x, uint32_t y) const;
+    std::optional<std::string> getPickResult() const;
+
+    // --------------------------------------------------------
+    // Rendering API
+    // --------------------------------------------------------
+    void enableWorldGrid();
+    void disableWorldGrid();
+    void toggleWorldGrid();
+
+    void enableLighting();
+    void disableLighting();
+    void toggleLighting();
+
+    void drawObjectOutline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
+    void drawGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const;
+
+    template<typename T, typename... Args>
+    T* emplaceWidget(Args&&... args) {
+        return userInterface_.emplace<T>(std::forward<Args>(args)...);
+    }
+
+    // --------------------------------------------------------
+    // Assets API
+    // --------------------------------------------------------
+    std::vector<std::string> getAvailableAssets(const std::string& extension) const;
+    template<typename T>
+    T* getAsset(const std::string& name) const {
+        return assetManager_.get<T>(name);
+    }
+
+    // --------------------------------------------------------
+    // Scene API
+    // --------------------------------------------------------
+    GameObject& getObject(const std::string& name) const;
+    const std::unordered_map<std::string, GameObject>& getObjects() const;
+    void destroyObject(const std::string& name);
+
+    std::string createCamera(const Scene::_createCamera_Options& options);
+    std::string createCube(const Scene::_createMesh_Options& options);
+    std::string createRectangle2D(const Scene::_createMesh_Options& options);
+    std::string createMesh(const std::string& meshName, const Scene::_createMesh_Options& options);
+    std::string createModel(const std::string& modelName, const Scene::_createModel_Options& options);
+
+    nlohmann::json serializeScene() const;
+    void deserializeScene(const nlohmann::json& j);
+
 private:
-    void initialize(const std::filesystem::path& assetsPath);
     bool shouldClose() const;
 
     GameWindow& window_;
-    RendererSettings rendererSettings_;
-    std::unique_ptr<UserInterface> userInterface_;
-    std::unique_ptr<VulkanWiringContainer> vulkanWiringContainer_;
-    std::unique_ptr<RenderSystem> renderSystem_;
-    std::unique_ptr<InputSystem> inputSystem_;
-    std::unique_ptr<PickingSystem> pickingSystem_;
-    std::unique_ptr<PhysicsSystem> physicsSystem_;
-    std::unique_ptr<Scene> scene_;
-    std::unique_ptr<AssetStorage> assetStorage_;
-    std::unique_ptr<AssetImporter> assetImporter_;
-    std::unique_ptr<AssetManager> assetManager_;
-
-    std::unique_ptr<Time> time_;
-    GameLoopFunc updateFunction_;
+    Time& time_;
+    UserInterface& userInterface_;
+    AssetManager& assetManager_;
+    InputSystem& inputSystem_;
+    PickingSystem& pickingSystem_;
+    PhysicsSystem& physicsSystem_;
+    Scene& scene_;
+    RenderSystem& renderSystem_;
+    RendererSettings& rendererSettings_;
+    VulkanGraphicsBackend& graphicsBackend_;
 };
