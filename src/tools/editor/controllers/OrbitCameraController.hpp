@@ -2,6 +2,7 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "GameEngine.hpp"
+#include "data/components/Camera.hpp"
 #include "data/components/Transform.hpp"
 
 class OrbitCameraController {
@@ -17,22 +18,15 @@ public:
     static constexpr float MIN_ORBIT_DISTANCE = 0.1f;
     static constexpr float PITCH_CLAMP_MARGIN = 0.05f;
 
-    explicit OrbitCameraController(GameEngine& engine) : engine_(engine) {}
+    explicit OrbitCameraController(GameEngine& engine) : engine_(engine) { transform_.position = computePosition(); }
 
-    glm::vec3 computePosition() const {
-        return {
-                orbitTarget_.x + orbitDistance_ * std::cos(orbitPitch_) * std::sin(orbitYaw_),
-                orbitTarget_.y + orbitDistance_ * std::sin(orbitPitch_),
-                orbitTarget_.z + orbitDistance_ * std::cos(orbitPitch_) * std::cos(orbitYaw_),
-        };
-    }
+    void setAspect(float aspect) { camera_.aspect = aspect; }
 
-    void resetFromCamera(const std::string& cameraId) {
-        glm::vec3 pos = engine_.getObject(cameraId).get<Transform>().position;
+    void resetFromTransform(const Transform& t) {
         orbitTarget_ = {0.0f, 0.0f, 0.0f};
-        orbitDistance_ = glm::length(pos);
-        orbitPitch_ = std::asin(pos.y / orbitDistance_);
-        orbitYaw_ = std::atan2(pos.x, pos.z);
+        orbitDistance_ = glm::length(t.position);
+        orbitPitch_ = std::asin(t.position.y / orbitDistance_);
+        orbitYaw_ = std::atan2(t.position.x, t.position.z);
     }
 
     void resetToDefault() {
@@ -42,7 +36,7 @@ public:
         orbitPitch_ = INITIAL_ORBIT_PITCH;
     }
 
-    void update(double deltaTime, const std::string& cameraId) {
+    void update(double deltaTime) {
         auto [mouseX, mouseY] = engine_.getMousePosition();
 
         bool rightDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT);
@@ -101,11 +95,14 @@ public:
         lastMouseX_ = mouseX;
         lastMouseY_ = mouseY;
 
-        applyTransform(cameraId);
+        applyTransform();
+        engine_.setActiveCamera(camera_, transform_);
     }
 
 private:
     GameEngine& engine_;
+    Camera camera_;
+    Transform transform_;
 
     glm::vec3 orbitTarget_{0.0f, 0.0f, 0.0f};
     float orbitDistance_ = INITIAL_ORBIT_DISTANCE;
@@ -117,12 +114,19 @@ private:
     bool wasOrbiting_ = false;
     bool wasPanning_ = false;
 
-    void applyTransform(const std::string& cameraId) {
-        auto& t = engine_.getObject(cameraId).get<Transform>();
-        t.position = computePosition();
-        glm::vec3 forward = glm::normalize(orbitTarget_ - t.position);
+    glm::vec3 computePosition() const {
+        return {
+                orbitTarget_.x + orbitDistance_ * std::cos(orbitPitch_) * std::sin(orbitYaw_),
+                orbitTarget_.y + orbitDistance_ * std::sin(orbitPitch_),
+                orbitTarget_.z + orbitDistance_ * std::cos(orbitPitch_) * std::cos(orbitYaw_),
+        };
+    }
+
+    void applyTransform() {
+        transform_.position = computePosition();
+        glm::vec3 forward = glm::normalize(orbitTarget_ - transform_.position);
         glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
         glm::vec3 up = glm::cross(right, forward);
-        t.rotation = glm::normalize(glm::quat_cast(glm::mat3(right, up, -forward)));
+        transform_.rotation = glm::normalize(glm::quat_cast(glm::mat3(right, up, -forward)));
     }
 };

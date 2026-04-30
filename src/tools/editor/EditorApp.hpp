@@ -2,7 +2,6 @@
 #include "GameEngineWiringContainer.hpp"
 #include "controllers/EditorUIController.hpp"
 #include "controllers/OrbitCameraController.hpp"
-#include "data/components/Camera.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
 #include "data/settings/RendererSettings.hpp"
@@ -22,7 +21,8 @@ public:
         window_.onWindowResize([this](int newW, int newH, int, int) {
             SceneViewport sv = computeSceneViewport(newW, newH);
             window_.setSceneViewport(sv);
-            updateCameraAspect(sv);
+            if (sv.width > 0 && sv.height > 0)
+                camera_.setAspect(static_cast<float>(sv.width) / static_cast<float>(sv.height));
         });
         setupScene();
     }
@@ -47,16 +47,10 @@ private:
         return {left, 0, right - left, h};
     }
 
-    void updateCameraAspect(const SceneViewport& sv) {
-        if (sv.width > 0 && sv.height > 0) {
-            auto& cam = engine_.getObject(controller_.cameraId).get<Camera>();
-            cam.aspect = static_cast<float>(sv.width) / static_cast<float>(sv.height);
-        }
-    }
-
     void setupScene() {
-        controller_.cameraId = engine_.createCamera({.position = camera_.computePosition()});
-        updateCameraAspect(window_.getSceneViewport());
+        SceneViewport sv = window_.getSceneViewport();
+        if (sv.width > 0 && sv.height > 0)
+            camera_.setAspect(static_cast<float>(sv.width) / static_cast<float>(sv.height));
         engine_.createCube({});
         engine_.enableWorldGrid();
     }
@@ -67,16 +61,6 @@ private:
         bool ctrlHeld = engine_.isKeyDown(GLFW_KEY_LEFT_CONTROL) || engine_.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
         if (ctrlHeld && engine_.isKeyPressed(GLFW_KEY_S) && controller_.scenePath)
             controller_.saveScene(*controller_.scenePath);
-
-        if (engine_.getObjects().find(controller_.cameraId) == engine_.getObjects().end()) {
-            controller_.cameraId = engine_.createCamera({.position = camera_.computePosition()});
-        } else if (controller_.scenePath) {
-            static std::optional<std::filesystem::path> lastSyncedPath{};
-            if (lastSyncedPath != controller_.scenePath) {
-                camera_.resetFromCamera(controller_.cameraId);
-                lastSyncedPath = controller_.scenePath;
-            }
-        }
 
         if (engine_.isKeyPressed(GLFW_KEY_G)) engine_.toggleWorldGrid();
         if (engine_.isKeyPressed(GLFW_KEY_L)) engine_.toggleLighting();
@@ -100,6 +84,6 @@ private:
 
         controller_.gizmos.setSelectedObject(controller_.selectedObjectId);
         controller_.gizmos.draw();
-        camera_.update(deltaTime, controller_.cameraId);
+        camera_.update(deltaTime);
     }
 };

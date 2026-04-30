@@ -14,7 +14,6 @@ class EditorUIController {
 public:
     std::optional<std::string> selectedObjectId{};
     std::optional<std::filesystem::path> scenePath{};
-    std::string cameraId{};
     EditorGizmosController gizmos;
 
     explicit EditorUIController(GameEngine& engine) : engine_(engine), gizmos(engine) {
