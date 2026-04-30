@@ -85,6 +85,7 @@ private:
                 engine_.drawObjectOutline(obj.get<Renderer>(), obj.get<Transform>(), *controller_.selectedObjectId);
         }
 
+        controller_.gizmos.setSelectedObject(controller_.selectedObjectId);
         controller_.gizmos.draw();
         camera_.update(deltaTime, controller_.cameraId);
     }
