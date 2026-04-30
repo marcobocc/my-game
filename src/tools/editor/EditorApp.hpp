@@ -2,6 +2,7 @@
 #include "GameEngineWiringContainer.hpp"
 #include "controllers/EditorUIController.hpp"
 #include "controllers/OrbitCameraController.hpp"
+#include "data/components/Camera.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
 #include "data/settings/RendererSettings.hpp"
@@ -18,8 +19,11 @@ public:
         camera_(engine_) {
         auto [w, h] = window_.getLogicalSize();
         window_.setSceneViewport(computeSceneViewport(w, h));
-        window_.onWindowResize(
-                [this](int newW, int newH, int, int) { window_.setSceneViewport(computeSceneViewport(newW, newH)); });
+        window_.onWindowResize([this](int newW, int newH, int, int) {
+            SceneViewport sv = computeSceneViewport(newW, newH);
+            window_.setSceneViewport(sv);
+            updateCameraAspect(sv);
+        });
         setupScene();
     }
 
@@ -43,8 +47,16 @@ private:
         return {left, 0, right - left, h};
     }
 
+    void updateCameraAspect(const SceneViewport& sv) {
+        if (sv.width > 0 && sv.height > 0) {
+            auto& cam = engine_.getObject(controller_.cameraId).get<Camera>();
+            cam.aspect = static_cast<float>(sv.width) / static_cast<float>(sv.height);
+        }
+    }
+
     void setupScene() {
         controller_.cameraId = engine_.createCamera({.position = camera_.computePosition()});
+        updateCameraAspect(window_.getSceneViewport());
         engine_.createCube({});
         engine_.enableWorldGrid();
     }
