@@ -142,6 +142,19 @@ void GameEngine::GIZMOS_DrawObjectAABB(const std::string& objectId, const glm::v
     }
 }
 
+void GameEngine::GIZMOS_DrawObjectTransform(const std::string& objectId, float axisLength) const {
+    GameObject& object = scene_.getObject(objectId);
+    if (object.has<Transform>() && object.has<Renderer>()) {
+        auto transform = object.get<Transform>();
+        glm::vec3 position = transform.position;
+        glm::vec3 right = transform.getRight() * axisLength;
+        glm::vec3 up = transform.getUp() * axisLength;
+        glm::vec3 forward = transform.getForward() * axisLength;
+        GIZMOS_DrawLine(position, position + right, {1.0f, 0.0f, 0.0f});
+        GIZMOS_DrawLine(position, position + up, {0.0f, 1.0f, 0.0f});
+        GIZMOS_DrawLine(position, position + forward, {0.0f, 0.0f, 1.0f});
+    }
+}
 
 // --------------------------------------------------------
 // Scene API

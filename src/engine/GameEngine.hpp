@@ -93,6 +93,7 @@ public:
     void GIZMOS_DrawLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) const;
     void GIZMOS_DrawAABB(const AABB& aabb, const glm::vec3& color) const;
     void GIZMOS_DrawObjectAABB(const std::string& objectId, const glm::vec3& color) const;
+    void GIZMOS_DrawObjectTransform(const std::string& objectId, float axisLength) const;
 
     template<typename T, typename... Args>
     T* emplaceWidget(Args&&... args) {
