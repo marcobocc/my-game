@@ -2,8 +2,8 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
-#include "core/GameEngine.hpp"
-#include "core/ui/ImguiWidget.hpp"
+#include "GameEngine.hpp"
+#include "systems/ui/ImguiWidget.hpp"
 
 class HierarchyPanel : public ImguiWidget {
 public:

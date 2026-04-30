@@ -4,9 +4,9 @@
 #include <optional>
 #include <string>
 #include "EditorMenuBar.hpp"
+#include "GameEngine.hpp"
 #include "HierarchyPanel.hpp"
 #include "InspectorPanel.hpp"
-#include "core/GameEngine.hpp"
 #include "utils/JsonUtils.hpp"
 
 class EditorController {

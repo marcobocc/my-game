@@ -1,10 +1,10 @@
 #pragma once
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include "GameEngineWiringContainer.hpp"
 #include "InspectorSidePanel.hpp"
-#include "core/GameEngineWiringContainer.hpp"
-#include "core/objects/components/Transform.hpp"
-#include "rendering/RendererSettings.hpp"
+#include "data/components/Transform.hpp"
+#include "data/settings/RendererSettings.hpp"
 
 class ObjectViewerApp {
 public:

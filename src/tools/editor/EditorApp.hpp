@@ -2,10 +2,10 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "core/GameEngineWiringContainer.hpp"
-#include "core/objects/components/Renderer.hpp"
-#include "core/objects/components/Transform.hpp"
-#include "rendering/RendererSettings.hpp"
+#include "GameEngineWiringContainer.hpp"
+#include "data/components/Renderer.hpp"
+#include "data/components/Transform.hpp"
+#include "data/settings/RendererSettings.hpp"
 #include "ui/EditorController.hpp"
 #include "ui/HierarchyPanel.hpp"
 #include "ui/InspectorPanel.hpp"

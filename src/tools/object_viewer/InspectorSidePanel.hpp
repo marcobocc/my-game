@@ -2,7 +2,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include <string>
-#include "assets/types/Material.hpp"
+#include "../../engine/assets/Material.hpp"
 #include "core/GameEngine.hpp"
 #include "core/objects/components/Renderer.hpp"
 #include "core/objects/components/Transform.hpp"

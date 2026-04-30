@@ -3,7 +3,7 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
-#include "core/ui/ImguiWidget.hpp"
+#include "systems/ui/ImguiWidget.hpp"
 
 class EditorMenuBar : public ImguiWidget {
 public:

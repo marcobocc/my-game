@@ -3,12 +3,12 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
-#include "assets/types/Material.hpp"
-#include "core/GameEngine.hpp"
-#include "core/objects/components/BoxCollider.hpp"
-#include "core/objects/components/Renderer.hpp"
-#include "core/objects/components/Transform.hpp"
-#include "core/ui/ImguiWidget.hpp"
+#include "GameEngine.hpp"
+#include "data/assets/Material.hpp"
+#include "data/components/BoxCollider.hpp"
+#include "data/components/Renderer.hpp"
+#include "data/components/Transform.hpp"
+#include "systems/ui/ImguiWidget.hpp"
 
 class InspectorPanel : public ImguiWidget {
 public:
