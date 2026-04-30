@@ -2,11 +2,11 @@
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include <string>
-#include "../../engine/assets/Material.hpp"
-#include "core/GameEngine.hpp"
-#include "core/objects/components/Renderer.hpp"
-#include "core/objects/components/Transform.hpp"
-#include "core/ui/ImguiWidget.hpp"
+#include "GameEngine.hpp"
+#include "data/assets/Material.hpp"
+#include "data/components/Renderer.hpp"
+#include "data/components/Transform.hpp"
+#include "systems/ui/ImguiWidget.hpp"
 
 class InspectorSidePanel : public ImguiWidget {
 public:
@@ -38,7 +38,6 @@ private:
 
         ImGui::Begin("SidebarDock", nullptr, flags);
 
-        float objectsPanelHeight = 120.0f;
         if (ImGui::BeginChild("InspectorPanel", ImVec2(0, 0), true)) {
             ImGui::Spacing();
             ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.2f, 1.0f), "Inspector");

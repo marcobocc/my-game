@@ -11,9 +11,9 @@ public:
     static constexpr float SCENE_WIDTH_RATIO = 0.70f;
     static constexpr float MOUSE_SENSITIVITY = 0.005f;
 
-    ObjectViewerApp(unsigned int windowWidth = 0,
-                    unsigned int windowHeight = 0,
-                    const std::filesystem::path& assetsPath) :
+    ObjectViewerApp(const std::filesystem::path& assetsPath,
+                    unsigned int windowWidth = 0,
+                    unsigned int windowHeight = 0) :
         window_("Object Viewer", windowWidth, windowHeight),
         wiringContainer_(window_, assetsPath),
         engine_(wiringContainer_.gameEngine()) {
@@ -45,8 +45,12 @@ private:
     double lastMouseY_ = 0.0;
     bool wasDragging_ = false;
 
+    Camera editorCamera;
+    Transform editorCameraTransform{
+            .position = glm::vec3(0.0f, 0.0f, 5.0f), .rotation = glm::quat(glm::vec3(0.0f)), .scale = glm::vec3(1.0f)};
+
     void setupScene() {
-        engine_.createCamera({.position = glm::vec3(0.0f, 0.0f, 4.0f)});
+        engine_.setActiveCamera(editorCamera, editorCameraTransform);
         objectId_ = engine_.createCube({});
     }
 
