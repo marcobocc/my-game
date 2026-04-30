@@ -191,7 +191,7 @@ private:
         }
 
         for (const auto& objectId: controller_.aabbGizmoEnabled)
-            engine_.drawObjectAABB(objectId, {0.0f, 1.0f, 0.0f});
+            engine_.GIZMOS_DrawObjectAABB(objectId, {0.0f, 1.0f, 0.0f});
 
         applyCameraTransform();
     }

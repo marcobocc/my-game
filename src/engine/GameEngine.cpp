@@ -91,11 +91,11 @@ void GameEngine::drawObjectOutline(const Renderer& renderer, const Transform& tr
     graphicsBackend_.outline(renderer, transform, std::move(objectId));
 }
 
-void GameEngine::drawGizmoLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) const {
+void GameEngine::GIZMOS_DrawLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) const {
     graphicsBackend_.submitGizmoLine(from, to, color);
 }
 
-void GameEngine::drawGizmoAABB(const AABB& aabb, const glm::vec3& color) const {
+void GameEngine::GIZMOS_DrawAABB(const AABB& aabb, const glm::vec3& color) const {
     const glm::vec3 min = aabb.min;
     const glm::vec3 max = aabb.max;
 
@@ -113,32 +113,32 @@ void GameEngine::drawGizmoAABB(const AABB& aabb, const glm::vec3& color) const {
 
     // gizmo is jagged and not properly showing the lines
     // Bottom face (y = min.y)
-    drawGizmoLine(v000, v010, color);
-    drawGizmoLine(v010, v011, color);
-    drawGizmoLine(v011, v001, color);
-    drawGizmoLine(v001, v000, color);
+    GIZMOS_DrawLine(v000, v010, color);
+    GIZMOS_DrawLine(v010, v011, color);
+    GIZMOS_DrawLine(v011, v001, color);
+    GIZMOS_DrawLine(v001, v000, color);
 
     // Top face (y = max.y)
-    drawGizmoLine(v100, v110, color);
-    drawGizmoLine(v110, v111, color);
-    drawGizmoLine(v111, v101, color);
-    drawGizmoLine(v101, v100, color);
+    GIZMOS_DrawLine(v100, v110, color);
+    GIZMOS_DrawLine(v110, v111, color);
+    GIZMOS_DrawLine(v111, v101, color);
+    GIZMOS_DrawLine(v101, v100, color);
 
     // Vertical edges
-    drawGizmoLine(v000, v100, color);
-    drawGizmoLine(v001, v101, color);
-    drawGizmoLine(v010, v110, color);
-    drawGizmoLine(v011, v111, color);
+    GIZMOS_DrawLine(v000, v100, color);
+    GIZMOS_DrawLine(v001, v101, color);
+    GIZMOS_DrawLine(v010, v110, color);
+    GIZMOS_DrawLine(v011, v111, color);
 }
 
-void GameEngine::drawObjectAABB(const std::string& objectId, const glm::vec3& color) const {
+void GameEngine::GIZMOS_DrawObjectAABB(const std::string& objectId, const glm::vec3& color) const {
     GameObject& object = scene_.getObject(objectId);
     if (object.has<Transform>() && object.has<Renderer>()) {
         auto transform = object.get<Transform>();
         auto renderer = object.get<Renderer>();
         auto mesh = assetManager_.get<Mesh>(renderer.meshName);
         auto aabb = mesh->getAABB().applyTransform(transform.getModelMatrix());
-        drawGizmoAABB(aabb, color);
+        GIZMOS_DrawAABB(aabb, color);
     }
 }
 

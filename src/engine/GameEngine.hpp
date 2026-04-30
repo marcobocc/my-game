@@ -89,9 +89,10 @@ public:
     void toggleLighting();
 
     void drawObjectOutline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
-    void drawGizmoLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) const;
-    void drawGizmoAABB(const AABB& aabb, const glm::vec3& color) const;
-    void drawObjectAABB(const std::string& objectId, const glm::vec3& color) const;
+
+    void GIZMOS_DrawLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) const;
+    void GIZMOS_DrawAABB(const AABB& aabb, const glm::vec3& color) const;
+    void GIZMOS_DrawObjectAABB(const std::string& objectId, const glm::vec3& color) const;
 
     template<typename T, typename... Args>
     T* emplaceWidget(Args&&... args) {
