@@ -190,6 +190,9 @@ private:
                 engine_.drawObjectOutline(obj.get<Renderer>(), obj.get<Transform>(), *controller_.selectedObjectId);
         }
 
+        for (const auto& objectId: controller_.aabbGizmoEnabled)
+            engine_.drawObjectAABB(objectId, {0.0f, 1.0f, 0.0f});
+
         applyCameraTransform();
     }
 };

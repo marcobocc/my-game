@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include "GameEngine.hpp"
 #include "data/assets/Material.hpp"
 #include "data/components/BoxCollider.hpp"
@@ -12,9 +13,12 @@
 
 class InspectorPanel : public ImguiWidget {
 public:
-    InspectorPanel(const std::optional<std::string>* selectedObjectId, GameEngine& engine) :
+    InspectorPanel(const std::optional<std::string>* selectedObjectId,
+                   GameEngine& engine,
+                   std::unordered_set<std::string>& aabbGizmoEnabled) :
         selectedObjectId_(selectedObjectId),
-        engine_(engine) {}
+        engine_(engine),
+        aabbGizmoEnabled_(aabbGizmoEnabled) {}
 
     void draw() const override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -49,6 +53,7 @@ public:
 private:
     const std::optional<std::string>* selectedObjectId_;
     GameEngine& engine_;
+    std::unordered_set<std::string>& aabbGizmoEnabled_;
 
     static float childHeight(int rows) {
         return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y * 2.0f;
@@ -57,7 +62,7 @@ private:
     void drawObject(GameObject& obj) const {
         if (obj.has<Transform>()) drawTransform(obj.get<Transform>());
         ImGui::Spacing();
-        if (obj.has<Renderer>()) drawRenderer(obj.get<Renderer>());
+        if (obj.has<Renderer>()) drawRenderer(obj.get<Renderer>(), obj.getName());
         ImGui::Spacing();
         if (obj.has<BoxCollider>()) drawBoxCollider(obj.get<BoxCollider>());
     }
@@ -76,8 +81,8 @@ private:
         ImGui::EndChild();
     }
 
-    void drawRenderer(Renderer& r) const {
-        if (!ImGui::BeginChild("Renderer", {0, childHeight(5)}, true)) {
+    void drawRenderer(Renderer& r, const std::string& objectId) const {
+        if (!ImGui::BeginChild("Renderer", {0, childHeight(6)}, true)) {
             ImGui::EndChild();
             return;
         }
@@ -93,6 +98,13 @@ private:
             glm::vec4 color = r.baseColorOverride.value_or(mat->getBaseColor());
             float col[4] = {color.r, color.g, color.b, color.a};
             if (ImGui::ColorEdit4("Base color", col)) r.baseColorOverride = glm::vec4(col[0], col[1], col[2], col[3]);
+        }
+        bool showAABB = aabbGizmoEnabled_.contains(objectId);
+        if (ImGui::Checkbox("Show Mesh Bounding Box", &showAABB)) {
+            if (showAABB)
+                aabbGizmoEnabled_.insert(objectId);
+            else
+                aabbGizmoEnabled_.erase(objectId);
         }
         ImGui::EndChild();
     }

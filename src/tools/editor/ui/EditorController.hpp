@@ -3,6 +3,7 @@
 #include <nfd.hpp>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include "EditorMenuBar.hpp"
 #include "GameEngine.hpp"
 #include "HierarchyPanel.hpp"
@@ -14,6 +15,7 @@ public:
     std::optional<std::string> selectedObjectId{};
     std::optional<std::filesystem::path> scenePath{};
     std::string cameraId{};
+    std::unordered_set<std::string> aabbGizmoEnabled{};
 
     explicit EditorController(GameEngine& engine) : engine_(engine) {
         menuBar_ = engine_.emplaceWidget<EditorMenuBar>();
@@ -21,7 +23,7 @@ public:
         menuBar_->onSaveAs = [this] { openSaveDialog(); };
         menuBar_->onOpen = [this] { openLoadDialog(); };
         engine_.emplaceWidget<HierarchyPanel>(&selectedObjectId, engine_);
-        engine_.emplaceWidget<InspectorPanel>(&selectedObjectId, engine_);
+        engine_.emplaceWidget<InspectorPanel>(&selectedObjectId, engine_, aabbGizmoEnabled);
     }
 
     void saveScene(const std::filesystem::path& path) {
