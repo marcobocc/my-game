@@ -18,9 +18,16 @@ public:
     GameWindow(GameWindow&&) = delete;
     GameWindow& operator=(GameWindow&&) = delete;
 
-    GameWindow(size_t width, size_t height, const char* title) {
+    explicit GameWindow(const char* title, size_t width = 0, size_t height = 0) {
         if (!glfwInit()) throw std::runtime_error("Failed to initialize window");
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+        if (width == 0 || height == 0) {
+            const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+            width = mode->width;
+            height = mode->height;
+        }
+
         window_ = glfwCreateWindow(static_cast<int>(width), static_cast<int>(height), title, nullptr, nullptr);
         if (!window_) {
             glfwTerminate();

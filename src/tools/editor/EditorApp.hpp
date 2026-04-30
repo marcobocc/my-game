@@ -10,8 +10,8 @@
 
 class EditorApp {
 public:
-    EditorApp(unsigned int windowWidth, unsigned int windowHeight, const std::filesystem::path& assetsPath) :
-        window_(windowWidth, windowHeight, "Editor"),
+    EditorApp(const std::filesystem::path& assetsPath, unsigned int windowWidth = 0, unsigned int windowHeight = 0) :
+        window_("Editor", windowWidth, windowHeight),
         wiringContainer_(window_, assetsPath),
         engine_(wiringContainer_.gameEngine()),
         controller_(engine_),

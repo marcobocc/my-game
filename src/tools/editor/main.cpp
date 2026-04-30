@@ -21,9 +21,7 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("Assets path not provided. Use --assets_path <path> to specify the path to assets.");
     }
 
-    constexpr unsigned int width = 1280;
-    constexpr unsigned int height = 720;
-    EditorApp app(width, height, assetsPath);
+    EditorApp app(assetsPath);
     app.run();
     return 0;
 }

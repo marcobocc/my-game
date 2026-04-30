@@ -11,8 +11,10 @@ public:
     static constexpr float SCENE_WIDTH_RATIO = 0.70f;
     static constexpr float MOUSE_SENSITIVITY = 0.005f;
 
-    ObjectViewerApp(unsigned int windowWidth, unsigned int windowHeight, const std::filesystem::path& assetsPath) :
-        window_(windowWidth, windowHeight, "Object Viewer"),
+    ObjectViewerApp(unsigned int windowWidth = 0,
+                    unsigned int windowHeight = 0,
+                    const std::filesystem::path& assetsPath) :
+        window_("Object Viewer", windowWidth, windowHeight),
         wiringContainer_(window_, assetsPath),
         engine_(wiringContainer_.gameEngine()) {
         auto [w, h] = window_.getLogicalSize();
