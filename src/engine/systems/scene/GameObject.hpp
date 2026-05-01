@@ -13,6 +13,11 @@ public:
     }
 
     template<typename T>
+    void remove() {
+        componentStorage_.destroyComponent<T>(name);
+    }
+
+    template<typename T>
     T& get() const {
         return componentStorage_.getComponent<T>(name);
     }

@@ -5,6 +5,7 @@
 #include <string>
 #include "GameEngine.hpp"
 #include "UndoHistoryController.hpp"
+#include "systems/scene/GameObject.hpp"
 
 class SceneMutationsController {
 public:
@@ -27,6 +28,33 @@ public:
         T* ptr = &target;
         undoHistory_.push([ptr, oldVal] { *ptr = oldVal; }, [ptr, newVal] { *ptr = newVal; });
         pendingOldValue_.reset();
+    }
+
+    template<typename T>
+    void addComponent(GameObject& obj) {
+        std::string name = obj.getName();
+        obj.add<T>();
+        T val = obj.get<T>();
+        undoHistory_.push([this, name] { engine_.getObject(name).remove<T>(); },
+                          [this, name, val] {
+                              auto& o = engine_.getObject(name);
+                              o.add<T>();
+                              o.get<T>() = val;
+                          });
+    }
+
+    template<typename T>
+    void removeComponent(GameObject& obj) {
+        std::string name = obj.getName();
+        T val = obj.get<T>();
+        obj.remove<T>();
+        undoHistory_.push(
+                [this, name, val] {
+                    auto& o = engine_.getObject(name);
+                    o.add<T>();
+                    o.get<T>() = val;
+                },
+                [this, name] { engine_.getObject(name).remove<T>(); });
     }
 
     std::string createCube(const Scene::_createMesh_Options& options) {
