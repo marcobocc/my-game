@@ -1,6 +1,8 @@
 #include "GameEngine.hpp"
 #include "data/assets/Mesh.hpp"
 #include "data/components/Camera.hpp"
+#include "data/components/Renderer.hpp"
+#include "data/components/Transform.hpp"
 #include "data/settings/RendererSettings.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/core/TimeManager.hpp"
@@ -9,6 +11,7 @@
 #include "systems/physics/PhysicsSystem.hpp"
 #include "systems/rendering/RenderSystem.hpp"
 #include "systems/rendering/vulkan/VulkanGraphicsBackend.hpp"
+#include "systems/rendering/vulkan/utils/structs.hpp"
 #include "systems/scene/SceneSerializer.hpp"
 #include "utils/math/AABB.hpp"
 #include "utils/math/BVH.hpp"
@@ -184,6 +187,24 @@ void GameEngine::GIZMOS_DrawBVH(const glm::vec3& color) const {
                 GIZMOS_DrawAABB(bvh.items[i].aabb, color);
         }
     }
+}
+
+RenderTargetHandle GameEngine::createRenderTarget(uint32_t width, uint32_t height) {
+    return graphicsBackend_.createRenderTarget(width, height);
+}
+
+VkDescriptorSet GameEngine::getRenderTargetImGuiId(RenderTargetHandle handle) const {
+    return graphicsBackend_.getRenderTargetImGuiId(handle);
+}
+
+void GameEngine::renderToTarget(RenderTargetHandle handle, const Camera& camera, const Transform& cameraTransform) {
+    std::vector<DrawCall> drawQueue;
+    auto drawables = scene_.getObjectsWith<Renderer, Transform>();
+    for (auto& [entity, renderer, transform]: drawables) {
+        if (!renderer.enabled) continue;
+        drawQueue.push_back({renderer, transform, entity});
+    }
+    graphicsBackend_.renderToTarget(handle, camera, cameraTransform, drawQueue);
 }
 
 // --------------------------------------------------------

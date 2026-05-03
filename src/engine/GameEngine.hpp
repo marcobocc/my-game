@@ -9,6 +9,7 @@
 #include <vector>
 #include "systems/assets/AssetManager.hpp"
 #include "systems/core/GameWindow.hpp"
+#include "systems/rendering/vulkan/RenderTarget.hpp"
 #include "systems/scene/GameObject.hpp"
 #include "systems/scene/Scene.hpp"
 #include "systems/ui/UserInterface.hpp"
@@ -92,6 +93,11 @@ public:
     void toggleLighting();
 
     void drawObjectOutline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
+
+    RenderTargetHandle createRenderTarget(uint32_t width, uint32_t height);
+    void destroyRenderTarget(RenderTargetHandle handle);
+    VkDescriptorSet getRenderTargetImGuiId(RenderTargetHandle handle) const;
+    void renderToTarget(RenderTargetHandle handle, const Camera& camera, const Transform& cameraTransform);
 
     void GIZMOS_DrawLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) const;
     void GIZMOS_DrawAABB(const AABB& aabb, const glm::vec3& color) const;

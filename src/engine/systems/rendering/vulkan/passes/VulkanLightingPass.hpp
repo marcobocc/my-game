@@ -97,6 +97,21 @@ public:
         vkCmdEndRendering(cmd);
     }
 
+    uint32_t allocateExtraDescriptorSet() {
+        if (!pipeline_) return UINT32_MAX;
+        VkDescriptorSetLayout samplerLayout = pipeline_->descriptorSetLayouts[0];
+        VkDescriptorSet ds = VK_NULL_HANDLE;
+        VkDescriptorSetAllocateInfo dsAlloc{};
+        dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        dsAlloc.descriptorPool = context_.descriptorPool;
+        dsAlloc.descriptorSetCount = 1;
+        dsAlloc.pSetLayouts = &samplerLayout;
+        vkAllocateDescriptorSets(context_.device, &dsAlloc, &ds);
+        uint32_t index = static_cast<uint32_t>(descriptorSets_.size());
+        descriptorSets_.push_back(ds);
+        return index;
+    }
+
 private:
     void updateDescriptor(uint32_t imageIndex,
                           VkImageView albedoView,

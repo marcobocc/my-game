@@ -1,7 +1,9 @@
 #pragma once
 #include <glm/vec3.hpp>
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "RenderTarget.hpp"
 #include "data/components/Camera.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
@@ -44,6 +46,15 @@ public:
     void submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const;
     bool renderFrame(const Camera& camera, const Transform& cameraTransform);
 
+    RenderTargetHandle createRenderTarget(uint32_t width, uint32_t height);
+    void destroyRenderTarget(RenderTargetHandle handle);
+    VkDescriptorSet getRenderTargetImGuiId(RenderTargetHandle handle) const;
+    void renderToTarget(RenderTargetHandle handle,
+                        const Camera& camera,
+                        const Transform& cameraTransform,
+                        const std::vector<DrawCall>& drawQueue);
+    void renderToTarget(RenderTargetHandle handle, const Camera& camera, const Transform& cameraTransform);
+
 private:
     void setupGraph();
     bool acquireImage(uint32_t& imageIndex);
@@ -65,7 +76,6 @@ private:
     void advanceFrame();
     FrameSync& currentFrame();
 
-    // Per-frame state captured before graph execution, read by pass lambdas.
     const Camera* currentCamera_ = nullptr;
     const Transform* currentCameraTransform_ = nullptr;
     uint32_t currentImageIndex_ = 0;
@@ -94,4 +104,24 @@ private:
     ResourceHandle gbufferDepthHandle_;
     ResourceHandle objectIdColorHandle_;
     ResourceHandle objectIdDepthHandle_;
+
+    // --- Render targets ---
+    std::vector<std::unique_ptr<RenderTargetData>> renderTargets_;
+
+    struct PendingRenderTargetJob {
+        RenderTargetHandle handle;
+        Camera camera;
+        Transform cameraTransform;
+        std::vector<DrawCall> drawQueue;
+    };
+    std::vector<PendingRenderTargetJob> pendingRenderTargetJobs_;
+
+    void allocateRenderTargetImages(RenderTargetData& rt);
+    void freeRenderTargetImages(RenderTargetData& rt);
+    void executePendingRenderTargetJobs(VkCommandBuffer cmd);
+    void renderCameraToTarget(VkCommandBuffer cmd,
+                              RenderTargetData& rt,
+                              const Camera& camera,
+                              const Transform& cameraTransform,
+                              const std::vector<DrawCall>& drawQueue);
 };

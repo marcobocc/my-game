@@ -25,13 +25,25 @@ public:
         resourcesManager_(resourcesManager),
         assetManager_(assetManager),
         window_(window) {
-        createPerFrameUBO();
+        createUBOLayout();
+        mainContext_ = createRenderContext();
     }
 
     ~VulkanGeometryPass() {
-        destroyBuffer(context_.device, perFrameUBO_.buffer);
+        destroyRenderContext(mainContext_);
         vkDestroyDescriptorSetLayout(context_.device, perFrameUBOLayout_, nullptr);
     }
+
+    GeometryRenderContext createRenderContext() const {
+        constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * 2;
+        GeometryRenderContext ctx;
+        ctx.buffer = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
+        ctx.descriptorSet = createUniformBufferDescriptorSet(
+                context_.device, context_.descriptorPool, perFrameUBOLayout_, ctx.buffer.buffer, uboSize);
+        return ctx;
+    }
+
+    void destroyRenderContext(GeometryRenderContext& ctx) const { destroyBuffer(context_.device, ctx.buffer); }
 
     void record(VkCommandBuffer cmd,
                 VkImageView albedoView,
@@ -40,16 +52,39 @@ public:
                 VkExtent2D extent,
                 const Camera& camera,
                 const Transform& cameraTransform,
-                const std::vector<DrawCall>& drawQueue) {
-        beginRendering(cmd, albedoView, normalView, depthView, extent);
-        updatePerFrameUBO(camera, cameraTransform);
+                const std::vector<DrawCall>& drawQueue,
+                const VkRect2D* viewportOverride = nullptr) {
+        record(cmd,
+               mainContext_,
+               albedoView,
+               normalView,
+               depthView,
+               extent,
+               camera,
+               cameraTransform,
+               drawQueue,
+               viewportOverride);
+    }
+
+    void record(VkCommandBuffer cmd,
+                GeometryRenderContext& ctx,
+                VkImageView albedoView,
+                VkImageView normalView,
+                VkImageView depthView,
+                VkExtent2D extent,
+                const Camera& camera,
+                const Transform& cameraTransform,
+                const std::vector<DrawCall>& drawQueue,
+                const VkRect2D* viewportOverride = nullptr) {
+        beginRendering(cmd, albedoView, normalView, depthView, extent, viewportOverride);
+        updatePerFrameUBO(ctx, camera, cameraTransform);
         for (const auto& drawCall: drawQueue)
-            renderEntity(cmd, drawCall);
+            renderEntity(cmd, ctx, drawCall);
         vkCmdEndRendering(cmd);
     }
 
 private:
-    void createPerFrameUBO() {
+    void createUBOLayout() {
         VkDescriptorSetLayoutBinding binding{};
         binding.binding = 0;
         binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -61,26 +96,21 @@ private:
         layoutInfo.bindingCount = 1;
         layoutInfo.pBindings = &binding;
         vkCreateDescriptorSetLayout(context_.device, &layoutInfo, nullptr, &perFrameUBOLayout_);
-
-        constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * 2;
-        perFrameUBO_.buffer = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
-        perFrameUBO_.descriptorSet = createUniformBufferDescriptorSet(
-                context_.device, context_.descriptorPool, perFrameUBOLayout_, perFrameUBO_.buffer.buffer, uboSize);
     }
 
-    void updatePerFrameUBO(const Camera& camera, const Transform& cameraTransform) const {
+    void updatePerFrameUBO(GeometryRenderContext& ctx, const Camera& camera, const Transform& cameraTransform) const {
         glm::mat4 data[2] = {cameraTransform.getViewMatrix(), camera.getProjectionMatrix()};
-        updateBuffer(context_.device, perFrameUBO_.buffer, data, sizeof(data));
+        updateBuffer(context_.device, ctx.buffer, data, sizeof(data));
     }
 
-    void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall) const {
+    void renderEntity(VkCommandBuffer cmd, const GeometryRenderContext& ctx, const DrawCall& drawCall) const {
         const Material* material = assetManager_.get<Material>(drawCall.renderer.materialName);
         static constexpr std::array<VkFormat, 2> colorFormats{ALBEDO_FORMAT, NORMAL_FORMAT};
         auto [pipeline, texturesDescriptorSet] = resourcesManager_.getMaterial(*material, colorFormats, DEPTH_FORMAT);
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
         vkCmdBindDescriptorSets(
-                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &perFrameUBO_.descriptorSet, 0, nullptr);
+                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &ctx.descriptorSet, 0, nullptr);
         vkCmdBindDescriptorSets(
                 cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &texturesDescriptorSet, 0, nullptr);
 
@@ -112,13 +142,22 @@ private:
                         VkImageView albedoView,
                         VkImageView normalView,
                         VkImageView depthView,
-                        VkExtent2D extent) const {
-        const SceneViewport sv = window_.getSceneViewport();
-        const auto [scaleX, scaleY] = window_.getContentScale();
-        const int fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
-        const int fbY = static_cast<int>(static_cast<float>(sv.y) * scaleY);
-        const int fbW = static_cast<int>(static_cast<float>(sv.width) * scaleX);
-        const int fbH = static_cast<int>(static_cast<float>(sv.height) * scaleY);
+                        VkExtent2D extent,
+                        const VkRect2D* viewportOverride = nullptr) const {
+        int fbX = 0, fbY = 0, fbW = 0, fbH = 0;
+        if (viewportOverride) {
+            fbX = viewportOverride->offset.x;
+            fbY = viewportOverride->offset.y;
+            fbW = static_cast<int>(viewportOverride->extent.width);
+            fbH = static_cast<int>(viewportOverride->extent.height);
+        } else {
+            const SceneViewport sv = window_.getSceneViewport();
+            const auto [scaleX, scaleY] = window_.getContentScale();
+            fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
+            fbY = static_cast<int>(static_cast<float>(sv.y) * scaleY);
+            fbW = static_cast<int>(static_cast<float>(sv.width) * scaleX);
+            fbH = static_cast<int>(static_cast<float>(sv.height) * scaleY);
+        }
 
         VkClearValue clearAlbedo{};
         clearAlbedo.color = {{0.0f, 0.0f, 0.0f, 0.0f}};
@@ -176,6 +215,6 @@ private:
     AssetManager& assetManager_;
     GameWindow& window_;
 
-    VulkanPerFrameUBO perFrameUBO_{};
+    GeometryRenderContext mainContext_{};
     VkDescriptorSetLayout perFrameUBOLayout_ = VK_NULL_HANDLE;
 };

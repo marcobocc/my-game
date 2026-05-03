@@ -1,6 +1,10 @@
 #pragma once
+#include <cstdint>
 #include <glm/vec3.hpp>
 #include <string>
+#include <vector>
+#include <vulkan/vulkan.h>
+#include "RenderTarget.hpp"
 
 struct VulkanContext;
 class VulkanRenderingOrchestrator;
@@ -8,6 +12,7 @@ class IPickingBackend;
 struct Renderer;
 struct Transform;
 struct Camera;
+struct DrawCall;
 
 /*
     VulkanGraphicsBackend (Facade)
@@ -55,6 +60,15 @@ public:
     void submitGizmoLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) const;
     void renderFrame(const Camera& camera, const Transform& cameraTransform) const;
     IPickingBackend& pickingBackend() const;
+
+    RenderTargetHandle createRenderTarget(uint32_t width, uint32_t height) const;
+    void destroyRenderTarget(RenderTargetHandle handle) const;
+    VkDescriptorSet getRenderTargetImGuiId(RenderTargetHandle handle) const;
+    void renderToTarget(RenderTargetHandle handle,
+                        const Camera& camera,
+                        const Transform& cameraTransform,
+                        const std::vector<DrawCall>& drawQueue) const;
+    void renderToTarget(RenderTargetHandle handle, const Camera& camera, const Transform& cameraTransform) const;
 
 private:
     VulkanContext& context_;

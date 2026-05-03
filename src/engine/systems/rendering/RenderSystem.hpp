@@ -22,6 +22,12 @@ public:
             if (!renderer.enabled) continue;
             backend_.draw(renderer, transform, entity);
         }
+
+        auto cameras = scene.getObjectsWith<Camera, Transform>();
+        for (auto& [entity, camera, transform]: cameras) {
+            if (camera.renderTarget.isValid()) backend_.renderToTarget(camera.renderTarget, camera, transform);
+        }
+
         backend_.renderFrame(getActiveCamera(), getActiveCameraTransform());
     }
 

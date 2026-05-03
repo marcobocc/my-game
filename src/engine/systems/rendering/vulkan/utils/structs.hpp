@@ -90,6 +90,11 @@ struct VulkanPerFrameUBO {
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 };
 
+struct GeometryRenderContext {
+    VulkanBuffer buffer;
+    VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+};
+
 // ------------------------------------------------------------------------
 // Draw call
 // ------------------------------------------------------------------------

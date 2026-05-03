@@ -1,5 +1,7 @@
 #include "VulkanRenderingOrchestrator.hpp"
 #include <glm/vec3.hpp>
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
 #include <volk.h>
 #include "../../core/GameWindow.hpp"
 #include "VulkanCommandManager.hpp"
@@ -15,6 +17,7 @@
 #include "rendergraph/RenderGraph.hpp"
 #include "rendergraph/RenderPassNode.hpp"
 #include "utils/error_handling.hpp"
+#include "utils/memory.hpp"
 
 VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
                                                          VulkanContext& context,
@@ -55,6 +58,10 @@ VulkanRenderingOrchestrator::VulkanRenderingOrchestrator(GameWindow& window,
 
 VulkanRenderingOrchestrator::~VulkanRenderingOrchestrator() {
     vkDeviceWaitIdle(context_.device);
+    for (auto& rt: renderTargets_) {
+        if (rt) freeRenderTargetImages(*rt);
+    }
+    renderTargets_.clear();
     destroyFrameSync();
 }
 
@@ -409,9 +416,12 @@ void VulkanRenderingOrchestrator::recordCommands(VkCommandBuffer cmd,
                                                  uint32_t imageIndex,
                                                  const Camera& camera,
                                                  const Transform& cameraTransform) {
+    currentImageIndex_ = imageIndex;
+
+    executePendingRenderTargetJobs(cmd);
+
     currentCamera_ = &camera;
     currentCameraTransform_ = &cameraTransform;
-    currentImageIndex_ = imageIndex;
 
     const VulkanSwapchain& sc = swapchainManager_.swapchain();
     graph_.setImportedImage(swapchainColorHandle_, sc.swapchainImages[imageIndex], sc.swapchainImageViews[imageIndex]);
@@ -431,4 +441,321 @@ void VulkanRenderingOrchestrator::submit(VkCommandBuffer cmd, uint32_t imageInde
     const auto& frame = currentFrame();
     commandManager_.submitCommandBuffer(cmd, frame.imageAvailable, frame.renderFinished, frame.inFlightFence);
     swapchainManager_.present(context_.graphicsQueue, frame.renderFinished, imageIndex);
+}
+
+// ------------------- Render targets -------------------
+
+RenderTargetHandle VulkanRenderingOrchestrator::createRenderTarget(uint32_t width, uint32_t height) {
+    RenderTargetHandle handle{static_cast<uint32_t>(renderTargets_.size())};
+    auto rt = std::make_unique<RenderTargetData>();
+    rt->width = width;
+    rt->height = height;
+    allocateRenderTargetImages(*rt);
+    rt->imguiDescriptorSet =
+            ImGui_ImplVulkan_AddTexture(rt->colorSampler, rt->colorView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    renderTargets_.push_back(std::move(rt));
+    return handle;
+}
+
+void VulkanRenderingOrchestrator::destroyRenderTarget(RenderTargetHandle handle) {
+    if (!handle.isValid() || handle.index >= renderTargets_.size()) return;
+    auto& rt = renderTargets_[handle.index];
+    if (!rt) return;
+    vkDeviceWaitIdle(context_.device);
+    if (rt->imguiDescriptorSet != VK_NULL_HANDLE) {
+        ImGui_ImplVulkan_RemoveTexture(rt->imguiDescriptorSet);
+        rt->imguiDescriptorSet = VK_NULL_HANDLE;
+    }
+    freeRenderTargetImages(*rt);
+    rt.reset();
+}
+
+VkDescriptorSet VulkanRenderingOrchestrator::getRenderTargetImGuiId(RenderTargetHandle handle) const {
+    if (!handle.isValid() || handle.index >= renderTargets_.size()) return VK_NULL_HANDLE;
+    const auto& rt = renderTargets_[handle.index];
+    if (!rt) return VK_NULL_HANDLE;
+    return rt->imguiDescriptorSet;
+}
+
+void VulkanRenderingOrchestrator::renderToTarget(RenderTargetHandle handle,
+                                                 const Camera& camera,
+                                                 const Transform& cameraTransform,
+                                                 const std::vector<DrawCall>& drawQueue) {
+    if (!handle.isValid() || handle.index >= renderTargets_.size()) return;
+    if (!renderTargets_[handle.index]) return;
+    pendingRenderTargetJobs_.push_back({handle, camera, cameraTransform, drawQueue});
+}
+
+void VulkanRenderingOrchestrator::renderToTarget(RenderTargetHandle handle,
+                                                 const Camera& camera,
+                                                 const Transform& cameraTransform) {
+    if (!handle.isValid() || handle.index >= renderTargets_.size()) return;
+    if (!renderTargets_[handle.index]) return;
+    pendingRenderTargetJobs_.push_back({handle, camera, cameraTransform, drawQueue_});
+}
+
+void VulkanRenderingOrchestrator::executePendingRenderTargetJobs(VkCommandBuffer cmd) {
+    for (auto& job: pendingRenderTargetJobs_) {
+        auto& rt = renderTargets_[job.handle.index];
+        if (!rt) continue;
+        renderCameraToTarget(cmd, *rt, job.camera, job.cameraTransform, job.drawQueue);
+    }
+    pendingRenderTargetJobs_.clear();
+}
+
+void VulkanRenderingOrchestrator::renderCameraToTarget(VkCommandBuffer cmd,
+                                                       RenderTargetData& rt,
+                                                       const Camera& camera,
+                                                       const Transform& cameraTransform,
+                                                       const std::vector<DrawCall>& drawQueue) {
+    const VkExtent2D extent{rt.width, rt.height};
+    const VkRect2D viewport{{0, 0}, extent};
+
+    auto emitBarrier = [&](VkImage image,
+                           VkImageLayout oldLayout,
+                           VkImageLayout newLayout,
+                           VkAccessFlags srcAccess,
+                           VkAccessFlags dstAccess,
+                           VkPipelineStageFlags srcStage,
+                           VkPipelineStageFlags dstStage,
+                           VkImageAspectFlags aspect) {
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = oldLayout;
+        barrier.newLayout = newLayout;
+        barrier.srcAccessMask = srcAccess;
+        barrier.dstAccessMask = dstAccess;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = image;
+        barrier.subresourceRange = {aspect, 0, 1, 0, 1};
+        vkCmdPipelineBarrier(cmd, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+    };
+
+    // Transition G-buffers to attachment layouts
+    emitBarrier(rt.gbufferAlbedo,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                0,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_IMAGE_ASPECT_COLOR_BIT);
+    emitBarrier(rt.gbufferNormal,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                0,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_IMAGE_ASPECT_COLOR_BIT);
+    emitBarrier(rt.gbufferDepth,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                0,
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                VK_IMAGE_ASPECT_DEPTH_BIT);
+
+    // Geometry pass
+    geometryPass_.record(cmd,
+                         rt.geometryContext,
+                         rt.gbufferAlbedoView,
+                         rt.gbufferNormalView,
+                         rt.gbufferDepthView,
+                         extent,
+                         camera,
+                         cameraTransform,
+                         drawQueue,
+                         &viewport);
+
+    // Transition G-buffers to shader read for lighting
+    emitBarrier(rt.gbufferAlbedo,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_ACCESS_SHADER_READ_BIT,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                VK_IMAGE_ASPECT_COLOR_BIT);
+    emitBarrier(rt.gbufferNormal,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_ACCESS_SHADER_READ_BIT,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                VK_IMAGE_ASPECT_COLOR_BIT);
+
+    // Transition color target for lighting output
+    emitBarrier(rt.colorImage,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                0,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_IMAGE_ASPECT_COLOR_BIT);
+
+    // Lighting pass
+    lightingPass_.record(cmd,
+                         rt.lightingDescSetIndex,
+                         rt.colorView,
+                         extent,
+                         rt.gbufferAlbedoView,
+                         rt.gbufferAlbedoSampler,
+                         rt.gbufferNormalView,
+                         rt.gbufferNormalSampler,
+                         0,
+                         0,
+                         static_cast<int>(rt.width),
+                         static_cast<int>(rt.height),
+                         true);
+
+    // Transition color to shader read for ImGui sampling
+    emitBarrier(rt.colorImage,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_ACCESS_SHADER_READ_BIT,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                VK_IMAGE_ASPECT_COLOR_BIT);
+}
+
+void VulkanRenderingOrchestrator::allocateRenderTargetImages(RenderTargetData& rt) {
+    auto allocImage = [&](VkFormat format, VkImageUsageFlags usage, VkImage& outImage, VkDeviceMemory& outMemory) {
+        VkImageCreateInfo imageInfo{};
+        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageInfo.imageType = VK_IMAGE_TYPE_2D;
+        imageInfo.extent = {rt.width, rt.height, 1};
+        imageInfo.mipLevels = 1;
+        imageInfo.arrayLayers = 1;
+        imageInfo.format = format;
+        imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageInfo.usage = usage;
+        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        vkCreateImage(context_.device, &imageInfo, nullptr, &outImage);
+
+        VkMemoryRequirements memReq{};
+        vkGetImageMemoryRequirements(context_.device, outImage, &memReq);
+        VkMemoryAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memReq.size;
+        allocInfo.memoryTypeIndex =
+                getMemoryType(context_.physicalDevice, memReq.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        vkAllocateMemory(context_.device, &allocInfo, nullptr, &outMemory);
+        vkBindImageMemory(context_.device, outImage, outMemory, 0);
+    };
+
+    auto allocView = [&](VkImage image, VkFormat format, VkImageAspectFlags aspect, VkImageView& outView) {
+        VkImageViewCreateInfo viewInfo{};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = image;
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format = format;
+        viewInfo.subresourceRange = {aspect, 0, 1, 0, 1};
+        vkCreateImageView(context_.device, &viewInfo, nullptr, &outView);
+    };
+
+    auto allocSampler = [&](VkFilter filter, VkSampler& outSampler) {
+        VkSamplerCreateInfo samplerInfo{};
+        samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerInfo.magFilter = filter;
+        samplerInfo.minFilter = filter;
+        samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        vkCreateSampler(context_.device, &samplerInfo, nullptr, &outSampler);
+    };
+
+    // Color output
+    allocImage(RenderTargetData::COLOR_FORMAT,
+               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+               rt.colorImage,
+               rt.colorMemory);
+    allocView(rt.colorImage, RenderTargetData::COLOR_FORMAT, VK_IMAGE_ASPECT_COLOR_BIT, rt.colorView);
+    allocSampler(VK_FILTER_LINEAR, rt.colorSampler);
+
+    // Depth
+    allocImage(
+            RenderTargetData::DEPTH_FORMAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, rt.depthImage, rt.depthMemory);
+    allocView(rt.depthImage, RenderTargetData::DEPTH_FORMAT, VK_IMAGE_ASPECT_DEPTH_BIT, rt.depthView);
+
+    // G-buffer albedo
+    allocImage(RenderTargetData::GBUFFER_ALBEDO_FORMAT,
+               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+               rt.gbufferAlbedo,
+               rt.gbufferAlbedoMemory);
+    allocView(
+            rt.gbufferAlbedo, RenderTargetData::GBUFFER_ALBEDO_FORMAT, VK_IMAGE_ASPECT_COLOR_BIT, rt.gbufferAlbedoView);
+    allocSampler(VK_FILTER_NEAREST, rt.gbufferAlbedoSampler);
+
+    // G-buffer normal
+    allocImage(RenderTargetData::GBUFFER_NORMAL_FORMAT,
+               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+               rt.gbufferNormal,
+               rt.gbufferNormalMemory);
+    allocView(
+            rt.gbufferNormal, RenderTargetData::GBUFFER_NORMAL_FORMAT, VK_IMAGE_ASPECT_COLOR_BIT, rt.gbufferNormalView);
+    allocSampler(VK_FILTER_NEAREST, rt.gbufferNormalSampler);
+
+    // G-buffer depth
+    allocImage(RenderTargetData::DEPTH_FORMAT,
+               VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+               rt.gbufferDepth,
+               rt.gbufferDepthMemory);
+    allocView(rt.gbufferDepth, RenderTargetData::DEPTH_FORMAT, VK_IMAGE_ASPECT_DEPTH_BIT, rt.gbufferDepthView);
+
+    // Per-target rendering resources
+    rt.geometryContext = geometryPass_.createRenderContext();
+    rt.lightingDescSetIndex = lightingPass_.allocateExtraDescriptorSet();
+}
+
+void VulkanRenderingOrchestrator::freeRenderTargetImages(RenderTargetData& rt) {
+    geometryPass_.destroyRenderContext(rt.geometryContext);
+
+    auto freeImage = [&](VkImage& image, VkDeviceMemory& memory) {
+        if (image != VK_NULL_HANDLE) {
+            vkDestroyImage(context_.device, image, nullptr);
+            image = VK_NULL_HANDLE;
+        }
+        if (memory != VK_NULL_HANDLE) {
+            vkFreeMemory(context_.device, memory, nullptr);
+            memory = VK_NULL_HANDLE;
+        }
+    };
+    auto freeView = [&](VkImageView& view) {
+        if (view != VK_NULL_HANDLE) {
+            vkDestroyImageView(context_.device, view, nullptr);
+            view = VK_NULL_HANDLE;
+        }
+    };
+    auto freeSampler = [&](VkSampler& sampler) {
+        if (sampler != VK_NULL_HANDLE) {
+            vkDestroySampler(context_.device, sampler, nullptr);
+            sampler = VK_NULL_HANDLE;
+        }
+    };
+
+    freeSampler(rt.colorSampler);
+    freeView(rt.colorView);
+    freeImage(rt.colorImage, rt.colorMemory);
+
+    freeView(rt.depthView);
+    freeImage(rt.depthImage, rt.depthMemory);
+
+    freeSampler(rt.gbufferAlbedoSampler);
+    freeView(rt.gbufferAlbedoView);
+    freeImage(rt.gbufferAlbedo, rt.gbufferAlbedoMemory);
+
+    freeSampler(rt.gbufferNormalSampler);
+    freeView(rt.gbufferNormalView);
+    freeImage(rt.gbufferNormal, rt.gbufferNormalMemory);
+
+    freeView(rt.gbufferDepthView);
+    freeImage(rt.gbufferDepth, rt.gbufferDepthMemory);
 }
