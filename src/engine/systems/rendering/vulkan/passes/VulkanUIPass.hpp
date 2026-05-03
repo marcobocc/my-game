@@ -1,6 +1,6 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "../utils/structs.hpp"
+#include "../core/utils/structs.hpp"
 #include "systems/ui/UserInterface.hpp"
 
 class VulkanSwapchainManager;
@@ -14,13 +14,11 @@ public:
                  UserInterface& userInterface);
     ~VulkanUIPass();
 
-    void record(VkCommandBuffer cmd, uint32_t imageIndex);
+    void record(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent);
 
 private:
-    VulkanSwapchainManager& swapchainManager_;
-    VkFormat swapchainImageFormat_ = VK_FORMAT_UNDEFINED;
     UserInterface& userInterface_;
 
-    void beginRendering(VkCommandBuffer cmd, uint32_t imageIndex) const;
+    void beginRendering(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent) const;
     void endRendering(VkCommandBuffer cmd);
 };

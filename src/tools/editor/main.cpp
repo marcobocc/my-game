@@ -2,7 +2,8 @@
 #include <log4cxx/consoleappender.h>
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
-#include "EditorApp.hpp"
+#include "../../engine/systems/core/GameWindow.hpp"
+#include "EditorWiringContainer.hpp"
 
 int main(int argc, char* argv[]) {
     const log4cxx::LayoutPtr layout(new log4cxx::PatternLayout("%d [%t] %-5p %c (%F:%L) - %m%n"));
@@ -21,7 +22,9 @@ int main(int argc, char* argv[]) {
         throw std::runtime_error("Assets path not provided. Use --assets_path <path> to specify the path to assets.");
     }
 
-    EditorApp app(assetsPath);
-    app.run();
+    GameWindow window("Editor");
+    EditorWiringContainer wiringContainer(window, assetsPath);
+    wiringContainer.run();
+
     return 0;
 }

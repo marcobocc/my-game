@@ -1,5 +1,4 @@
 #include "GameEngine.hpp"
-#include "data/assets/Mesh.hpp"
 #include "data/components/Camera.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
@@ -9,27 +8,23 @@
 #include "systems/input/InputSystem.hpp"
 #include "systems/input/PickingSystem.hpp"
 #include "systems/physics/PhysicsSystem.hpp"
-#include "systems/rendering/RenderSystem.hpp"
-#include "systems/rendering/vulkan/VulkanGraphicsBackend.hpp"
-#include "systems/rendering/vulkan/utils/structs.hpp"
+#include "systems/rendering/GameRenderSystem.hpp"
+#include "systems/rendering/vulkan/VulkanGameRenderer.hpp"
+#include "systems/rendering/vulkan/core/utils/structs.hpp"
 #include "systems/scene/SceneSerializer.hpp"
-#include "utils/math/AABB.hpp"
-#include "utils/math/BVH.hpp"
 
 GameEngine::GameEngine(GameWindow& window,
                        TimeManager& time,
-                       UserInterface& userInterface,
                        AssetManager& assetManager,
                        InputSystem& inputSystem,
                        PickingSystem& pickingSystem,
                        PhysicsSystem& physicsSystem,
                        Scene& scene,
-                       RenderSystem& renderSystem,
+                       GameRenderSystem& renderSystem,
                        RendererSettings& rendererSettings,
-                       VulkanGraphicsBackend& graphicsBackend) :
+                       VulkanGameRenderer& renderer) :
     window_(window),
     time_(time),
-    userInterface_(userInterface),
     assetManager_(assetManager),
     inputSystem_(inputSystem),
     pickingSystem_(pickingSystem),
@@ -37,7 +32,7 @@ GameEngine::GameEngine(GameWindow& window,
     scene_(scene),
     renderSystem_(renderSystem),
     rendererSettings_(rendererSettings),
-    graphicsBackend_(graphicsBackend) {}
+    renderer_(renderer) {}
 
 // --------------------------------------------------------
 // Game Loop
@@ -88,127 +83,8 @@ void GameEngine::setActiveCamera(const Camera& camera, const Transform& transfor
     renderSystem_.setActiveCamera(camera, transform);
 }
 
-void GameEngine::enableWorldGrid() { rendererSettings_.enableGrid = true; }
-void GameEngine::disableWorldGrid() { rendererSettings_.enableGrid = false; }
-void GameEngine::toggleWorldGrid() { rendererSettings_.enableGrid = !rendererSettings_.enableGrid; }
-
-void GameEngine::enableLighting() { rendererSettings_.enableLighting = true; }
-void GameEngine::disableLighting() { rendererSettings_.enableLighting = false; }
-void GameEngine::toggleLighting() { rendererSettings_.enableLighting = !rendererSettings_.enableLighting; }
-
-void GameEngine::drawObjectOutline(const Renderer& renderer, const Transform& transform, std::string objectId) const {
-    graphicsBackend_.outline(renderer, transform, std::move(objectId));
-}
-
-void GameEngine::GIZMOS_DrawLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) const {
-    graphicsBackend_.submitGizmoLine(from, to, color);
-}
-
-void GameEngine::GIZMOS_DrawAABB(const AABB& aabb, const glm::vec3& color) const {
-    const glm::vec3 min = aabb.min;
-    const glm::vec3 max = aabb.max;
-
-    // Bottom vertices
-    glm::vec3 v000 = {min.x, min.y, min.z};
-    glm::vec3 v001 = {min.x, min.y, max.z};
-    glm::vec3 v010 = {max.x, min.y, min.z};
-    glm::vec3 v011 = {max.x, min.y, max.z};
-
-    // Top vertices
-    glm::vec3 v100 = {min.x, max.y, min.z};
-    glm::vec3 v101 = {min.x, max.y, max.z};
-    glm::vec3 v110 = {max.x, max.y, min.z};
-    glm::vec3 v111 = {max.x, max.y, max.z};
-
-    // gizmo is jagged and not properly showing the lines
-    // Bottom face (y = min.y)
-    GIZMOS_DrawLine(v000, v010, color);
-    GIZMOS_DrawLine(v010, v011, color);
-    GIZMOS_DrawLine(v011, v001, color);
-    GIZMOS_DrawLine(v001, v000, color);
-
-    // Top face (y = max.y)
-    GIZMOS_DrawLine(v100, v110, color);
-    GIZMOS_DrawLine(v110, v111, color);
-    GIZMOS_DrawLine(v111, v101, color);
-    GIZMOS_DrawLine(v101, v100, color);
-
-    // Vertical edges
-    GIZMOS_DrawLine(v000, v100, color);
-    GIZMOS_DrawLine(v001, v101, color);
-    GIZMOS_DrawLine(v010, v110, color);
-    GIZMOS_DrawLine(v011, v111, color);
-}
-
-void GameEngine::GIZMOS_DrawObjectAABB(const std::string& objectId, const glm::vec3& color) const {
-    GameObject& object = scene_.getObject(objectId);
-    if (object.has<Transform>() && object.has<Renderer>()) {
-        auto transform = object.get<Transform>();
-        auto renderer = object.get<Renderer>();
-        auto mesh = assetManager_.get<Mesh>(renderer.meshName);
-        auto aabb = mesh->getAABB().applyTransform(transform.getModelMatrix());
-        GIZMOS_DrawAABB(aabb, color);
-    }
-}
-
-void GameEngine::GIZMOS_DrawObjectTransform(const std::string& objectId, float axisLength) const {
-    GameObject& object = scene_.getObject(objectId);
-    if (object.has<Transform>() && object.has<Renderer>()) {
-        auto transform = object.get<Transform>();
-        glm::vec3 position = transform.position;
-        glm::vec3 right = transform.getRight() * axisLength;
-        glm::vec3 up = transform.getUp() * axisLength;
-        glm::vec3 forward = transform.getForward() * axisLength;
-        GIZMOS_DrawLine(position, position + right, {1.0f, 0.0f, 0.0f});
-        GIZMOS_DrawLine(position, position + up, {0.0f, 1.0f, 0.0f});
-        GIZMOS_DrawLine(position, position + forward, {0.0f, 0.0f, 1.0f});
-    }
-}
-
-void GameEngine::GIZMOS_DrawBVH(const glm::vec3& color) const {
-    std::vector<Item> items;
-    for (const auto& [id, object]: scene_.getObjects()) {
-        if (object.has<Transform>() && object.has<Renderer>()) {
-            auto transform = object.get<Transform>();
-            auto renderer = object.get<Renderer>();
-            auto* mesh = assetManager_.get<Mesh>(renderer.meshName);
-            if (!mesh) continue;
-            auto aabb = mesh->getAABB().applyTransform(transform.getModelMatrix());
-            items.push_back({aabb, id});
-        }
-    }
-    if (items.empty()) return;
-    BVH bvh;
-    bvh.build(std::move(items));
-    for (const auto& node: bvh.nodes) {
-        GIZMOS_DrawAABB(node.bounds, color);
-        if (node.isLeaf()) {
-            for (uint32_t i = node.begin; i < node.begin + node.count; i++)
-                GIZMOS_DrawAABB(bvh.items[i].aabb, color);
-        }
-    }
-}
-
-RenderTargetHandle GameEngine::createRenderTarget(uint32_t width, uint32_t height) {
-    return graphicsBackend_.createRenderTarget(width, height);
-}
-
-VkDescriptorSet GameEngine::getRenderTargetImGuiId(RenderTargetHandle handle) const {
-    return graphicsBackend_.getRenderTargetImGuiId(handle);
-}
-
-void GameEngine::renderToTarget(RenderTargetHandle handle, const Camera& camera, const Transform& cameraTransform) {
-    std::vector<DrawCall> drawQueue;
-    auto drawables = scene_.getObjectsWith<Renderer, Transform>();
-    for (auto& [entity, renderer, transform]: drawables) {
-        if (!renderer.enabled) continue;
-        drawQueue.push_back({renderer, transform, entity});
-    }
-    graphicsBackend_.renderToTarget(handle, camera, cameraTransform, drawQueue);
-}
-
 // --------------------------------------------------------
-// Scene API
+// Assets API
 // --------------------------------------------------------
 
 std::string GameEngine::createCamera(const Scene::_createCamera_Options& options) {

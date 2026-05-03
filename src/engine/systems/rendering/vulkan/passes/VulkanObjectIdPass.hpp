@@ -2,8 +2,9 @@
 #include <string>
 #include <vector>
 #include <volk.h>
-#include "../utils/buffers.hpp"
-#include "../utils/structs.hpp"
+#include "../core/resources/VulkanResourcesManager.hpp"
+#include "../core/utils/buffers.hpp"
+#include "../core/utils/structs.hpp"
 #include "data/assets/Mesh.hpp"
 #include "data/assets/Shader.hpp"
 #include "data/components/Camera.hpp"
@@ -11,7 +12,6 @@
 #include "systems/assets/AssetManager.hpp"
 #include "systems/assets/BuiltinAssetNames.hpp"
 #include "systems/core/GameWindow.hpp"
-#include "systems/rendering/vulkan/resources/VulkanResourcesManager.hpp"
 
 class VulkanObjectIdPass {
 public:
@@ -27,22 +27,21 @@ public:
 
     ~VulkanObjectIdPass() { destroyBuffer(context_.device, perFrameUBOBuffer_); }
 
-    const std::vector<std::string>& getObjectIdMap() const { return objectIdMap_; }
-
     // color/depthImageView are owned by the RenderGraph and already transitioned
     // to COLOR_ATTACHMENT_OPTIMAL / DEPTH_STENCIL_ATTACHMENT_OPTIMAL by the graph.
     // imageWidth/imageHeight are the full allocated image dimensions (swapchain extent).
-    void record(VkCommandBuffer cmd,
-                const std::vector<DrawCall>& drawQueue,
-                const Camera& camera,
-                const Transform& cameraTransform,
-                const GameWindow& window,
-                VkImage colorImage,
-                VkImageView colorImageView,
-                VkImageView depthImageView,
-                uint32_t imageWidth,
-                uint32_t imageHeight) {
-        if (pipeline_ == nullptr) return;
+    std::vector<std::string> record(VkCommandBuffer cmd,
+                                    const std::vector<DrawCall>& drawQueue,
+                                    const Camera& camera,
+                                    const Transform& cameraTransform,
+                                    const GameWindow& window,
+                                    VkImage colorImage,
+                                    VkImageView colorImageView,
+                                    VkImageView depthImageView,
+                                    uint32_t imageWidth,
+                                    uint32_t imageHeight) {
+        if (pipeline_ == nullptr) return {};
+        std::vector<std::string> objectIdMap;
 
         VkClearValue clearObjectId{};
         clearObjectId.color.uint32[0] = 0xFFFFFFFF;
@@ -100,10 +99,9 @@ public:
         glm::mat4 uboData[2] = {cameraTransform.getViewMatrix(), camera.getProjectionMatrix()};
         updateBuffer(context_.device, perFrameUBOBuffer_, uboData, sizeof(uboData));
 
-        objectIdMap_.clear();
         for (uint32_t i = 0; i < static_cast<uint32_t>(drawQueue.size()); ++i) {
             const DrawCall& dc = drawQueue[i];
-            objectIdMap_.push_back(dc.objectId);
+            objectIdMap.push_back(dc.objectId);
 
             struct ObjectIdPush {
                 glm::mat4 model;
@@ -154,6 +152,7 @@ public:
                              nullptr,
                              1,
                              &barrier);
+        return objectIdMap;
     }
 
 private:
@@ -198,6 +197,4 @@ private:
     VulkanBuffer perFrameUBOBuffer_{};
     VkDescriptorSet perFrameUBODescriptorSet_ = VK_NULL_HANDLE;
     VulkanPipeline* pipeline_ = nullptr;
-
-    std::vector<std::string> objectIdMap_;
 };

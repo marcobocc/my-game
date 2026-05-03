@@ -2,20 +2,25 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <volk.h>
-#include "../VulkanSwapchainManager.hpp"
-#include "../utils/buffers.hpp"
-#include "../utils/structs.hpp"
+#include "../core/VulkanSwapchainManager.hpp"
+#include "../core/resources/VulkanResourcesManager.hpp"
+#include "../core/utils/buffers.hpp"
+#include "../core/utils/structs.hpp"
 #include "data/assets/Shader.hpp"
 #include "data/components/Camera.hpp"
 #include "data/components/Transform.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/assets/BuiltinAssetNames.hpp"
 #include "systems/core/GameWindow.hpp"
-#include "systems/rendering/vulkan/resources/VulkanResourcesManager.hpp"
 
 class VulkanGizmoPass {
 public:
     static constexpr uint32_t MAX_LINES = 4096;
+
+    struct GizmoVertex {
+        glm::vec3 position;
+        glm::vec3 color;
+    };
 
     VulkanGizmoPass(const VulkanContext& context,
                     AssetManager& assetManager,
@@ -34,21 +39,16 @@ public:
             destroyBuffer(context_.device, buf);
     }
 
-    void submitLine(glm::vec3 from, glm::vec3 to, glm::vec3 color) {
-        if (lineVertices_.size() >= MAX_LINES * 2) return;
-        lineVertices_.push_back({from, color});
-        lineVertices_.push_back({to, color});
-    }
-
     void record(VkCommandBuffer cmd,
-                uint32_t imageIndex,
+                VkImageView colorView,
+                VkExtent2D extent,
                 const Camera& camera,
                 const Transform& cameraTransform,
                 const GameWindow& window,
-                VkImageView depthView) {
-        if (pipeline_ == nullptr || lineVertices_.empty()) return;
+                VkImageView depthView,
+                const std::vector<GizmoVertex>& lineVertices) {
+        if (pipeline_ == nullptr || lineVertices.empty()) return;
 
-        const VulkanSwapchain& swapchain = swapchainManager_.swapchain();
         const SceneViewport sv = window.getSceneViewport();
         const auto [scaleX, scaleY] = window.getContentScale();
         const int fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
@@ -56,13 +56,14 @@ public:
         const int fbW = static_cast<int>(static_cast<float>(sv.width) * scaleX);
         const int fbH = static_cast<int>(static_cast<float>(sv.height) * scaleY);
 
-        const uint32_t vertexCount = static_cast<uint32_t>(lineVertices_.size());
+        const uint32_t bufIdx = nextBufferIndex_++ % static_cast<uint32_t>(vertexBuffers_.size());
+        const uint32_t vertexCount = static_cast<uint32_t>(lineVertices.size());
         const VkDeviceSize uploadSize = vertexCount * sizeof(GizmoVertex);
-        updateBuffer(context_.device, vertexBuffers_[imageIndex], lineVertices_.data(), uploadSize);
+        updateBuffer(context_.device, vertexBuffers_[bufIdx], lineVertices.data(), uploadSize);
 
         VkRenderingAttachmentInfo colorAttachment{};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        colorAttachment.imageView = swapchain.swapchainImageViews[imageIndex];
+        colorAttachment.imageView = colorView;
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -76,7 +77,7 @@ public:
 
         VkRenderingInfo renderingInfo{};
         renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-        renderingInfo.renderArea = {{0, 0}, swapchain.swapchainExtent};
+        renderingInfo.renderArea = {{0, 0}, extent};
         renderingInfo.layerCount = 1;
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.pColorAttachments = &colorAttachment;
@@ -100,7 +101,7 @@ public:
         glm::mat4 viewProj = proj * view;
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
-        VkBuffer vbuf = vertexBuffers_[imageIndex].buffer;
+        VkBuffer vbuf = vertexBuffers_[bufIdx].buffer;
         VkDeviceSize offset = 0;
         vkCmdBindVertexBuffers(cmd, 0, 1, &vbuf, &offset);
         vkCmdPushConstants(cmd,
@@ -111,16 +112,9 @@ public:
                            &viewProj);
         vkCmdDraw(cmd, vertexCount, 1, 0, 0);
         vkCmdEndRendering(cmd);
-
-        lineVertices_.clear();
     }
 
 private:
-    struct GizmoVertex {
-        glm::vec3 position;
-        glm::vec3 color;
-    };
-
     void initPipeline() {
         const Shader* shader = assetManager_.get<Shader>(GIZMO_SHADER);
         if (!shader) return;
@@ -148,5 +142,5 @@ private:
 
     VulkanPipeline* pipeline_ = nullptr;
     std::vector<VulkanBuffer> vertexBuffers_;
-    std::vector<GizmoVertex> lineVertices_;
+    uint32_t nextBufferIndex_ = 0;
 };

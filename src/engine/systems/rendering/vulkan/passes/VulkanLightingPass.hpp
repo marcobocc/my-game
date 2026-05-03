@@ -1,28 +1,39 @@
 #pragma once
 #include <vector>
 #include <volk.h>
-#include "../utils/structs.hpp"
+#include "../core/resources/VulkanResourcesManager.hpp"
+#include "../core/utils/structs.hpp"
 #include "data/assets/Shader.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/assets/BuiltinAssetNames.hpp"
-#include "systems/rendering/vulkan/resources/VulkanResourcesManager.hpp"
 
 class VulkanLightingPass {
 public:
     VulkanLightingPass(const VulkanContext& context,
                        AssetManager& assetManager,
                        VulkanResourcesManager& resourcesManager,
-                       VkFormat swapchainImageFormat,
-                       uint32_t frameCount) :
+                       VkFormat swapchainImageFormat) :
         context_(context),
         assetManager_(assetManager),
-        resourcesManager_(resourcesManager),
-        swapchainImageFormat_(swapchainImageFormat) {
-        initPipeline(frameCount);
+        resourcesManager_(resourcesManager) {
+        initPipeline(swapchainImageFormat);
+    }
+
+    VkDescriptorSet createDescriptorSet() const {
+        if (!pipeline_) return VK_NULL_HANDLE;
+        VkDescriptorSetLayout layout = pipeline_->descriptorSetLayouts[0];
+        VkDescriptorSet ds = VK_NULL_HANDLE;
+        VkDescriptorSetAllocateInfo dsAlloc{};
+        dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        dsAlloc.descriptorPool = context_.descriptorPool;
+        dsAlloc.descriptorSetCount = 1;
+        dsAlloc.pSetLayouts = &layout;
+        vkAllocateDescriptorSets(context_.device, &dsAlloc, &ds);
+        return ds;
     }
 
     void record(VkCommandBuffer cmd,
-                uint32_t imageIndex,
+                VkDescriptorSet descriptorSet,
                 VkImageView swapchainColorView,
                 VkExtent2D swapchainExtent,
                 VkImageView albedoView,
@@ -33,9 +44,11 @@ public:
                 int fbY,
                 int fbW,
                 int fbH,
+                float gbufferWidth,
+                float gbufferHeight,
                 bool enableLighting = true) {
         if (pipeline_ == nullptr) return;
-        updateDescriptor(imageIndex, albedoView, albedoSampler, normalView, normalSampler);
+        updateDescriptor(descriptorSet, albedoView, albedoSampler, normalView, normalSampler);
 
         VkClearValue clearColor{};
         clearColor.color = {{0.1f, 0.1f, 0.1f, 1.0f}};
@@ -67,8 +80,8 @@ public:
         VkRect2D scissor{{fbX, fbY}, {static_cast<uint32_t>(fbW), static_cast<uint32_t>(fbH)}};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-        const float scW = static_cast<float>(swapchainExtent.width);
-        const float scH = static_cast<float>(swapchainExtent.height);
+        const float scW = gbufferWidth;
+        const float scH = gbufferHeight;
         struct LightingPush {
             glm::vec2 uvOffset;
             glm::vec2 uvScale;
@@ -79,14 +92,8 @@ public:
         push.enableLighting = enableLighting ? 1 : 0;
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
-        vkCmdBindDescriptorSets(cmd,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                pipeline_->layout,
-                                0,
-                                1,
-                                &descriptorSets_[imageIndex],
-                                0,
-                                nullptr);
+        vkCmdBindDescriptorSets(
+                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->layout, 0, 1, &descriptorSet, 0, nullptr);
         vkCmdPushConstants(cmd,
                            pipeline_->layout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -97,23 +104,8 @@ public:
         vkCmdEndRendering(cmd);
     }
 
-    uint32_t allocateExtraDescriptorSet() {
-        if (!pipeline_) return UINT32_MAX;
-        VkDescriptorSetLayout samplerLayout = pipeline_->descriptorSetLayouts[0];
-        VkDescriptorSet ds = VK_NULL_HANDLE;
-        VkDescriptorSetAllocateInfo dsAlloc{};
-        dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        dsAlloc.descriptorPool = context_.descriptorPool;
-        dsAlloc.descriptorSetCount = 1;
-        dsAlloc.pSetLayouts = &samplerLayout;
-        vkAllocateDescriptorSets(context_.device, &dsAlloc, &ds);
-        uint32_t index = static_cast<uint32_t>(descriptorSets_.size());
-        descriptorSets_.push_back(ds);
-        return index;
-    }
-
 private:
-    void updateDescriptor(uint32_t imageIndex,
+    void updateDescriptor(VkDescriptorSet descriptorSet,
                           VkImageView albedoView,
                           VkSampler albedoSampler,
                           VkImageView normalView,
@@ -128,14 +120,14 @@ private:
 
         VkWriteDescriptorSet writes[2] = {};
         writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writes[0].dstSet = descriptorSets_[imageIndex];
+        writes[0].dstSet = descriptorSet;
         writes[0].dstBinding = 0;
         writes[0].descriptorCount = 1;
         writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         writes[0].pImageInfo = &imageInfos[0];
 
         writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writes[1].dstSet = descriptorSets_[imageIndex];
+        writes[1].dstSet = descriptorSet;
         writes[1].dstBinding = 1;
         writes[1].descriptorCount = 1;
         writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -143,27 +135,15 @@ private:
         vkUpdateDescriptorSets(context_.device, 2, writes, 0, nullptr);
     }
 
-    void initPipeline(uint32_t frameCount) {
+    void initPipeline(VkFormat swapchainImageFormat) {
         const Shader* shader = assetManager_.get<Shader>(LIGHTING_SHADER);
         if (!shader) return;
-        pipeline_ = &resourcesManager_.getPipeline(*shader, swapchainImageFormat_, VK_FORMAT_UNDEFINED);
-
-        VkDescriptorSetLayout samplerLayout = pipeline_->descriptorSetLayouts[0];
-        descriptorSets_.resize(frameCount);
-        std::vector<VkDescriptorSetLayout> layouts(frameCount, samplerLayout);
-        VkDescriptorSetAllocateInfo dsAlloc{};
-        dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        dsAlloc.descriptorPool = context_.descriptorPool;
-        dsAlloc.descriptorSetCount = frameCount;
-        dsAlloc.pSetLayouts = layouts.data();
-        vkAllocateDescriptorSets(context_.device, &dsAlloc, descriptorSets_.data());
+        pipeline_ = &resourcesManager_.getPipeline(*shader, swapchainImageFormat, VK_FORMAT_UNDEFINED);
     }
 
     const VulkanContext& context_;
     AssetManager& assetManager_;
     VulkanResourcesManager& resourcesManager_;
 
-    VkFormat swapchainImageFormat_ = VK_FORMAT_UNDEFINED;
     VulkanPipeline* pipeline_ = nullptr;
-    std::vector<VkDescriptorSet> descriptorSets_;
 };

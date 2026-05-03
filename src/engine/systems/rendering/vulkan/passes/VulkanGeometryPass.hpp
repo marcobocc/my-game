@@ -1,15 +1,15 @@
 #pragma once
 #include <array>
 #include <vector>
-#include "../utils/buffers.hpp"
-#include "../utils/descriptors.hpp"
-#include "../utils/structs.hpp"
+#include "../core/resources/VulkanResourcesManager.hpp"
+#include "../core/utils/buffers.hpp"
+#include "../core/utils/descriptors.hpp"
+#include "../core/utils/structs.hpp"
 #include "data/assets/Material.hpp"
 #include "data/assets/Mesh.hpp"
 #include "data/components/Camera.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/core/GameWindow.hpp"
-#include "systems/rendering/vulkan/resources/VulkanResourcesManager.hpp"
 
 class VulkanGeometryPass {
 public:
@@ -26,48 +26,23 @@ public:
         assetManager_(assetManager),
         window_(window) {
         createUBOLayout();
-        mainContext_ = createRenderContext();
     }
 
-    ~VulkanGeometryPass() {
-        destroyRenderContext(mainContext_);
-        vkDestroyDescriptorSetLayout(context_.device, perFrameUBOLayout_, nullptr);
-    }
+    ~VulkanGeometryPass() { vkDestroyDescriptorSetLayout(context_.device, perFrameUBOLayout_, nullptr); }
 
-    GeometryRenderContext createRenderContext() const {
+    std::pair<VulkanBuffer, VkDescriptorSet> createRenderContext() const {
         constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * 2;
-        GeometryRenderContext ctx;
-        ctx.buffer = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
-        ctx.descriptorSet = createUniformBufferDescriptorSet(
-                context_.device, context_.descriptorPool, perFrameUBOLayout_, ctx.buffer.buffer, uboSize);
-        return ctx;
+        VulkanBuffer buf = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
+        VkDescriptorSet ds = createUniformBufferDescriptorSet(
+                context_.device, context_.descriptorPool, perFrameUBOLayout_, buf.buffer, uboSize);
+        return {std::move(buf), ds};
     }
 
-    void destroyRenderContext(GeometryRenderContext& ctx) const { destroyBuffer(context_.device, ctx.buffer); }
+    void destroyRenderContext(VulkanBuffer& buf) const { destroyBuffer(context_.device, buf); }
 
     void record(VkCommandBuffer cmd,
-                VkImageView albedoView,
-                VkImageView normalView,
-                VkImageView depthView,
-                VkExtent2D extent,
-                const Camera& camera,
-                const Transform& cameraTransform,
-                const std::vector<DrawCall>& drawQueue,
-                const VkRect2D* viewportOverride = nullptr) {
-        record(cmd,
-               mainContext_,
-               albedoView,
-               normalView,
-               depthView,
-               extent,
-               camera,
-               cameraTransform,
-               drawQueue,
-               viewportOverride);
-    }
-
-    void record(VkCommandBuffer cmd,
-                GeometryRenderContext& ctx,
+                VkDescriptorSet geometryDescriptorSet,
+                VulkanBuffer& geometryBuffer,
                 VkImageView albedoView,
                 VkImageView normalView,
                 VkImageView depthView,
@@ -77,9 +52,9 @@ public:
                 const std::vector<DrawCall>& drawQueue,
                 const VkRect2D* viewportOverride = nullptr) {
         beginRendering(cmd, albedoView, normalView, depthView, extent, viewportOverride);
-        updatePerFrameUBO(ctx, camera, cameraTransform);
+        updatePerFrameUBO(geometryBuffer, camera, cameraTransform);
         for (const auto& drawCall: drawQueue)
-            renderEntity(cmd, ctx, drawCall);
+            renderEntity(cmd, geometryDescriptorSet, drawCall);
         vkCmdEndRendering(cmd);
     }
 
@@ -98,19 +73,19 @@ private:
         vkCreateDescriptorSetLayout(context_.device, &layoutInfo, nullptr, &perFrameUBOLayout_);
     }
 
-    void updatePerFrameUBO(GeometryRenderContext& ctx, const Camera& camera, const Transform& cameraTransform) const {
+    void updatePerFrameUBO(VulkanBuffer& buf, const Camera& camera, const Transform& cameraTransform) const {
         glm::mat4 data[2] = {cameraTransform.getViewMatrix(), camera.getProjectionMatrix()};
-        updateBuffer(context_.device, ctx.buffer, data, sizeof(data));
+        updateBuffer(context_.device, buf, data, sizeof(data));
     }
 
-    void renderEntity(VkCommandBuffer cmd, const GeometryRenderContext& ctx, const DrawCall& drawCall) const {
+    void renderEntity(VkCommandBuffer cmd, VkDescriptorSet geometryDescriptorSet, const DrawCall& drawCall) const {
         const Material* material = assetManager_.get<Material>(drawCall.renderer.materialName);
         static constexpr std::array<VkFormat, 2> colorFormats{ALBEDO_FORMAT, NORMAL_FORMAT};
         auto [pipeline, texturesDescriptorSet] = resourcesManager_.getMaterial(*material, colorFormats, DEPTH_FORMAT);
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
         vkCmdBindDescriptorSets(
-                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &ctx.descriptorSet, 0, nullptr);
+                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 0, 1, &geometryDescriptorSet, 0, nullptr);
         vkCmdBindDescriptorSets(
                 cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &texturesDescriptorSet, 0, nullptr);
 
@@ -215,6 +190,5 @@ private:
     AssetManager& assetManager_;
     GameWindow& window_;
 
-    GeometryRenderContext mainContext_{};
     VkDescriptorSetLayout perFrameUBOLayout_ = VK_NULL_HANDLE;
 };

@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "systems/rendering/vulkan/RenderTarget.hpp"
+#include "../RenderTargetHandle.hpp"
 
 struct Camera {
     float fov = 45.0f;

@@ -2,56 +2,59 @@
 #include <string>
 #include <vector>
 #include <volk.h>
-#include "../resources/VulkanResourcesManager.hpp"
-#include "../utils/structs.hpp"
+#include "../core/resources/VulkanResourcesManager.hpp"
+#include "../core/utils/structs.hpp"
 #include "data/assets/Shader.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/assets/BuiltinAssetNames.hpp"
 #include "systems/core/GameWindow.hpp"
+
 class VulkanOutlinePass {
 public:
     VulkanOutlinePass(const VulkanContext& context,
                       AssetManager& assetManager,
                       VulkanResourcesManager& resourcesManager,
-                      VkFormat swapchainImageFormat,
-                      uint32_t frameCount,
-                      uint32_t width,
-                      uint32_t height) :
+                      VkFormat swapchainImageFormat) :
         context_(context),
         assetManager_(assetManager),
-        resourcesManager_(resourcesManager),
-        width_(width),
-        height_(height),
-        swapchainImageFormat_(swapchainImageFormat) {
-        initPipeline(frameCount);
+        resourcesManager_(resourcesManager) {
+        initPipeline(swapchainImageFormat);
     }
 
-    void resize(uint32_t width, uint32_t height) {
-        width_ = width;
-        height_ = height;
-    }
-
-    void enqueueForOutline(const Renderer& renderer, const Transform& transform, std::string objectId) {
-        outlineQueue_.push_back({renderer, transform, std::move(objectId)});
+    VkDescriptorSet createDescriptorSet() const {
+        if (!pipeline_) return VK_NULL_HANDLE;
+        VkDescriptorSetLayout layout = pipeline_->descriptorSetLayouts[0];
+        VkDescriptorSet ds = VK_NULL_HANDLE;
+        VkDescriptorSetAllocateInfo dsAlloc{};
+        dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        dsAlloc.descriptorPool = context_.descriptorPool;
+        dsAlloc.descriptorSetCount = 1;
+        dsAlloc.pSetLayouts = &layout;
+        vkAllocateDescriptorSets(context_.device, &dsAlloc, &ds);
+        return ds;
     }
 
     void record(VkCommandBuffer cmd,
-                uint32_t imageIndex,
-                const VulkanSwapchain& swapchain,
+                VkDescriptorSet descriptorSet,
+                VkImageView swapchainColorView,
+                VkExtent2D swapchainExtent,
                 VkImageView objectIdImageView,
                 VkSampler objectIdBufferSampler,
                 const GameWindow& window,
-                const std::vector<std::string>& objectIdMap) {
-        if (outlineQueue_.empty()) return;
-        uint32_t targetId = resolveTargetId(objectIdMap);
+                const std::vector<std::string>& objectIdMap,
+                const std::vector<DrawCall>& outlineQueue,
+                uint32_t width,
+                uint32_t height) {
+        if (outlineQueue.empty()) return;
+        uint32_t targetId = resolveTargetId(objectIdMap, outlineQueue);
         if (targetId == 0) return;
-        updateDescriptor(imageIndex, objectIdImageView, objectIdBufferSampler);
-        recordCompositePass(cmd, imageIndex, swapchain, window, targetId);
-        outlineQueue_.clear();
+        updateDescriptor(descriptorSet, objectIdImageView, objectIdBufferSampler);
+        recordCompositePass(cmd, descriptorSet, swapchainColorView, swapchainExtent, window, targetId, width, height);
     }
 
 private:
-    void updateDescriptor(uint32_t imageIndex, VkImageView objectIdImageView, VkSampler objectIdBufferSampler) {
+    void
+    updateDescriptor(VkDescriptorSet descriptorSet, VkImageView objectIdImageView, VkSampler objectIdBufferSampler) {
         VkDescriptorImageInfo imageInfo{};
         imageInfo.sampler = objectIdBufferSampler;
         imageInfo.imageView = objectIdImageView;
@@ -59,7 +62,7 @@ private:
 
         VkWriteDescriptorSet write{};
         write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet = descriptorSets_[imageIndex];
+        write.dstSet = descriptorSet;
         write.dstBinding = 0;
         write.descriptorCount = 1;
         write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -67,8 +70,9 @@ private:
         vkUpdateDescriptorSets(context_.device, 1, &write, 0, nullptr);
     }
 
-    uint32_t resolveTargetId(const std::vector<std::string>& objectIdMap) const {
-        const auto& targetObjectId = outlineQueue_.front().objectId;
+    uint32_t resolveTargetId(const std::vector<std::string>& objectIdMap,
+                             const std::vector<DrawCall>& outlineQueue) const {
+        const auto& targetObjectId = outlineQueue.front().objectId;
         for (uint32_t i = 0; i < static_cast<uint32_t>(objectIdMap.size()); ++i) {
             if (objectIdMap[i] == targetObjectId) return i + 1;
         }
@@ -76,10 +80,13 @@ private:
     }
 
     void recordCompositePass(VkCommandBuffer cmd,
-                             uint32_t imageIndex,
-                             const VulkanSwapchain& swapchain,
+                             VkDescriptorSet descriptorSet,
+                             VkImageView swapchainColorView,
+                             VkExtent2D swapchainExtent,
                              const GameWindow& window,
-                             uint32_t targetId) {
+                             uint32_t targetId,
+                             uint32_t width,
+                             uint32_t height) {
         const SceneViewport sv = window.getSceneViewport();
         const auto [scaleX, scaleY] = window.getContentScale();
         const int fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
@@ -89,14 +96,14 @@ private:
 
         VkRenderingAttachmentInfo colorAttachment{};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        colorAttachment.imageView = swapchain.swapchainImageViews[imageIndex];
+        colorAttachment.imageView = swapchainColorView;
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
         VkRenderingInfo renderingInfo{};
         renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-        renderingInfo.renderArea = {{0, 0}, swapchain.swapchainExtent};
+        renderingInfo.renderArea = {{0, 0}, swapchainExtent};
         renderingInfo.layerCount = 1;
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.pColorAttachments = &colorAttachment;
@@ -114,8 +121,8 @@ private:
         VkRect2D scissor{{fbX, fbY}, {static_cast<uint32_t>(fbW), static_cast<uint32_t>(fbH)}};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-        const float fw = static_cast<float>(width_);
-        const float fh = static_cast<float>(height_);
+        const float fw = static_cast<float>(width);
+        const float fh = static_cast<float>(height);
         struct OutlinePush {
             glm::vec2 texelSize;
             glm::vec2 uvOffset;
@@ -128,14 +135,8 @@ private:
         push.targetId = targetId;
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
-        vkCmdBindDescriptorSets(cmd,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                pipeline_->layout,
-                                0,
-                                1,
-                                &descriptorSets_[imageIndex],
-                                0,
-                                nullptr);
+        vkCmdBindDescriptorSets(
+                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->layout, 0, 1, &descriptorSet, 0, nullptr);
         vkCmdPushConstants(cmd,
                            pipeline_->layout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -146,33 +147,15 @@ private:
         vkCmdEndRendering(cmd);
     }
 
-    void initPipeline(uint32_t frameCount) {
+    void initPipeline(VkFormat swapchainImageFormat) {
         const Shader* shader = assetManager_.get<Shader>(OUTLINE_SHADER);
         if (!shader) return;
-
-        pipeline_ = &resourcesManager_.getPipeline(*shader, swapchainImageFormat_, VK_FORMAT_UNDEFINED);
-        VkDescriptorSetLayout samplerLayout = pipeline_->descriptorSetLayouts[0];
-
-        descriptorSets_.resize(frameCount);
-        std::vector<VkDescriptorSetLayout> layouts(frameCount, samplerLayout);
-
-        VkDescriptorSetAllocateInfo dsAlloc{};
-        dsAlloc.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        dsAlloc.descriptorPool = context_.descriptorPool;
-        dsAlloc.descriptorSetCount = frameCount;
-        dsAlloc.pSetLayouts = layouts.data();
-        vkAllocateDescriptorSets(context_.device, &dsAlloc, descriptorSets_.data());
+        pipeline_ = &resourcesManager_.getPipeline(*shader, swapchainImageFormat, VK_FORMAT_UNDEFINED);
     }
 
     const VulkanContext& context_;
     AssetManager& assetManager_;
     VulkanResourcesManager& resourcesManager_;
 
-    uint32_t width_ = 0;
-    uint32_t height_ = 0;
-    VkFormat swapchainImageFormat_ = VK_FORMAT_UNDEFINED;
-
-    std::vector<VkDescriptorSet> descriptorSets_;
     VulkanPipeline* pipeline_ = nullptr;
-    std::vector<DrawCall> outlineQueue_;
 };

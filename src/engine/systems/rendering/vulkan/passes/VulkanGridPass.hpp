@@ -1,39 +1,34 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <volk.h>
-#include "../VulkanSwapchainManager.hpp"
-#include "../utils/structs.hpp"
+#include "../core/resources/VulkanResourcesManager.hpp"
+#include "../core/utils/structs.hpp"
 #include "data/components/Camera.hpp"
 #include "data/components/Transform.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/assets/BuiltinAssetNames.hpp"
-#include "systems/rendering/vulkan/resources/VulkanResourcesManager.hpp"
 
 class VulkanGridPass {
 public:
-    VulkanGridPass(AssetManager& assetManager,
-                   VulkanResourcesManager& resourcesManager,
-                   VulkanSwapchainManager& swapchainManager) :
+    VulkanGridPass(AssetManager& assetManager, VulkanResourcesManager& resourcesManager) :
         assetManager_(assetManager),
-        resourcesManager_(resourcesManager),
-        swapchainManager_(swapchainManager) {
+        resourcesManager_(resourcesManager) {
         initPipeline();
     }
 
     ~VulkanGridPass() = default;
 
     void record(VkCommandBuffer cmd,
-                uint32_t imageIndex,
+                VkImageView colorView,
+                VkExtent2D extent,
                 const Camera& camera,
                 const Transform& cameraTransform,
                 VkImageView depthView) const {
         if (pipeline_ == nullptr) return;
 
-        const VulkanSwapchain& swapchain = swapchainManager_.swapchain();
-
         VkRenderingAttachmentInfo colorAttachment{};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        colorAttachment.imageView = swapchain.swapchainImageViews[imageIndex];
+        colorAttachment.imageView = colorView;
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -47,7 +42,7 @@ public:
 
         VkRenderingInfo renderingInfo{};
         renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-        renderingInfo.renderArea = {{0, 0}, swapchain.swapchainExtent};
+        renderingInfo.renderArea = {{0, 0}, extent};
         renderingInfo.layerCount = 1;
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.pColorAttachments = &colorAttachment;
@@ -89,6 +84,5 @@ private:
 
     AssetManager& assetManager_;
     VulkanResourcesManager& resourcesManager_;
-    VulkanSwapchainManager& swapchainManager_;
-    VulkanPipeline* pipeline_ = nullptr; // owned by VulkanPipelineCache
+    VulkanPipeline* pipeline_ = nullptr;
 };

@@ -1,18 +1,17 @@
 #pragma once
 #include <functional>
-#include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "data/RenderTargetHandle.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/core/GameWindow.hpp"
-#include "systems/rendering/vulkan/RenderTarget.hpp"
+#include "systems/rendering/vulkan/core/utils/structs.hpp"
 #include "systems/scene/GameObject.hpp"
 #include "systems/scene/Scene.hpp"
-#include "systems/ui/UserInterface.hpp"
 
 struct AABB;
 struct Camera;
@@ -22,9 +21,9 @@ struct RendererSettings;
 class InputSystem;
 class PickingSystem;
 class PhysicsSystem;
-class RenderSystem;
+class GameRenderSystem;
 class TimeManager;
-class VulkanGraphicsBackend;
+class VulkanGameRenderer;
 
 /*
     GameEngine (Facade)
@@ -50,15 +49,14 @@ class GameEngine {
 public:
     explicit GameEngine(GameWindow& window,
                         TimeManager& time,
-                        UserInterface& userInterface,
                         AssetManager& assetManager,
                         InputSystem& inputSystem,
                         PickingSystem& pickingSystem,
                         PhysicsSystem& physicsSystem,
                         Scene& scene,
-                        RenderSystem& renderSystem,
+                        GameRenderSystem& renderSystem,
                         RendererSettings& rendererSettings,
-                        VulkanGraphicsBackend& graphicsBackend);
+                        VulkanGameRenderer& renderer);
 
     // --------------------------------------------------------
     // Game Loop
@@ -84,31 +82,6 @@ public:
     // --------------------------------------------------------
     void setActiveCamera(const Camera& camera, const Transform& transform);
 
-    void enableWorldGrid();
-    void disableWorldGrid();
-    void toggleWorldGrid();
-
-    void enableLighting();
-    void disableLighting();
-    void toggleLighting();
-
-    void drawObjectOutline(const Renderer& renderer, const Transform& transform, std::string objectId) const;
-
-    RenderTargetHandle createRenderTarget(uint32_t width, uint32_t height);
-    void destroyRenderTarget(RenderTargetHandle handle);
-    VkDescriptorSet getRenderTargetImGuiId(RenderTargetHandle handle) const;
-    void renderToTarget(RenderTargetHandle handle, const Camera& camera, const Transform& cameraTransform);
-
-    void GIZMOS_DrawLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) const;
-    void GIZMOS_DrawAABB(const AABB& aabb, const glm::vec3& color) const;
-    void GIZMOS_DrawObjectAABB(const std::string& objectId, const glm::vec3& color) const;
-    void GIZMOS_DrawObjectTransform(const std::string& objectId, float axisLength) const;
-    void GIZMOS_DrawBVH(const glm::vec3& color) const;
-
-    template<typename T, typename... Args>
-    T* emplaceWidget(Args&&... args) {
-        return userInterface_.emplace<T>(std::forward<Args>(args)...);
-    }
 
     // --------------------------------------------------------
     // Assets API
@@ -140,13 +113,12 @@ private:
 
     GameWindow& window_;
     TimeManager& time_;
-    UserInterface& userInterface_;
     AssetManager& assetManager_;
     InputSystem& inputSystem_;
     PickingSystem& pickingSystem_;
     PhysicsSystem& physicsSystem_;
     Scene& scene_;
-    RenderSystem& renderSystem_;
+    GameRenderSystem& renderSystem_;
     RendererSettings& rendererSettings_;
-    VulkanGraphicsBackend& graphicsBackend_;
+    VulkanGameRenderer& renderer_;
 };
