@@ -68,6 +68,7 @@ public:
     // Gizmo Drawing
     // --------------------------------------------------------
     void drawGizmoLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color);
+    void drawGizmoCube(const glm::vec3& center, float halfSize, const glm::vec3& color);
     void drawGizmoAABB(const AABB& aabb, const glm::vec3& color);
     void drawGizmoObjectAABB(const std::string& objectId, const glm::vec3& color);
     void drawGizmoObjectTransform(const std::string& objectId, float axisLength);
@@ -78,6 +79,9 @@ public:
 
     std::vector<GizmoHandle>
     drawRotationHandles(const std::string& objectId, const Camera& camera, const Transform& cameraTransform);
+
+    std::vector<GizmoHandle>
+    drawScaleHandles(const std::string& objectId, const Camera& camera, const Transform& cameraTransform);
 
     // --------------------------------------------------------
     // Object Outlining

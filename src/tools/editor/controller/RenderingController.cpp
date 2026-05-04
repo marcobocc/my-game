@@ -78,6 +78,35 @@ void RenderingController::drawGizmoLine(const glm::vec3& from, const glm::vec3& 
     gizmoLines.push_back({to, color});
 }
 
+void RenderingController::drawGizmoCube(const glm::vec3& center, float halfSize, const glm::vec3& color) {
+    float h = halfSize;
+    glm::vec3 c[8] = {
+            center + glm::vec3(-h, -h, -h),
+            center + glm::vec3(h, -h, -h),
+            center + glm::vec3(h, h, -h),
+            center + glm::vec3(-h, h, -h),
+            center + glm::vec3(-h, -h, h),
+            center + glm::vec3(h, -h, h),
+            center + glm::vec3(h, h, h),
+            center + glm::vec3(-h, h, h),
+    };
+    // Bottom face
+    drawGizmoLine(c[0], c[1], color);
+    drawGizmoLine(c[1], c[2], color);
+    drawGizmoLine(c[2], c[3], color);
+    drawGizmoLine(c[3], c[0], color);
+    // Top face
+    drawGizmoLine(c[4], c[5], color);
+    drawGizmoLine(c[5], c[6], color);
+    drawGizmoLine(c[6], c[7], color);
+    drawGizmoLine(c[7], c[4], color);
+    // Verticals
+    drawGizmoLine(c[0], c[4], color);
+    drawGizmoLine(c[1], c[5], color);
+    drawGizmoLine(c[2], c[6], color);
+    drawGizmoLine(c[3], c[7], color);
+}
+
 void RenderingController::drawGizmoAABB(const AABB& aabb, const glm::vec3& color) {
     const glm::vec3 min = aabb.min;
     const glm::vec3 max = aabb.max;
@@ -282,6 +311,58 @@ std::vector<GizmoHandle> RenderingController::drawRotationHandles(const std::str
             prevPt = pt;
         }
     }
+
+    return handles;
+}
+
+std::vector<GizmoHandle> RenderingController::drawScaleHandles(const std::string& objectId,
+                                                               const Camera& camera,
+                                                               const Transform& cameraTransform) {
+    auto& scene = editorState_.getScene();
+    GameObject& object = scene.getObject(objectId);
+    if (!object.has<Transform>()) return {};
+
+    auto transform = object.get<Transform>();
+    glm::vec3 origin = transform.position;
+
+    float dist = glm::length(cameraTransform.position - origin);
+    float scale = dist * 0.15f;
+
+    float shaftLength = scale;
+    float cubeHalf = scale * 0.07f;
+    float pickRadius = scale * 0.18f;
+    float pickOffset = scale * 0.20f;
+
+    const glm::vec3 axes[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    const glm::vec3 colors[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    const GizmoAxis gaxes[3] = {GizmoAxis::X, GizmoAxis::Y, GizmoAxis::Z};
+
+    std::vector<GizmoHandle> handles;
+    handles.reserve(4);
+
+    for (int i = 0; i < 3; ++i) {
+        glm::vec3 dir = axes[i];
+        glm::vec3 color = colors[i];
+        glm::vec3 tip = origin + dir * shaftLength;
+
+        // Shaft
+        drawGizmoLine(origin, tip, color);
+        // Cube tip
+        drawGizmoCube(tip, cubeHalf, color);
+
+        glm::vec3 capsuleBase = origin + dir * pickOffset;
+        handles.push_back({GizmoType::Scale, gaxes[i], capsuleBase, tip + dir * cubeHalf, pickRadius});
+    }
+
+    // Center cube — uniform scale
+    float centerHalf = scale * 0.09f;
+    drawGizmoCube(origin, centerHalf, {1, 1, 1});
+    // Represent as a short vertical capsule with radius covering the cube
+    handles.push_back({GizmoType::Scale,
+                       GizmoAxis::All,
+                       origin - glm::vec3(0, centerHalf, 0),
+                       origin + glm::vec3(0, centerHalf, 0),
+                       centerHalf * 2.0f});
 
     return handles;
 }

@@ -23,7 +23,7 @@
     and cleared via clearHandles() at the start of each frame.
 */
 
-enum class GizmoAxis { X, Y, Z };
+enum class GizmoAxis { X, Y, Z, All };
 enum class GizmoType { Translation, Rotation, Scale };
 
 struct GizmoHit {

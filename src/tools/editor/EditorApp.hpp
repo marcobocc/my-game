@@ -72,7 +72,7 @@ private:
 
     std::unordered_set<std::string> aabbEnabled_;
     bool bvhEnabled_ = false;
-    GizmoType gizmoMode_ = GizmoType::Translation; // T = Translation, R = Rotation
+    GizmoType gizmoMode_ = GizmoType::Translation; // T = Translation, R = Rotation, Y = Scale
 
     // Translation drag state
     struct TranslationDrag {
@@ -95,6 +95,18 @@ private:
         glm::vec3 initialHitDir; // normalized direction from origin to first hit in ring plane
     };
     std::optional<RotationDrag> activeRotationDrag_;
+
+    // Scale drag state
+    struct ScaleDrag {
+        std::string objectId;
+        GizmoAxis axis;
+        glm::vec3 axisDir; // world-space drag direction (camera right for uniform)
+        glm::vec3 origin; // object position
+        glm::vec3 initialScale; // object scale at drag start
+        glm::vec3 dragPlaneNormal;
+        float initialT; // projected distance at drag start (must be non-zero)
+    };
+    std::optional<ScaleDrag> activeScaleDrag_;
 
     static SceneViewport computeSceneViewport(int w, int h) {
         int left = static_cast<int>(static_cast<float>(w) * HierarchyPanel::PANEL_WIDTH_RATIO);
@@ -174,6 +186,7 @@ private:
         if (engine_.isKeyPressed(GLFW_KEY_B)) bvhEnabled_ = !bvhEnabled_;
         if (engine_.isKeyPressed(GLFW_KEY_T)) gizmoMode_ = GizmoType::Translation;
         if (engine_.isKeyPressed(GLFW_KEY_R)) gizmoMode_ = GizmoType::Rotation;
+        if (engine_.isKeyPressed(GLFW_KEY_Y)) gizmoMode_ = GizmoType::Scale;
 
         bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
 
@@ -188,6 +201,12 @@ private:
                 updateRotationDrag(mouseX, mouseY);
             } else {
                 commitRotationDrag();
+            }
+        } else if (activeScaleDrag_) {
+            if (leftDown) {
+                updateScaleDrag(mouseX, mouseY);
+            } else {
+                commitScaleDrag();
             }
         } else if (leftDown && !wasLeftDown_ && !ImGui::GetIO().WantCaptureMouse) {
             auto sv = window_.getSceneViewport();
@@ -224,6 +243,8 @@ private:
             beginTranslationDrag(hit.axis, mouseX, mouseY);
         } else if (hit.type == GizmoType::Rotation) {
             beginRotationDrag(hit.axis, mouseX, mouseY);
+        } else if (hit.type == GizmoType::Scale) {
+            beginScaleDrag(hit.axis, mouseX, mouseY);
         }
     }
 
@@ -343,6 +364,83 @@ private:
         activeRotationDrag_.reset();
     }
 
+    void beginScaleDrag(GizmoAxis axis, double mouseX, double mouseY) {
+        auto selectedId = editorState_.getSelectedObject();
+        if (!selectedId) return;
+        auto& scene = editorState_.getScene();
+        auto& obj = scene.getObject(*selectedId);
+        if (!obj.has<Transform>()) return;
+
+        glm::vec3 origin = obj.get<Transform>().position;
+
+        // For uniform scale use the camera's right vector as drag axis;
+        // for single-axis use the world axis with a camera-facing plane.
+        glm::vec3 axisDir;
+        glm::vec3 planeNormal;
+        if (axis == GizmoAxis::All) {
+            axisDir = glm::normalize(cameraController_.getTransform().getRight());
+            planeNormal = glm::normalize(cameraController_.getTransform().position - origin);
+        } else {
+            axisDir = axisToDir(axis);
+            glm::vec3 camDir = glm::normalize(cameraController_.getTransform().position - origin);
+            planeNormal = glm::normalize(camDir - glm::dot(camDir, axisDir) * axisDir);
+            if (glm::length(planeNormal) < 1e-5f) planeNormal = cameraController_.getTransform().getUp();
+        }
+
+        Ray ray = buildMouseRay(mouseX, mouseY);
+        auto hitPoint = rayPlaneIntersect(ray, origin, planeNormal);
+        if (!hitPoint) return;
+
+        float initialT = glm::dot(*hitPoint - origin, axisDir);
+        if (std::abs(initialT) < 1e-5f) return;
+
+        uiController_.mutations.beginEdit(obj.get<Transform>());
+        activeScaleDrag_ =
+                ScaleDrag{*selectedId, axis, axisDir, origin, obj.get<Transform>().scale, planeNormal, initialT};
+    }
+
+    void updateScaleDrag(double mouseX, double mouseY) {
+        if (!activeScaleDrag_) return;
+        auto& scene = editorState_.getScene();
+        auto& obj = scene.getObject(activeScaleDrag_->objectId);
+        if (!obj.has<Transform>()) return;
+
+        Ray ray = buildMouseRay(mouseX, mouseY);
+        auto hitPoint = rayPlaneIntersect(ray, activeScaleDrag_->origin, activeScaleDrag_->dragPlaneNormal);
+        if (!hitPoint) return;
+
+        float currentT = glm::dot(*hitPoint - activeScaleDrag_->origin, activeScaleDrag_->axisDir);
+        float factor = glm::max(currentT / activeScaleDrag_->initialT, 0.01f);
+
+        if (activeScaleDrag_->axis == GizmoAxis::All) {
+            obj.get<Transform>().scale = activeScaleDrag_->initialScale * factor;
+        } else {
+            glm::vec3 newScale = activeScaleDrag_->initialScale;
+            switch (activeScaleDrag_->axis) {
+                case GizmoAxis::X:
+                    newScale.x = activeScaleDrag_->initialScale.x * factor;
+                    break;
+                case GizmoAxis::Y:
+                    newScale.y = activeScaleDrag_->initialScale.y * factor;
+                    break;
+                case GizmoAxis::Z:
+                    newScale.z = activeScaleDrag_->initialScale.z * factor;
+                    break;
+                default:
+                    break;
+            }
+            obj.get<Transform>().scale = newScale;
+        }
+    }
+
+    void commitScaleDrag() {
+        if (!activeScaleDrag_) return;
+        auto& scene = editorState_.getScene();
+        auto& obj = scene.getObject(activeScaleDrag_->objectId);
+        if (obj.has<Transform>()) uiController_.mutations.commitEdit(obj.get<Transform>());
+        activeScaleDrag_.reset();
+    }
+
     static glm::vec3 axisToDir(GizmoAxis axis) {
         switch (axis) {
             case GizmoAxis::X:
@@ -368,6 +466,9 @@ private:
                         *selectedId, cameraController_.getCamera(), cameraController_.getTransform());
             } else if (gizmoMode_ == GizmoType::Rotation) {
                 handles = renderingController_.drawRotationHandles(
+                        *selectedId, cameraController_.getCamera(), cameraController_.getTransform());
+            } else if (gizmoMode_ == GizmoType::Scale) {
+                handles = renderingController_.drawScaleHandles(
                         *selectedId, cameraController_.getCamera(), cameraController_.getTransform());
             }
             for (const auto& h: handles)
