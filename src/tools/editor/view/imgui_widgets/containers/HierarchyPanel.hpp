@@ -77,7 +77,7 @@ private:
             }
 
             if (creatingSpherePrimitive_) {
-                ImGui::SliderInt("    Resolution##sphereRes", reinterpret_cast<int*>(&sphereResolution_), 4, 5);
+                ImGui::SliderInt("    Resolution##sphereRes", reinterpret_cast<int*>(&sphereResolution_), 4, 16);
                 if (ImGui::Button("    Create##sphere", ImVec2(-1, 0))) {
                     std::string meshName = "_PRIMITIVE_SPHERE_" + std::to_string(sphereResolution_);
                     auto id = engine_.createMesh(meshName, {});
