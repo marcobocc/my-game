@@ -72,6 +72,7 @@ private:
 
     std::unordered_set<std::string> aabbEnabled_;
     bool bvhEnabled_ = false;
+    GizmoType gizmoMode_ = GizmoType::Translation; // T = Translation, R = Rotation
 
     // Translation drag state
     struct TranslationDrag {
@@ -83,6 +84,17 @@ private:
         glm::vec3 hitPointOnAxis; // first hit point projected onto axis
     };
     std::optional<TranslationDrag> activeDrag_;
+
+    // Rotation drag state
+    struct RotationDrag {
+        std::string objectId;
+        GizmoAxis axis;
+        glm::vec3 axisDir; // world-space rotation axis
+        glm::vec3 origin; // object position (center of rotation)
+        glm::quat initialRotation; // object quaternion at drag start
+        glm::vec3 initialHitDir; // normalized direction from origin to first hit in ring plane
+    };
+    std::optional<RotationDrag> activeRotationDrag_;
 
     static SceneViewport computeSceneViewport(int w, int h) {
         int left = static_cast<int>(static_cast<float>(w) * HierarchyPanel::PANEL_WIDTH_RATIO);
@@ -160,16 +172,22 @@ private:
         if (engine_.isKeyPressed(GLFW_KEY_G)) renderingController_.toggleWorldGrid();
         if (engine_.isKeyPressed(GLFW_KEY_L)) renderingController_.toggleLighting();
         if (engine_.isKeyPressed(GLFW_KEY_B)) bvhEnabled_ = !bvhEnabled_;
+        if (engine_.isKeyPressed(GLFW_KEY_T)) gizmoMode_ = GizmoType::Translation;
+        if (engine_.isKeyPressed(GLFW_KEY_R)) gizmoMode_ = GizmoType::Rotation;
 
         bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
 
         if (activeDrag_) {
             if (leftDown) {
-                // Continue dragging — project current mouse ray onto constraint plane
                 updateTranslationDrag(mouseX, mouseY);
             } else {
-                // Mouse released — commit edit to undo history
                 commitTranslationDrag();
+            }
+        } else if (activeRotationDrag_) {
+            if (leftDown) {
+                updateRotationDrag(mouseX, mouseY);
+            } else {
+                commitRotationDrag();
             }
         } else if (leftDown && !wasLeftDown_ && !ImGui::GetIO().WantCaptureMouse) {
             auto sv = window_.getSceneViewport();
@@ -202,7 +220,14 @@ private:
     }
 
     void onPickResult(const GizmoHit& hit, double mouseX, double mouseY) {
-        if (hit.type != GizmoType::Translation) return;
+        if (hit.type == GizmoType::Translation) {
+            beginTranslationDrag(hit.axis, mouseX, mouseY);
+        } else if (hit.type == GizmoType::Rotation) {
+            beginRotationDrag(hit.axis, mouseX, mouseY);
+        }
+    }
+
+    void beginTranslationDrag(GizmoAxis axis, double mouseX, double mouseY) {
         auto selectedId = editorState_.getSelectedObject();
         if (!selectedId) return;
 
@@ -210,7 +235,7 @@ private:
         auto& obj = scene.getObject(*selectedId);
         if (!obj.has<Transform>()) return;
 
-        glm::vec3 axisDir = axisToDir(hit.axis);
+        glm::vec3 axisDir = axisToDir(axis);
         glm::vec3 origin = obj.get<Transform>().position;
 
         // Choose a drag plane whose normal is perpendicular to the axis and faces the camera as much as possible
@@ -227,7 +252,7 @@ private:
 
         activeDrag_ = TranslationDrag{
                 *selectedId,
-                hit.axis,
+                axis,
                 axisDir,
                 planeNormal,
                 origin,
@@ -261,6 +286,63 @@ private:
         activeDrag_.reset();
     }
 
+    void beginRotationDrag(GizmoAxis axis, double mouseX, double mouseY) {
+        auto selectedId = editorState_.getSelectedObject();
+        if (!selectedId) return;
+
+        auto& scene = editorState_.getScene();
+        auto& obj = scene.getObject(*selectedId);
+        if (!obj.has<Transform>()) return;
+
+        glm::vec3 axisDir = axisToDir(axis);
+        glm::vec3 origin = obj.get<Transform>().position;
+
+        // The ring lives in the plane whose normal is the rotation axis
+        Ray ray = buildMouseRay(mouseX, mouseY);
+        auto hitPoint = rayPlaneIntersect(ray, origin, axisDir);
+        if (!hitPoint) return;
+
+        glm::vec3 hitDir = *hitPoint - origin;
+        if (glm::length(hitDir) < 1e-5f) return;
+
+        hitDir = glm::normalize(hitDir);
+
+        uiController_.mutations.beginEdit(obj.get<Transform>());
+        activeRotationDrag_ = RotationDrag{*selectedId, axis, axisDir, origin, obj.get<Transform>().rotation, hitDir};
+    }
+
+    void updateRotationDrag(double mouseX, double mouseY) {
+        if (!activeRotationDrag_) return;
+        auto& scene = editorState_.getScene();
+        auto& obj = scene.getObject(activeRotationDrag_->objectId);
+        if (!obj.has<Transform>()) return;
+
+        Ray ray = buildMouseRay(mouseX, mouseY);
+        auto hitPoint = rayPlaneIntersect(ray, activeRotationDrag_->origin, activeRotationDrag_->axisDir);
+        if (!hitPoint) return;
+
+        glm::vec3 hitDir = *hitPoint - activeRotationDrag_->origin;
+        if (glm::length(hitDir) < 1e-5f) return;
+        hitDir = glm::normalize(hitDir);
+
+        // Signed angle from initial hit direction to current, around the rotation axis
+        float cosA = glm::clamp(glm::dot(activeRotationDrag_->initialHitDir, hitDir), -1.0f, 1.0f);
+        float angle = glm::acos(cosA);
+        if (glm::dot(glm::cross(activeRotationDrag_->initialHitDir, hitDir), activeRotationDrag_->axisDir) < 0.0f)
+            angle = -angle;
+
+        obj.get<Transform>().rotation =
+                glm::angleAxis(angle, activeRotationDrag_->axisDir) * activeRotationDrag_->initialRotation;
+    }
+
+    void commitRotationDrag() {
+        if (!activeRotationDrag_) return;
+        auto& scene = editorState_.getScene();
+        auto& obj = scene.getObject(activeRotationDrag_->objectId);
+        if (obj.has<Transform>()) uiController_.mutations.commitEdit(obj.get<Transform>());
+        activeRotationDrag_.reset();
+    }
+
     static glm::vec3 axisToDir(GizmoAxis axis) {
         switch (axis) {
             case GizmoAxis::X:
@@ -279,9 +361,15 @@ private:
         if (auto selectedId = editorState_.getSelectedObject()) {
             renderingController_.drawObjectOutline(*selectedId);
 
-            // Translation handles — draw arrows and register for picking
-            auto handles = renderingController_.drawTranslationHandles(
-                    *selectedId, cameraController_.getCamera(), cameraController_.getTransform());
+            // Draw and register handles for the active gizmo mode
+            std::vector<GizmoHandle> handles;
+            if (gizmoMode_ == GizmoType::Translation) {
+                handles = renderingController_.drawTranslationHandles(
+                        *selectedId, cameraController_.getCamera(), cameraController_.getTransform());
+            } else if (gizmoMode_ == GizmoType::Rotation) {
+                handles = renderingController_.drawRotationHandles(
+                        *selectedId, cameraController_.getCamera(), cameraController_.getTransform());
+            }
             for (const auto& h: handles)
                 pickingSystem_.registerHandle(h);
         }

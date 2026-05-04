@@ -50,6 +50,7 @@ std::string Scene::createMesh(const std::string& meshName, const _createMesh_Opt
 
     auto& transform = gameObj.add<Transform>();
     transform.position = options.position;
+    transform.rotation = options.rotation;
     transform.scale = options.scale;
 
     auto& renderer = gameObj.add<Renderer>();

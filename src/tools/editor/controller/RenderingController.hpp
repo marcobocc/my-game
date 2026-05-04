@@ -76,6 +76,9 @@ public:
     std::vector<GizmoHandle>
     drawTranslationHandles(const std::string& objectId, const Camera& camera, const Transform& cameraTransform);
 
+    std::vector<GizmoHandle>
+    drawRotationHandles(const std::string& objectId, const Camera& camera, const Transform& cameraTransform);
+
     // --------------------------------------------------------
     // Object Outlining
     // --------------------------------------------------------

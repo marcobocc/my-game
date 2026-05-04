@@ -1,7 +1,9 @@
 #pragma once
+#include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>
 
 static constexpr glm::vec3 DEFAULT_POSITION{0.0f, 0.0f, 0.0f};
+static constexpr glm::quat DEFAULT_ROTATION{1.0f, 0.0f, 0.0f, 0.0f};
 static constexpr glm::vec3 DEFAULT_SCALE{1.0f, 1.0f, 1.0f};
 static constexpr float DEFAULT_FOV = 45.0f;
 static constexpr float DEFAULT_ASPECT = 16.0f / 9.0f;

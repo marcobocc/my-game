@@ -32,6 +32,7 @@ public:
     // ------------------------------------------------------------------------------
     struct _createMesh_Options {
         glm::vec3 position{DEFAULT_POSITION};
+        glm::quat rotation{DEFAULT_ROTATION};
         glm::vec3 scale{DEFAULT_SCALE};
         std::string materialName{SOLID_COLOR_MATERIAL};
     };
@@ -53,7 +54,7 @@ public:
     // ------------------------------------------------------------------------------
     struct _createCamera_Options {
         glm::vec3 position{DEFAULT_POSITION};
-        glm::quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
+        glm::quat rotation{DEFAULT_ROTATION};
         float fov{DEFAULT_FOV};
         float aspect{DEFAULT_ASPECT};
         float nearPlane{DEFAULT_NEAR_PLANE};

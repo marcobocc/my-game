@@ -238,3 +238,50 @@ std::vector<GizmoHandle> RenderingController::drawTranslationHandles(const std::
 
     return handles;
 }
+
+std::vector<GizmoHandle> RenderingController::drawRotationHandles(const std::string& objectId,
+                                                                  const Camera& camera,
+                                                                  const Transform& cameraTransform) {
+    auto& scene = editorState_.getScene();
+    GameObject& object = scene.getObject(objectId);
+    if (!object.has<Transform>()) return {};
+
+    auto transform = object.get<Transform>();
+    glm::vec3 origin = transform.position;
+
+    // Scale ring radius with camera distance so handles stay constant on screen
+    float dist = glm::length(cameraTransform.position - origin);
+    float ringRadius = dist * 0.15f;
+    float pickRadius = ringRadius * 0.18f; // match translation handle pick radius ratio
+
+    constexpr int segments = 32;
+
+    // For each axis the ring lives in the plane spanned by the two perpendicular vectors
+    const glm::vec3 colors[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    const GizmoAxis gaxes[3] = {GizmoAxis::X, GizmoAxis::Y, GizmoAxis::Z};
+    const glm::vec3 perp1s[3] = {{0, 1, 0}, {1, 0, 0}, {1, 0, 0}};
+    const glm::vec3 perp2s[3] = {{0, 0, 1}, {0, 0, 1}, {0, 1, 0}};
+
+    std::vector<GizmoHandle> handles;
+    handles.reserve(3 * segments);
+
+    for (int i = 0; i < 3; ++i) {
+        glm::vec3 color = colors[i];
+        glm::vec3 p1 = perp1s[i];
+        glm::vec3 p2 = perp2s[i];
+
+        glm::vec3 prevPt{};
+        for (int s = 0; s <= segments; ++s) {
+            float angle = glm::two_pi<float>() * static_cast<float>(s) / static_cast<float>(segments);
+            glm::vec3 pt = origin + (p1 * glm::cos(angle) + p2 * glm::sin(angle)) * ringRadius;
+            if (s > 0) {
+                drawGizmoLine(prevPt, pt, color);
+                // Each segment doubles as a thin capsule for picking
+                handles.push_back({GizmoType::Rotation, gaxes[i], prevPt, pt, pickRadius});
+            }
+            prevPt = pt;
+        }
+    }
+
+    return handles;
+}
