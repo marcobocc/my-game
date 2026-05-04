@@ -14,7 +14,7 @@ public:
         renderingController_(renderingController),
         handle_(handle) {}
 
-    void draw() const override {
+    void draw() override {
         if (!handle_.isValid()) return;
         VkDescriptorSet texId = renderingController_.getRenderTargetImGuiId(handle_);
         if (texId == VK_NULL_HANDLE) return;

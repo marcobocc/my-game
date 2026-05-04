@@ -2,5 +2,5 @@
 
 struct ImguiWidget {
     virtual ~ImguiWidget() = default;
-    virtual void draw() const = 0;
+    virtual void draw() = 0;
 };

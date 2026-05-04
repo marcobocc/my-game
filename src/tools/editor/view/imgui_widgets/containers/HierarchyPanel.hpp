@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include "../../../controller/SceneMutationsController.hpp"
+#include "../ProceduralMeshWidget.hpp"
 #include "GameEngine.hpp"
 #include "systems/ui/ImguiWidget.hpp"
 
@@ -15,9 +16,10 @@ public:
                    SceneMutationsController& mutations) :
         selectedObjectId_(selectedObjectId),
         engine_(engine),
-        mutations_(mutations) {}
+        mutations_(mutations),
+        procMeshWidget_(engine, mutations) {}
 
-    void draw() const override {
+    void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         float menuBarHeight = ImGui::GetFrameHeight();
         float width = viewport->Size.x * PANEL_WIDTH_RATIO;
@@ -54,8 +56,9 @@ private:
     std::optional<std::string>* selectedObjectId_;
     GameEngine& engine_;
     SceneMutationsController& mutations_;
+    ProceduralMeshWidget procMeshWidget_;
 
-    void drawAddObject() const {
+    void drawAddObject() {
         if (!ImGui::CollapsingHeader("Add Object")) return;
 
         ImGui::Indent();
@@ -84,5 +87,6 @@ private:
             }
         }
         ImGui::Unindent();
+        procMeshWidget_.draw();
     }
 };

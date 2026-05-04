@@ -14,7 +14,7 @@ public:
     std::function<void()> onRedo;
     std::optional<std::string> sceneName{};
 
-    void draw() const override {
+    void draw() override {
         if (!ImGui::BeginMainMenuBar()) return;
 
         if (ImGui::BeginMenu("File")) {

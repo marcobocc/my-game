@@ -27,7 +27,7 @@ public:
         boxColliderWidget_(mutations),
         cameraWidget_(mutations) {}
 
-    void draw() const override {
+    void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         float menuBarHeight = ImGui::GetFrameHeight();
         float width = viewport->Size.x * PANEL_WIDTH_RATIO;

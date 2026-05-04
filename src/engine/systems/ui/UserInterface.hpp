@@ -7,7 +7,7 @@ class UserInterface {
 public:
     UserInterface() = default;
 
-    const auto& widgets() const { return widgets_; }
+    const auto& widgets() { return widgets_; }
 
     template<typename T, typename... Args>
     T* emplace(Args&&... args) {

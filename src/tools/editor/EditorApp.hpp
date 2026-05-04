@@ -449,6 +449,8 @@ private:
                 return {0, 1, 0};
             case GizmoAxis::Z:
                 return {0, 0, 1};
+            case GizmoAxis::All:
+                return {1, 1, 1};
         }
         return {1, 0, 0};
     }
