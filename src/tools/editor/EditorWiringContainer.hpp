@@ -50,7 +50,6 @@ public:
                         gridPass_,
                         gizmoPass_,
                         objectIdPass_,
-                        pickingBackend_,
                         outlinePass_,
                         uiPass_,
                         swapchainManager_,

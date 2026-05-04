@@ -3,7 +3,6 @@
 #include <volk.h>
 #include "../../../engine/systems/core/GameWindow.hpp"
 #include "../../../engine/systems/rendering/vulkan/core/VulkanFrameManager.hpp"
-#include "../../../engine/systems/rendering/vulkan/core/VulkanPickingBackend.hpp"
 #include "../../../engine/systems/rendering/vulkan/core/VulkanSwapchainManager.hpp"
 #include "../../../engine/systems/rendering/vulkan/core/resources/VulkanRenderTargetManager.hpp"
 #include "../../../engine/systems/rendering/vulkan/passes/VulkanGeometryPass.hpp"
@@ -23,7 +22,6 @@ VulkanEditorRenderer::VulkanEditorRenderer(GameWindow& window,
                                            VulkanGridPass& gridPass,
                                            VulkanGizmoPass& gizmoPass,
                                            VulkanObjectIdPass& objectIdPass,
-                                           VulkanPickingBackend& pickingBackend,
                                            VulkanOutlinePass& outlinePass,
                                            VulkanUIPass& uiPass,
                                            VulkanSwapchainManager& swapchainManager,
@@ -31,7 +29,6 @@ VulkanEditorRenderer::VulkanEditorRenderer(GameWindow& window,
     window_(window),
     context_(context),
     settings_(settings),
-    pickingBackend_(pickingBackend),
     swapchainManager_(swapchainManager),
     frameManager_(frameManager),
     renderTargetManager_(renderTargetManager),
@@ -111,7 +108,6 @@ bool VulkanEditorRenderer::renderFrame(const EditorRenderData& scene) {
     }
 
     frameManager_.waitForCurrentFrame();
-    pickingBackend_.processReadback(objectIdMap_);
 
     uint32_t imageIndex = 0;
     if (!frameManager_.acquireImage(imageIndex)) return false;
@@ -328,10 +324,6 @@ void VulkanEditorRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFl
                  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
                  VK_IMAGE_ASPECT_DEPTH_BIT},
         };
-        n.epilogues = {{objectIdColorHandle_,
-                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                        VK_ACCESS_TRANSFER_READ_BIT,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT}};
         n.execute = [this](VkCommandBuffer cmd,
                            const VulkanRenderGraph<EditorRenderData>& graph,
                            const EditorRenderData& ctx) -> bool {
@@ -347,15 +339,6 @@ void VulkanEditorRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFl
                                                 graph.getWidth(objectIdColorHandle_),
                                                 graph.getHeight(objectIdColorHandle_));
             return true;
-        };
-        n.postExecute = [this](VkCommandBuffer cmd,
-                               const VulkanRenderGraph<EditorRenderData>& graph,
-                               const EditorRenderData& ctx) {
-            if (ctx.isOffscreen) return;
-            pickingBackend_.recordReadback(cmd,
-                                           graph.getImage(objectIdColorHandle_),
-                                           graph.getWidth(objectIdColorHandle_),
-                                           graph.getHeight(objectIdColorHandle_));
         };
         renderGraph_->addPass(std::move(n));
     }

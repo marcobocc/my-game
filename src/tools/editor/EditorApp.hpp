@@ -8,6 +8,7 @@
 #include "../../engine/data/components/Transform.hpp"
 #include "../../engine/systems/assets/AssetManager.hpp"
 #include "../../engine/systems/ui/UserInterface.hpp"
+#include "controller/EditorPickingSystem.hpp"
 #include "controller/EditorUIController.hpp"
 #include "controller/OrbitCameraController.hpp"
 #include "controller/RenderingController.hpp"
@@ -38,7 +39,8 @@ public:
         userInterface_(userInterface),
         renderingController_(editorState_, editorRenderer, editorRenderSystem, rendererSettings, assetManager),
         uiController_(engine_, userInterface, editorState_),
-        cameraController_(engine_) {
+        cameraController_(engine_),
+        pickingSystem_(assetManager) {
         setupViewport();
         setupScene();
         setupRenderTargetPreview();
@@ -60,6 +62,7 @@ private:
     RenderingController renderingController_;
     EditorUIController uiController_;
     OrbitCameraController cameraController_;
+    EditorPickingSystem pickingSystem_;
 
     bool wasLeftDown_ = false;
     RenderTargetHandle renderTarget_;
@@ -126,24 +129,43 @@ private:
 
         bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
         if (leftDown && !wasLeftDown_ && !ImGui::GetIO().WantCaptureMouse) {
-            auto [scaleX, scaleY] = window_.getContentScale();
-            engine_.requestPick(static_cast<uint32_t>(mouseX * scaleX), static_cast<uint32_t>(mouseY * scaleY));
-        }
-        wasLeftDown_ = leftDown;
-
-        if (auto picked = engine_.getPickResult()) {
-            auto currentSelection = editorState_.getSelectedObject();
-            if (currentSelection == picked) {
-                editorState_.setSelectedObject({});
+            auto sv = window_.getSceneViewport();
+            auto result = pickingSystem_.pick(static_cast<uint32_t>(mouseX),
+                                              static_cast<uint32_t>(mouseY),
+                                              static_cast<uint32_t>(sv.x),
+                                              static_cast<uint32_t>(sv.y),
+                                              static_cast<uint32_t>(sv.width),
+                                              static_cast<uint32_t>(sv.height),
+                                              cameraController_.getCamera(),
+                                              cameraController_.getTransform(),
+                                              editorState_.getScene());
+            if (result) {
+                std::visit([this](const auto& hit) { onPickResult(hit); }, *result);
             } else {
-                editorState_.setSelectedObject(picked);
+                editorState_.setSelectedObject({});
             }
         }
+        wasLeftDown_ = leftDown;
 
         drawGizmos();
     }
 
+    void onPickResult(const SceneObjectHit& hit) {
+        auto current = editorState_.getSelectedObject();
+        if (current == hit.objectId)
+            editorState_.setSelectedObject({});
+        else
+            editorState_.setSelectedObject(hit.objectId);
+    }
+
+    void onPickResult(const GizmoHit& /*hit*/) {
+        // TODO: placeholder — gizmo handle drag logic (translation/rotation/scale) goes here
+    }
+
     void drawGizmos() {
+        pickingSystem_.clearHandles(); // TODO: placeholder — will re-register gizmo handles each frame once handles are
+                                       // implemented
+
         // Draw outline for selected object
         if (auto selectedId = editorState_.getSelectedObject()) {
             renderingController_.drawObjectOutline(*selectedId);

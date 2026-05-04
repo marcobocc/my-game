@@ -17,7 +17,6 @@ class VulkanLightingPass;
 class VulkanGridPass;
 class VulkanGizmoPass;
 class VulkanObjectIdPass;
-class VulkanPickingBackend;
 class VulkanOutlinePass;
 class VulkanUIPass;
 class VulkanSwapchainManager;
@@ -35,7 +34,6 @@ public:
                          VulkanGridPass& gridPass,
                          VulkanGizmoPass& gizmoPass,
                          VulkanObjectIdPass& objectIdPass,
-                         VulkanPickingBackend& pickingBackend,
                          VulkanOutlinePass& outlinePass,
                          VulkanUIPass& uiPass,
                          VulkanSwapchainManager& swapchainManager,
@@ -80,7 +78,6 @@ private:
     GameWindow& window_;
     VulkanContext& context_;
     RendererSettings& settings_;
-    VulkanPickingBackend& pickingBackend_;
     VulkanSwapchainManager& swapchainManager_;
     VulkanFrameManager& frameManager_;
     VulkanRenderTargetManager& renderTargetManager_;

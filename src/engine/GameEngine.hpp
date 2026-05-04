@@ -19,7 +19,6 @@ struct Renderer;
 struct Transform;
 struct RendererSettings;
 class InputSystem;
-class PickingSystem;
 class PhysicsSystem;
 class GameRenderSystem;
 class TimeManager;
@@ -51,7 +50,6 @@ public:
                         TimeManager& time,
                         AssetManager& assetManager,
                         InputSystem& inputSystem,
-                        PickingSystem& pickingSystem,
                         PhysicsSystem& physicsSystem,
                         Scene& scene,
                         GameRenderSystem& renderSystem,
@@ -73,9 +71,6 @@ public:
     bool isKeyDown(int key) const;
     bool isKeyPressed(int key) const;
     bool isMouseButtonDown(int button) const;
-
-    void requestPick(uint32_t x, uint32_t y) const;
-    std::optional<std::string> getPickResult() const;
 
     // --------------------------------------------------------
     // Rendering API
@@ -115,7 +110,6 @@ private:
     TimeManager& time_;
     AssetManager& assetManager_;
     InputSystem& inputSystem_;
-    PickingSystem& pickingSystem_;
     PhysicsSystem& physicsSystem_;
     Scene& scene_;
     GameRenderSystem& renderSystem_;

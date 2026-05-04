@@ -7,14 +7,12 @@
 #include "systems/core/GameWindow.hpp"
 #include "systems/core/TimeManager.hpp"
 #include "systems/input/InputSystem.hpp"
-#include "systems/input/PickingSystem.hpp"
 #include "systems/physics/PhysicsSystem.hpp"
 #include "systems/rendering/GameRenderSystem.hpp"
 #include "systems/rendering/vulkan/VulkanGameRenderer.hpp"
 #include "systems/rendering/vulkan/core/VulkanCommandManager.hpp"
 #include "systems/rendering/vulkan/core/VulkanDebugMessenger.hpp"
 #include "systems/rendering/vulkan/core/VulkanFrameManager.hpp"
-#include "systems/rendering/vulkan/core/VulkanPickingBackend.hpp"
 #include "systems/rendering/vulkan/core/VulkanSwapchainManager.hpp"
 #include "systems/rendering/vulkan/core/resources/VulkanMaterialCache.hpp"
 #include "systems/rendering/vulkan/core/resources/VulkanMeshBuffersCache.hpp"
@@ -72,7 +70,6 @@ public:
         geometryPass_(vulkanContext_, resourcesManager_, assetManager_, window_),
         lightingPass_(
                 vulkanContext_, assetManager_, resourcesManager_, swapchainManager_.swapchain().swapchainImageFormat),
-        pickingBackend_(vulkanContext_),
         gameRenderer_(vulkanContext_,
                       frameManager_,
                       renderTargetManager_,
@@ -80,7 +77,6 @@ public:
                       lightingPass_,
                       swapchainManager_,
                       rendererSettings_),
-        pickingSystem_(pickingBackend_),
         gameRenderSystem_(gameRenderer_),
         inputSystem_(window_),
         time_([&window] { return static_cast<float>(window.getTime()); }),
@@ -88,7 +84,6 @@ public:
                 time_,
                 assetManager_,
                 inputSystem_,
-                pickingSystem_,
                 physicsSystem_,
                 scene_,
                 gameRenderSystem_,
@@ -133,11 +128,8 @@ protected:
     VulkanGeometryPass geometryPass_;
     VulkanLightingPass lightingPass_;
 
-    // Vulkan backends
-    VulkanPickingBackend pickingBackend_;
     VulkanGameRenderer gameRenderer_;
 
-    PickingSystem pickingSystem_;
     GameRenderSystem gameRenderSystem_;
     InputSystem inputSystem_;
     TimeManager time_;

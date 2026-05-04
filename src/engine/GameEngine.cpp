@@ -6,7 +6,6 @@
 #include "systems/assets/AssetManager.hpp"
 #include "systems/core/TimeManager.hpp"
 #include "systems/input/InputSystem.hpp"
-#include "systems/input/PickingSystem.hpp"
 #include "systems/physics/PhysicsSystem.hpp"
 #include "systems/rendering/GameRenderSystem.hpp"
 #include "systems/rendering/vulkan/VulkanGameRenderer.hpp"
@@ -17,7 +16,6 @@ GameEngine::GameEngine(GameWindow& window,
                        TimeManager& time,
                        AssetManager& assetManager,
                        InputSystem& inputSystem,
-                       PickingSystem& pickingSystem,
                        PhysicsSystem& physicsSystem,
                        Scene& scene,
                        GameRenderSystem& renderSystem,
@@ -27,7 +25,6 @@ GameEngine::GameEngine(GameWindow& window,
     time_(time),
     assetManager_(assetManager),
     inputSystem_(inputSystem),
-    pickingSystem_(pickingSystem),
     physicsSystem_(physicsSystem),
     scene_(scene),
     renderSystem_(renderSystem),
@@ -70,10 +67,6 @@ bool GameEngine::isKeyPressed(int key) const { return inputSystem_.isKeyPressed(
 bool GameEngine::isMouseButtonDown(int button) const { return inputSystem_.isMouseButtonDown(button); }
 
 double GameEngine::getScrollDelta() const { return inputSystem_.getScrollDelta(); }
-
-void GameEngine::requestPick(uint32_t x, uint32_t y) const { pickingSystem_.requestPick(x, y); }
-
-std::optional<std::string> GameEngine::getPickResult() const { return pickingSystem_.getPickResult(); }
 
 // --------------------------------------------------------
 // Rendering API
