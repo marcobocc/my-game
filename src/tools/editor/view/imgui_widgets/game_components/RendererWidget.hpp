@@ -1,8 +1,10 @@
 #pragma once
+#include <functional>
 #include <glm/glm.hpp>
 #include <imgui.h>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include "../../../controller/SceneMutationsController.hpp"
 #include "GameEngine.hpp"
 #include "data/assets/Material.hpp"
@@ -10,10 +12,15 @@
 
 class RendererWidget {
 public:
-    RendererWidget(GameEngine& engine, SceneMutationsController& mutations) : engine_(engine), mutations_(mutations) {}
+    using AABBToggleCallback = std::function<void(const std::string&, bool)>;
+
+    RendererWidget(GameEngine& engine, SceneMutationsController& mutations, AABBToggleCallback aabbToggle = nullptr) :
+        engine_(engine),
+        mutations_(mutations),
+        aabbToggle_(aabbToggle) {}
 
     void draw(Renderer& r, const std::string& objectId) const {
-        if (!ImGui::BeginChild("Renderer", {0, childHeight(5)}, true)) {
+        if (!ImGui::BeginChild("Renderer", {0, childHeight(aabbToggle_ ? 7 : 5)}, true)) {
             ImGui::EndChild();
             return;
         }
@@ -21,6 +28,7 @@ public:
         ImGui::Spacing();
         ImGui::Text("Mesh: %s", r.meshName.c_str());
         ImGui::Text("Material: %s", r.materialName.c_str());
+
         if (const Material* mat = engine_.getAsset<Material>(r.materialName)) {
             if (!mat->getTextureName().empty())
                 ImGui::Text("Texture: %s", mat->getTextureName().c_str());
@@ -38,12 +46,29 @@ public:
                 mutations_.undoHistory().push([ptr, oldVal] { *ptr = oldVal; }, [ptr, newVal] { *ptr = newVal; });
             }
         }
+
+        if (aabbToggle_) {
+            ImGui::Spacing();
+            static std::unordered_set<std::string> aabbToggled;
+            bool showAABB = aabbToggled.count(objectId) > 0;
+            if (ImGui::Checkbox("Show Bounding Box", &showAABB)) {
+                if (showAABB) {
+                    aabbToggled.insert(objectId);
+                    aabbToggle_(objectId, true);
+                } else {
+                    aabbToggled.erase(objectId);
+                    aabbToggle_(objectId, false);
+                }
+            }
+        }
+
         ImGui::EndChild();
     }
 
 private:
     GameEngine& engine_;
     SceneMutationsController& mutations_;
+    AABBToggleCallback aabbToggle_;
     mutable std::optional<glm::vec4> colorBeforeEdit_;
 
     static float childHeight(int rows) {

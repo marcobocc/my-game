@@ -41,7 +41,15 @@ public:
         assetManager_(assetManager),
         userInterface_(userInterface),
         renderingController_(editorState_, editorRenderer, editorRenderSystem, rendererSettings, assetManager),
-        uiController_(engine_, userInterface, editorState_),
+        uiController_(engine_,
+                      userInterface,
+                      editorState_,
+                      [this](const std::string& objectId, bool show) {
+                          if (show)
+                              enableObjectAABB(objectId);
+                          else
+                              disableObjectAABB(objectId);
+                      }),
         cameraController_(engine_),
         pickingSystem_(assetManager) {
         setupViewport();

@@ -1,5 +1,6 @@
 #pragma once
 #include <fstream>
+#include <functional>
 #include <nfd.hpp>
 #include <optional>
 #include <string>
@@ -15,14 +16,20 @@
 
 class EditorUIController {
 public:
+    using AABBToggleCallback = std::function<void(const std::string&, bool)>;
+
     std::optional<std::filesystem::path> scenePath{};
     SceneMutationsController mutations;
 
-    EditorUIController(GameEngine& engine, UserInterface& ui, EditorState& editorState) :
+    EditorUIController(GameEngine& engine,
+                       UserInterface& ui,
+                       EditorState& editorState,
+                       AABBToggleCallback aabbToggle = nullptr) :
         mutations(engine),
         engine_(engine),
         userInterface_(ui),
-        editorState_(editorState) {
+        editorState_(editorState),
+        aabbToggle_(aabbToggle) {
         setupUI();
     }
 
@@ -49,6 +56,7 @@ private:
     UserInterface& userInterface_;
     EditorState& editorState_;
     EditorMenuBar* menuBar_ = nullptr;
+    AABBToggleCallback aabbToggle_;
 
     void setupUI() {
         menuBar_ = userInterface_.emplace<EditorMenuBar>();
@@ -60,7 +68,7 @@ private:
         menuBar_->onUndo = [this] { mutations.undoHistory().undo(); };
         menuBar_->onRedo = [this] { mutations.undoHistory().redo(); };
         userInterface_.emplace<HierarchyPanel>(&editorState_.getSelectedObjectRef(), engine_, mutations);
-        userInterface_.emplace<InspectorPanel>(&editorState_.getSelectedObjectRef(), engine_, mutations);
+        userInterface_.emplace<InspectorPanel>(&editorState_.getSelectedObjectRef(), engine_, mutations, aabbToggle_);
     }
 
     void openSaveDialog() {
