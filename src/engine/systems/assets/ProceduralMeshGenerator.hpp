@@ -172,19 +172,19 @@ private:
     }
 
     /**
-     * Generate a flat plane in the XY plane at Z=0, from -0.5 to 0.5.
+     * Generate a flat plane in the XZ plane at Y=0, from -0.5 to 0.5.
      */
     static std::unique_ptr<Mesh> generatePlane(const std::string& name) {
         std::vector<glm::vec3> positions = {
-                {-0.5f, -0.5f, 0.0f}, {0.5f, -0.5f, 0.0f}, {0.5f, 0.5f, 0.0f}, {-0.5f, 0.5f, 0.0f}};
+                {-0.5f, 0.0f, -0.5f}, {0.5f, 0.0f, -0.5f}, {0.5f, 0.0f, 0.5f}, {-0.5f, 0.0f, 0.5f}};
 
         std::vector<glm::vec2> uvs = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};
 
         std::vector<glm::vec3> colors(4, glm::vec3(1.0f, 1.0f, 1.0f));
 
-        std::vector<glm::vec3> normals = {{0, 0, 1}, {0, 0, 1}, {0, 0, 1}, {0, 0, 1}};
+        std::vector<glm::vec3> normals = {{0, 1, 0}, {0, 1, 0}, {0, 1, 0}, {0, 1, 0}};
 
-        std::vector<uint32_t> indices = {0, 2, 1, 0, 3, 2};
+        std::vector<uint32_t> indices = {0, 1, 2, 0, 2, 3};
 
         return std::make_unique<Mesh>(name, positions, uvs, colors, indices, normals);
     }
