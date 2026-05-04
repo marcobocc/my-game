@@ -3,8 +3,8 @@
 #include <optional>
 #include <string>
 #include "../../../controller/SceneMutationsController.hpp"
-#include "../ProceduralMeshWidget.hpp"
 #include "GameEngine.hpp"
+#include "systems/assets/BuiltinAssetNames.hpp"
 #include "systems/ui/ImguiWidget.hpp"
 
 class HierarchyPanel : public ImguiWidget {
@@ -16,8 +16,7 @@ public:
                    SceneMutationsController& mutations) :
         selectedObjectId_(selectedObjectId),
         engine_(engine),
-        mutations_(mutations),
-        procMeshWidget_(engine, mutations) {}
+        mutations_(mutations) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -56,7 +55,8 @@ private:
     std::optional<std::string>* selectedObjectId_;
     GameEngine& engine_;
     SceneMutationsController& mutations_;
-    ProceduralMeshWidget procMeshWidget_;
+    uint32_t sphereResolution_ = 5;
+    bool creatingSpherePrimitive_ = false;
 
     void drawAddObject() {
         if (!ImGui::CollapsingHeader("Add Object")) return;
@@ -64,12 +64,26 @@ private:
         ImGui::Indent();
         if (ImGui::CollapsingHeader("Primitives")) {
             if (ImGui::Selectable("  Cube")) {
-                auto id = mutations_.createCube({});
+                auto id = engine_.createMesh(PRIMITIVE_GEOMETRY_CUBE, {});
                 *selectedObjectId_ = id;
             }
-            if (ImGui::Selectable("  Rectangle 2D")) {
-                auto id = mutations_.createRectangle2D({});
+            if (ImGui::Selectable("  Plane")) {
+                auto id = engine_.createMesh(PRIMITIVE_GEOMETRY_PLANE, {});
                 *selectedObjectId_ = id;
+            }
+
+            if (ImGui::Selectable("  Sphere")) {
+                creatingSpherePrimitive_ = !creatingSpherePrimitive_;
+            }
+
+            if (creatingSpherePrimitive_) {
+                ImGui::SliderInt("    Resolution##sphereRes", reinterpret_cast<int*>(&sphereResolution_), 4, 5);
+                if (ImGui::Button("    Create##sphere", ImVec2(-1, 0))) {
+                    std::string meshName = "_PRIMITIVE_SPHERE_" + std::to_string(sphereResolution_);
+                    auto id = engine_.createMesh(meshName, {});
+                    *selectedObjectId_ = id;
+                    creatingSpherePrimitive_ = false;
+                }
             }
         }
 
@@ -87,6 +101,5 @@ private:
             }
         }
         ImGui::Unindent();
-        procMeshWidget_.draw();
     }
 };

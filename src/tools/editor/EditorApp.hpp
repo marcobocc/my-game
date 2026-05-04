@@ -8,6 +8,7 @@
 #include "../../engine/data/RenderTargetHandle.hpp"
 #include "../../engine/data/components/Transform.hpp"
 #include "../../engine/systems/assets/AssetManager.hpp"
+#include "../../engine/systems/assets/BuiltinAssetNames.hpp"
 #include "../../engine/systems/input/RaycastPickingSystem.hpp"
 #include "../../engine/systems/ui/UserInterface.hpp"
 #include "controller/EditorPickingSystem.hpp"

@@ -1,8 +1,8 @@
 #pragma once
 
 // --- Primitive Geometries ---
-static constexpr auto PRIMITIVE_GEOMETRY_CUBE = "builtins/meshes/_cube.mesh";
-static constexpr auto PRIMITIVE_GEOMETRY_RECTANGLE2D = "builtins/meshes/_rectangle2d.mesh";
+static constexpr auto PRIMITIVE_GEOMETRY_CUBE = "_PRIMITIVE_CUBE";
+static constexpr auto PRIMITIVE_GEOMETRY_PLANE = "_PRIMITIVE_PLANE";
 
 // --- Textures ---
 static constexpr auto EMPTY_TEXTURE = "builtins/textures/_white1x1.jpg";

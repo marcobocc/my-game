@@ -65,7 +65,7 @@ std::string Scene::createCube(const _createMesh_Options& options) {
 }
 
 std::string Scene::createRectangle2D(const _createMesh_Options& options) {
-    return createMesh(PRIMITIVE_GEOMETRY_RECTANGLE2D, options);
+    return createMesh(PRIMITIVE_GEOMETRY_PLANE, options);
 }
 
 std::string Scene::createModel(const std::string& modelName, const _createModel_Options& options) {

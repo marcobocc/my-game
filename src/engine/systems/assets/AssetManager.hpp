@@ -14,9 +14,8 @@ public:
     template<typename T>
     T* get(const std::string& name) {
         if (auto* cached = storage_.get<T>(name)) return cached;
-
         if constexpr (std::is_same_v<T, Mesh>) {
-            if (name.starts_with("_PROCEDURAL")) {
+            if (name.starts_with("_PRIMITIVE")) {
                 auto mesh = ProceduralMeshGenerator::generate(name);
                 return storage_.insert(name, std::move(mesh));
             }
