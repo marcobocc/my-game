@@ -1,8 +1,11 @@
 #pragma once
 #include <string>
+#include <type_traits>
 #include <vector>
 #include "AssetImporter.hpp"
 #include "AssetStorage.hpp"
+#include "ProceduralMeshGenerator.hpp"
+#include "data/assets/Mesh.hpp"
 
 class AssetManager {
 public:
@@ -11,6 +14,14 @@ public:
     template<typename T>
     T* get(const std::string& name) {
         if (auto* cached = storage_.get<T>(name)) return cached;
+
+        if constexpr (std::is_same_v<T, Mesh>) {
+            if (name.starts_with("_PROCEDURAL")) {
+                auto mesh = ProceduralMeshGenerator::generate(name);
+                return storage_.insert(name, std::move(mesh));
+            }
+        }
+
         bool importSuccessful = assetImporter_.import(name);
         if (!importSuccessful) throw std::runtime_error("Could not load asset: " + name);
         return storage_.get<T>(name);
