@@ -1,5 +1,6 @@
 #include "RenderingController.hpp"
 #include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
 #include "../../../engine/data/assets/Mesh.hpp"
 #include "../../../engine/data/components/Renderer.hpp"
 #include "../../../engine/data/components/Transform.hpp"
@@ -181,4 +182,59 @@ void RenderingController::renderToTarget(RenderTargetHandle handle,
     Camera offscreenCamera = camera;
     offscreenCamera.renderTarget = handle;
     renderer_.queueOffscreenCamera(offscreenCamera, cameraTransform);
+}
+
+std::vector<GizmoHandle> RenderingController::drawTranslationHandles(const std::string& objectId,
+                                                                     const Camera& camera,
+                                                                     const Transform& cameraTransform) {
+    auto& scene = editorState_.getScene();
+    GameObject& object = scene.getObject(objectId);
+    if (!object.has<Transform>()) return {};
+
+    auto transform = object.get<Transform>();
+    glm::vec3 origin = transform.position;
+
+    // Scale handle size with camera distance so they stay constant on screen
+    float dist = glm::length(cameraTransform.position - origin);
+    float scale = dist * 0.15f;
+
+    // Arrow parameters
+    float shaftLength = scale;
+    float headLength = scale * 0.25f;
+    float headSpread = scale * 0.10f;
+    float pickRadius = scale * 0.18f;
+    // Capsule base is offset from origin so the three handles don't share an ambiguous anchor point
+    float pickOffset = scale * 0.20f;
+
+    const glm::vec3 axes[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    const glm::vec3 colors[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    const GizmoAxis gaxes[3] = {GizmoAxis::X, GizmoAxis::Y, GizmoAxis::Z};
+
+    std::vector<GizmoHandle> handles;
+    handles.reserve(3);
+
+    for (int i = 0; i < 3; ++i) {
+        glm::vec3 dir = axes[i];
+        glm::vec3 color = colors[i];
+        glm::vec3 tip = origin + dir * shaftLength;
+
+        // Shaft
+        drawGizmoLine(origin, tip, color);
+
+        // Arrowhead — four lines forming a cone at the tip
+        glm::vec3 perp1 =
+                glm::normalize(glm::cross(dir, glm::abs(dir.x) < 0.9f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0)));
+        glm::vec3 perp2 = glm::cross(dir, perp1);
+        glm::vec3 headBase = tip - dir * headLength;
+        drawGizmoLine(headBase + perp1 * headSpread, tip, color);
+        drawGizmoLine(headBase - perp1 * headSpread, tip, color);
+        drawGizmoLine(headBase + perp2 * headSpread, tip, color);
+        drawGizmoLine(headBase - perp2 * headSpread, tip, color);
+
+        // Capsule starts offset from origin to avoid three-way overlap at the center
+        glm::vec3 capsuleBase = origin + dir * pickOffset;
+        handles.push_back({GizmoType::Translation, gaxes[i], capsuleBase, tip, pickRadius});
+    }
+
+    return handles;
 }

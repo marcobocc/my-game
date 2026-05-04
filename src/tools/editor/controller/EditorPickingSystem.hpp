@@ -72,13 +72,14 @@ public:
 
         Ray ray = RaycastPickingSystem::buildRay(ndc, camera, cameraTransform);
 
-        // Layer 1: gizmo handles (closest hit wins)
+        // Layer 1: gizmo handles — pick the one with the smallest perpendicular miss distance
         std::optional<GizmoHit> bestHandle;
-        float bestHandleT = std::numeric_limits<float>::max();
+        float bestDist2 = std::numeric_limits<float>::max();
         for (const auto& handle: handles_) {
             float t = 0.0f;
-            if (intersectsCapsule(ray, handle.base, handle.tip, handle.radius, t) && t < bestHandleT) {
-                bestHandleT = t;
+            float dist2 = 0.0f;
+            if (intersectsCapsule(ray, handle.base, handle.tip, handle.radius, t, dist2) && dist2 < bestDist2) {
+                bestDist2 = dist2;
                 bestHandle = GizmoHit{handle.type, handle.axis};
             }
         }
@@ -96,7 +97,9 @@ private:
     std::vector<GizmoHandle> handles_; // TODO: placeholder — populated each frame by gizmo drawing code
 
     // TODO: placeholder — ray-capsule test used for gizmo handle picking
-    static bool intersectsCapsule(const Ray& ray, const glm::vec3& a, const glm::vec3& b, float radius, float& tHit) {
+    // outDist2 is the squared perpendicular distance (used for tiebreaking between overlapping handles)
+    static bool intersectsCapsule(
+            const Ray& ray, const glm::vec3& a, const glm::vec3& b, float radius, float& tHit, float& outDist2) {
         glm::vec3 ab = b - a;
         glm::vec3 ao = ray.origin - a;
 
@@ -119,10 +122,7 @@ private:
 
         s = glm::clamp(s, 0.0f, 1.0f);
 
-        // Closest point on segment to the ray
         glm::vec3 closestOnSeg = a + s * ab;
-
-        // Closest point on ray to that segment point
         t = glm::max(0.0f, glm::dot(closestOnSeg - ray.origin, ray.direction));
         glm::vec3 closestOnRay = ray.origin + t * ray.direction;
 
@@ -130,6 +130,7 @@ private:
         if (dist2 > radius * radius) return false;
 
         tHit = t;
+        outDist2 = dist2;
         return true;
     }
 };

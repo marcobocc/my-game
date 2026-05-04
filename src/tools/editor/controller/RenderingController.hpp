@@ -1,10 +1,12 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <string>
+#include <vector>
 #include "../../../engine/data/RenderTargetHandle.hpp"
 #include "../../../engine/data/components/Camera.hpp"
 #include "../../../engine/data/components/Transform.hpp"
 #include "../state/EditorState.hpp"
+#include "EditorPickingSystem.hpp"
 
 class VulkanEditorRenderer;
 class EditorRenderSystem;
@@ -70,6 +72,9 @@ public:
     void drawGizmoObjectAABB(const std::string& objectId, const glm::vec3& color);
     void drawGizmoObjectTransform(const std::string& objectId, float axisLength);
     void drawGizmoBVH(const glm::vec3& color);
+
+    std::vector<GizmoHandle>
+    drawTranslationHandles(const std::string& objectId, const Camera& camera, const Transform& cameraTransform);
 
     // --------------------------------------------------------
     // Object Outlining
