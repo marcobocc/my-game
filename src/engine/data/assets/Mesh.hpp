@@ -4,6 +4,7 @@
 #include <vector>
 #include "Asset.hpp"
 #include "utils/math/AABB.hpp"
+#include "utils/math/BoundingSphere.hpp"
 
 class Mesh final : public Asset {
 public:
@@ -19,7 +20,8 @@ public:
         colors_(std::move(colors)),
         indices_(std::move(indices)),
         normals_(std::move(normals)),
-        aabb_(positions_) {}
+        aabb_(positions_),
+        boundingSphere_(positions_) {}
 
     bool hasIndices() const { return !indices_.empty(); }
     bool hasUvs() const { return !uvs_.empty(); }
@@ -33,6 +35,7 @@ public:
     const std::vector<uint32_t>& getIndices() const { return indices_; }
     const std::vector<glm::vec3>& getNormals() const { return normals_; }
     AABB getAABB() const { return aabb_; }
+    BoundingSphere getBoundingSphere() const { return boundingSphere_; }
 
 private:
     std::vector<glm::vec3> positions_;
@@ -41,4 +44,5 @@ private:
     std::vector<uint32_t> indices_;
     std::vector<glm::vec3> normals_;
     AABB aabb_;
+    BoundingSphere boundingSphere_;
 };
