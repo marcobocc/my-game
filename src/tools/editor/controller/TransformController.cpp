@@ -1,0 +1,229 @@
+#include "TransformController.hpp"
+#include "../../../engine/GameEngine.hpp"
+#include "../../../engine/data/components/Transform.hpp"
+#include "../../../engine/systems/input/RaycastPickingSystem.hpp"
+#include "../controller/EditorUIController.hpp"
+#include "../controller/OrbitCameraController.hpp"
+#include "../state/EditorState.hpp"
+
+std::optional<glm::vec3>
+TransformController::rayPlaneIntersect(const Ray& ray, const glm::vec3& planePoint, const glm::vec3& planeNormal) {
+    float denom = glm::dot(ray.direction, planeNormal);
+    if (std::abs(denom) < 1e-5f) return std::nullopt;
+    float t = glm::dot(planePoint - ray.origin, planeNormal) / denom;
+    if (t < 0.0f) return std::nullopt;
+    return ray.origin + ray.direction * t;
+}
+
+float TransformController::projectOnAxis(const glm::vec3& point,
+                                         const glm::vec3& axisOrigin,
+                                         const glm::vec3& axisDir) {
+    return glm::dot(point - axisOrigin, axisDir);
+}
+
+Ray TransformController::buildMouseRay(double mouseX, double mouseY) const {
+    auto sv = window_.getSceneViewport();
+    float ndcX = (static_cast<float>(mouseX) - static_cast<float>(sv.x)) / static_cast<float>(sv.width);
+    float ndcY = (static_cast<float>(mouseY) - static_cast<float>(sv.y)) / static_cast<float>(sv.height);
+    return RaycastPickingSystem::buildRay(
+            {ndcX, ndcY}, cameraController_.getCamera(), cameraController_.getTransform());
+}
+
+glm::vec3 TransformController::axisToDir(GizmoAxis axis) {
+    switch (axis) {
+        case GizmoAxis::X:
+            return {1, 0, 0};
+        case GizmoAxis::Y:
+            return {0, 1, 0};
+        case GizmoAxis::Z:
+            return {0, 0, 1};
+        case GizmoAxis::All:
+            return {1, 1, 1};
+    }
+    return {1, 0, 0};
+}
+
+void TransformController::beginTranslationDrag(GizmoAxis axis, double mouseX, double mouseY) {
+    auto selectedId = editorState_.getSelectedObject();
+    if (!selectedId) return;
+
+    auto& scene = editorState_.getScene();
+    auto& obj = scene.getObject(*selectedId);
+    if (!obj.has<Transform>()) return;
+
+    glm::vec3 axisDir = axisToDir(axis);
+    glm::vec3 origin = obj.get<Transform>().position;
+
+    glm::vec3 camDir = glm::normalize(cameraController_.getTransform().position - origin);
+    glm::vec3 planeNormal = glm::normalize(camDir - glm::dot(camDir, axisDir) * axisDir);
+    if (glm::length(planeNormal) < 1e-5f) planeNormal = cameraController_.getTransform().getUp();
+
+    Ray ray = buildMouseRay(mouseX, mouseY);
+    auto hitPoint = rayPlaneIntersect(ray, origin, planeNormal);
+    if (!hitPoint) return;
+
+    uiController_.mutations.beginEdit(obj.get<Transform>());
+
+    dragState_.activeDrag =
+            TransformDragState::TranslationDrag{*selectedId, axis, axisDir, planeNormal, origin, *hitPoint};
+}
+
+void TransformController::updateTranslationDrag(double mouseX, double mouseY) {
+    if (!dragState_.activeDrag) return;
+    auto& scene = editorState_.getScene();
+    auto& obj = scene.getObject(dragState_.activeDrag->objectId);
+    if (!obj.has<Transform>()) return;
+
+    Ray ray = buildMouseRay(mouseX, mouseY);
+    auto hitPoint = rayPlaneIntersect(ray, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->dragPlaneNormal);
+    if (!hitPoint) return;
+
+    float startT = projectOnAxis(
+            dragState_.activeDrag->hitPointOnAxis, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->axisDir);
+    float currentT = projectOnAxis(*hitPoint, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->axisDir);
+    float delta = currentT - startT;
+
+    obj.get<Transform>().position = dragState_.activeDrag->dragOrigin + dragState_.activeDrag->axisDir * delta;
+}
+
+void TransformController::commitTranslationDrag() {
+    if (!dragState_.activeDrag) return;
+    auto& scene = editorState_.getScene();
+    auto& obj = scene.getObject(dragState_.activeDrag->objectId);
+    if (obj.has<Transform>()) uiController_.mutations.commitEdit(obj.get<Transform>());
+    dragState_.activeDrag.reset();
+}
+
+void TransformController::beginRotationDrag(GizmoAxis axis, double mouseX, double mouseY) {
+    auto selectedId = editorState_.getSelectedObject();
+    if (!selectedId) return;
+
+    auto& scene = editorState_.getScene();
+    auto& obj = scene.getObject(*selectedId);
+    if (!obj.has<Transform>()) return;
+
+    glm::vec3 axisDir = axisToDir(axis);
+    glm::vec3 origin = obj.get<Transform>().position;
+
+    Ray ray = buildMouseRay(mouseX, mouseY);
+    auto hitPoint = rayPlaneIntersect(ray, origin, axisDir);
+    if (!hitPoint) return;
+
+    glm::vec3 hitDir = *hitPoint - origin;
+    if (glm::length(hitDir) < 1e-5f) return;
+
+    hitDir = glm::normalize(hitDir);
+
+    uiController_.mutations.beginEdit(obj.get<Transform>());
+    dragState_.activeRotationDrag =
+            TransformDragState::RotationDrag{*selectedId, axis, axisDir, origin, obj.get<Transform>().rotation, hitDir};
+}
+
+void TransformController::updateRotationDrag(double mouseX, double mouseY) {
+    if (!dragState_.activeRotationDrag) return;
+    auto& scene = editorState_.getScene();
+    auto& obj = scene.getObject(dragState_.activeRotationDrag->objectId);
+    if (!obj.has<Transform>()) return;
+
+    Ray ray = buildMouseRay(mouseX, mouseY);
+    auto hitPoint =
+            rayPlaneIntersect(ray, dragState_.activeRotationDrag->origin, dragState_.activeRotationDrag->axisDir);
+    if (!hitPoint) return;
+
+    glm::vec3 hitDir = *hitPoint - dragState_.activeRotationDrag->origin;
+    if (glm::length(hitDir) < 1e-5f) return;
+    hitDir = glm::normalize(hitDir);
+
+    float cosA = glm::clamp(glm::dot(dragState_.activeRotationDrag->initialHitDir, hitDir), -1.0f, 1.0f);
+    float angle = glm::acos(cosA);
+    if (glm::dot(glm::cross(dragState_.activeRotationDrag->initialHitDir, hitDir),
+                 dragState_.activeRotationDrag->axisDir) < 0.0f)
+        angle = -angle;
+
+    obj.get<Transform>().rotation = glm::angleAxis(angle, dragState_.activeRotationDrag->axisDir) *
+                                    dragState_.activeRotationDrag->initialRotation;
+}
+
+void TransformController::commitRotationDrag() {
+    if (!dragState_.activeRotationDrag) return;
+    auto& scene = editorState_.getScene();
+    auto& obj = scene.getObject(dragState_.activeRotationDrag->objectId);
+    if (obj.has<Transform>()) uiController_.mutations.commitEdit(obj.get<Transform>());
+    dragState_.activeRotationDrag.reset();
+}
+
+void TransformController::beginScaleDrag(GizmoAxis axis, double mouseX, double mouseY) {
+    auto selectedId = editorState_.getSelectedObject();
+    if (!selectedId) return;
+    auto& scene = editorState_.getScene();
+    auto& obj = scene.getObject(*selectedId);
+    if (!obj.has<Transform>()) return;
+
+    glm::vec3 origin = obj.get<Transform>().position;
+
+    glm::vec3 axisDir;
+    glm::vec3 planeNormal;
+    if (axis == GizmoAxis::All) {
+        axisDir = glm::normalize(cameraController_.getTransform().getRight());
+        planeNormal = glm::normalize(cameraController_.getTransform().position - origin);
+    } else {
+        axisDir = axisToDir(axis);
+        glm::vec3 camDir = glm::normalize(cameraController_.getTransform().position - origin);
+        planeNormal = glm::normalize(camDir - glm::dot(camDir, axisDir) * axisDir);
+        if (glm::length(planeNormal) < 1e-5f) planeNormal = cameraController_.getTransform().getUp();
+    }
+
+    Ray ray = buildMouseRay(mouseX, mouseY);
+    auto hitPoint = rayPlaneIntersect(ray, origin, planeNormal);
+    if (!hitPoint) return;
+
+    float initialT = glm::dot(*hitPoint - origin, axisDir);
+    if (std::abs(initialT) < 1e-5f) return;
+
+    uiController_.mutations.beginEdit(obj.get<Transform>());
+    dragState_.activeScaleDrag = TransformDragState::ScaleDrag{
+            *selectedId, axis, axisDir, origin, obj.get<Transform>().scale, planeNormal, initialT};
+}
+
+void TransformController::updateScaleDrag(double mouseX, double mouseY) {
+    if (!dragState_.activeScaleDrag) return;
+    auto& scene = editorState_.getScene();
+    auto& obj = scene.getObject(dragState_.activeScaleDrag->objectId);
+    if (!obj.has<Transform>()) return;
+
+    Ray ray = buildMouseRay(mouseX, mouseY);
+    auto hitPoint =
+            rayPlaneIntersect(ray, dragState_.activeScaleDrag->origin, dragState_.activeScaleDrag->dragPlaneNormal);
+    if (!hitPoint) return;
+
+    float currentT = glm::dot(*hitPoint - dragState_.activeScaleDrag->origin, dragState_.activeScaleDrag->axisDir);
+    float factor = glm::max(currentT / dragState_.activeScaleDrag->initialT, 0.01f);
+
+    if (dragState_.activeScaleDrag->axis == GizmoAxis::All) {
+        obj.get<Transform>().scale = dragState_.activeScaleDrag->initialScale * factor;
+    } else {
+        glm::vec3 newScale = dragState_.activeScaleDrag->initialScale;
+        switch (dragState_.activeScaleDrag->axis) {
+            case GizmoAxis::X:
+                newScale.x = dragState_.activeScaleDrag->initialScale.x * factor;
+                break;
+            case GizmoAxis::Y:
+                newScale.y = dragState_.activeScaleDrag->initialScale.y * factor;
+                break;
+            case GizmoAxis::Z:
+                newScale.z = dragState_.activeScaleDrag->initialScale.z * factor;
+                break;
+            default:
+                break;
+        }
+        obj.get<Transform>().scale = newScale;
+    }
+}
+
+void TransformController::commitScaleDrag() {
+    if (!dragState_.activeScaleDrag) return;
+    auto& scene = editorState_.getScene();
+    auto& obj = scene.getObject(dragState_.activeScaleDrag->objectId);
+    if (obj.has<Transform>()) uiController_.mutations.commitEdit(obj.get<Transform>());
+    dragState_.activeScaleDrag.reset();
+}

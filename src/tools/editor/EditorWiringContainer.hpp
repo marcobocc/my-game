@@ -7,6 +7,14 @@
 #include "../../engine/systems/rendering/vulkan/passes/VulkanOutlinePass.hpp"
 #include "../../engine/systems/rendering/vulkan/passes/VulkanUIPass.hpp"
 #include "EditorApp.hpp"
+#include "controller/EditorPickingSystem.hpp"
+#include "controller/EditorUIController.hpp"
+#include "controller/GizmoController.hpp"
+#include "controller/InteractionController.hpp"
+#include "controller/OrbitCameraController.hpp"
+#include "controller/RenderingController.hpp"
+#include "controller/ShortcutController.hpp"
+#include "controller/TransformController.hpp"
 #include "rendering/EditorRenderSystem.hpp"
 #include "rendering/VulkanEditorRenderer.hpp"
 #include "state/EditorState.hpp"
@@ -20,7 +28,7 @@
 
     Responsibilities:
     --------------------------------------------------
-    - Extend GameEngineWiringContainer with editor-specific rendering
+    - Extend GameEngineWiringContainer with editor-specific logic
     - Create editor-only render passes and the editor renderer
     - Create and wire EditorState, controllers, and EditorApp
     - Manage the editor application lifecycle
@@ -29,7 +37,6 @@
     --------------------------------------------------
     - Core engine setup (delegated to GameEngineWiringContainer)
     - Application logic (delegated to EditorApp)
-    - Input/physics updates (user handles these)
 */
 class EditorWiringContainer : public GameEngineWiringContainer {
 public:
@@ -56,18 +63,28 @@ public:
                         rendererSettings_),
         editorRenderSystem_(editorRenderer_),
         editorState_(scene_),
+        gizmoController_(editorState_, assetManager_),
+        renderingController_(editorState_, editorRenderer_, editorRenderSystem_, rendererSettings_, assetManager_),
+        orbitalCamera_(engine_),
+        pickingSystem_(assetManager_),
+        uiController_(engine_, userInterface_, editorState_),
+        transformController_(editorState_, window, engine_, uiController_, orbitalCamera_),
+        shortcutController_(engine_, uiController_, renderingController_, editorState_, transformController_),
+        interactionController_(window, engine_, editorState_, pickingSystem_, transformController_),
         editorApp_(window,
                    engine_,
                    editorState_,
-                   editorRenderSystem_,
-                   editorRenderer_,
-                   rendererSettings_,
                    assetManager_,
-                   userInterface_) {}
+                   userInterface_,
+                   renderingController_,
+                   gizmoController_,
+                   uiController_,
+                   orbitalCamera_,
+                   pickingSystem_,
+                   transformController_,
+                   shortcutController_,
+                   interactionController_) {}
 
-    EditorRenderSystem& editorRenderSystem() { return editorRenderSystem_; }
-    VulkanEditorRenderer& editorRenderer() { return editorRenderer_; }
-    EditorState& editorState() { return editorState_; }
     EditorApp& editorApp() { return editorApp_; }
 
     void run() {
@@ -81,11 +98,8 @@ public:
             window_.pollEvents();
             inputSystem_.update();
             physicsSystem_.update();
-
-            // Editor app logic update
             editorApp_.update(deltaTime);
 
-            // Render with current frame's gizmos and outlines
             editorRenderSystem_.update(
                     editorState_.getScene(), editorState_.getOutlineQueue(), editorState_.getGizmoLines());
             time_.endFrame();
@@ -101,5 +115,13 @@ private:
     VulkanEditorRenderer editorRenderer_;
     EditorRenderSystem editorRenderSystem_;
     EditorState editorState_;
+    GizmoController gizmoController_;
+    RenderingController renderingController_;
+    OrbitCameraController orbitalCamera_;
+    EditorPickingSystem pickingSystem_;
+    EditorUIController uiController_;
+    TransformController transformController_;
+    ShortcutController shortcutController_;
+    InteractionController interactionController_;
     EditorApp editorApp_;
 };

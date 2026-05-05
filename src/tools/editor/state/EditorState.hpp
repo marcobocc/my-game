@@ -73,6 +73,24 @@ public:
     void clearOutlineQueue() { outlineQueue_.clear(); }
 
     // --------------------------------------------------------
+    // Bounding Volume Visualization
+    // --------------------------------------------------------
+    std::unordered_set<std::string>& getAABBEnabledObjects() { return aabbEnabled_; }
+    const std::unordered_set<std::string>& getAABBEnabledObjects() const { return aabbEnabled_; }
+    void enableAABB(const std::string& objectId) { aabbEnabled_.insert(objectId); }
+    void disableAABB(const std::string& objectId) { aabbEnabled_.erase(objectId); }
+
+    std::unordered_set<std::string>& getBoundingSphereEnabledObjects() { return boundingSpheresEnabled_; }
+    const std::unordered_set<std::string>& getBoundingSphereEnabledObjects() const { return boundingSpheresEnabled_; }
+    void enableBoundingSphere(const std::string& objectId) { boundingSpheresEnabled_.insert(objectId); }
+    void disableBoundingSphere(const std::string& objectId) { boundingSpheresEnabled_.erase(objectId); }
+
+    bool isBVHEnabled() const { return bvhEnabled_; }
+    void setBVHEnabled(bool enabled) { bvhEnabled_ = enabled; }
+    void toggleBVH() { bvhEnabled_ = !bvhEnabled_; }
+
+
+    // --------------------------------------------------------
     // Active Camera
     // --------------------------------------------------------
     void setActiveCamera(const Camera& camera, const Transform& transform) {
@@ -107,9 +125,12 @@ private:
     std::optional<std::string> selectedObjectId_;
     std::vector<VulkanGizmoPass::GizmoVertex> gizmoLines_;
     std::vector<DrawCall> outlineQueue_;
+    std::unordered_set<std::string> aabbEnabled_;
+    std::unordered_set<std::string> boundingSpheresEnabled_;
     const Camera* activeCamera_ = nullptr;
     const Transform* activeCameraTransform_ = nullptr;
     bool gridEnabled_ = true;
     bool lightingEnabled_ = true;
+    bool bvhEnabled_ = false;
     std::unordered_map<uint32_t, VkDescriptorSet> renderTargetImGuiIds_;
 };

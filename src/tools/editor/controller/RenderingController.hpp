@@ -1,18 +1,13 @@
 #pragma once
-#include <glm/glm.hpp>
 #include <string>
-#include <vector>
 #include "../../../engine/data/RenderTargetHandle.hpp"
 #include "../../../engine/data/components/Camera.hpp"
 #include "../../../engine/data/components/Transform.hpp"
 #include "../state/EditorState.hpp"
-#include "EditorPickingSystem.hpp"
 
 class VulkanEditorRenderer;
 class EditorRenderSystem;
 class AssetManager;
-class AABB;
-struct BoundingSphere;
 struct RendererSettings;
 
 /*
@@ -64,27 +59,6 @@ public:
     void destroyRenderTarget(RenderTargetHandle handle);
     VkDescriptorSet getRenderTargetImGuiId(RenderTargetHandle handle) const;
     void renderToTarget(RenderTargetHandle handle, const Camera& camera, const Transform& cameraTransform);
-
-    // --------------------------------------------------------
-    // Gizmo Drawing
-    // --------------------------------------------------------
-    void drawGizmoLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color);
-    void drawGizmoCube(const glm::vec3& center, float halfSize, const glm::vec3& color);
-    void drawGizmoAABB(const AABB& aabb, const glm::vec3& color);
-    void drawGizmoObjectAABB(const std::string& objectId, const glm::vec3& color);
-    void drawGizmoBoundingSphere(const BoundingSphere& sphere, const glm::vec3& color);
-    void drawGizmoObjectTransform(const std::string& objectId, float axisLength);
-    void drawGizmoObjectBoundingSphere(const std::string& objectId, const glm::vec3& color);
-    void drawGizmoBVH(const glm::vec3& color);
-
-    std::vector<GizmoHandle>
-    drawTranslationHandles(const std::string& objectId, const Camera& camera, const Transform& cameraTransform);
-
-    std::vector<GizmoHandle>
-    drawRotationHandles(const std::string& objectId, const Camera& camera, const Transform& cameraTransform);
-
-    std::vector<GizmoHandle>
-    drawScaleHandles(const std::string& objectId, const Camera& camera, const Transform& cameraTransform);
 
     // --------------------------------------------------------
     // Object Outlining
