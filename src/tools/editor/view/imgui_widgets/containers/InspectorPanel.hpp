@@ -71,37 +71,42 @@ private:
     BoxColliderWidget boxColliderWidget_;
     CameraWidget cameraWidget_;
 
-    void drawObject(GameObject& obj) const {
+    void drawObject(GameObject& obj) {
         if (obj.has<Transform>()) {
             transformWidget_.draw(obj.get<Transform>());
-            drawRemoveButton<Transform>("##RemoveTransform", obj);
+            drawComponentContextMenu<Transform>("TransformContext", obj);
         }
         ImGui::Spacing();
         if (obj.has<Camera>()) {
             cameraWidget_.draw(obj.get<Camera>());
-            drawRemoveButton<Camera>("##RemoveCamera", obj);
+            drawComponentContextMenu<Camera>("CameraContext", obj);
         }
         ImGui::Spacing();
         if (obj.has<Renderer>()) {
             rendererWidget_.draw(obj.get<Renderer>(), obj.getName());
-            drawRemoveButton<Renderer>("##RemoveRenderer", obj);
+            drawComponentContextMenu<Renderer>("RendererContext", obj);
         }
         ImGui::Spacing();
         if (obj.has<BoxCollider>()) {
             boxColliderWidget_.draw(obj.get<BoxCollider>());
-            drawRemoveButton<BoxCollider>("##RemoveBoxCollider", obj);
+            drawComponentContextMenu<BoxCollider>("BoxColliderContext", obj);
         }
         ImGui::Spacing();
         drawAddComponent(obj);
     }
 
     template<typename T>
-    void drawRemoveButton(const char* id, GameObject& obj) const {
-        ImGui::SameLine(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize("Remove").x);
-        if (ImGui::SmallButton((std::string("Remove") + id).c_str())) mutations_.removeComponent<T>(obj);
+    void drawComponentContextMenu(const char* contextId, GameObject& obj) {
+        if (ImGui::BeginPopupContextItem(contextId)) {
+            if (ImGui::MenuItem("Remove")) {
+                printf("Remove context menu clicked\n");
+                mutations_.removeComponent<T>(obj);
+            }
+            ImGui::EndPopup();
+        }
     }
 
-    void drawAddComponent(GameObject& obj) const {
+    void drawAddComponent(GameObject& obj) {
         ImGui::Separator();
         ImGui::Spacing();
         if (!ImGui::CollapsingHeader("Add Component")) return;
