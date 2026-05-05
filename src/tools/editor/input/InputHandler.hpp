@@ -1,0 +1,78 @@
+#pragma once
+#include "../../../engine/GameEngine.hpp"
+#include "../../../engine/systems/core/GameWindow.hpp"
+#include "PickingSystem.hpp"
+
+
+class EditorGizmos;
+class EditorOrbitCamera;
+class ObjectSelection;
+class ObjectTransformHandle;
+class Scene;
+class SceneMutations;
+class EditorSettings;
+
+/*
+    InputHandler
+
+    Purpose:
+    --------------------------------------------------
+    Unified input handler for keyboard and mouse input.
+    Invokes business/ directly without events.
+
+    Responsibilities:
+    --------------------------------------------------
+    - Detect keyboard input and invoke service methods
+    - Detect mouse input and invoke camera/gizmo service methods
+    - Detect object picking and invoke selection service
+    - Detect gizmo interactions and invoke gizmo service
+*/
+class InputHandler {
+public:
+    InputHandler(GameWindow& window,
+                 GameEngine& engine,
+                 PickingSystem& pickingSystem,
+                 EditorOrbitCamera& editorOrbitCamera,
+                 ObjectSelection& objectSelection,
+                 ObjectTransformHandle& objectTransformHandle,
+                 Scene& sceneManager,
+                 SceneMutations& sceneMutations,
+                 EditorGizmos& editorGizmos,
+                 EditorSettings& rendererSettings) :
+        window_(window),
+        engine_(engine),
+        pickingSystem_(pickingSystem),
+        editorOrbitCamera_(editorOrbitCamera),
+        objectSelection_(objectSelection),
+        objectTransformHandle_(objectTransformHandle),
+        scene_(sceneManager),
+        sceneMutations_(sceneMutations),
+        editorGizmos_(editorGizmos),
+        rendererSettings_(rendererSettings),
+        wasLeftDown_(false) {}
+
+    void update(double mouseX, double mouseY, double deltaTime);
+
+private:
+    GameWindow& window_;
+    GameEngine& engine_;
+    PickingSystem& pickingSystem_;
+    EditorOrbitCamera& editorOrbitCamera_;
+    ObjectSelection& objectSelection_;
+    ObjectTransformHandle& objectTransformHandle_;
+    Scene& scene_;
+    SceneMutations& sceneMutations_;
+    EditorGizmos& editorGizmos_;
+    EditorSettings& rendererSettings_;
+    bool wasLeftDown_;
+
+    double lastMouseX_ = 0.0;
+    double lastMouseY_ = 0.0;
+    bool wasOrbiting_ = false;
+    bool wasPanning_ = false;
+
+    void handleKeyboardInput();
+    void processGizmoDrag(double mouseX, double mouseY, bool leftDown);
+    void processMouseInteraction(double mouseX, double mouseY, bool leftDown);
+    void processCameraInput(double mouseX, double mouseY, double deltaTime);
+};

@@ -12,7 +12,7 @@ GameEngine::GameEngine(GameWindow& window,
                        AssetManager& assetManager,
                        InputSystem& inputSystem,
                        PhysicsSystem& physicsSystem,
-                       SceneManager& scene,
+                       Scene& scene,
                        GameRenderSystem& renderSystem,
                        RendererSettings& rendererSettings,
                        VulkanGameRenderer& renderer) :
@@ -21,7 +21,7 @@ GameEngine::GameEngine(GameWindow& window,
     assetManager_(assetManager),
     inputSystem_(inputSystem),
     physicsSystem_(physicsSystem),
-    sceneManager_(scene),
+    scene_(scene),
     renderSystem_(renderSystem),
     rendererSettings_(rendererSettings),
     renderer_(renderer) {}
@@ -40,7 +40,7 @@ void GameEngine::run(const std::function<void(double deltaTime)>& gameLoopFunc) 
         physicsSystem_.update();
 
         gameLoopFunc(deltaTime);
-        renderSystem_.update(sceneManager_);
+        renderSystem_.update(scene_);
         time_.endFrame();
     }
 }
@@ -76,36 +76,34 @@ void GameEngine::setActiveCamera(const Camera& camera, const Transform& transfor
 // --------------------------------------------------------
 
 std::pair<std::string, bool> GameEngine::createEmptyObject(const std::string& name) {
-    return sceneManager_.createEmptyObject(name);
+    return scene_.createEmptyObject(name);
 }
 
-std::string GameEngine::createCamera(const SceneManager::_createCamera_Options& options) {
-    return sceneManager_.createCamera(options);
+std::string GameEngine::createCamera(const Scene::_createCamera_Options& options) {
+    return scene_.createCamera(options);
 }
 
-std::string GameEngine::createCube(const SceneManager::_createMesh_Options& options) {
-    return sceneManager_.createCube(options);
+std::string GameEngine::createCube(const Scene::_createMesh_Options& options) { return scene_.createCube(options); }
+
+std::string GameEngine::createRectangle2D(const Scene::_createMesh_Options& options) {
+    return scene_.createPlane(options);
 }
 
-std::string GameEngine::createRectangle2D(const SceneManager::_createMesh_Options& options) {
-    return sceneManager_.createRectangle2D(options);
+std::string GameEngine::createMesh(const std::string& meshName, const Scene::_createMesh_Options& options) {
+    return scene_.createMesh(meshName, options);
 }
 
-std::string GameEngine::createMesh(const std::string& meshName, const SceneManager::_createMesh_Options& options) {
-    return sceneManager_.createMesh(meshName, options);
+std::string GameEngine::createModel(const std::string& modelName, const Scene::_createModel_Options& options) {
+    return scene_.createModel(modelName, options);
 }
 
-std::string GameEngine::createModel(const std::string& modelName, const SceneManager::_createModel_Options& options) {
-    return sceneManager_.createModel(modelName, options);
-}
+void GameEngine::destroyObject(const std::string& name) { scene_.destroyObject(name); }
 
-void GameEngine::destroyObject(const std::string& name) { sceneManager_.destroyObject(name); }
+GameObject& GameEngine::getObject(const std::string& name) const { return scene_.getObject(name); }
 
-GameObject& GameEngine::getObject(const std::string& name) const { return sceneManager_.getObject(name); }
+const std::unordered_map<std::string, GameObject>& GameEngine::getObjects() const { return scene_.getObjects(); }
 
-const std::unordered_map<std::string, GameObject>& GameEngine::getObjects() const { return sceneManager_.getObjects(); }
-
-void GameEngine::loadScene(SceneManager& scene, const nlohmann::json& j) { SceneManager::deserialize(j, scene); }
+void GameEngine::loadScene(Scene& scene, const nlohmann::json& j) { Scene::deserialize(j, scene); }
 
 // --------------------------------------------------------
 // Assets API

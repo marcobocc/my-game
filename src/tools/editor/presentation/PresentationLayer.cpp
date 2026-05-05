@@ -1,0 +1,139 @@
+#include "PresentationLayer.hpp"
+#include "../../../engine/data/components/Renderer.hpp"
+#include "../../../engine/systems/assets/AssetManager.hpp"
+#include "../../../engine/systems/scene/Scene.hpp"
+#include "../business/EditorGizmos.hpp"
+#include "../business/EditorOrbitCamera.hpp"
+#include "../business/ObjectSelection.hpp"
+#include "../business/ObjectTransformHandle.hpp"
+#include "../business/SceneMutations.hpp"
+#include "../input/PickingSystem.hpp"
+#include "../presentation/imgui/containers/EditorMenuBar.hpp"
+#include "../presentation/imgui/containers/HierarchyPanel.hpp"
+#include "../presentation/imgui/containers/InspectorPanel.hpp"
+#include "gizmos/GizmosRenderer.hpp"
+#include "vulkan/EditorRenderData.hpp"
+#include "vulkan/VulkanEditorBackend.hpp"
+
+PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
+                                     EditorOrbitCamera& editorOrbitCamera,
+                                     ObjectSelection& objectSelection,
+                                     EditorGizmos& editorGizmos,
+                                     EditorSettings& editorSettings,
+                                     RendererSettings& rendererSettings,
+                                     Scene& scene,
+                                     GizmosRenderer& gizmosBuilder,
+                                     ObjectTransformHandle& objectTransformHandle,
+                                     UserInterface& userInterface,
+                                     PickingSystem& pickingService,
+                                     SceneMutations& sceneMutations,
+                                     SceneLoader& editorWorkspace,
+                                     AssetManager& assetManager) :
+    renderer_(renderer),
+    editorOrbitCamera_(editorOrbitCamera),
+    objectSelection_(objectSelection),
+    editorGizmos_(editorGizmos),
+    editorSettings_(editorSettings),
+    rendererSettings_(rendererSettings),
+    scene_(scene),
+    gizmosBuilder_(gizmosBuilder),
+    objectTransformHandle_(objectTransformHandle),
+    userInterface_(userInterface),
+    pickingSystem_(pickingService),
+    sceneMutations_(sceneMutations),
+    editorWorkspace_(editorWorkspace),
+    assetManager_(assetManager) {
+    userInterface_.emplace<EditorMenuBar>(sceneMutations, editorWorkspace);
+    userInterface_.emplace<HierarchyPanel>(objectSelection_, scene_, assetManager_, sceneMutations);
+    userInterface_.emplace<InspectorPanel>(objectSelection_, scene_, assetManager_, sceneMutations, editorGizmos_);
+}
+
+void PresentationLayer::buildOutlines() {
+    outlineQueue_.clear();
+    auto selectedId = objectSelection_.getSelectedObjectId();
+    if (selectedId.has_value()) {
+        GameObject& object = scene_.getObject(*selectedId);
+        if (object.has<Renderer>() && object.has<Transform>()) {
+            auto renderer = object.get<Renderer>();
+            auto transform = object.get<Transform>();
+            outlineQueue_.push_back({renderer, transform, *selectedId});
+        }
+    }
+}
+
+void PresentationLayer::buildGizmos() {
+    builtGizmoLines_.clear();
+    pickingSystem_.clearHandles();
+
+    auto selectedId = objectSelection_.getSelectedObjectId();
+    if (!selectedId.has_value()) return;
+
+    const std::string& objectId = *selectedId;
+    const Camera& camera = editorOrbitCamera_.getCamera();
+    const Transform& cameraTransform = editorOrbitCamera_.getCameraTransform();
+    auto dragState = objectTransformHandle_.getDragState();
+
+    if (dragState.gizmoMode == GizmoType::Translation) {
+        auto result = gizmosBuilder_.buildTranslationGizmo(objectId, camera, cameraTransform);
+        builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
+        for (const auto& h: result.pickingHandles) {
+            pickingSystem_.registerHandle(h);
+        }
+    } else if (dragState.gizmoMode == GizmoType::Rotation) {
+        auto result = gizmosBuilder_.buildRotationGizmo(objectId, camera, cameraTransform);
+        builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
+        for (const auto& h: result.pickingHandles) {
+            pickingSystem_.registerHandle(h);
+        }
+    } else if (dragState.gizmoMode == GizmoType::Scale) {
+        auto result = gizmosBuilder_.buildScaleGizmo(objectId, camera, cameraTransform);
+        builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
+        for (const auto& h: result.pickingHandles) {
+            pickingSystem_.registerHandle(h);
+        }
+    }
+
+    auto aabbEnabled = editorGizmos_.getObjectsWithAABBEnabled();
+    for (const auto& objectId: aabbEnabled) {
+        auto aabbGizmo = gizmosBuilder_.buildGizmoObjectAABB(objectId, {0.0f, 1.0f, 0.0f});
+        builtGizmoLines_.insert(builtGizmoLines_.end(), aabbGizmo.begin(), aabbGizmo.end());
+    }
+
+    auto boundingSpheresEnabled = editorGizmos_.getObjectsWithBoundingSpheresEnabled();
+    for (const auto& objectId: boundingSpheresEnabled) {
+        auto sphereGizmo = gizmosBuilder_.buildGizmoObjectBoundingSphere(objectId, {1.0f, 1.0f, 0.0f});
+        builtGizmoLines_.insert(builtGizmoLines_.end(), sphereGizmo.begin(), sphereGizmo.end());
+    }
+
+    if (editorGizmos_.bvhEnabled()) {
+        auto bvhGizmo = gizmosBuilder_.buildGizmoBVH({1.0f, 1.0f, 0.0f});
+        builtGizmoLines_.insert(builtGizmoLines_.end(), bvhGizmo.begin(), bvhGizmo.end());
+    }
+}
+
+void PresentationLayer::render(const Scene& scene, float gridScale, const std::vector<DrawCall>& outlineQueue) {
+    buildOutlines();
+    buildGizmos();
+
+    std::vector<DrawCall> drawQueue;
+    auto drawables = scene.getObjectsWith<Renderer, Transform>();
+    for (auto& [entity, renderer, transform]: drawables) {
+        if (!renderer.enabled) continue;
+        drawQueue.push_back({renderer, transform, entity});
+    }
+
+    auto cameras = scene.getObjectsWith<Camera, Transform>();
+    for (auto& [entity, camera, transform]: cameras) {
+        if (camera.renderTarget.isValid())
+            renderer_.renderFrame(
+                    EditorRenderData(camera, transform, drawQueue, outlineQueue_, builtGizmoLines_, gridScale, true));
+    }
+
+    renderer_.renderFrame(EditorRenderData(editorOrbitCamera_.getCamera(),
+                                           editorOrbitCamera_.getCameraTransform(),
+                                           drawQueue,
+                                           outlineQueue_,
+                                           builtGizmoLines_,
+                                           gridScale,
+                                           false));
+}

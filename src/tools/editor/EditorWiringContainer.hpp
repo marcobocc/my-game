@@ -7,123 +7,128 @@
 #include "../../engine/systems/rendering/vulkan/passes/VulkanOutlinePass.hpp"
 #include "../../engine/systems/rendering/vulkan/passes/VulkanUIPass.hpp"
 #include "EditorApp.hpp"
-#include "controller/EditorPickingSystem.hpp"
-#include "controller/EditorUIController.hpp"
-#include "controller/GizmoController.hpp"
-#include "controller/InteractionController.hpp"
-#include "controller/OrbitCameraController.hpp"
-#include "controller/RenderingController.hpp"
-#include "controller/ShortcutController.hpp"
-#include "controller/TransformController.hpp"
-#include "rendering/EditorRenderSystem.hpp"
-#include "rendering/VulkanEditorRenderer.hpp"
-#include "state/EditorState.hpp"
+#include "business/EditorGizmos.hpp"
+#include "business/EditorOrbitCamera.hpp"
+#include "business/EditorSettings.hpp"
+#include "business/ObjectSelection.hpp"
+#include "business/ObjectTransformHandle.hpp"
+#include "business/SceneLoader.hpp"
+#include "input/InputHandler.hpp"
+#include "input/PickingSystem.hpp"
+#include "presentation/PresentationLayer.hpp"
+#include "presentation/gizmos/GizmosRenderer.hpp"
+#include "presentation/vulkan/VulkanEditorBackend.hpp"
 
 /*
     EditorWiringContainer
-
-    Purpose:
     --------------------------------------------------
-    Central composition root for the editor application.
-
-    Responsibilities:
-    --------------------------------------------------
-    - Extend GameEngineWiringContainer with editor-specific logic
-    - Create editor-only render passes and the editor renderer
-    - Create and wire EditorState, controllers, and EditorApp
-    - Manage the editor application lifecycle
-
-    This class is not responsible for:
-    --------------------------------------------------
-    - Core engine setup (delegated to GameEngineWiringContainer)
-    - Application logic (delegated to EditorApp)
+    Central composition root for the editor application
 */
 class EditorWiringContainer : public GameEngineWiringContainer {
 public:
     EditorWiringContainer(GameWindow& window, const std::filesystem::path& assetsPath) :
         GameEngineWiringContainer(window, assetsPath),
+        // -------------------------------------------------------------------------------------------------------------
+        // Vulkan backend for the editor
+        // -------------------------------------------------------------------------------------------------------------
         gridPass_(assetManager_, resourcesManager_),
         gizmoPass_(vulkanContext_, assetManager_, resourcesManager_, swapchainManager_),
         objectIdPass_(vulkanContext_, assetManager_, resourcesManager_),
         outlinePass_(
                 vulkanContext_, assetManager_, resourcesManager_, swapchainManager_.swapchain().swapchainImageFormat),
         uiPass_(vulkanContext_, swapchainManager_, window, userInterface_),
-        editorRenderer_(window,
-                        vulkanContext_,
-                        frameManager_,
-                        renderTargetManager_,
-                        geometryPass_,
-                        lightingPass_,
-                        gridPass_,
-                        gizmoPass_,
-                        objectIdPass_,
-                        outlinePass_,
-                        uiPass_,
-                        swapchainManager_,
-                        rendererSettings_),
-        editorRenderSystem_(editorRenderer_),
-        editorState_(sceneManager_),
-        gizmoController_(editorState_, assetManager_),
-        renderingController_(editorState_, editorRenderer_, editorRenderSystem_, rendererSettings_, assetManager_),
-        orbitCameraController_(engine_),
+        vulkanEditorRenderer_(window,
+                              vulkanContext_,
+                              frameManager_,
+                              renderTargetManager_,
+                              geometryPass_,
+                              lightingPass_,
+                              gridPass_,
+                              gizmoPass_,
+                              objectIdPass_,
+                              outlinePass_,
+                              uiPass_,
+                              swapchainManager_,
+                              rendererSettings_),
+        // -------------------------------------------------------------------------------------------------------------
+        // Editor business logic providers
+        // -------------------------------------------------------------------------------------------------------------
+        editorSettings_(rendererSettings_),
+        editorOrbitCamera_(),
+        gizmosBuilder_(assetManager_, scene_),
         pickingSystem_(assetManager_),
-        uiController_(engine_, userInterface_, editorState_, assetManager_),
-        transformController_(editorState_, window, engine_, uiController_, orbitCameraController_),
-        shortcutController_(engine_, uiController_, renderingController_, editorState_, transformController_),
-        interactionController_(window, engine_, editorState_, pickingSystem_, transformController_),
+        sceneLoader_(scene_, objectSelection_, engine_),
+        sceneMutations_(scene_, engine_, &objectSelection_),
+        objectTransformHandle_(
+                window, engine_, sceneMutations_, editorOrbitCamera_, objectSelection_, editorSettings_, scene_),
+        // -------------------------------------------------------------------------------------------------------------
+        // Presentation and input handling
+        // -------------------------------------------------------------------------------------------------------------
+        presentationLayer_(vulkanEditorRenderer_,
+                           editorOrbitCamera_,
+                           objectSelection_,
+                           editorGizmos_,
+                           editorSettings_,
+                           rendererSettings_,
+                           scene_,
+                           gizmosBuilder_,
+                           objectTransformHandle_,
+                           userInterface_,
+                           pickingSystem_,
+                           sceneMutations_,
+                           sceneLoader_,
+                           assetManager_),
+        inputHandler_(window,
+                      engine_,
+                      pickingSystem_,
+                      editorOrbitCamera_,
+                      objectSelection_,
+                      objectTransformHandle_,
+                      scene_,
+                      sceneMutations_,
+                      editorGizmos_,
+                      editorSettings_),
+        // -------------------------------------------------------------------------------------------------------------
+        // Editor application entry point (root)
+        // -------------------------------------------------------------------------------------------------------------
         editorApp_(window,
                    engine_,
-                   editorState_,
-                   assetManager_,
-                   userInterface_,
-                   renderingController_,
-                   gizmoController_,
-                   uiController_,
-                   orbitCameraController_,
-                   pickingSystem_,
-                   transformController_,
-                   shortcutController_,
-                   interactionController_) {}
+                   scene_,
+                   editorOrbitCamera_,
+                   inputHandler_,
+                   presentationLayer_,
+                   editorSettings_,
+                   sceneLoader_,
+                   time_,
+                   inputSystem_,
+                   physicsSystem_) {}
 
     EditorApp& editorApp() { return editorApp_; }
 
-    void run() {
-        while (!window_.shouldClose()) {
-            time_.beginFrame();
-            float deltaTime = time_.getGameDeltaTime();
-
-            editorState_.clearGizmoLines();
-            editorState_.clearOutlineQueue();
-
-            window_.pollEvents();
-            inputSystem_.update();
-            physicsSystem_.update();
-            editorApp_.update(deltaTime);
-
-            editorRenderSystem_.update(editorState_.getScene(),
-                                       editorState_.getGridScale(),
-                                       editorState_.getOutlineQueue(),
-                                       editorState_.getGizmoLines());
-            time_.endFrame();
-        }
-    }
-
 private:
+    // Vulkan backend
     VulkanGridPass gridPass_;
     VulkanGizmoPass gizmoPass_;
     VulkanObjectIdPass objectIdPass_;
     VulkanOutlinePass outlinePass_;
     VulkanUIPass uiPass_;
-    VulkanEditorRenderer editorRenderer_;
-    EditorRenderSystem editorRenderSystem_;
-    EditorState editorState_;
-    GizmoController gizmoController_;
-    RenderingController renderingController_;
-    OrbitCameraController orbitCameraController_;
-    EditorPickingSystem pickingSystem_;
-    EditorUIController uiController_;
-    TransformController transformController_;
-    ShortcutController shortcutController_;
-    InteractionController interactionController_;
+    VulkanEditorBackend vulkanEditorRenderer_;
+
+    // Business logic
+    ObjectSelection objectSelection_;
+    EditorGizmos editorGizmos_;
+    EditorSettings editorSettings_;
+    EditorOrbitCamera editorOrbitCamera_;
+    GizmosRenderer gizmosBuilder_;
+    PickingSystem pickingSystem_;
+    SceneLoader sceneLoader_;
+    SceneMutations sceneMutations_;
+    ObjectTransformHandle objectTransformHandle_;
+
+    // Presentation and input handling
+    PresentationLayer presentationLayer_;
+    InputHandler inputHandler_;
+
+    // Root application
     EditorApp editorApp_;
 };
