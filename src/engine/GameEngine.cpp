@@ -108,9 +108,7 @@ GameObject& GameEngine::getObject(const std::string& name) const { return scene_
 
 const std::unordered_map<std::string, GameObject>& GameEngine::getObjects() const { return scene_.getObjects(); }
 
-nlohmann::json GameEngine::serializeScene() const { return SceneSerializer::serializeScene(scene_); }
-
-void GameEngine::deserializeScene(const nlohmann::json& j) { SceneSerializer::deserializeScene(j, scene_); }
+void GameEngine::loadScene(Scene& scene, const nlohmann::json& j) { SceneSerializer::deserializeScene(j, scene); }
 
 // --------------------------------------------------------
 // Assets API

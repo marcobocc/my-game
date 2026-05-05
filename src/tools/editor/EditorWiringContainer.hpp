@@ -65,10 +65,10 @@ public:
         editorState_(scene_),
         gizmoController_(editorState_, assetManager_),
         renderingController_(editorState_, editorRenderer_, editorRenderSystem_, rendererSettings_, assetManager_),
-        orbitalCamera_(engine_),
+        orbitCameraController_(engine_),
         pickingSystem_(assetManager_),
-        uiController_(engine_, userInterface_, editorState_),
-        transformController_(editorState_, window, engine_, uiController_, orbitalCamera_),
+        uiController_(engine_, userInterface_, editorState_, assetManager_),
+        transformController_(editorState_, window, engine_, uiController_, orbitCameraController_),
         shortcutController_(engine_, uiController_, renderingController_, editorState_, transformController_),
         interactionController_(window, engine_, editorState_, pickingSystem_, transformController_),
         editorApp_(window,
@@ -79,7 +79,7 @@ public:
                    renderingController_,
                    gizmoController_,
                    uiController_,
-                   orbitalCamera_,
+                   orbitCameraController_,
                    pickingSystem_,
                    transformController_,
                    shortcutController_,
@@ -117,7 +117,7 @@ private:
     EditorState editorState_;
     GizmoController gizmoController_;
     RenderingController renderingController_;
-    OrbitCameraController orbitalCamera_;
+    OrbitCameraController orbitCameraController_;
     EditorPickingSystem pickingSystem_;
     EditorUIController uiController_;
     TransformController transformController_;

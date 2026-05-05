@@ -5,10 +5,11 @@
 #include "GameEngine.hpp"
 #include "UndoHistoryController.hpp"
 #include "systems/scene/GameObject.hpp"
+#include "systems/scene/Scene.hpp"
 
 class SceneMutationsController {
 public:
-    explicit SceneMutationsController(GameEngine& engine) : engine_(engine) {}
+    SceneMutationsController(Scene& scene, GameEngine& engine) : scene_(scene), engine_(engine) {}
 
     UndoHistoryController& undoHistory() { return undoHistory_; }
 
@@ -34,9 +35,9 @@ public:
         std::string name = obj.getName();
         obj.add<T>();
         T val = obj.get<T>();
-        undoHistory_.push([this, name] { engine_.getObject(name).remove<T>(); },
+        undoHistory_.push([this, name] { scene_.getObject(name).remove<T>(); },
                           [this, name, val] {
-                              auto& o = engine_.getObject(name);
+                              auto& o = scene_.getObject(name);
                               o.add<T>();
                               o.get<T>() = val;
                           });
@@ -49,41 +50,42 @@ public:
         obj.remove<T>();
         undoHistory_.push(
                 [this, name, val] {
-                    auto& o = engine_.getObject(name);
+                    auto& o = scene_.getObject(name);
                     o.add<T>();
                     o.get<T>() = val;
                 },
-                [this, name] { engine_.getObject(name).remove<T>(); });
+                [this, name] { scene_.getObject(name).remove<T>(); });
     }
 
     std::string createCube(const Scene::_createMesh_Options& options) {
-        std::string id = engine_.createCube(options);
-        undoHistory_.push([this, id] { engine_.destroyObject(id); }, [this, options] { engine_.createCube(options); });
+        std::string id = scene_.createCube(options);
+        undoHistory_.push([this, id] { scene_.destroyObject(id); }, [this, options] { scene_.createCube(options); });
         return id;
     }
 
     std::string createRectangle2D(const Scene::_createMesh_Options& options) {
-        std::string id = engine_.createRectangle2D(options);
-        undoHistory_.push([this, id] { engine_.destroyObject(id); },
-                          [this, options] { engine_.createRectangle2D(options); });
+        std::string id = scene_.createRectangle2D(options);
+        undoHistory_.push([this, id] { scene_.destroyObject(id); },
+                          [this, options] { scene_.createRectangle2D(options); });
         return id;
     }
 
     std::string createModel(const std::string& modelName, const Scene::_createModel_Options& options) {
-        std::string id = engine_.createModel(modelName, options);
-        undoHistory_.push([this, id] { engine_.destroyObject(id); },
-                          [this, modelName, options] { engine_.createModel(modelName, options); });
+        std::string id = scene_.createModel(modelName, options);
+        undoHistory_.push([this, id] { scene_.destroyObject(id); },
+                          [this, modelName, options] { scene_.createModel(modelName, options); });
         return id;
     }
 
     std::string createEmptyObject(const std::string& name = "") {
-        auto [id, success] = engine_.createEmptyObject(name);
-        undoHistory_.push([this, id] { engine_.destroyObject(id); },
-                          [this, name] { auto [newId, _] = engine_.createEmptyObject(name); });
+        auto [id, success] = scene_.createEmptyObject(name);
+        undoHistory_.push([this, id] { scene_.destroyObject(id); },
+                          [this, name] { auto [newId, _] = scene_.createEmptyObject(name); });
         return id;
     }
 
 private:
+    Scene& scene_;
     GameEngine& engine_;
     UndoHistoryController undoHistory_;
 

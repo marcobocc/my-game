@@ -1,17 +1,18 @@
 #pragma once
 #include <imgui.h>
 #include <optional>
-#include <string>
 #include "../../../controller/SceneMutationsController.hpp"
+#include "../../../state/EditorState.hpp"
 #include "../game_components/BoxColliderWidget.hpp"
 #include "../game_components/CameraWidget.hpp"
 #include "../game_components/RendererWidget.hpp"
 #include "../game_components/TransformWidget.hpp"
-#include "GameEngine.hpp"
 #include "data/components/BoxCollider.hpp"
 #include "data/components/Camera.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
+#include "systems/assets/AssetManager.hpp"
+#include "systems/scene/Scene.hpp"
 #include "systems/ui/ImguiWidget.hpp"
 
 class InspectorPanel : public ImguiWidget {
@@ -19,16 +20,18 @@ public:
     using AABBToggleCallback = RendererWidget::AABBToggleCallback;
     using BoundingSphereToggleCallback = RendererWidget::BoundingSphereToggleCallback;
 
-    InspectorPanel(const std::optional<std::string>* selectedObjectId,
-                   GameEngine& engine,
+    InspectorPanel(EditorState& editorState,
+                   Scene& scene,
+                   AssetManager& assetManager,
                    SceneMutationsController& mutations,
                    AABBToggleCallback aabbToggle = nullptr,
                    BoundingSphereToggleCallback sphereToggle = nullptr) :
-        selectedObjectId_(selectedObjectId),
-        engine_(engine),
+        editorState_(editorState),
+        scene_(scene),
+        assetManager_(assetManager),
         mutations_(mutations),
         transformWidget_(mutations),
-        rendererWidget_(engine, mutations, aabbToggle, sphereToggle),
+        rendererWidget_(assetManager, mutations, aabbToggle, sphereToggle),
         boxColliderWidget_(mutations),
         cameraWidget_(mutations) {}
 
@@ -51,10 +54,10 @@ public:
         ImGui::Separator();
         ImGui::Spacing();
 
-        if (!selectedObjectId_ || !selectedObjectId_->has_value()) {
+        if (!editorState_.getSelectedObject().has_value()) {
             ImGui::TextDisabled("No object selected");
         } else {
-            drawObject(engine_.getObject(**selectedObjectId_));
+            drawObject(scene_.getObject(*editorState_.getSelectedObject()));
         }
 
         ImGui::End();
@@ -63,8 +66,9 @@ public:
     static constexpr float PANEL_WIDTH_RATIO = 0.25f;
 
 private:
-    const std::optional<std::string>* selectedObjectId_;
-    GameEngine& engine_;
+    EditorState& editorState_;
+    Scene& scene_;
+    AssetManager& assetManager_;
     SceneMutationsController& mutations_;
     TransformWidget transformWidget_;
     RendererWidget rendererWidget_;

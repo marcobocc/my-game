@@ -4,19 +4,24 @@
 #include <string>
 #include "../../../controller/SceneMutationsController.hpp"
 #include "../../../state/EditorState.hpp"
-#include "GameEngine.hpp"
 #include "HierarchyDropdownMenu.hpp"
+#include "systems/assets/AssetManager.hpp"
+#include "systems/scene/Scene.hpp"
 #include "systems/ui/ImguiWidget.hpp"
 
 class HierarchyPanel : public ImguiWidget {
 public:
     static constexpr float PANEL_WIDTH_RATIO = 0.15f;
 
-    HierarchyPanel(EditorState& editorState, GameEngine& engine, SceneMutationsController& mutations) :
+    HierarchyPanel(EditorState& editorState,
+                   Scene& scene,
+                   AssetManager& assetManager,
+                   SceneMutationsController& mutations) :
         editorState_(editorState),
-        engine_(engine),
+        scene_(scene),
+        assetManager_(assetManager),
         mutations_(mutations),
-        dropdownMenu_(editorState, engine, mutations) {}
+        dropdownMenu_(editorState, scene, assetManager, mutations) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -37,7 +42,7 @@ public:
         ImGui::Separator();
         ImGui::Spacing();
 
-        for (const auto& [id, obj]: engine_.getObjects()) {
+        for (const auto& [id, obj]: scene_.getObjects()) {
             bool isSelected = editorState_.getSelectedObject().has_value() && *editorState_.getSelectedObject() == id;
             if (ImGui::Selectable(id.c_str(), isSelected))
                 editorState_.setSelectedObject((isSelected) ? std::nullopt : std::optional<std::string>(id));
@@ -50,7 +55,8 @@ public:
 
 private:
     EditorState& editorState_;
-    GameEngine& engine_;
+    Scene& scene_;
+    AssetManager& assetManager_;
     SceneMutationsController& mutations_;
     HierarchyDropdownMenu dropdownMenu_;
 };

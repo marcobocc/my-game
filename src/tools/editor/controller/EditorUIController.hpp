@@ -4,9 +4,9 @@
 #include <nfd.hpp>
 #include <optional>
 #include <string>
-#include "../../../engine/GameEngine.hpp"
+#include "../../../engine/systems/assets/AssetManager.hpp"
+#include "../../../engine/systems/scene/SceneSerializer.hpp"
 #include "../../../engine/systems/ui/UserInterface.hpp"
-#include "../state/EditorState.hpp"
 #include "../view/imgui_widgets/containers/EditorMenuBar.hpp"
 #include "../view/imgui_widgets/containers/HierarchyPanel.hpp"
 #include "../view/imgui_widgets/containers/InspectorPanel.hpp"
@@ -19,25 +19,25 @@ public:
     std::optional<std::filesystem::path> scenePath{};
     SceneMutationsController mutations;
 
-    EditorUIController(GameEngine& engine, UserInterface& ui, EditorState& editorState) :
-        mutations(engine),
-        engine_(engine),
+    EditorUIController(GameEngine& engine, UserInterface& ui, EditorState& editorState, AssetManager& assetManager) :
+        mutations(editorState.getScene(), engine),
         userInterface_(ui),
-        editorState_(editorState) {
+        editorState_(editorState),
+        assetManager_(assetManager) {
         setupUI();
     }
 
     void saveScene(const std::filesystem::path& path) {
         std::ofstream f(path);
         if (!f) return;
-        f << engine_.serializeScene().dump(4);
+        f << SceneSerializer::serializeScene(editorState_.getScene()).dump(4);
         scenePath = path;
         if (menuBar_) menuBar_->sceneName = path.filename().string();
     }
 
     void loadScene(const std::filesystem::path& path) {
         try {
-            engine_.deserializeScene(JsonUtils::loadJson(path));
+            SceneSerializer::deserializeScene(JsonUtils::loadJson(path), editorState_.getScene());
             scenePath = path;
             if (menuBar_) menuBar_->sceneName = path.filename().string();
             editorState_.setSelectedObject(std::nullopt);
@@ -46,9 +46,9 @@ public:
     }
 
 private:
-    GameEngine& engine_;
     UserInterface& userInterface_;
     EditorState& editorState_;
+    AssetManager& assetManager_;
     EditorMenuBar* menuBar_ = nullptr;
 
     void setupUI() {
@@ -60,7 +60,7 @@ private:
         menuBar_->onOpen = [this] { openLoadDialog(); };
         menuBar_->onUndo = [this] { mutations.undoHistory().undo(); };
         menuBar_->onRedo = [this] { mutations.undoHistory().redo(); };
-        userInterface_.emplace<HierarchyPanel>(editorState_, engine_, mutations);
+        userInterface_.emplace<HierarchyPanel>(editorState_, editorState_.getScene(), assetManager_, mutations);
 
         auto aabbToggle = [this](const std::string& objectId, bool show) {
             if (show)
@@ -77,7 +77,7 @@ private:
         };
 
         userInterface_.emplace<InspectorPanel>(
-                &editorState_.getSelectedObjectRef(), engine_, mutations, aabbToggle, sphereToggle);
+                editorState_, editorState_.getScene(), assetManager_, mutations, aabbToggle, sphereToggle);
     }
 
     void openSaveDialog() {

@@ -6,20 +6,20 @@
 #include <string>
 #include <unordered_set>
 #include "../../../controller/SceneMutationsController.hpp"
-#include "GameEngine.hpp"
 #include "data/assets/Material.hpp"
 #include "data/components/Renderer.hpp"
+#include "systems/assets/AssetManager.hpp"
 
 class RendererWidget {
 public:
     using AABBToggleCallback = std::function<void(const std::string&, bool)>;
     using BoundingSphereToggleCallback = std::function<void(const std::string&, bool)>;
 
-    RendererWidget(GameEngine& engine,
+    RendererWidget(AssetManager& assetManager,
                    SceneMutationsController& mutations,
                    AABBToggleCallback aabbToggle = nullptr,
                    BoundingSphereToggleCallback sphereToggle = nullptr) :
-        engine_(engine),
+        assetManager_(assetManager),
         mutations_(mutations),
         aabbToggle_(aabbToggle),
         sphereToggle_(sphereToggle) {}
@@ -37,7 +37,7 @@ public:
         ImGui::Text("Mesh: %s", r.meshName.c_str());
         ImGui::Text("Material: %s", r.materialName.c_str());
 
-        if (const Material* mat = engine_.getAsset<Material>(r.materialName)) {
+        if (const Material* mat = assetManager_.get<Material>(r.materialName)) {
             if (!mat->getTextureName().empty())
                 ImGui::Text("Texture: %s", mat->getTextureName().c_str());
             else
@@ -89,7 +89,7 @@ public:
     }
 
 private:
-    GameEngine& engine_;
+    AssetManager& assetManager_;
     SceneMutationsController& mutations_;
     AABBToggleCallback aabbToggle_;
     BoundingSphereToggleCallback sphereToggle_;

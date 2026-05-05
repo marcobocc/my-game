@@ -4,14 +4,19 @@
 #include <string>
 #include "../../../controller/SceneMutationsController.hpp"
 #include "../../../state/EditorState.hpp"
-#include "GameEngine.hpp"
+#include "systems/assets/AssetManager.hpp"
 #include "systems/assets/BuiltinAssetNames.hpp"
+#include "systems/scene/Scene.hpp"
 
 class HierarchyDropdownMenu {
 public:
-    HierarchyDropdownMenu(EditorState& editorState, GameEngine& engine, SceneMutationsController& mutations) :
+    HierarchyDropdownMenu(EditorState& editorState,
+                          Scene& scene,
+                          AssetManager& assetManager,
+                          SceneMutationsController& mutations) :
         editorState_(editorState),
-        engine_(engine),
+        scene_(scene),
+        assetManager_(assetManager),
         mutations_(mutations) {}
 
     void draw() {
@@ -23,7 +28,8 @@ public:
 
 private:
     EditorState& editorState_;
-    GameEngine& engine_;
+    Scene& scene_;
+    AssetManager& assetManager_;
     SceneMutationsController& mutations_;
 
     void drawMenu() {
@@ -41,15 +47,15 @@ private:
     void drawPrimitivesSubmenu() {
         if (ImGui::BeginMenu("Primitives")) {
             if (ImGui::MenuItem("Cube")) {
-                auto id = engine_.createMesh(PRIMITIVE_GEOMETRY_CUBE, {});
+                auto id = scene_.createMesh(PRIMITIVE_GEOMETRY_CUBE, {});
                 editorState_.setSelectedObject(id);
             }
             if (ImGui::MenuItem("Plane")) {
-                auto id = engine_.createMesh(PRIMITIVE_GEOMETRY_PLANE, {});
+                auto id = scene_.createMesh(PRIMITIVE_GEOMETRY_PLANE, {});
                 editorState_.setSelectedObject(id);
             }
             if (ImGui::MenuItem("Sphere")) {
-                auto id = engine_.createMesh("_PRIMITIVE_SPHERE_5", {});
+                auto id = scene_.createMesh("_PRIMITIVE_SPHERE_5", {});
                 editorState_.setSelectedObject(id);
             }
             ImGui::EndMenu();
@@ -58,7 +64,7 @@ private:
 
     void drawModelsSubmenu() {
         if (ImGui::BeginMenu("Models")) {
-            auto models = engine_.getAvailableAssets(".model");
+            auto models = assetManager_.getAvailableAssets(".model");
             if (models.empty()) {
                 ImGui::MenuItem("No models found", nullptr, false, false);
             } else {

@@ -1,15 +1,12 @@
 #pragma once
 #include <functional>
 #include <nlohmann/json.hpp>
-#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "data/RenderTargetHandle.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/core/GameWindow.hpp"
-#include "systems/rendering/vulkan/core/utils/structs.hpp"
 #include "systems/scene/GameObject.hpp"
 #include "systems/scene/Scene.hpp"
 
@@ -100,9 +97,7 @@ public:
     std::string createRectangle2D(const Scene::_createMesh_Options& options);
     std::string createMesh(const std::string& meshName, const Scene::_createMesh_Options& options);
     std::string createModel(const std::string& modelName, const Scene::_createModel_Options& options);
-
-    nlohmann::json serializeScene() const;
-    void deserializeScene(const nlohmann::json& j);
+    void loadScene(Scene& scene, const nlohmann::json& j);
 
 private:
     bool shouldClose() const;
