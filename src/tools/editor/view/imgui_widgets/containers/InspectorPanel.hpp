@@ -17,16 +17,18 @@
 class InspectorPanel : public ImguiWidget {
 public:
     using AABBToggleCallback = RendererWidget::AABBToggleCallback;
+    using BoundingSphereToggleCallback = RendererWidget::BoundingSphereToggleCallback;
 
     InspectorPanel(const std::optional<std::string>* selectedObjectId,
                    GameEngine& engine,
                    SceneMutationsController& mutations,
-                   AABBToggleCallback aabbToggle = nullptr) :
+                   AABBToggleCallback aabbToggle = nullptr,
+                   BoundingSphereToggleCallback sphereToggle = nullptr) :
         selectedObjectId_(selectedObjectId),
         engine_(engine),
         mutations_(mutations),
         transformWidget_(mutations),
-        rendererWidget_(engine, mutations, aabbToggle),
+        rendererWidget_(engine, mutations, aabbToggle, sphereToggle),
         boxColliderWidget_(mutations),
         cameraWidget_(mutations) {}
 

@@ -17,6 +17,7 @@
 class EditorUIController {
 public:
     using AABBToggleCallback = std::function<void(const std::string&, bool)>;
+    using BoundingSphereToggleCallback = std::function<void(const std::string&, bool)>;
 
     std::optional<std::filesystem::path> scenePath{};
     SceneMutationsController mutations;
@@ -24,12 +25,14 @@ public:
     EditorUIController(GameEngine& engine,
                        UserInterface& ui,
                        EditorState& editorState,
-                       AABBToggleCallback aabbToggle = nullptr) :
+                       AABBToggleCallback aabbToggle = nullptr,
+                       BoundingSphereToggleCallback sphereToggle = nullptr) :
         mutations(engine),
         engine_(engine),
         userInterface_(ui),
         editorState_(editorState),
-        aabbToggle_(aabbToggle) {
+        aabbToggle_(aabbToggle),
+        sphereToggle_(sphereToggle) {
         setupUI();
     }
 
@@ -57,6 +60,7 @@ private:
     EditorState& editorState_;
     EditorMenuBar* menuBar_ = nullptr;
     AABBToggleCallback aabbToggle_;
+    BoundingSphereToggleCallback sphereToggle_;
 
     void setupUI() {
         menuBar_ = userInterface_.emplace<EditorMenuBar>();
@@ -68,7 +72,8 @@ private:
         menuBar_->onUndo = [this] { mutations.undoHistory().undo(); };
         menuBar_->onRedo = [this] { mutations.undoHistory().redo(); };
         userInterface_.emplace<HierarchyPanel>(&editorState_.getSelectedObjectRef(), engine_, mutations);
-        userInterface_.emplace<InspectorPanel>(&editorState_.getSelectedObjectRef(), engine_, mutations, aabbToggle_);
+        userInterface_.emplace<InspectorPanel>(
+                &editorState_.getSelectedObjectRef(), engine_, mutations, aabbToggle_, sphereToggle_);
     }
 
     void openSaveDialog() {

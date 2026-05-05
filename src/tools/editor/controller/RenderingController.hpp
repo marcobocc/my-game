@@ -12,6 +12,7 @@ class VulkanEditorRenderer;
 class EditorRenderSystem;
 class AssetManager;
 class AABB;
+struct BoundingSphere;
 struct RendererSettings;
 
 /*
@@ -71,7 +72,9 @@ public:
     void drawGizmoCube(const glm::vec3& center, float halfSize, const glm::vec3& color);
     void drawGizmoAABB(const AABB& aabb, const glm::vec3& color);
     void drawGizmoObjectAABB(const std::string& objectId, const glm::vec3& color);
+    void drawGizmoBoundingSphere(const BoundingSphere& sphere, const glm::vec3& color);
     void drawGizmoObjectTransform(const std::string& objectId, float axisLength);
+    void drawGizmoObjectBoundingSphere(const std::string& objectId, const glm::vec3& color);
     void drawGizmoBVH(const glm::vec3& color);
 
     std::vector<GizmoHandle>

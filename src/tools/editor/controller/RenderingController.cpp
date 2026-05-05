@@ -10,6 +10,7 @@
 #include "../../../engine/systems/scene/Scene.hpp"
 #include "../../../engine/utils/math/AABB.hpp"
 #include "../../../engine/utils/math/BVH.hpp"
+#include "../../../engine/utils/math/BoundingSphere.hpp"
 #include "../rendering/EditorRenderSystem.hpp"
 #include "../rendering/VulkanEditorRenderer.hpp"
 
@@ -151,6 +152,37 @@ void RenderingController::drawGizmoObjectAABB(const std::string& objectId, const
         auto mesh = assetManager_.get<Mesh>(renderer.meshName);
         auto aabb = mesh->getAABB().applyTransform(transform.getModelMatrix());
         drawGizmoAABB(aabb, color);
+    }
+}
+
+void RenderingController::drawGizmoObjectBoundingSphere(const std::string& objectId, const glm::vec3& color) {
+    auto& scene = editorState_.getScene();
+    GameObject& object = scene.getObject(objectId);
+    if (object.has<Transform>() && object.has<Renderer>()) {
+        auto transform = object.get<Transform>();
+        auto renderer = object.get<Renderer>();
+        auto mesh = assetManager_.get<Mesh>(renderer.meshName);
+        auto sphere = mesh->getBoundingSphere().applyTransform(transform.getModelMatrix());
+        drawGizmoBoundingSphere(sphere, color);
+    }
+}
+
+void RenderingController::drawGizmoBoundingSphere(const BoundingSphere& sphere, const glm::vec3& color) {
+    for (int i = 0; i < 3; ++i) {
+        constexpr glm::vec3 perp1s[3] = {{0, 1, 0}, {1, 0, 0}, {1, 0, 0}};
+        constexpr glm::vec3 perp2s[3] = {{0, 0, 1}, {0, 0, 1}, {0, 1, 0}};
+        constexpr int segments = 24;
+        glm::vec3 p1 = perp1s[i];
+        glm::vec3 p2 = perp2s[i];
+        glm::vec3 prevPt{};
+        for (int s = 0; s <= segments; ++s) {
+            float angle = glm::two_pi<float>() * static_cast<float>(s) / static_cast<float>(segments);
+            glm::vec3 pt = sphere.center + (p1 * glm::cos(angle) + p2 * glm::sin(angle)) * sphere.radius;
+            if (s > 0) {
+                drawGizmoLine(prevPt, pt, color);
+            }
+            prevPt = pt;
+        }
     }
 }
 

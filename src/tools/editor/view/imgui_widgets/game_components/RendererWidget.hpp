@@ -13,14 +13,22 @@
 class RendererWidget {
 public:
     using AABBToggleCallback = std::function<void(const std::string&, bool)>;
+    using BoundingSphereToggleCallback = std::function<void(const std::string&, bool)>;
 
-    RendererWidget(GameEngine& engine, SceneMutationsController& mutations, AABBToggleCallback aabbToggle = nullptr) :
+    RendererWidget(GameEngine& engine,
+                   SceneMutationsController& mutations,
+                   AABBToggleCallback aabbToggle = nullptr,
+                   BoundingSphereToggleCallback sphereToggle = nullptr) :
         engine_(engine),
         mutations_(mutations),
-        aabbToggle_(aabbToggle) {}
+        aabbToggle_(aabbToggle),
+        sphereToggle_(sphereToggle) {}
 
     void draw(Renderer& r, const std::string& objectId) const {
-        if (!ImGui::BeginChild("Renderer", {0, childHeight(aabbToggle_ ? 7 : 5)}, true)) {
+        int rows = 5;
+        if (aabbToggle_) rows++;
+        if (sphereToggle_) rows++;
+        if (!ImGui::BeginChild("Renderer", {0, childHeight(rows)}, true)) {
             ImGui::EndChild();
             return;
         }
@@ -62,6 +70,21 @@ public:
             }
         }
 
+        if (sphereToggle_) {
+            ImGui::Spacing();
+            static std::unordered_set<std::string> sphereToggled;
+            bool showSphere = sphereToggled.count(objectId) > 0;
+            if (ImGui::Checkbox("Show Bounding Sphere", &showSphere)) {
+                if (showSphere) {
+                    sphereToggled.insert(objectId);
+                    sphereToggle_(objectId, true);
+                } else {
+                    sphereToggled.erase(objectId);
+                    sphereToggle_(objectId, false);
+                }
+            }
+        }
+
         ImGui::EndChild();
     }
 
@@ -69,6 +92,7 @@ private:
     GameEngine& engine_;
     SceneMutationsController& mutations_;
     AABBToggleCallback aabbToggle_;
+    BoundingSphereToggleCallback sphereToggle_;
     mutable std::optional<glm::vec4> colorBeforeEdit_;
 
     static float childHeight(int rows) {

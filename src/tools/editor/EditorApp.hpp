@@ -41,15 +41,22 @@ public:
         assetManager_(assetManager),
         userInterface_(userInterface),
         renderingController_(editorState_, editorRenderer, editorRenderSystem, rendererSettings, assetManager),
-        uiController_(engine_,
-                      userInterface,
-                      editorState_,
-                      [this](const std::string& objectId, bool show) {
-                          if (show)
-                              enableObjectAABB(objectId);
-                          else
-                              disableObjectAABB(objectId);
-                      }),
+        uiController_(
+                engine_,
+                userInterface,
+                editorState_,
+                [this](const std::string& objectId, bool show) {
+                    if (show)
+                        enableObjectAABB(objectId);
+                    else
+                        disableObjectAABB(objectId);
+                },
+                [this](const std::string& objectId, bool show) {
+                    if (show)
+                        enableObjectBoundingSphere(objectId);
+                    else
+                        disableObjectBoundingSphere(objectId);
+                }),
         cameraController_(engine_),
         pickingSystem_(assetManager) {
         setupViewport();
@@ -80,6 +87,7 @@ private:
     Transform previewCameraTransform_;
 
     std::unordered_set<std::string> aabbEnabled_;
+    std::unordered_set<std::string> boundingSpheresEnabled_;
     bool bvhEnabled_ = false;
     GizmoType gizmoMode_ = GizmoType::Translation; // T = Translation, R = Rotation, Y = Scale
 
@@ -489,12 +497,18 @@ private:
         for (const auto& objectId: aabbEnabled_)
             renderingController_.drawGizmoObjectAABB(objectId, {0.0f, 1.0f, 0.0f});
 
+        for (const auto& objectId: boundingSpheresEnabled_)
+            renderingController_.drawGizmoObjectBoundingSphere(objectId, {1.0f, 1.0f, 0.0f});
+
         if (bvhEnabled_) renderingController_.drawGizmoBVH({1.0f, 1.0f, 0.0f});
     }
 
     void enableObjectAABB(const std::string& objectId) { aabbEnabled_.insert(objectId); }
     void disableObjectAABB(const std::string& objectId) { aabbEnabled_.erase(objectId); }
     void toggleBVH() { bvhEnabled_ = !bvhEnabled_; }
+
+    void enableObjectBoundingSphere(const std::string& objectId) { boundingSpheresEnabled_.insert(objectId); }
+    void disableObjectBoundingSphere(const std::string& objectId) { boundingSpheresEnabled_.erase(objectId); }
 
     void updateCamera(double deltaTime) {
         cameraController_.update(deltaTime);
