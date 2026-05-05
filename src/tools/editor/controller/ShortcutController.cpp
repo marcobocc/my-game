@@ -11,6 +11,7 @@ void ShortcutController::update() {
     handleToggleKeys();
     handleGizmoModeKeys();
     handleGridRescale();
+    handleGridSnapping();
 }
 
 void ShortcutController::handleSaveAndUndoRedo() {
@@ -49,5 +50,11 @@ void ShortcutController::handleGridRescale() {
     if (engine_.isKeyPressed(GLFW_KEY_KP_SUBTRACT)) {
         float newScale = editorState_.getGridScale() / rescaleFactor;
         editorState_.setGridScale(std::clamp(newScale, lowerBound, upperBound));
+    }
+}
+
+void ShortcutController::handleGridSnapping() {
+    if (engine_.isKeyPressed(GLFW_KEY_U)) {
+        editorState_.toggleGridSnapping();
     }
 }

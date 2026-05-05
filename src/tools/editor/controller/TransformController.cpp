@@ -80,10 +80,19 @@ void TransformController::updateTranslationDrag(double mouseX, double mouseY) {
 
     float startT = projectOnAxis(
             dragState_.activeDrag->hitPointOnAxis, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->axisDir);
-    float currentT = projectOnAxis(*hitPoint, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->axisDir);
-    float delta = currentT - startT;
 
-    obj.get<Transform>().position = dragState_.activeDrag->dragOrigin + dragState_.activeDrag->axisDir * delta;
+    float currentT = projectOnAxis(*hitPoint, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->axisDir);
+
+    float delta = currentT - startT;
+    glm::vec3 pos = dragState_.activeDrag->dragOrigin + dragState_.activeDrag->axisDir * delta;
+
+    if (editorState_.isGridSnappingEnabled()) {
+        float scale = editorState_.getGridScale();
+        glm::vec3 gridOrigin = {0.0f, 0.0f, 0.0f};
+        pos = gridOrigin + glm::round((pos - gridOrigin) / scale) * scale;
+    }
+
+    obj.get<Transform>().position = pos;
 }
 
 void TransformController::commitTranslationDrag() {

@@ -52,4 +52,5 @@ private:
     void handleToggleKeys();
     void handleGizmoModeKeys();
     void handleGridRescale();
+    void handleGridSnapping();
 };

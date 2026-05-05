@@ -55,6 +55,9 @@ public:
     void toggleGrid() { gridEnabled_ = !gridEnabled_; }
     float getGridScale() const { return gridScale_; }
     void setGridScale(float scale) { gridScale_ = scale; }
+    bool isGridSnappingEnabled() const { return gridSnappingEnabled_; }
+    void setGridSnappingEnabled(bool enabled) { gridSnappingEnabled_ = enabled; }
+    void toggleGridSnapping() { gridSnappingEnabled_ = !gridSnappingEnabled_; }
 
     bool isLightingEnabled() const { return lightingEnabled_; }
     void setLightingEnabled(bool enabled) { lightingEnabled_ = enabled; }
@@ -135,5 +138,6 @@ private:
     bool lightingEnabled_ = true;
     bool bvhEnabled_ = false;
     float gridScale_ = 1.0f;
+    bool gridSnappingEnabled_ = true;
     std::unordered_map<uint32_t, VkDescriptorSet> renderTargetImGuiIds_;
 };
