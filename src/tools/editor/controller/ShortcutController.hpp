@@ -51,4 +51,5 @@ private:
     void handleSaveAndUndoRedo();
     void handleToggleKeys();
     void handleGizmoModeKeys();
+    void handleGridRescale();
 };

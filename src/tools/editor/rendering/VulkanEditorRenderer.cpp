@@ -99,11 +99,11 @@ VulkanEditorRenderer::~VulkanEditorRenderer() {
 
 // ------------------- Public API -------------------
 
-bool VulkanEditorRenderer::renderFrame(const EditorRenderData& scene) {
+bool VulkanEditorRenderer::renderFrame(const EditorRenderData& renderData) {
     // Off-screen cameras: queue up work to be batched into the next swapchain frame.
-    if (scene.camera.renderTarget.isValid()) {
-        if (renderTargetManager_.get(scene.camera.renderTarget))
-            pendingOffscreenCameras_.push_back({scene.camera, scene.cameraTransform});
+    if (renderData.camera.renderTarget.isValid()) {
+        if (renderTargetManager_.get(renderData.camera.renderTarget))
+            pendingOffscreenCameras_.push_back({renderData.camera, renderData.cameraTransform});
         return true;
     }
 
@@ -112,7 +112,7 @@ bool VulkanEditorRenderer::renderFrame(const EditorRenderData& scene) {
     uint32_t imageIndex = 0;
     if (!frameManager_.acquireImage(imageIndex)) return false;
     VkCommandBuffer cmd = frameManager_.beginFrame();
-    recordCommands(cmd, imageIndex, scene);
+    recordCommands(cmd, imageIndex, renderData);
     frameManager_.endFrame(cmd);
     frameManager_.submit(imageIndex);
     frameManager_.advanceFrame();
@@ -196,10 +196,10 @@ void VulkanEditorRenderer::executeRenderGraph(VkCommandBuffer cmd,
                                               VkImage colorImage,
                                               VkImageView colorView,
                                               VkExtent2D extent,
-                                              const EditorRenderData& ctx) {
+                                              const EditorRenderData& renderData) {
     renderGraph_->resetAllResourceLayouts();
     renderGraph_->setImportedImage(colorTargetHandle_, colorImage, colorView, extent);
-    renderGraph_->execute(cmd, ctx);
+    renderGraph_->execute(cmd, renderData);
 }
 
 // Transition a color image from COLOR_ATTACHMENT_OPTIMAL to its final consumer layout.
@@ -222,7 +222,9 @@ static void transitionColorImageFinal(VkCommandBuffer cmd,
             cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
-void VulkanEditorRenderer::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const EditorRenderData& scene) {
+void VulkanEditorRenderer::recordCommands(VkCommandBuffer cmd,
+                                          uint32_t imageIndex,
+                                          const EditorRenderData& renderData) {
     // Flush off-screen cameras first, within the same command buffer.
     for (auto& job: pendingOffscreenCameras_) {
         if (job.camera.renderTarget.isValid()) {
@@ -259,12 +261,12 @@ void VulkanEditorRenderer::recordCommands(VkCommandBuffer cmd, uint32_t imageInd
                                        target->image,
                                        target->view,
                                        {target->width, target->height},
-                                       {job.camera,
-                                        job.cameraTransform,
-                                        scene.drawQueue,
-                                        scene.outlineQueue,
-                                        scene.gizmoLines,
-                                        /*isOffscreen=*/true});
+                                       EditorRenderData{job.camera,
+                                                        job.cameraTransform,
+                                                        renderData.drawQueue,
+                                                        renderData.outlineQueue,
+                                                        renderData.gizmoLines,
+                                                        /*isOffscreen=*/true});
                     transitionColorImageFinal(cmd,
                                               target->image,
                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -289,7 +291,8 @@ void VulkanEditorRenderer::recordCommands(VkCommandBuffer cmd, uint32_t imageInd
                        swapchainTarget.image,
                        swapchainTarget.view,
                        {swapchainTarget.width, swapchainTarget.height},
-                       {scene.camera, scene.cameraTransform, scene.drawQueue, scene.outlineQueue, scene.gizmoLines});
+                       renderData);
+
     transitionColorImageFinal(
             cmd, swapchainTarget.image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0);
 }
@@ -513,6 +516,7 @@ void VulkanEditorRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFl
                              extent,
                              ctx.camera,
                              ctx.cameraTransform,
+                             ctx.gridScale,
                              graph.getImageView(gbufferDepthHandle_));
             return true;
         };

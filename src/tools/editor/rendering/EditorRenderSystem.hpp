@@ -19,6 +19,7 @@ public:
     }
 
     void update(const SceneManager& scene,
+                float gridScale,
                 const std::vector<DrawCall>& outlineQueue = {},
                 const std::vector<VulkanGizmoPass::GizmoVertex>& gizmoLines = {}) {
 
@@ -32,12 +33,14 @@ public:
         auto cameras = scene.getObjectsWith<Camera, Transform>();
         for (auto& [entity, camera, transform]: cameras) {
             if (camera.renderTarget.isValid())
-                renderer_.renderFrame({camera, transform, drawQueue, outlineQueue, gizmoLines, true});
+                renderer_.renderFrame(
+                        EditorRenderData(camera, transform, drawQueue, outlineQueue, gizmoLines, gridScale, true));
         }
 
-        const Camera& cam = getActiveCamera();
-        const Transform& camTransform = getActiveCameraTransform();
-        renderer_.renderFrame({cam, camTransform, drawQueue, outlineQueue, gizmoLines});
+        const Camera& activeCamera = getActiveCamera();
+        const Transform& activeCameraTransform = getActiveCameraTransform();
+        renderer_.renderFrame(EditorRenderData(
+                activeCamera, activeCameraTransform, drawQueue, outlineQueue, gizmoLines, gridScale, false));
     }
 
 private:

@@ -5,8 +5,9 @@ layout(location = 0) out vec4 outColor;
 
 layout(push_constant) uniform Push {
     mat4 invViewProj;
-    vec3 cameraPos;
     mat4 viewProj;
+    vec3 cameraPos;
+    float scale;
 } pc;
 
 vec3 getWorldPos(vec2 uv) {
@@ -28,8 +29,7 @@ void main() {
     vec4 clipHit = pc.viewProj * vec4(hit, 1.0);
     gl_FragDepth = clipHit.z / clipHit.w;
 
-    float scale = 1.0;
-    vec2 grid = hit.xz / scale;
+    vec2 grid = hit.xz / pc.scale;
 
     vec2 lines = abs(fract(grid - 0.5) - 0.5) / fwidth(grid);
     float line = min(lines.x, lines.y);

@@ -53,6 +53,8 @@ public:
     bool isGridEnabled() const { return gridEnabled_; }
     void setGridEnabled(bool enabled) { gridEnabled_ = enabled; }
     void toggleGrid() { gridEnabled_ = !gridEnabled_; }
+    float getGridScale() const { return gridScale_; }
+    void setGridScale(float scale) { gridScale_ = scale; }
 
     bool isLightingEnabled() const { return lightingEnabled_; }
     void setLightingEnabled(bool enabled) { lightingEnabled_ = enabled; }
@@ -132,5 +134,6 @@ private:
     bool gridEnabled_ = true;
     bool lightingEnabled_ = true;
     bool bvhEnabled_ = false;
+    float gridScale_ = 1.0f;
     std::unordered_map<uint32_t, VkDescriptorSet> renderTargetImGuiIds_;
 };

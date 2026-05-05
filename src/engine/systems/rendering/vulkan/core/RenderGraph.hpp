@@ -156,7 +156,7 @@ public:
         }
     }
 
-    void execute(VkCommandBuffer cmd, const RenderData& ctx) {
+    void execute(VkCommandBuffer cmd, const RenderData& renderData) {
         assert(built_);
         for (size_t i: sortedOrder_) {
             RenderPassNode& pass = passes_[i];
@@ -166,7 +166,7 @@ public:
             for (const auto& usage: pass.reads)
                 emitBarrier(cmd, resource(usage.handle), usage);
 
-            const bool ran = !pass.execute || pass.execute(cmd, *this, ctx);
+            const bool ran = !pass.execute || pass.execute(cmd, *this, renderData);
 
             if (ran) {
                 for (const auto& ep: pass.epilogues) {
@@ -177,7 +177,7 @@ public:
                 }
             }
 
-            if (ran && pass.postExecute) pass.postExecute(cmd, *this, ctx);
+            if (ran && pass.postExecute) pass.postExecute(cmd, *this, renderData);
         }
     }
 

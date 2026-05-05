@@ -1,5 +1,6 @@
 #include "ShortcutController.hpp"
 #include <GLFW/glfw3.h>
+#include <cmath>
 #include "../controller/EditorUIController.hpp"
 #include "../controller/RenderingController.hpp"
 #include "../controller/TransformController.hpp"
@@ -9,6 +10,7 @@ void ShortcutController::update() {
     handleSaveAndUndoRedo();
     handleToggleKeys();
     handleGizmoModeKeys();
+    handleGridRescale();
 }
 
 void ShortcutController::handleSaveAndUndoRedo() {
@@ -34,4 +36,18 @@ void ShortcutController::handleGizmoModeKeys() {
     if (engine_.isKeyPressed(GLFW_KEY_T)) dragState.gizmoMode = GizmoType::Translation;
     if (engine_.isKeyPressed(GLFW_KEY_R)) dragState.gizmoMode = GizmoType::Rotation;
     if (engine_.isKeyPressed(GLFW_KEY_Y)) dragState.gizmoMode = GizmoType::Scale;
+}
+
+void ShortcutController::handleGridRescale() {
+    static constexpr float rescaleFactor = 1.5f;
+    static const float upperBound = pow(rescaleFactor, 3);
+    static const float lowerBound = 1 / pow(rescaleFactor, 14);
+    if (engine_.isKeyPressed(GLFW_KEY_KP_ADD)) {
+        float newScale = editorState_.getGridScale() * rescaleFactor;
+        editorState_.setGridScale(std::clamp(newScale, lowerBound, upperBound));
+    }
+    if (engine_.isKeyPressed(GLFW_KEY_KP_SUBTRACT)) {
+        float newScale = editorState_.getGridScale() / rescaleFactor;
+        editorState_.setGridScale(std::clamp(newScale, lowerBound, upperBound));
+    }
 }

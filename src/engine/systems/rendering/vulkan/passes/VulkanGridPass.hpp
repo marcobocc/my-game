@@ -23,6 +23,7 @@ public:
                 VkExtent2D extent,
                 const Camera& camera,
                 const Transform& cameraTransform,
+                float gridScale,
                 VkImageView depthView) const {
         if (pipeline_ == nullptr) return;
 
@@ -52,9 +53,9 @@ public:
 
         struct GridPushConstants {
             glm::mat4 invViewProj;
-            glm::vec3 cameraPos;
-            float pad = 0.0f;
             glm::mat4 viewProj;
+            glm::vec3 cameraPos;
+            float scale;
         } pc{};
 
         glm::mat4 view = cameraTransform.getViewMatrix();
@@ -62,6 +63,7 @@ public:
         pc.viewProj = proj * view;
         pc.invViewProj = glm::inverse(pc.viewProj);
         pc.cameraPos = cameraTransform.position;
+        pc.scale = gridScale;
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
         vkCmdPushConstants(cmd,

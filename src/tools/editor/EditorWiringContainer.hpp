@@ -100,8 +100,10 @@ public:
             physicsSystem_.update();
             editorApp_.update(deltaTime);
 
-            editorRenderSystem_.update(
-                    editorState_.getScene(), editorState_.getOutlineQueue(), editorState_.getGizmoLines());
+            editorRenderSystem_.update(editorState_.getScene(),
+                                       editorState_.getGridScale(),
+                                       editorState_.getOutlineQueue(),
+                                       editorState_.getGizmoLines());
             time_.endFrame();
         }
     }

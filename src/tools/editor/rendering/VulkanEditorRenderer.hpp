@@ -41,10 +41,10 @@ public:
 
     ~VulkanEditorRenderer();
 
-    // Render one frame for the given scene view.
+    // Render one frame for the given renderData view.
     // Off-screen cameras (camera.renderTarget.isValid()) are queued and flushed
     // at the start of the next swapchain frame.
-    bool renderFrame(const EditorRenderData& scene);
+    bool renderFrame(const EditorRenderData& renderData);
 
     // Queue an off-screen camera render to be processed in the next swapchain frame.
     // The camera will render using the scene's draw queue from the next renderFrame() call.
@@ -63,12 +63,12 @@ public:
 
 private:
     // --- Frame helpers ---
-    void recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const EditorRenderData& scene);
+    void recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const EditorRenderData& renderData);
     void executeRenderGraph(VkCommandBuffer cmd,
                             VkImage colorImage,
                             VkImageView colorView,
                             VkExtent2D extent,
-                            const EditorRenderData& ctx);
+                            const EditorRenderData& renderData);
 
 
     // --- Render graph setup ---
