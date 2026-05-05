@@ -60,7 +60,7 @@ private:
         menuBar_->onOpen = [this] { openLoadDialog(); };
         menuBar_->onUndo = [this] { mutations.undoHistory().undo(); };
         menuBar_->onRedo = [this] { mutations.undoHistory().redo(); };
-        userInterface_.emplace<HierarchyPanel>(&editorState_.getSelectedObjectRef(), engine_, mutations);
+        userInterface_.emplace<HierarchyPanel>(editorState_, engine_, mutations);
 
         auto aabbToggle = [this](const std::string& objectId, bool show) {
             if (show)
