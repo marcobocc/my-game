@@ -76,6 +76,13 @@ public:
         return id;
     }
 
+    std::string createEmptyObject(const std::string& name = "") {
+        auto [id, success] = engine_.createEmptyObject(name);
+        undoHistory_.push([this, id] { engine_.destroyObject(id); },
+                          [this, name] { auto [newId, _] = engine_.createEmptyObject(name); });
+        return id;
+    }
+
 private:
     GameEngine& engine_;
     UndoHistoryController undoHistory_;

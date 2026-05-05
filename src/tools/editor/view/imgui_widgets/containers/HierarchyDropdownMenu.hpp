@@ -27,6 +27,10 @@ private:
     SceneMutationsController& mutations_;
 
     void drawMenu() {
+        if (ImGui::MenuItem("Empty Object")) {
+            auto id = mutations_.createEmptyObject();
+            editorState_.setSelectedObject(id);
+        }
         if (ImGui::BeginMenu("3D Object")) {
             drawPrimitivesSubmenu();
             drawModelsSubmenu();

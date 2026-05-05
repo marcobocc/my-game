@@ -80,6 +80,10 @@ void GameEngine::setActiveCamera(const Camera& camera, const Transform& transfor
 // Assets API
 // --------------------------------------------------------
 
+std::pair<std::string, bool> GameEngine::createEmptyObject(const std::string& name) {
+    return scene_.createEmptyObject(name);
+}
+
 std::string GameEngine::createCamera(const Scene::_createCamera_Options& options) {
     return scene_.createCamera(options);
 }

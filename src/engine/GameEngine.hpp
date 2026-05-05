@@ -94,6 +94,7 @@ public:
     const std::unordered_map<std::string, GameObject>& getObjects() const;
     void destroyObject(const std::string& name);
 
+    std::pair<std::string, bool> createEmptyObject(const std::string& name = "");
     std::string createCamera(const Scene::_createCamera_Options& options);
     std::string createCube(const Scene::_createMesh_Options& options);
     std::string createRectangle2D(const Scene::_createMesh_Options& options);
