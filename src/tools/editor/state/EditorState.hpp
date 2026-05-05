@@ -9,7 +9,7 @@
 #include "../../../engine/data/components/Transform.hpp"
 #include "../../../engine/systems/rendering/vulkan/core/utils/structs.hpp"
 #include "../../../engine/systems/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "../../../engine/systems/scene/Scene.hpp"
+#include "../../../engine/systems/scene/SceneManager.hpp"
 
 /*
     EditorState
@@ -21,7 +21,7 @@
 
     Contents:
     --------------------------------------------------
-    - Scene reference (game objects being edited)
+    - SceneManager reference (game objects being edited)
     - Gizmo drawing queue (lines to visualize)
     - Outline drawing queue (objects to outline)
     - Active editor camera and transform
@@ -31,13 +31,13 @@
 */
 class EditorState {
 public:
-    explicit EditorState(Scene& scene) : scene_(scene) {}
+    explicit EditorState(SceneManager& scene) : sceneManager_(scene) {}
 
     // --------------------------------------------------------
-    // Scene
+    // SceneManager
     // --------------------------------------------------------
-    Scene& getScene() { return scene_; }
-    const Scene& getScene() const { return scene_; }
+    SceneManager& getScene() { return sceneManager_; }
+    const SceneManager& getScene() const { return sceneManager_; }
 
     // --------------------------------------------------------
     // Selection
@@ -121,7 +121,7 @@ public:
     }
 
 private:
-    Scene& scene_;
+    SceneManager& sceneManager_;
     std::optional<std::string> selectedObjectId_;
     std::vector<VulkanGizmoPass::GizmoVertex> gizmoLines_;
     std::vector<DrawCall> outlineQueue_;

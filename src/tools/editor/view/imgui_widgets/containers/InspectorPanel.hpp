@@ -12,7 +12,7 @@
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
 #include "systems/assets/AssetManager.hpp"
-#include "systems/scene/Scene.hpp"
+#include "systems/scene/SceneManager.hpp"
 #include "systems/ui/ImguiWidget.hpp"
 
 class InspectorPanel : public ImguiWidget {
@@ -21,13 +21,13 @@ public:
     using BoundingSphereToggleCallback = RendererWidget::BoundingSphereToggleCallback;
 
     InspectorPanel(EditorState& editorState,
-                   Scene& scene,
+                   SceneManager& sceneManager,
                    AssetManager& assetManager,
                    SceneMutationsController& mutations,
                    AABBToggleCallback aabbToggle = nullptr,
                    BoundingSphereToggleCallback sphereToggle = nullptr) :
         editorState_(editorState),
-        scene_(scene),
+        sceneManager_(sceneManager),
         assetManager_(assetManager),
         mutations_(mutations),
         transformWidget_(mutations),
@@ -57,7 +57,7 @@ public:
         if (!editorState_.getSelectedObject().has_value()) {
             ImGui::TextDisabled("No object selected");
         } else {
-            drawObject(scene_.getObject(*editorState_.getSelectedObject()));
+            drawObject(sceneManager_.getObject(*editorState_.getSelectedObject()));
         }
 
         ImGui::End();
@@ -67,7 +67,7 @@ public:
 
 private:
     EditorState& editorState_;
-    Scene& scene_;
+    SceneManager& sceneManager_;
     AssetManager& assetManager_;
     SceneMutationsController& mutations_;
     TransformWidget transformWidget_;

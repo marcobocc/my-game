@@ -8,7 +8,7 @@
 #include "systems/assets/AssetManager.hpp"
 #include "systems/core/GameWindow.hpp"
 #include "systems/scene/GameObject.hpp"
-#include "systems/scene/Scene.hpp"
+#include "systems/scene/SceneManager.hpp"
 
 struct AABB;
 struct Camera;
@@ -48,7 +48,7 @@ public:
                         AssetManager& assetManager,
                         InputSystem& inputSystem,
                         PhysicsSystem& physicsSystem,
-                        Scene& scene,
+                        SceneManager& scene,
                         GameRenderSystem& renderSystem,
                         RendererSettings& rendererSettings,
                         VulkanGameRenderer& renderer);
@@ -85,19 +85,19 @@ public:
     }
 
     // --------------------------------------------------------
-    // Scene API
+    // SceneManager API
     // --------------------------------------------------------
     GameObject& getObject(const std::string& name) const;
     const std::unordered_map<std::string, GameObject>& getObjects() const;
     void destroyObject(const std::string& name);
 
     std::pair<std::string, bool> createEmptyObject(const std::string& name = "");
-    std::string createCamera(const Scene::_createCamera_Options& options);
-    std::string createCube(const Scene::_createMesh_Options& options);
-    std::string createRectangle2D(const Scene::_createMesh_Options& options);
-    std::string createMesh(const std::string& meshName, const Scene::_createMesh_Options& options);
-    std::string createModel(const std::string& modelName, const Scene::_createModel_Options& options);
-    void loadScene(Scene& scene, const nlohmann::json& j);
+    std::string createCamera(const SceneManager::_createCamera_Options& options);
+    std::string createCube(const SceneManager::_createMesh_Options& options);
+    std::string createRectangle2D(const SceneManager::_createMesh_Options& options);
+    std::string createMesh(const std::string& meshName, const SceneManager::_createMesh_Options& options);
+    std::string createModel(const std::string& modelName, const SceneManager::_createModel_Options& options);
+    void loadScene(SceneManager& scene, const nlohmann::json& j);
 
 private:
     bool shouldClose() const;
@@ -107,7 +107,7 @@ private:
     AssetManager& assetManager_;
     InputSystem& inputSystem_;
     PhysicsSystem& physicsSystem_;
-    Scene& scene_;
+    SceneManager& sceneManager_;
     GameRenderSystem& renderSystem_;
     RendererSettings& rendererSettings_;
     VulkanGameRenderer& renderer_;

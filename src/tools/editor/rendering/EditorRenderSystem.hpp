@@ -3,7 +3,7 @@
 #include "../../../engine/data/components/Renderer.hpp"
 #include "../../../engine/data/components/Transform.hpp"
 #include "../../../engine/systems/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "../../../engine/systems/scene/Scene.hpp"
+#include "../../../engine/systems/scene/SceneManager.hpp"
 #include "EditorRenderData.hpp"
 #include "VulkanEditorRenderer.hpp"
 
@@ -18,7 +18,7 @@ public:
         activeCameraTransform_ = &cameraTransform;
     }
 
-    void update(const Scene& scene,
+    void update(const SceneManager& scene,
                 const std::vector<DrawCall>& outlineQueue = {},
                 const std::vector<VulkanGizmoPass::GizmoVertex>& gizmoLines = {}) {
 

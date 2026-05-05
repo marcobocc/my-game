@@ -62,7 +62,7 @@ public:
                         swapchainManager_,
                         rendererSettings_),
         editorRenderSystem_(editorRenderer_),
-        editorState_(scene_),
+        editorState_(sceneManager_),
         gizmoController_(editorState_, assetManager_),
         renderingController_(editorState_, editorRenderer_, editorRenderSystem_, rendererSettings_, assetManager_),
         orbitCameraController_(engine_),

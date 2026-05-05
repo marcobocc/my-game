@@ -4,7 +4,7 @@
 #include "../../../engine/data/components/Renderer.hpp"
 #include "../../../engine/systems/assets/AssetManager.hpp"
 #include "../../../engine/systems/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "../../../engine/systems/scene/Scene.hpp"
+#include "../../../engine/systems/scene/SceneManager.hpp"
 #include "../../../engine/utils/math/AABB.hpp"
 #include "../../../engine/utils/math/BVH.hpp"
 #include "../../../engine/utils/math/BoundingSphere.hpp"

@@ -8,7 +8,7 @@
 #include "../../data/components/Renderer.hpp"
 #include "../../data/components/Transform.hpp"
 #include "../../systems/assets/AssetManager.hpp"
-#include "../../systems/scene/Scene.hpp"
+#include "../../systems/scene/SceneManager.hpp"
 #include "../../utils/math/Ray.hpp"
 
 /*
@@ -25,7 +25,7 @@ public:
     static std::optional<std::string> pick(const glm::vec2& ndcPos,
                                            const Camera& camera,
                                            const Transform& cameraTransform,
-                                           Scene& scene,
+                                           SceneManager& scene,
                                            AssetManager& assetManager) {
         Ray ray = buildRay(ndcPos, camera, cameraTransform);
 
@@ -59,7 +59,7 @@ public:
                                                     uint32_t viewportHeight,
                                                     const Camera& camera,
                                                     const Transform& cameraTransform,
-                                                    Scene& scene,
+                                                    SceneManager& scene,
                                                     AssetManager& assetManager) {
         if (viewportWidth == 0 || viewportHeight == 0) return std::nullopt;
         float ndcX = (static_cast<float>(pixelX) - static_cast<float>(viewportX)) / static_cast<float>(viewportWidth);

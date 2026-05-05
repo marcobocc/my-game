@@ -2,7 +2,7 @@
 #include <functional>
 #include <unordered_set>
 #include "systems/physics/collision_utils.hpp"
-#include "systems/scene/Scene.hpp"
+#include "systems/scene/SceneManager.hpp"
 
 class PhysicsSystem {
 public:
@@ -11,14 +11,14 @@ public:
     enum class CollisionEventType { Enter, Stay, Exit };
     using CollisionCallback = std::function<void(const CollisionPair&)>;
 
-    explicit PhysicsSystem(Scene& scene) : scene_(scene) {}
+    explicit PhysicsSystem(SceneManager& scene) : sceneManager_(scene) {}
 
     static bool checkCollision(const BoxCollider& a, const Transform& ta, const BoxCollider& b, const Transform& tb) {
         return Physics::checkCollision(a, ta, b, tb);
     }
 
     std::optional<Physics::RaycastHit> raycast(const glm::vec3& origin, const glm::vec3& dir) const {
-        auto objects = scene_.getObjectsWith<BoxCollider, Transform>();
+        auto objects = sceneManager_.getObjectsWith<BoxCollider, Transform>();
         return Physics::raycast(origin, dir, objects);
     }
 
@@ -27,7 +27,7 @@ public:
     void onCollisionExit(CollisionCallback cb) { exitCallbacks_.push_back(std::move(cb)); }
 
     void update() {
-        auto objects = scene_.getObjectsWith<BoxCollider, Transform>();
+        auto objects = sceneManager_.getObjectsWith<BoxCollider, Transform>();
         std::unordered_set<CollisionPair, PairHash> currentCollisions;
         for (size_t i = 0; i < objects.size(); ++i) {
             const auto& [idA, colliderA, transformA] = objects[i];
@@ -68,7 +68,7 @@ private:
         return a < b ? std::make_pair(a, b) : std::make_pair(b, a);
     }
 
-    Scene& scene_;
+    SceneManager& sceneManager_;
     std::unordered_set<CollisionPair, PairHash> prevCollisions_;
     std::vector<CollisionCallback> enterCallbacks_;
     std::vector<CollisionCallback> stayCallbacks_;

@@ -11,9 +11,9 @@
 
 class AssetManager;
 
-class Scene {
+class SceneManager {
 public:
-    explicit Scene(AssetManager& assetManager);
+    explicit SceneManager(AssetManager& assetManager);
 
     std::pair<std::string, bool> createEmptyObject(std::string name = "");
     void destroyObject(const std::string& name);

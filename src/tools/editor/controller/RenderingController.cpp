@@ -3,7 +3,7 @@
 #include "../../../engine/data/components/Transform.hpp"
 #include "../../../engine/data/settings/RendererSettings.hpp"
 #include "../../../engine/systems/assets/AssetManager.hpp"
-#include "../../../engine/systems/scene/Scene.hpp"
+#include "../../../engine/systems/scene/SceneManager.hpp"
 #include "../rendering/EditorRenderSystem.hpp"
 #include "../rendering/VulkanEditorRenderer.hpp"
 

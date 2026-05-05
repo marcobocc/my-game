@@ -6,16 +6,16 @@
 #include "../../../state/EditorState.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/assets/BuiltinAssetNames.hpp"
-#include "systems/scene/Scene.hpp"
+#include "systems/scene/SceneManager.hpp"
 
 class HierarchyDropdownMenu {
 public:
     HierarchyDropdownMenu(EditorState& editorState,
-                          Scene& scene,
+                          SceneManager& sceneManager,
                           AssetManager& assetManager,
                           SceneMutationsController& mutations) :
         editorState_(editorState),
-        scene_(scene),
+        sceneManager_(sceneManager),
         assetManager_(assetManager),
         mutations_(mutations) {}
 
@@ -28,7 +28,7 @@ public:
 
 private:
     EditorState& editorState_;
-    Scene& scene_;
+    SceneManager& sceneManager_;
     AssetManager& assetManager_;
     SceneMutationsController& mutations_;
 
@@ -47,15 +47,15 @@ private:
     void drawPrimitivesSubmenu() {
         if (ImGui::BeginMenu("Primitives")) {
             if (ImGui::MenuItem("Cube")) {
-                auto id = scene_.createMesh(PRIMITIVE_GEOMETRY_CUBE, {});
+                auto id = sceneManager_.createMesh(PRIMITIVE_GEOMETRY_CUBE, {});
                 editorState_.setSelectedObject(id);
             }
             if (ImGui::MenuItem("Plane")) {
-                auto id = scene_.createMesh(PRIMITIVE_GEOMETRY_PLANE, {});
+                auto id = sceneManager_.createMesh(PRIMITIVE_GEOMETRY_PLANE, {});
                 editorState_.setSelectedObject(id);
             }
             if (ImGui::MenuItem("Sphere")) {
-                auto id = scene_.createMesh("_PRIMITIVE_SPHERE_5", {});
+                auto id = sceneManager_.createMesh("_PRIMITIVE_SPHERE_5", {});
                 editorState_.setSelectedObject(id);
             }
             ImGui::EndMenu();

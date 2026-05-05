@@ -9,7 +9,7 @@
 #include "../../../engine/data/components/Transform.hpp"
 #include "../../../engine/systems/assets/AssetManager.hpp"
 #include "../../../engine/systems/input/RaycastPickingSystem.hpp"
-#include "../../../engine/systems/scene/Scene.hpp"
+#include "../../../engine/systems/scene/SceneManager.hpp"
 #include "../../../engine/utils/math/Ray.hpp"
 
 /*
@@ -17,7 +17,7 @@
 
     Two-layer picking for the editor viewport:
       1. Gizmo handles (tested first — takes priority over scene objects)
-      2. Scene objects via AABB raycast (falls through if no handle hit)
+      2. SceneManager objects via AABB raycast (falls through if no handle hit)
 
     Gizmo handles are registered each frame via registerHandle() before pick() is called,
     and cleared via clearHandles() at the start of each frame.
@@ -63,7 +63,7 @@ public:
                                          uint32_t viewportHeight,
                                          const Camera& camera,
                                          const Transform& cameraTransform,
-                                         Scene& scene) const {
+                                         SceneManager& scene) const {
         if (viewportWidth == 0 || viewportHeight == 0) return std::nullopt;
 
         float ndcX = (static_cast<float>(pixelX) - static_cast<float>(viewportX)) / static_cast<float>(viewportWidth);

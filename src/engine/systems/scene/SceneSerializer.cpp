@@ -95,7 +95,7 @@ static BoxCollider deserializeBoxCollider(const json& j) {
 
 namespace SceneSerializer {
 
-    json serializeScene(const Scene& scene) {
+    json serializeScene(const SceneManager& scene) {
         json root;
         json& objects = root["objects"];
         for (const auto& [name, obj]: scene.getObjects()) {
@@ -110,7 +110,7 @@ namespace SceneSerializer {
         return root;
     }
 
-    void deserializeScene(const json& root, Scene& scene) {
+    void deserializeScene(const json& root, SceneManager& scene) {
         scene.clear();
         for (const auto& [name, entry]: root.at("objects").items()) {
             scene.createEmptyObject(name);

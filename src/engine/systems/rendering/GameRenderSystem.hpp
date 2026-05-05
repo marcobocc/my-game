@@ -3,7 +3,7 @@
 #include "data/components/Camera.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
-#include "systems/scene/Scene.hpp"
+#include "systems/scene/SceneManager.hpp"
 #include "vulkan/VulkanGameRenderer.hpp"
 
 class GameRenderSystem {
@@ -17,7 +17,7 @@ public:
         activeCameraTransform_ = &cameraTransform;
     }
 
-    void update(const Scene& scene) {
+    void update(const SceneManager& scene) {
         std::vector<DrawCall> drawQueue;
         auto drawables = scene.getObjectsWith<Renderer, Transform>();
         for (auto& [entity, renderer, transform]: drawables) {
