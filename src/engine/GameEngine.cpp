@@ -1,16 +1,11 @@
 #include "GameEngine.hpp"
 #include "data/components/Camera.hpp"
-#include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
-#include "data/settings/RendererSettings.hpp"
 #include "systems/assets/AssetManager.hpp"
 #include "systems/core/TimeManager.hpp"
 #include "systems/input/InputSystem.hpp"
 #include "systems/physics/PhysicsSystem.hpp"
 #include "systems/rendering/GameRenderSystem.hpp"
-#include "systems/rendering/vulkan/VulkanGameRenderer.hpp"
-#include "systems/rendering/vulkan/core/utils/structs.hpp"
-#include "systems/scene/SceneSerializer.hpp"
 
 GameEngine::GameEngine(GameWindow& window,
                        TimeManager& time,
@@ -110,9 +105,7 @@ GameObject& GameEngine::getObject(const std::string& name) const { return sceneM
 
 const std::unordered_map<std::string, GameObject>& GameEngine::getObjects() const { return sceneManager_.getObjects(); }
 
-void GameEngine::loadScene(SceneManager& scene, const nlohmann::json& j) {
-    SceneSerializer::deserializeScene(j, scene);
-}
+void GameEngine::loadScene(SceneManager& scene, const nlohmann::json& j) { SceneManager::deserialize(j, scene); }
 
 // --------------------------------------------------------
 // Assets API

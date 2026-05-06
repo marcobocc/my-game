@@ -20,20 +20,55 @@ std::pair<std::string, bool> SceneManager::createEmptyObject(std::string name) {
     return std::make_pair(name, created);
 }
 
+std::pair<std::string, bool> SceneManager::createGameObjectFromJson(const nlohmann::json& j, const std::string& name) {
+    auto result = createEmptyObject(name);
+    auto& obj = getObject(name);
+    if (j.contains("transform")) obj.add<Transform>() = Transform::deserialize(j["transform"]);
+    if (j.contains("camera")) obj.add<Camera>() = Camera::deserialize(j["camera"]);
+    if (j.contains("renderer")) obj.add<Renderer>() = Renderer::deserialize(j["renderer"]);
+    if (j.contains("boxCollider")) obj.add<BoxCollider>() = BoxCollider::deserialize(j["boxCollider"]);
+    return result;
+}
+
+nlohmann::json SceneManager::serializeGameObject(const GameObject& obj) {
+    nlohmann::json entry;
+    if (obj.has<Transform>()) entry["transform"] = obj.get<Transform>().serialize();
+    if (obj.has<Camera>()) entry["camera"] = obj.get<Camera>().serialize();
+    if (obj.has<Renderer>()) entry["renderer"] = obj.get<Renderer>().serialize();
+    if (obj.has<BoxCollider>()) entry["boxCollider"] = obj.get<BoxCollider>().serialize();
+    return entry;
+}
+
 void SceneManager::destroyObject(const std::string& name) {
     componentStorage_->destroyAllComponents(name);
     gameObjects_.erase(name);
 }
 
+GameObject& SceneManager::getObject(const std::string& name) { return gameObjects_.at(name); }
+
+const std::unordered_map<std::string, GameObject>& SceneManager::getObjects() const { return gameObjects_; }
+
 void SceneManager::clear() {
-    for (auto& [name, _]: gameObjects_)
+    for (const auto& name: gameObjects_ | std::views::keys)
         componentStorage_->destroyAllComponents(name);
     gameObjects_.clear();
 }
 
-GameObject& SceneManager::getObject(const std::string& name) { return gameObjects_.at(name); }
+nlohmann::json SceneManager::serialize() const {
+    nlohmann::json root;
+    nlohmann::json& objects = root["objects"];
+    for (const auto& [name, obj]: getObjects()) {
+        objects[name] = serializeGameObject(obj);
+    }
+    return root;
+}
 
-const std::unordered_map<std::string, GameObject>& SceneManager::getObjects() const { return gameObjects_; }
+void SceneManager::deserialize(const nlohmann::json& root, SceneManager& scene) {
+    scene.clear();
+    for (const auto& [name, entry]: root.at("objects").items()) {
+        scene.createGameObjectFromJson(entry, name);
+    }
+}
 
 std::string SceneManager::generateName() {
     static size_t counter = 0;

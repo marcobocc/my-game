@@ -1,6 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <nlohmann/json.hpp>
 #include "../RenderTargetHandle.hpp"
 
 struct Camera {
@@ -15,5 +16,18 @@ struct Camera {
         proj[1][1] *= -1.0f; // Vulkan NDC has Y pointing down; flip here so the Vulkan backend uses plain
                              // positive-height viewports
         return proj;
+    }
+
+    nlohmann::json serialize() const {
+        return {{"fov", fov}, {"aspect", aspect}, {"nearPlane", nearPlane}, {"farPlane", farPlane}};
+    }
+
+    static Camera deserialize(const nlohmann::json& j) {
+        Camera c{};
+        c.fov = j.at("fov").get<float>();
+        c.aspect = j.at("aspect").get<float>();
+        c.nearPlane = j.at("nearPlane").get<float>();
+        c.farPlane = j.at("farPlane").get<float>();
+        return c;
     }
 };

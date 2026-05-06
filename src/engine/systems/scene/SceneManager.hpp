@@ -1,9 +1,11 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <memory>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
 #include <utility>
+
 #include "systems/assets/BuiltinAssetNames.hpp"
 #include "systems/scene/ComponentStorage.hpp"
 #include "systems/scene/DefaultOptions.hpp"
@@ -16,16 +18,20 @@ public:
     explicit SceneManager(AssetManager& assetManager);
 
     std::pair<std::string, bool> createEmptyObject(std::string name = "");
+    std::pair<std::string, bool> createGameObjectFromJson(const nlohmann::json& j, const std::string& name = "");
+    static nlohmann::json serializeGameObject(const GameObject& obj);
     void destroyObject(const std::string& name);
-    void clear();
-    GameObject& getObject(const std::string& name);
 
+    GameObject& getObject(const std::string& name);
+    const std::unordered_map<std::string, GameObject>& getObjects() const;
     template<typename... Components>
     auto getObjectsWith() const {
         return componentStorage_->query<Components...>();
     }
 
-    const std::unordered_map<std::string, GameObject>& getObjects() const;
+    void clear();
+    nlohmann::json serialize() const;
+    static void deserialize(const nlohmann::json& root, SceneManager& scene);
 
     // ------------------------------------------------------------------------------
     // createMesh
