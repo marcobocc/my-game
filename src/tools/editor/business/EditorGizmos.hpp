@@ -1,16 +1,16 @@
 #pragma once
-#include <string>
 #include <unordered_set>
+#include "modules/scene/EntityManager.hpp"
 
 class EditorGizmos {
 public:
-    void toggleAABB(const std::string& objectId);
-    bool aabbEnabled(const std::string& objectId) const { return aabbEnabled_.contains(objectId); }
-    const std::unordered_set<std::string>& getObjectsWithAABBEnabled() const { return aabbEnabled_; }
+    void toggleAABB(EntityHandle objectId);
+    bool aabbEnabled(EntityHandle objectId) const { return aabbEnabled_.contains(objectId); }
+    const std::unordered_set<EntityHandle>& getObjectsWithAABBEnabled() const { return aabbEnabled_; }
 
-    void toggleBoundingSphere(const std::string& objectId);
-    bool boundingSphereEnabled(const std::string& objectId) const { return boundingSpheresEnabled_.contains(objectId); }
-    const std::unordered_set<std::string>& getObjectsWithBoundingSpheresEnabled() const {
+    void toggleBoundingSphere(EntityHandle objectId);
+    bool boundingSphereEnabled(EntityHandle objectId) const { return boundingSpheresEnabled_.contains(objectId); }
+    const std::unordered_set<EntityHandle>& getObjectsWithBoundingSpheresEnabled() const {
         return boundingSpheresEnabled_;
     }
 
@@ -18,7 +18,7 @@ public:
     bool bvhEnabled() const { return bvhEnabled_; }
 
 private:
-    std::unordered_set<std::string> aabbEnabled_;
-    std::unordered_set<std::string> boundingSpheresEnabled_;
+    std::unordered_set<EntityHandle> aabbEnabled_;
+    std::unordered_set<EntityHandle> boundingSpheresEnabled_;
     bool bvhEnabled_ = false;
 };

@@ -13,10 +13,11 @@
 #include "business/ObjectSelection.hpp"
 #include "business/ObjectTransformHandle.hpp"
 #include "business/SceneLoader.hpp"
+#include "business/scene_editing/SceneMutations.hpp"
 #include "input/InputHandler.hpp"
 #include "input/PickingSystem.hpp"
 #include "presentation/PresentationLayer.hpp"
-#include "presentation/gizmos/GizmosRenderer.hpp"
+#include "presentation/gizmos/GizmosBuilder.hpp"
 #include "presentation/vulkan/VulkanEditorBackend.hpp"
 
 /*
@@ -55,12 +56,17 @@ public:
         // -------------------------------------------------------------------------------------------------------------
         editorSettings_(rendererSettings_),
         editorOrbitCamera_(),
-        gizmosBuilder_(assetManager_, scene_),
+        gizmosBuilder_(assetManager_, entityManager_),
         pickingSystem_(assetManager_),
-        sceneLoader_(scene_, objectSelection_, engine_),
-        sceneMutations_(scene_, engine_, &objectSelection_),
-        objectTransformHandle_(
-                window, engine_, sceneMutations_, editorOrbitCamera_, objectSelection_, editorSettings_, scene_),
+        sceneLoader_(entityManager_, objectSelection_, engine_),
+        sceneMutations_(entityManager_, engine_, objectSelection_),
+        objectTransformHandle_(window,
+                               engine_,
+                               sceneMutations_,
+                               editorOrbitCamera_,
+                               objectSelection_,
+                               editorSettings_,
+                               entityManager_),
         // -------------------------------------------------------------------------------------------------------------
         // Presentation and input handling
         // -------------------------------------------------------------------------------------------------------------
@@ -70,7 +76,7 @@ public:
                            editorGizmos_,
                            editorSettings_,
                            rendererSettings_,
-                           scene_,
+                           entityManager_,
                            gizmosBuilder_,
                            objectTransformHandle_,
                            userInterface_,
@@ -84,7 +90,7 @@ public:
                       editorOrbitCamera_,
                       objectSelection_,
                       objectTransformHandle_,
-                      scene_,
+                      entityManager_,
                       sceneMutations_,
                       editorGizmos_,
                       editorSettings_),
@@ -93,7 +99,7 @@ public:
         // -------------------------------------------------------------------------------------------------------------
         editorApp_(window,
                    engine_,
-                   scene_,
+                   entityManager_,
                    editorOrbitCamera_,
                    inputHandler_,
                    presentationLayer_,

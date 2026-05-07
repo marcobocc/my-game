@@ -1,11 +1,10 @@
 #include "ObjectSelection.hpp"
 
-void ObjectSelection::selectObject(const std::string& objectId) {
-    if (selectedObjectId_ == objectId) {
-        selectedObjectId_ = {};
-    } else {
-        selectedObjectId_ = objectId;
-    }
+void ObjectSelection::selectObject(EntityHandle entity) {
+    if (selectedEntityId_ && *selectedEntityId_ == entity)
+        selectedEntityId_.reset();
+    else
+        selectedEntityId_.emplace(entity);
 }
 
-void ObjectSelection::clearSelection() { selectedObjectId_ = {}; }
+void ObjectSelection::clearSelection() { selectedEntityId_.reset(); }

@@ -3,12 +3,13 @@
 #include <optional>
 #include <string>
 #include "../../../business/ObjectSelection.hpp"
-#include "../../../business/SceneMutations.hpp"
+#include "../../../business/scene_editing/SceneMutations.hpp"
 
 class SceneMutations;
 #include "../ui_components/hierarchy_panel/HierarchyDropdownMenu.hpp"
 #include "modules/assets/AssetManager.hpp"
-#include "modules/scene/Scene.hpp"
+#include "modules/scene/EntityManager.hpp"
+#include "modules/scene/EntityMetadata.hpp"
 #include "modules/ui/ImguiWidget.hpp"
 
 class HierarchyPanel : public ImguiWidget {
@@ -16,11 +17,11 @@ public:
     static constexpr float PANEL_WIDTH_RATIO = 0.15f;
 
     HierarchyPanel(ObjectSelection& objectSelection,
-                   Scene& scene,
+                   EntityManager& entityManager,
                    AssetManager& assetManager,
                    SceneMutations& sceneMutations) :
         objectSelection_(objectSelection),
-        scene_(scene),
+        entityManager_(entityManager),
         assetManager_(assetManager),
         sceneMutations_(sceneMutations),
         dropdownMenu_(assetManager, sceneMutations) {}
@@ -46,18 +47,29 @@ public:
         ImGui::Separator();
         ImGui::Spacing();
 
-        for (const auto& [id, obj]: scene_.getObjects()) {
-            ImGui::PushID(id.c_str());
-            auto selectedId = objectSelection_.getSelectedObjectId();
-            bool isSelected = selectedId.has_value() && *selectedId == id;
-            if (ImGui::Selectable(id.c_str(), isSelected)) {
-                objectSelection_.selectObject(id);
+        auto selectedId = objectSelection_.getSelectedEntityId();
+
+        for (EntityHandle e: entityManager_.getEntities()) {
+            std::string label;
+            if (const auto* meta = entityManager_.getMetadata(e)) {
+                label = meta->entityName.empty() ? "Entity " + std::to_string(e) : meta->entityName;
+            } else {
+                label = "Entity " + std::to_string(e);
             }
-            if (ImGui::IsItemClicked(ImGuiMouseButton_Right)) {
-                contextTargetId = id;
+
+            bool selected = selectedId && *selectedId == e;
+            if (ImGui::Selectable(("##entity" + std::to_string(e)).c_str(),
+                                  selected,
+                                  ImGuiSelectableFlags_AllowOverlap,
+                                  {0, 0})) {
+                objectSelection_.selectObject(e);
+            }
+            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                contextTargetId.emplace(e);
                 openContextMenu = true;
             }
-            ImGui::PopID();
+            ImGui::SameLine();
+            ImGui::Text("%s", label.c_str());
         }
 
         if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImGui::IsAnyItemHovered()) {
@@ -80,11 +92,11 @@ public:
 
 private:
     ObjectSelection& objectSelection_;
-    Scene& scene_;
+    EntityManager& entityManager_;
     AssetManager& assetManager_;
     SceneMutations& sceneMutations_;
     HierarchyDropdownMenu dropdownMenu_;
 
-    std::optional<std::string> contextTargetId;
+    std::optional<EntityHandle> contextTargetId;
     bool openContextMenu = false;
 };

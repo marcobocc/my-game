@@ -28,14 +28,14 @@ public:
     ~VulkanGameRenderer();
 
     // Render one frame for the given game render data.
-    bool renderFrame(const GameRenderData& scene);
+    bool renderFrame(const GameRenderData& renderData);
 
     RenderTargetHandle createRenderTarget(uint32_t width, uint32_t height);
     void destroyRenderTarget(RenderTargetHandle handle);
 
 private:
     // --- Frame helpers ---
-    void recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const GameRenderData& scene);
+    void recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const GameRenderData& renderData);
     void executeRenderGraph(VkCommandBuffer cmd,
                             VkImage colorImage,
                             VkImageView colorView,

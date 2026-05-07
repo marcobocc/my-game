@@ -4,6 +4,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <optional>
 #include <string>
+#include "../../../engine/modules/scene/EntityManager.hpp"
+#include "../../../engine/modules/scene/EntityMetadata.hpp"
 #include "../../../engine/utils/math/Ray.hpp"
 #include "../gizmos.hpp"
 
@@ -13,13 +15,12 @@ class SceneMutations;
 class EditorOrbitCamera;
 class ObjectSelection;
 class EditorSettings;
-class Scene;
 
 struct TransformDragState {
     GizmoType gizmoMode = GizmoType::Translation;
 
     struct TranslationDrag {
-        std::string objectId;
+        EntityHandle objectId;
         GizmoAxis axis;
         glm::vec3 axisDir;
         glm::vec3 dragPlaneNormal;
@@ -29,7 +30,7 @@ struct TransformDragState {
     std::optional<TranslationDrag> activeDrag;
 
     struct RotationDrag {
-        std::string objectId;
+        EntityHandle objectId;
         GizmoAxis axis;
         glm::vec3 axisDir;
         glm::vec3 origin;
@@ -39,7 +40,7 @@ struct TransformDragState {
     std::optional<RotationDrag> activeRotationDrag;
 
     struct ScaleDrag {
-        std::string objectId;
+        EntityHandle objectId;
         GizmoAxis axis;
         glm::vec3 axisDir;
         glm::vec3 origin;
@@ -68,14 +69,14 @@ public:
                           EditorOrbitCamera& editorOrbitCamera,
                           ObjectSelection& objectSelection,
                           EditorSettings& rendererSettings,
-                          Scene& sceneManager) :
+                          EntityManager& entityManager) :
         window_(window),
         engine_(engine),
         sceneMutations_(sceneMutations),
         editorOrbitCamera_(editorOrbitCamera),
         objectSelection_(objectSelection),
         rendererSettings_(rendererSettings),
-        scene_(sceneManager) {}
+        entityManager_(entityManager) {}
 
     void beginTranslationDrag(GizmoAxis axis, double mouseX, double mouseY);
     void updateTranslationDrag(double mouseX, double mouseY);
@@ -103,7 +104,7 @@ private:
     EditorOrbitCamera& editorOrbitCamera_;
     ObjectSelection& objectSelection_;
     EditorSettings& rendererSettings_;
-    Scene& scene_;
+    EntityManager& entityManager_;
     TransformDragState dragState_;
 
     static std::optional<glm::vec3>

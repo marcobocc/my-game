@@ -3,7 +3,7 @@
 #include <optional>
 #include "../../../business/EditorGizmos.hpp"
 #include "../../../business/ObjectSelection.hpp"
-#include "../../../business/SceneMutations.hpp"
+#include "../../../business/scene_editing/SceneMutations.hpp"
 #include "../ui_components/inspector_panel/BoxColliderWidget.hpp"
 #include "../ui_components/inspector_panel/CameraWidget.hpp"
 #include "../ui_components/inspector_panel/RendererWidget.hpp"
@@ -13,18 +13,19 @@
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
 #include "modules/assets/AssetManager.hpp"
-#include "modules/scene/Scene.hpp"
+#include "modules/scene/EntityManager.hpp"
+#include "modules/scene/EntityMetadata.hpp"
 #include "modules/ui/ImguiWidget.hpp"
 
 class InspectorPanel : public ImguiWidget {
 public:
     InspectorPanel(ObjectSelection& objectSelection,
-                   Scene& scene,
+                   EntityManager& entityManager,
                    AssetManager& assetManager,
                    SceneMutations& sceneMutations,
                    EditorGizmos& debugViz) :
         objectSelection_(objectSelection),
-        scene_(scene),
+        entityManager_(entityManager),
         assetManager_(assetManager),
         sceneMutations_(sceneMutations),
         debugViz_(debugViz),
@@ -52,12 +53,15 @@ public:
         ImGui::Separator();
         ImGui::Spacing();
 
-        auto selectedId = objectSelection_.getSelectedObjectId();
+        auto selectedId = objectSelection_.getSelectedEntityId();
         if (!selectedId.has_value()) {
             ImGui::TextDisabled("No object selected");
         } else {
-            transformWidget_.setCurrentObjectId(*selectedId);
-            drawObject(scene_.getObject(*selectedId));
+            EntityHandle entity = *selectedId;
+            transformWidget_.setCurrentObjectId(entity);
+            cameraWidget_.setCurrentObjectId(entity);
+            boxColliderWidget_.setCurrentObjectId(entity);
+            drawObject(entity);
         }
 
         ImGui::End();
@@ -66,69 +70,71 @@ public:
     static constexpr float PANEL_WIDTH_RATIO = 0.25f;
 
 private:
-    void drawObject(GameObject& obj) {
-        if (obj.has<Transform>()) {
-            transformWidget_.setCurrentObjectId(obj.getName());
-            transformWidget_.draw(obj.get<Transform>());
-            drawComponentContextMenu<Transform>("TransformContext", obj);
+    void drawObject(EntityHandle entity) {
+        if (entityManager_.hasComponent<Transform>(entity)) {
+            auto* transform = entityManager_.getComponent<Transform>(entity);
+            transformWidget_.draw(*transform);
+            drawComponentContextMenu<Transform>("TransformContext", entity);
         }
         ImGui::Spacing();
-        if (obj.has<Camera>()) {
-            cameraWidget_.setCurrentObjectId(obj.getName());
-            cameraWidget_.draw(obj.get<Camera>());
-            drawComponentContextMenu<Camera>("CameraContext", obj);
+        if (entityManager_.hasComponent<Camera>(entity)) {
+            auto* camera = entityManager_.getComponent<Camera>(entity);
+            cameraWidget_.draw(*camera);
+            drawComponentContextMenu<Camera>("CameraContext", entity);
         }
         ImGui::Spacing();
-        if (obj.has<Renderer>()) {
-            rendererWidget_.draw(obj.get<Renderer>(), obj.getName());
-            drawComponentContextMenu<Renderer>("RendererContext", obj);
+        if (entityManager_.hasComponent<Renderer>(entity)) {
+            auto* renderer = entityManager_.getComponent<Renderer>(entity);
+            rendererWidget_.draw(*renderer, entity);
+            drawComponentContextMenu<Renderer>("RendererContext", entity);
         }
         ImGui::Spacing();
-        if (obj.has<BoxCollider>()) {
-            boxColliderWidget_.setCurrentObjectId(obj.getName());
-            boxColliderWidget_.draw(obj.get<BoxCollider>());
-            drawComponentContextMenu<BoxCollider>("BoxColliderContext", obj);
+        if (entityManager_.hasComponent<BoxCollider>(entity)) {
+            auto* boxCollider = entityManager_.getComponent<BoxCollider>(entity);
+            boxColliderWidget_.draw(*boxCollider);
+            drawComponentContextMenu<BoxCollider>("BoxColliderContext", entity);
         }
         ImGui::Spacing();
-        drawAddComponent(obj);
+        drawAddComponent(entity);
     }
 
     template<typename T>
-    void drawComponentContextMenu(const char* contextId, GameObject& obj) {
+    void drawComponentContextMenu(const char* contextId, EntityHandle entity) {
         if (ImGui::BeginPopupContextItem(contextId)) {
             if (ImGui::MenuItem("Remove")) {
-                emitRemoveComponentEvent<T>(obj);
+                emitRemoveComponentEvent<T>(entity);
             }
             ImGui::EndPopup();
         }
     }
 
-    void drawAddComponent(GameObject& obj) {
+    void drawAddComponent(EntityHandle entity) {
         ImGui::Separator();
         ImGui::Spacing();
         if (!ImGui::CollapsingHeader("Add Component")) return;
 
         ImGui::Indent();
-        if (!obj.has<Transform>()) {
-            if (ImGui::Selectable("  Transform")) emitAddComponentEvent("Transform", obj);
+        if (!entityManager_.hasComponent<Transform>(entity)) {
+            if (ImGui::Selectable("  Transform")) emitAddComponentEvent("Transform", entity);
         }
-        if (!obj.has<Camera>()) {
-            if (ImGui::Selectable("  Camera")) emitAddComponentEvent("Camera", obj);
+        if (!entityManager_.hasComponent<Camera>(entity)) {
+            if (ImGui::Selectable("  Camera")) emitAddComponentEvent("Camera", entity);
         }
-        if (!obj.has<Renderer>()) {
-            if (ImGui::Selectable("  Renderer")) emitAddComponentEvent("Renderer", obj);
+        if (!entityManager_.hasComponent<Renderer>(entity)) {
+            if (ImGui::Selectable("  Renderer")) emitAddComponentEvent("Renderer", entity);
         }
-        if (!obj.has<BoxCollider>()) {
-            if (ImGui::Selectable("  Box Collider")) emitAddComponentEvent("BoxCollider", obj);
+        if (!entityManager_.hasComponent<BoxCollider>(entity)) {
+            if (ImGui::Selectable("  Box Collider")) emitAddComponentEvent("BoxCollider", entity);
         }
-        if (obj.has<Transform>() && obj.has<Camera>() && obj.has<Renderer>() && obj.has<BoxCollider>()) {
+        if (entityManager_.hasComponent<Transform>(entity) && entityManager_.hasComponent<Camera>(entity) &&
+            entityManager_.hasComponent<Renderer>(entity) && entityManager_.hasComponent<BoxCollider>(entity)) {
             ImGui::TextDisabled("  All components added");
         }
         ImGui::Unindent();
     }
 
     template<typename T>
-    void emitRemoveComponentEvent(GameObject& obj) {
+    void emitRemoveComponentEvent(EntityHandle entity) {
         std::string componentName;
         if constexpr (std::is_same_v<T, Transform>) {
             componentName = "Transform";
@@ -139,15 +145,15 @@ private:
         } else if constexpr (std::is_same_v<T, BoxCollider>) {
             componentName = "BoxCollider";
         }
-        sceneMutations_.removeComponentByType(obj.getName(), componentName);
+        sceneMutations_.removeComponentByType(entity, componentName);
     }
 
-    void emitAddComponentEvent(const std::string& componentType, GameObject& obj) {
-        sceneMutations_.addComponentByType(obj.getName(), componentType);
+    void emitAddComponentEvent(const std::string& componentType, EntityHandle entity) {
+        sceneMutations_.addComponentByType(entity, componentType);
     }
 
     ObjectSelection& objectSelection_;
-    Scene& scene_;
+    EntityManager& entityManager_;
     AssetManager& assetManager_;
     SceneMutations& sceneMutations_;
     EditorGizmos& debugViz_;

@@ -2,24 +2,29 @@
 #include <functional>
 #include <unordered_set>
 #include "modules/physics/collision_utils.hpp"
-#include "modules/scene/Scene.hpp"
+#include "modules/scene/EntityManager.hpp"
 
 class PhysicsSystem {
 public:
-    using ObjectId = std::string;
-    using CollisionPair = std::pair<ObjectId, ObjectId>;
+    using CollisionPair = std::pair<EntityHandle, EntityHandle>;
     enum class CollisionEventType { Enter, Stay, Exit };
     using CollisionCallback = std::function<void(const CollisionPair&)>;
 
-    explicit PhysicsSystem(Scene& scene) : scene_(scene) {}
+    explicit PhysicsSystem(EntityManager& entityManager) : entityManager_(entityManager) {}
 
     static bool checkCollision(const BoxCollider& a, const Transform& ta, const BoxCollider& b, const Transform& tb) {
         return Physics::checkCollision(a, ta, b, tb);
     }
 
     std::optional<Physics::RaycastHit> raycast(const glm::vec3& origin, const glm::vec3& dir) const {
-        auto objects = scene_.getObjectsWith<BoxCollider, Transform>();
-        return Physics::raycast(origin, dir, objects);
+        auto objects = entityManager_.query<BoxCollider, Transform>();
+        std::vector<std::tuple<EntityHandle, const BoxCollider*, const Transform*>> wrapped;
+        for (auto& [entity, collPtr, transformPtr]: objects) {
+            if (collPtr && transformPtr) {
+                wrapped.emplace_back(entity, collPtr, transformPtr);
+            }
+        }
+        return Physics::raycast(origin, dir, wrapped);
     }
 
     void onCollisionEnter(CollisionCallback cb) { enterCallbacks_.push_back(std::move(cb)); }
@@ -27,13 +32,15 @@ public:
     void onCollisionExit(CollisionCallback cb) { exitCallbacks_.push_back(std::move(cb)); }
 
     void update() {
-        auto objects = scene_.getObjectsWith<BoxCollider, Transform>();
+        auto objects = entityManager_.query<BoxCollider, Transform>();
         std::unordered_set<CollisionPair, PairHash> currentCollisions;
         for (size_t i = 0; i < objects.size(); ++i) {
-            const auto& [idA, colliderA, transformA] = objects[i];
+            const auto& [idA, colliderAPtr, transformAPtr] = objects[i];
+            if (!colliderAPtr || !transformAPtr) continue;
             for (size_t j = i + 1; j < objects.size(); ++j) {
-                const auto& [idB, colliderB, transformB] = objects[j];
-                if (checkCollision(colliderA, transformA, colliderB, transformB)) {
+                const auto& [idB, colliderBPtr, transformBPtr] = objects[j];
+                if (!colliderBPtr || !transformBPtr) continue;
+                if (checkCollision(*colliderAPtr, *transformAPtr, *colliderBPtr, *transformBPtr)) {
                     currentCollisions.insert(makeOrderedPair(idA, idB));
                 }
             }
@@ -60,15 +67,15 @@ public:
 private:
     struct PairHash {
         std::size_t operator()(const CollisionPair& p) const {
-            return std::hash<std::string>{}(p.first) ^ std::hash<std::string>{}(p.second) << 1;
+            return std::hash<EntityHandle>{}(p.first) ^ (std::hash<EntityHandle>{}(p.second) << 1);
         }
     };
 
-    static CollisionPair makeOrderedPair(const ObjectId& a, const ObjectId& b) {
+    static CollisionPair makeOrderedPair(const EntityHandle& a, const EntityHandle& b) {
         return a < b ? std::make_pair(a, b) : std::make_pair(b, a);
     }
 
-    Scene& scene_;
+    EntityManager& entityManager_;
     std::unordered_set<CollisionPair, PairHash> prevCollisions_;
     std::vector<CollisionCallback> enterCallbacks_;
     std::vector<CollisionCallback> stayCallbacks_;

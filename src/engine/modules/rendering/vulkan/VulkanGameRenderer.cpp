@@ -45,13 +45,13 @@ VulkanGameRenderer::~VulkanGameRenderer() {
 
 // ------------------- Public API -------------------
 
-bool VulkanGameRenderer::renderFrame(const GameRenderData& scene) {
+bool VulkanGameRenderer::renderFrame(const GameRenderData& renderData) {
     frameManager_.waitForCurrentFrame();
 
     uint32_t imageIndex = 0;
     if (!frameManager_.acquireImage(imageIndex)) return false;
     VkCommandBuffer cmd = frameManager_.beginFrame();
-    recordCommands(cmd, imageIndex, scene);
+    recordCommands(cmd, imageIndex, renderData);
     frameManager_.endFrame(cmd);
     frameManager_.submit(imageIndex);
     frameManager_.advanceFrame();
@@ -66,7 +66,7 @@ void VulkanGameRenderer::destroyRenderTarget(RenderTargetHandle handle) { render
 
 // ------------------- Frame Rendering -------------------
 
-void VulkanGameRenderer::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const GameRenderData& scene) {
+void VulkanGameRenderer::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const GameRenderData& renderData) {
     // Set current frame resources
     size_t frameIdx = frameManager_.currentFrameIndex();
     currentFrameLightingDescriptorSet_ = mainLightingDescriptorSets_[frameIdx];
@@ -80,8 +80,11 @@ void VulkanGameRenderer::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex
                              {swapchainTarget.width, swapchainTarget.height});
     graph_->resetLayout(colorTargetHandle_);
 
-    executeRenderGraph(
-            cmd, swapchainTarget.image, swapchainTarget.view, {swapchainTarget.width, swapchainTarget.height}, scene);
+    executeRenderGraph(cmd,
+                       swapchainTarget.image,
+                       swapchainTarget.view,
+                       {swapchainTarget.width, swapchainTarget.height},
+                       renderData);
 }
 
 void VulkanGameRenderer::executeRenderGraph(

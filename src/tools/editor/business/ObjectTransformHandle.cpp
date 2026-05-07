@@ -1,11 +1,12 @@
 #include "ObjectTransformHandle.hpp"
+#include <string>
 #include "../../../engine/GameEngine.hpp"
 #include "../../../engine/data/components/Transform.hpp"
 #include "../../../engine/modules/input/RaycastPickingSystem.hpp"
-#include "../business/SceneMutations.hpp"
 #include "EditorOrbitCamera.hpp"
 #include "EditorSettings.hpp"
 #include "ObjectSelection.hpp"
+#include "scene_editing/SceneMutations.hpp"
 
 std::optional<glm::vec3>
 ObjectTransformHandle::rayPlaneIntersect(const Ray& ray, const glm::vec3& planePoint, const glm::vec3& planeNormal) {
@@ -45,15 +46,14 @@ glm::vec3 ObjectTransformHandle::axisToDir(GizmoAxis axis) {
 }
 
 void ObjectTransformHandle::beginTranslationDrag(GizmoAxis axis, double mouseX, double mouseY) {
-    auto selectedId = objectSelection_.getSelectedObjectId();
+    auto selectedId = objectSelection_.getSelectedEntityId();
     if (!selectedId) return;
 
-    auto& scene = scene_;
-    auto& obj = scene.getObject(*selectedId);
-    if (!obj.has<Transform>()) return;
+    auto* transformPtr = entityManager_.getComponent<Transform>(*selectedId);
+    if (!transformPtr) return;
 
     glm::vec3 axisDir = axisToDir(axis);
-    glm::vec3 origin = obj.get<Transform>().position;
+    glm::vec3 origin = transformPtr->position;
 
     glm::vec3 camDir = glm::normalize(editorOrbitCamera_.getCameraTransform().position - origin);
     glm::vec3 planeNormal = glm::normalize(camDir - glm::dot(camDir, axisDir) * axisDir);
@@ -63,17 +63,15 @@ void ObjectTransformHandle::beginTranslationDrag(GizmoAxis axis, double mouseX, 
     auto hitPoint = rayPlaneIntersect(ray, origin, planeNormal);
     if (!hitPoint) return;
 
-    sceneMutations_.beginEdit(obj.get<Transform>());
+    sceneMutations_.beginEdit(*selectedId);
 
-    dragState_.activeDrag =
-            TransformDragState::TranslationDrag{*selectedId, axis, axisDir, planeNormal, origin, *hitPoint};
+    dragState_.activeDrag.emplace(*selectedId, axis, axisDir, planeNormal, origin, *hitPoint);
 }
 
 void ObjectTransformHandle::updateTranslationDrag(double mouseX, double mouseY) {
     if (!dragState_.activeDrag) return;
-    auto& scene = scene_;
-    auto& obj = scene.getObject(dragState_.activeDrag->objectId);
-    if (!obj.has<Transform>()) return;
+    auto* transformPtr = entityManager_.getComponent<Transform>(dragState_.activeDrag->objectId);
+    if (!transformPtr) return;
 
     Ray ray = buildMouseRay(mouseX, mouseY);
     auto hitPoint = rayPlaneIntersect(ray, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->dragPlaneNormal);
@@ -93,27 +91,25 @@ void ObjectTransformHandle::updateTranslationDrag(double mouseX, double mouseY) 
         pos = gridOrigin + glm::round((pos - gridOrigin) / scale) * scale;
     }
 
-    obj.get<Transform>().position = pos;
+    transformPtr->position = pos;
 }
 
 void ObjectTransformHandle::commitTranslationDrag() {
     if (!dragState_.activeDrag) return;
-    auto& scene = scene_;
-    auto& obj = scene.getObject(dragState_.activeDrag->objectId);
-    if (obj.has<Transform>()) sceneMutations_.commitEdit(obj.get<Transform>());
+    auto* transformPtr = entityManager_.getComponent<Transform>(dragState_.activeDrag->objectId);
+    if (transformPtr) sceneMutations_.commitEdit(dragState_.activeDrag->objectId);
     dragState_.activeDrag.reset();
 }
 
 void ObjectTransformHandle::beginRotationDrag(GizmoAxis axis, double mouseX, double mouseY) {
-    auto selectedId = objectSelection_.getSelectedObjectId();
+    auto selectedId = objectSelection_.getSelectedEntityId();
     if (!selectedId) return;
 
-    auto& scene = scene_;
-    auto& obj = scene.getObject(*selectedId);
-    if (!obj.has<Transform>()) return;
+    auto* transformPtr = entityManager_.getComponent<Transform>(*selectedId);
+    if (!transformPtr) return;
 
     glm::vec3 axisDir = axisToDir(axis);
-    glm::vec3 origin = obj.get<Transform>().position;
+    glm::vec3 origin = transformPtr->position;
 
     Ray ray = buildMouseRay(mouseX, mouseY);
     auto hitPoint = rayPlaneIntersect(ray, origin, axisDir);
@@ -124,16 +120,14 @@ void ObjectTransformHandle::beginRotationDrag(GizmoAxis axis, double mouseX, dou
 
     hitDir = glm::normalize(hitDir);
 
-    sceneMutations_.beginEdit(obj.get<Transform>());
-    dragState_.activeRotationDrag =
-            TransformDragState::RotationDrag{*selectedId, axis, axisDir, origin, obj.get<Transform>().rotation, hitDir};
+    sceneMutations_.beginEdit(*selectedId);
+    dragState_.activeRotationDrag.emplace(*selectedId, axis, axisDir, origin, transformPtr->rotation, hitDir);
 }
 
 void ObjectTransformHandle::updateRotationDrag(double mouseX, double mouseY) {
     if (!dragState_.activeRotationDrag) return;
-    auto& scene = scene_;
-    auto& obj = scene.getObject(dragState_.activeRotationDrag->objectId);
-    if (!obj.has<Transform>()) return;
+    auto* transformPtr = entityManager_.getComponent<Transform>(dragState_.activeRotationDrag->objectId);
+    if (!transformPtr) return;
 
     Ray ray = buildMouseRay(mouseX, mouseY);
     auto hitPoint =
@@ -150,26 +144,24 @@ void ObjectTransformHandle::updateRotationDrag(double mouseX, double mouseY) {
                  dragState_.activeRotationDrag->axisDir) < 0.0f)
         angle = -angle;
 
-    obj.get<Transform>().rotation = glm::angleAxis(angle, dragState_.activeRotationDrag->axisDir) *
-                                    dragState_.activeRotationDrag->initialRotation;
+    transformPtr->rotation = glm::angleAxis(angle, dragState_.activeRotationDrag->axisDir) *
+                             dragState_.activeRotationDrag->initialRotation;
 }
 
 void ObjectTransformHandle::commitRotationDrag() {
     if (!dragState_.activeRotationDrag) return;
-    auto& scene = scene_;
-    auto& obj = scene.getObject(dragState_.activeRotationDrag->objectId);
-    if (obj.has<Transform>()) sceneMutations_.commitEdit(obj.get<Transform>());
+    auto* transformPtr = entityManager_.getComponent<Transform>(dragState_.activeRotationDrag->objectId);
+    if (transformPtr) sceneMutations_.commitEdit(dragState_.activeRotationDrag->objectId);
     dragState_.activeRotationDrag.reset();
 }
 
 void ObjectTransformHandle::beginScaleDrag(GizmoAxis axis, double mouseX, double mouseY) {
-    auto selectedId = objectSelection_.getSelectedObjectId();
+    auto selectedId = objectSelection_.getSelectedEntityId();
     if (!selectedId) return;
-    auto& scene = scene_;
-    auto& obj = scene.getObject(*selectedId);
-    if (!obj.has<Transform>()) return;
+    auto* transformPtr = entityManager_.getComponent<Transform>(*selectedId);
+    if (!transformPtr) return;
 
-    glm::vec3 origin = obj.get<Transform>().position;
+    glm::vec3 origin = transformPtr->position;
 
     glm::vec3 axisDir;
     glm::vec3 planeNormal;
@@ -190,16 +182,14 @@ void ObjectTransformHandle::beginScaleDrag(GizmoAxis axis, double mouseX, double
     float initialT = glm::dot(*hitPoint - origin, axisDir);
     if (std::abs(initialT) < 1e-5f) return;
 
-    sceneMutations_.beginEdit(obj.get<Transform>());
-    dragState_.activeScaleDrag = TransformDragState::ScaleDrag{
-            *selectedId, axis, axisDir, origin, obj.get<Transform>().scale, planeNormal, initialT};
+    sceneMutations_.beginEdit(*selectedId);
+    dragState_.activeScaleDrag.emplace(*selectedId, axis, axisDir, origin, transformPtr->scale, planeNormal, initialT);
 }
 
 void ObjectTransformHandle::updateScaleDrag(double mouseX, double mouseY) {
     if (!dragState_.activeScaleDrag) return;
-    auto& scene = scene_;
-    auto& obj = scene.getObject(dragState_.activeScaleDrag->objectId);
-    if (!obj.has<Transform>()) return;
+    auto* transformPtr = entityManager_.getComponent<Transform>(dragState_.activeScaleDrag->objectId);
+    if (!transformPtr) return;
 
     Ray ray = buildMouseRay(mouseX, mouseY);
     auto hitPoint =
@@ -210,7 +200,7 @@ void ObjectTransformHandle::updateScaleDrag(double mouseX, double mouseY) {
     float factor = glm::max(currentT / dragState_.activeScaleDrag->initialT, 0.01f);
 
     if (dragState_.activeScaleDrag->axis == GizmoAxis::All) {
-        obj.get<Transform>().scale = dragState_.activeScaleDrag->initialScale * factor;
+        transformPtr->scale = dragState_.activeScaleDrag->initialScale * factor;
     } else {
         glm::vec3 newScale = dragState_.activeScaleDrag->initialScale;
         switch (dragState_.activeScaleDrag->axis) {
@@ -226,15 +216,14 @@ void ObjectTransformHandle::updateScaleDrag(double mouseX, double mouseY) {
             default:
                 break;
         }
-        obj.get<Transform>().scale = newScale;
+        transformPtr->scale = newScale;
     }
 }
 
 void ObjectTransformHandle::commitScaleDrag() {
     if (!dragState_.activeScaleDrag) return;
-    auto& scene = scene_;
-    auto& obj = scene.getObject(dragState_.activeScaleDrag->objectId);
-    if (obj.has<Transform>()) sceneMutations_.commitEdit(obj.get<Transform>());
+    auto* transformPtr = entityManager_.getComponent<Transform>(dragState_.activeScaleDrag->objectId);
+    if (transformPtr) sceneMutations_.commitEdit(dragState_.activeScaleDrag->objectId);
     dragState_.activeScaleDrag.reset();
 }
 

@@ -1,15 +1,17 @@
-#include "GizmosRenderer.hpp"
+#include "GizmosBuilder.hpp"
 #include <glm/gtc/constants.hpp>
 #include "../../../../engine/data/assets/Mesh.hpp"
 #include "../../../../engine/data/components/Renderer.hpp"
 #include "../../../../engine/modules/assets/AssetManager.hpp"
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "../../../../engine/modules/scene/Scene.hpp"
+#include "../../../../engine/modules/scene/EntityManager.hpp"
 #include "../../../../engine/utils/math/AABB.hpp"
 #include "../../../../engine/utils/math/BVH.hpp"
 #include "../../../../engine/utils/math/BoundingSphere.hpp"
 
-GizmosRenderer::GizmosRenderer(AssetManager& assetManager, Scene& scene) : assetManager_(assetManager), scene_(scene) {}
+GizmosRenderer::GizmosRenderer(AssetManager& assetManager, EntityManager& entityManager) :
+    assetManager_(assetManager),
+    entityManager_(entityManager) {}
 
 void GizmosRenderer::addGizmoLine(GizmoObject& gizmoObject,
                                   const glm::vec3& from,
@@ -86,13 +88,12 @@ GizmoObject GizmosRenderer::buildGizmoAABB(const AABB& aabb, const glm::vec3& co
     return gizmoObject;
 }
 
-GizmoObject GizmosRenderer::buildGizmoObjectAABB(const std::string& objectId, const glm::vec3& color) {
-    GameObject& object = scene_.getObject(objectId);
-    if (object.has<Transform>() && object.has<Renderer>()) {
-        auto transform = object.get<Transform>();
-        auto renderer = object.get<Renderer>();
-        auto mesh = assetManager_.get<Mesh>(renderer.meshName);
-        auto aabb = mesh->getAABB().applyTransform(transform.getModelMatrix());
+GizmoObject GizmosRenderer::buildGizmoObjectAABB(EntityHandle objectId, const glm::vec3& color) {
+    auto* transform = entityManager_.getComponent<Transform>(objectId);
+    auto* renderer = entityManager_.getComponent<Renderer>(objectId);
+    if (transform && renderer) {
+        auto mesh = assetManager_.get<Mesh>(renderer->meshName);
+        auto aabb = mesh->getAABB().applyTransform(transform->getModelMatrix());
         return buildGizmoAABB(aabb, color);
     }
     return {};
@@ -121,13 +122,12 @@ GizmoObject GizmosRenderer::buildGizmoBoundingSphere(const BoundingSphere& spher
     return gizmoObject;
 }
 
-GizmoObject GizmosRenderer::buildGizmoObjectBoundingSphere(const std::string& objectId, const glm::vec3& color) {
-    GameObject& object = scene_.getObject(objectId);
-    if (object.has<Transform>() && object.has<Renderer>()) {
-        auto transform = object.get<Transform>();
-        auto renderer = object.get<Renderer>();
-        auto mesh = assetManager_.get<Mesh>(renderer.meshName);
-        auto sphere = mesh->getBoundingSphere().applyTransform(transform.getModelMatrix());
+GizmoObject GizmosRenderer::buildGizmoObjectBoundingSphere(EntityHandle objectId, const glm::vec3& color) {
+    auto* transform = entityManager_.getComponent<Transform>(objectId);
+    auto* renderer = entityManager_.getComponent<Renderer>(objectId);
+    if (transform && renderer) {
+        auto mesh = assetManager_.get<Mesh>(renderer->meshName);
+        auto sphere = mesh->getBoundingSphere().applyTransform(transform->getModelMatrix());
         return buildGizmoBoundingSphere(sphere, color);
     }
     return {};
@@ -136,15 +136,12 @@ GizmoObject GizmosRenderer::buildGizmoObjectBoundingSphere(const std::string& ob
 GizmoObject GizmosRenderer::buildGizmoBVH(const glm::vec3& color) {
     GizmoObject gizmoObject;
     std::vector<Item> items;
-    for (const auto& [id, object]: scene_.getObjects()) {
-        if (object.has<Transform>() && object.has<Renderer>()) {
-            auto transform = object.get<Transform>();
-            auto renderer = object.get<Renderer>();
-            auto* mesh = assetManager_.get<Mesh>(renderer.meshName);
-            if (!mesh) continue;
-            auto aabb = mesh->getAABB().applyTransform(transform.getModelMatrix());
-            items.push_back({aabb, id});
-        }
+    auto renderables = entityManager_.query<Transform, Renderer>();
+    for (const auto& [entity, transform, renderer]: renderables) {
+        auto* mesh = assetManager_.get<Mesh>(renderer->meshName);
+        if (!mesh) continue;
+        auto aabb = mesh->getAABB().applyTransform(transform->getModelMatrix());
+        items.emplace_back(aabb, std::to_string(entity));
     }
     if (items.empty()) return gizmoObject;
     BVH bvh;
@@ -163,15 +160,13 @@ GizmoObject GizmosRenderer::buildGizmoBVH(const glm::vec3& color) {
 }
 
 
-GizmoTransformHandle GizmosRenderer::buildTranslationGizmo(const std::string& objectId,
-                                                           const Camera& camera,
-                                                           const Transform& cameraTransform) {
+GizmoTransformHandle
+GizmosRenderer::buildTranslationGizmo(EntityHandle objectId, const Camera& camera, const Transform& cameraTransform) {
     GizmoTransformHandle result;
-    GameObject& object = scene_.getObject(objectId);
-    if (!object.has<Transform>()) return result;
+    auto* transform = entityManager_.getComponent<Transform>(objectId);
+    if (!transform) return result;
 
-    auto transform = object.get<Transform>();
-    glm::vec3 origin = transform.position;
+    glm::vec3 origin = transform->position;
 
     float dist = glm::length(cameraTransform.position - origin);
     float scale = dist * 0.15f;
@@ -205,21 +200,19 @@ GizmoTransformHandle GizmosRenderer::buildTranslationGizmo(const std::string& ob
         addGizmoLine(result.visualization, headBase - perp2 * headSpread, tip, color);
 
         glm::vec3 capsuleBase = origin + dir * pickOffset;
-        result.pickingHandles.push_back({objectId, GizmoType::Translation, gaxes[i], capsuleBase, tip, pickRadius});
+        result.pickingHandles.emplace_back(objectId, GizmoType::Translation, gaxes[i], capsuleBase, tip, pickRadius);
     }
 
     return result;
 }
 
-GizmoTransformHandle GizmosRenderer::buildRotationGizmo(const std::string& objectId,
-                                                        const Camera& camera,
-                                                        const Transform& cameraTransform) {
+GizmoTransformHandle
+GizmosRenderer::buildRotationGizmo(EntityHandle objectId, const Camera& camera, const Transform& cameraTransform) {
     GizmoTransformHandle result;
-    GameObject& object = scene_.getObject(objectId);
-    if (!object.has<Transform>()) return result;
+    auto* transform = entityManager_.getComponent<Transform>(objectId);
+    if (!transform) return result;
 
-    auto transform = object.get<Transform>();
-    glm::vec3 origin = transform.position;
+    glm::vec3 origin = transform->position;
 
     float dist = glm::length(cameraTransform.position - origin);
     float ringRadius = dist * 0.15f;
@@ -244,8 +237,8 @@ GizmoTransformHandle GizmosRenderer::buildRotationGizmo(const std::string& objec
             glm::vec3 pt = origin + (p1 * glm::cos(angle) + p2 * glm::sin(angle)) * ringRadius;
             if (s > 0) {
                 addGizmoLine(result.visualization, prevPt, pt, color);
-                result.pickingHandles.push_back(
-                        {objectId, GizmoType::Rotation, static_cast<GizmoAxis>(i), prevPt, pt, pickRadius});
+                result.pickingHandles.emplace_back(
+                        objectId, GizmoType::Rotation, static_cast<GizmoAxis>(i), prevPt, pt, pickRadius);
             }
             prevPt = pt;
         }
@@ -255,13 +248,12 @@ GizmoTransformHandle GizmosRenderer::buildRotationGizmo(const std::string& objec
 }
 
 GizmoTransformHandle
-GizmosRenderer::buildScaleGizmo(const std::string& objectId, const Camera& camera, const Transform& cameraTransform) {
+GizmosRenderer::buildScaleGizmo(EntityHandle objectId, const Camera& camera, const Transform& cameraTransform) {
     GizmoTransformHandle result;
-    GameObject& object = scene_.getObject(objectId);
-    if (!object.has<Transform>()) return result;
+    auto* transform = entityManager_.getComponent<Transform>(objectId);
+    if (!transform) return result;
 
-    auto transform = object.get<Transform>();
-    glm::vec3 origin = transform.position;
+    glm::vec3 origin = transform->position;
 
     float dist = glm::length(cameraTransform.position - origin);
     float scale = dist * 0.15f;
@@ -287,20 +279,20 @@ GizmosRenderer::buildScaleGizmo(const std::string& objectId, const Camera& camer
         result.visualization.insert(result.visualization.end(), cubeGizmo.begin(), cubeGizmo.end());
 
         glm::vec3 capsuleBase = origin + dir * pickOffset;
-        result.pickingHandles.push_back(
-                {objectId, GizmoType::Scale, gaxes[i], capsuleBase, tip + dir * cubeHalf, pickRadius});
+        result.pickingHandles.emplace_back(
+                objectId, GizmoType::Scale, gaxes[i], capsuleBase, tip + dir * cubeHalf, pickRadius);
     }
 
     float centerHalf = scale * 0.09f;
     auto centerCubeGizmo = buildGizmoCube(origin, centerHalf, {1, 1, 1});
     result.visualization.insert(result.visualization.end(), centerCubeGizmo.begin(), centerCubeGizmo.end());
 
-    result.pickingHandles.push_back({objectId,
-                                     GizmoType::Scale,
-                                     GizmoAxis::All,
-                                     origin - glm::vec3(0, centerHalf, 0),
-                                     origin + glm::vec3(0, centerHalf, 0),
-                                     centerHalf * 2.0f});
+    result.pickingHandles.emplace_back(objectId,
+                                       GizmoType::Scale,
+                                       GizmoAxis::All,
+                                       origin - glm::vec3(0, centerHalf, 0),
+                                       origin + glm::vec3(0, centerHalf, 0),
+                                       centerHalf * 2.0f);
 
     return result;
 }

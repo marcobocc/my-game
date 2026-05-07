@@ -1,14 +1,14 @@
 #pragma once
 #include <optional>
-#include <string>
+#include "modules/scene/EntityManager.hpp"
 
 class ObjectSelection {
 public:
-    void selectObject(const std::string& objectId);
+    void selectObject(EntityHandle entity);
     void clearSelection();
 
-    std::optional<std::string> getSelectedObjectId() const { return selectedObjectId_; }
+    std::optional<EntityHandle> getSelectedEntityId() const { return selectedEntityId_; }
 
 private:
-    std::optional<std::string> selectedObjectId_;
+    std::optional<EntityHandle> selectedEntityId_;
 };

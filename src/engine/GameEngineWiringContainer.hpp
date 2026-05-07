@@ -22,7 +22,7 @@
 #include "modules/rendering/vulkan/core/utils/initialization.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGeometryPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanLightingPass.hpp"
-#include "modules/scene/Scene.hpp"
+#include "modules/scene/EntityManager.hpp"
 #include "modules/ui/UserInterface.hpp"
 
 /*
@@ -54,8 +54,8 @@ public:
         assetStorage_(),
         assetImporter_(assetsPath, assetStorage_),
         assetManager_(assetImporter_, assetStorage_),
-        scene_(assetManager_),
-        physicsSystem_(scene_),
+        entityManager_(),
+        physicsSystem_(entityManager_),
         vulkanContext_(initVulkanContext()),
         debugMessenger_(vulkanContext_),
         swapchainManager_(window_, vulkanContext_),
@@ -85,7 +85,7 @@ public:
                 assetManager_,
                 inputSystem_,
                 physicsSystem_,
-                scene_,
+                entityManager_,
                 gameRenderSystem_,
                 rendererSettings_,
                 gameRenderer_) {}
@@ -93,7 +93,7 @@ public:
     GameEngine& gameEngine() { return engine_; }
     UserInterface& userInterface() { return userInterface_; }
     RendererSettings& rendererSettings() { return rendererSettings_; }
-    Scene& scene() { return scene_; }
+    EntityManager& entityManager() { return entityManager_; }
     AssetManager& assetManager() { return assetManager_; }
     TimeManager& timeManager() { return time_; }
     InputSystem& inputSystem() { return inputSystem_; }
@@ -106,7 +106,7 @@ protected:
     AssetStorage assetStorage_;
     AssetImporter assetImporter_;
     AssetManager assetManager_;
-    Scene scene_;
+    EntityManager entityManager_;
     PhysicsSystem physicsSystem_;
 
     // Vulkan components

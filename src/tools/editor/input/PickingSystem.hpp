@@ -40,7 +40,7 @@ public:
                                          uint32_t viewportHeight,
                                          const Camera& camera,
                                          const Transform& cameraTransform,
-                                         Scene& scene) const {
+                                         EntityManager& entityManager) const {
         if (viewportWidth == 0 || viewportHeight == 0) return std::nullopt;
 
         float ndcX = (static_cast<float>(pixelX) - static_cast<float>(viewportX)) / static_cast<float>(viewportWidth);
@@ -57,14 +57,14 @@ public:
             float dist2 = 0.0f;
             if (intersectsCapsule(ray, handle.base, handle.tip, handle.radius, t, dist2) && dist2 < bestDist2) {
                 bestDist2 = dist2;
-                bestHandle = GizmoHit{handle.objectId, handle.type, handle.axis};
+                bestHandle.emplace(handle.objectId, handle.type, handle.axis);
             }
         }
         if (bestHandle) return EditorPickResult{*bestHandle};
 
         // Layer 2: scene objects via AABB raycast
-        auto hit = RaycastPickingSystem::pick(ndc, camera, cameraTransform, scene, assetManager_);
-        if (hit) return EditorPickResult{SceneObjectHit{*hit}};
+        auto hit = RaycastPickingSystem::pick(ndc, camera, cameraTransform, entityManager, assetManager_);
+        if (hit) return EditorPickResult{SceneObjectHit{hit.value()}};
 
         return std::nullopt;
     }

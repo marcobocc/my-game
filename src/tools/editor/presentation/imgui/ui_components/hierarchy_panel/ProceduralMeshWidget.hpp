@@ -2,7 +2,7 @@
 #include <imgui.h>
 #include <string>
 #include "../../../../../../engine/GameEngine.hpp"
-#include "../../../../business/SceneMutations.hpp"
+#include "../../../../business/scene_editing/SceneMutations.hpp"
 
 class ProceduralMeshWidget {
 public:

@@ -3,7 +3,7 @@
 #include <nfd.hpp>
 #include <string>
 #include "../../../business/SceneLoader.hpp"
-#include "../../../business/SceneMutations.hpp"
+#include "../../../business/scene_editing/SceneMutations.hpp"
 #include "modules/ui/ImguiWidget.hpp"
 
 

@@ -7,6 +7,7 @@
 #include "data/assets/Material.hpp"
 #include "data/components/Renderer.hpp"
 #include "modules/assets/AssetManager.hpp"
+#include "modules/scene/EntityManager.hpp"
 
 class SceneMutations;
 class EditorGizmos;
@@ -18,7 +19,7 @@ public:
         sceneMutations_(sceneMutations),
         debugViz_(debugViz) {}
 
-    void draw(Renderer& r, const std::string& objectId) {
+    void draw(Renderer& r, EntityHandle objectId) {
         int rows = 5;
         rows += 2; // AABB and bounding sphere toggles
 
@@ -45,7 +46,7 @@ public:
                 sceneMutations_.beginEditByType(objectId, "Renderer");
             }
             if (ImGui::IsItemDeactivatedAfterEdit()) {
-                sceneMutations_.endEditByType(objectId, "Renderer");
+                sceneMutations_.commitEditByType(objectId, "Renderer");
             }
         }
 

@@ -2,13 +2,12 @@
 #include <glm/glm.hpp>
 #include <limits>
 #include <optional>
-#include <string>
 #include "../../data/assets/Mesh.hpp"
 #include "../../data/components/Camera.hpp"
 #include "../../data/components/Renderer.hpp"
 #include "../../data/components/Transform.hpp"
 #include "../../modules/assets/AssetManager.hpp"
-#include "../../modules/scene/Scene.hpp"
+#include "../../modules/scene/EntityManager.hpp"
 #include "../../utils/math/Ray.hpp"
 
 /*
@@ -22,27 +21,29 @@
 class RaycastPickingSystem {
 public:
     // ndcPos: [0,1] screen-space coord (x right, y down from top-left of the viewport)
-    static std::optional<std::string> pick(const glm::vec2& ndcPos,
-                                           const Camera& camera,
-                                           const Transform& cameraTransform,
-                                           Scene& scene,
-                                           AssetManager& assetManager) {
+    static std::optional<EntityHandle> pick(const glm::vec2& ndcPos,
+                                            const Camera& camera,
+                                            const Transform& cameraTransform,
+                                            EntityManager& entityManager,
+                                            AssetManager& assetManager) {
         Ray ray = buildRay(ndcPos, camera, cameraTransform);
 
-        std::optional<std::string> best;
+        std::optional<EntityHandle> best;
         float bestT = std::numeric_limits<float>::max();
 
-        for (auto& [id, transform, renderer]: scene.getObjectsWith<Transform, Renderer>()) {
-            if (!renderer.enabled) continue;
-            const Mesh* mesh = assetManager.get<Mesh>(renderer.meshName);
+        auto objects = entityManager.query<Transform, Renderer>();
+        for (auto& [entity, transformPtr, rendererPtr]: objects) {
+            if (!transformPtr || !rendererPtr) continue;
+            if (!rendererPtr->enabled) continue;
+            const Mesh* mesh = assetManager.get<Mesh>(rendererPtr->meshName);
             if (!mesh) continue;
 
-            AABB worldAABB = mesh->getAABB().applyTransform(transform.getModelMatrix());
+            AABB worldAABB = mesh->getAABB().applyTransform(transformPtr->getModelMatrix());
 
             float t = 0.0f;
             if (ray.intersectsAABB(worldAABB, t) && t < bestT) {
                 bestT = t;
-                best = id;
+                best.emplace(entity);
             }
         }
 
@@ -51,20 +52,20 @@ public:
 
     // Converts a viewport pixel (pixelX, pixelY) to [0,1] NDC within the viewport region and
     // calls pick(). viewportX/Y are the viewport's top-left corner in window pixel space.
-    static std::optional<std::string> pickFromPixel(uint32_t pixelX,
-                                                    uint32_t pixelY,
-                                                    uint32_t viewportX,
-                                                    uint32_t viewportY,
-                                                    uint32_t viewportWidth,
-                                                    uint32_t viewportHeight,
-                                                    const Camera& camera,
-                                                    const Transform& cameraTransform,
-                                                    Scene& scene,
-                                                    AssetManager& assetManager) {
+    static std::optional<EntityHandle> pickFromPixel(uint32_t pixelX,
+                                                     uint32_t pixelY,
+                                                     uint32_t viewportX,
+                                                     uint32_t viewportY,
+                                                     uint32_t viewportWidth,
+                                                     uint32_t viewportHeight,
+                                                     const Camera& camera,
+                                                     const Transform& cameraTransform,
+                                                     EntityManager& entityManager,
+                                                     AssetManager& assetManager) {
         if (viewportWidth == 0 || viewportHeight == 0) return std::nullopt;
         float ndcX = (static_cast<float>(pixelX) - static_cast<float>(viewportX)) / static_cast<float>(viewportWidth);
         float ndcY = (static_cast<float>(pixelY) - static_cast<float>(viewportY)) / static_cast<float>(viewportHeight);
-        return pick({ndcX, ndcY}, camera, cameraTransform, scene, assetManager);
+        return pick({ndcX, ndcY}, camera, cameraTransform, entityManager, assetManager);
     }
 
     static Ray buildRay(const glm::vec2& ndcPos, const Camera& camera, const Transform& cameraTransform) {

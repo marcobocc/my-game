@@ -1,6 +1,7 @@
 #pragma once
 #include <functional>
 #include <string>
+#include "../../../engine/modules/scene/EntityManager.hpp"
 
 class GameEngine;
 class Scene;
@@ -10,8 +11,8 @@ class SceneLoader {
 public:
     using OnSceneNameChanged = std::function<void(const std::string&)>;
 
-    SceneLoader(Scene& sceneManager, ObjectSelection& objectSelection, GameEngine& engine) :
-        scene_(sceneManager),
+    SceneLoader(EntityManager& entityManager, ObjectSelection& objectSelection, GameEngine& engine) :
+        entityManager_(entityManager),
         objectSelection_(objectSelection),
         engine_(engine) {}
 
@@ -20,7 +21,7 @@ public:
     void loadScene(const char* path);
 
 private:
-    Scene& scene_;
+    EntityManager& entityManager_;
     ObjectSelection& objectSelection_;
     GameEngine& engine_;
     OnSceneNameChanged onSceneNameChanged_;

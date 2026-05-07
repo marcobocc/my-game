@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
+#include "../../../engine/modules/scene/EntityManager.hpp"
 #include "../../../engine/modules/ui/UserInterface.hpp"
 
 
@@ -9,7 +10,6 @@ class PickingSystem;
 class AssetManager;
 class SceneMutations;
 class VulkanEditorBackend;
-class Scene;
 class EditorOrbitCamera;
 class GizmosRenderer;
 class ObjectSelection;
@@ -42,7 +42,7 @@ public:
                       EditorGizmos& editorGizmos,
                       EditorSettings& editorSettings,
                       RendererSettings& rendererSettings,
-                      Scene& scene,
+                      EntityManager& entityManager,
                       GizmosRenderer& gizmosBuilder,
                       ObjectTransformHandle& objectTransformHandle,
                       UserInterface& userInterface,
@@ -54,7 +54,7 @@ public:
     // --------------------------------------------------------
     // Rendering
     // --------------------------------------------------------
-    void render(const Scene& scene, float gridScale, const std::vector<DrawCall>& outlineQueue);
+    void render(const EntityManager& entityManager, float gridScale, const std::vector<DrawCall>& outlineQueue);
 
 private:
     void buildGizmos();
@@ -66,7 +66,7 @@ private:
     EditorGizmos& editorGizmos_;
     EditorSettings& editorSettings_;
     RendererSettings& rendererSettings_;
-    Scene& scene_;
+    EntityManager& entityManager_;
     GizmosRenderer& gizmosBuilder_;
     ObjectTransformHandle& objectTransformHandle_;
     UserInterface& userInterface_;

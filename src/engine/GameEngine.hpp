@@ -2,13 +2,11 @@
 #include <functional>
 #include <nlohmann/json.hpp>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 #include "modules/assets/AssetManager.hpp"
 #include "modules/core/GameWindow.hpp"
-#include "modules/scene/GameObject.hpp"
-#include "modules/scene/Scene.hpp"
+#include "modules/scene/EntityManager.hpp"
 
 struct AABB;
 struct Camera;
@@ -48,7 +46,7 @@ public:
                         AssetManager& assetManager,
                         InputSystem& inputSystem,
                         PhysicsSystem& physicsSystem,
-                        Scene& scene,
+                        EntityManager& entityManager,
                         GameRenderSystem& renderSystem,
                         RendererSettings& rendererSettings,
                         VulkanGameRenderer& renderer);
@@ -85,19 +83,9 @@ public:
     }
 
     // --------------------------------------------------------
-    // Scene API
+    // Entity API
     // --------------------------------------------------------
-    GameObject& getObject(const std::string& name) const;
-    const std::unordered_map<std::string, GameObject>& getObjects() const;
-    void destroyObject(const std::string& name);
-
-    std::pair<std::string, bool> createEmptyObject(const std::string& name = "");
-    std::string createCamera(const Scene::_createCamera_Options& options);
-    std::string createCube(const Scene::_createMesh_Options& options);
-    std::string createRectangle2D(const Scene::_createMesh_Options& options);
-    std::string createMesh(const std::string& meshName, const Scene::_createMesh_Options& options);
-    std::string createModel(const std::string& modelName, const Scene::_createModel_Options& options);
-    void loadScene(Scene& scene, const nlohmann::json& j);
+    EntityManager& entities() { return entityManager_; }
 
 private:
     bool shouldClose() const;
@@ -107,7 +95,7 @@ private:
     AssetManager& assetManager_;
     InputSystem& inputSystem_;
     PhysicsSystem& physicsSystem_;
-    Scene& scene_;
+    EntityManager& entityManager_;
     GameRenderSystem& renderSystem_;
     RendererSettings& rendererSettings_;
     VulkanGameRenderer& renderer_;

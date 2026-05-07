@@ -7,7 +7,7 @@
 #include "../business/EditorSettings.hpp"
 #include "../business/ObjectSelection.hpp"
 #include "../business/ObjectTransformHandle.hpp"
-#include "../business/SceneMutations.hpp"
+#include "../business/scene_editing/SceneMutations.hpp"
 
 void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
     handleKeyboardInput();
@@ -78,8 +78,8 @@ void InputHandler::handleKeyboardInput() {
 
     // Object sceneMutations
     if (shift && engine_.isKeyPressed(GLFW_KEY_X)) {
-        auto selectedId = objectSelection_.getSelectedObjectId();
-        if (selectedId.has_value()) sceneMutations_.deleteObject(*selectedId);
+        auto selectedId = objectSelection_.getSelectedEntityId();
+        if (selectedId.has_value()) sceneMutations_.destroyObject(*selectedId);
     }
 }
 
@@ -103,7 +103,7 @@ void InputHandler::processMouseInteraction(double mouseX, double mouseY, bool le
                                           static_cast<uint32_t>(sv.height),
                                           editorOrbitCamera_.getCamera(),
                                           editorOrbitCamera_.getCameraTransform(),
-                                          scene_);
+                                          entityManager_);
         if (result) {
             if (auto* sceneHit = std::get_if<SceneObjectHit>(&*result)) {
                 objectSelection_.selectObject(sceneHit->objectId);

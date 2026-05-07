@@ -2,8 +2,10 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
+#include "../../../../business/scene_editing/ObjectPrefabs.hpp"
+#include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "modules/assets/AssetManager.hpp"
-#include "modules/assets/BuiltinAssetNames.hpp"
+#include "modules/scene/EntityMetadata.hpp"
 
 class SceneMutations;
 
@@ -13,15 +15,15 @@ public:
         assetManager_(assetManager),
         sceneMutations_(sceneMutations) {}
 
-    void draw(std::optional<std::string> selectedItem) {
+    void draw(std::optional<EntityHandle> selectedItem) {
         if (selectedItem) {
             if (ImGui::MenuItem("Delete")) {
-                sceneMutations_.deleteObject(*selectedItem);
+                sceneMutations_.destroyObject(*selectedItem);
             }
             ImGui::Separator();
         }
         if (ImGui::MenuItem("Empty Object")) {
-            sceneMutations_.createEmptyObjectAndSelect();
+            sceneMutations_.createObject({{"metadata", {{"name", "Object"}}}});
         }
         if (ImGui::BeginMenu("3D Object")) {
             drawPrimitivesSubmenu();
@@ -30,7 +32,6 @@ public:
         }
     }
 
-
 private:
     AssetManager& assetManager_;
     SceneMutations& sceneMutations_;
@@ -38,13 +39,13 @@ private:
     void drawPrimitivesSubmenu() {
         if (ImGui::BeginMenu("Primitives")) {
             if (ImGui::MenuItem("Cube")) {
-                sceneMutations_.createCube({});
+                sceneMutations_.createObject(primitives::cube());
             }
             if (ImGui::MenuItem("Plane")) {
-                sceneMutations_.createPlane({});
+                sceneMutations_.createObject(primitives::plane());
             }
             if (ImGui::MenuItem("Sphere")) {
-                sceneMutations_.createSphere({});
+                sceneMutations_.createObject(primitives::sphere());
             }
             ImGui::EndMenu();
         }
@@ -58,7 +59,7 @@ private:
             } else {
                 for (const auto& modelName: models) {
                     if (ImGui::MenuItem(modelName.c_str())) {
-                        sceneMutations_.createModelAndSelect(modelName, {});
+                        sceneMutations_.createObject({{"metadata", {{"name", modelName}}}});
                     }
                 }
             }

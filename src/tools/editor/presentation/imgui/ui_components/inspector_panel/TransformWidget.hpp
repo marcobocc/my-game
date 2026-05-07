@@ -2,14 +2,15 @@
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include "data/components/Transform.hpp"
+#include "modules/scene/EntityMetadata.hpp"
 
 class SceneMutations;
 
 class TransformWidget {
 public:
-    explicit TransformWidget(SceneMutations& sceneMutations) : sceneMutations_(sceneMutations), lastObjectId_("") {}
+    explicit TransformWidget(SceneMutations& sceneMutations) : sceneMutations_(sceneMutations) {}
 
-    void setCurrentObjectId(const std::string& objectId) { lastObjectId_ = objectId; }
+    void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
 
     void draw(Transform& t) {
         if (!ImGui::BeginChild("Transform", {0, childHeight(4)}, true)) {
@@ -30,7 +31,7 @@ public:
 
 private:
     SceneMutations& sceneMutations_;
-    std::string lastObjectId_;
+    std::optional<EntityHandle> lastObjectId_;
 
     static float childHeight(int rows) {
         return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y * 2.0f;
@@ -38,11 +39,12 @@ private:
 
     template<typename T>
     void trackDrag(const std::string& componentType, T& target) {
+        if (!lastObjectId_) return;
         if (ImGui::IsItemActivated()) {
-            sceneMutations_.beginEditByType(lastObjectId_, componentType);
+            sceneMutations_.beginEditByType(*lastObjectId_, componentType);
         }
         if (ImGui::IsItemDeactivatedAfterEdit()) {
-            sceneMutations_.endEditByType(lastObjectId_, componentType);
+            sceneMutations_.commitEditByType(*lastObjectId_, componentType);
         }
     }
 };

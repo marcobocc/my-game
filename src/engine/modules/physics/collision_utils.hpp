@@ -1,13 +1,13 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <optional>
-#include <string>
 #include "data/components/BoxCollider.hpp"
 #include "data/components/Transform.hpp"
+#include "modules/scene/EntityMetadata.hpp"
 
 namespace Physics {
     struct RaycastHit {
-        std::string objectId;
+        EntityHandle objectId;
         glm::vec3 point;
         float distance = 0.0f;
     };
@@ -59,15 +59,15 @@ namespace Physics {
         return tMin;
     }
 
-    // Casts a ray against a list of (objectId, collider, transform) tuples.
+    // Casts a ray against a list of (entity, collider, transform) tuples.
     // Returns the closest hit, or nullopt if nothing was hit.
     template<typename Range>
     std::optional<RaycastHit> raycast(const glm::vec3& origin, const glm::vec3& dir, Range&& objects) {
         std::optional<RaycastHit> closest;
-        for (auto& [id, collider, transform]: objects) {
-            auto dist = raycastBox(origin, dir, collider, transform);
+        for (auto& [entity, collider, transform]: objects) {
+            auto dist = raycastBox(origin, dir, *collider, *transform);
             if (dist && (!closest || *dist < closest->distance)) {
-                closest = RaycastHit{id, origin + dir * (*dist), *dist};
+                closest.emplace(entity, origin + dir * (*dist), *dist);
             }
         }
         return closest;

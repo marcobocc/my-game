@@ -1,14 +1,15 @@
 #pragma once
 #include <imgui.h>
 #include "data/components/BoxCollider.hpp"
+#include "modules/scene/EntityMetadata.hpp"
 
 class SceneMutations;
 
 class BoxColliderWidget {
 public:
-    explicit BoxColliderWidget(SceneMutations& sceneMutations) : sceneMutations_(sceneMutations), lastObjectId_("") {}
+    explicit BoxColliderWidget(SceneMutations& sceneMutations) : sceneMutations_(sceneMutations) {}
 
-    void setCurrentObjectId(const std::string& objectId) { lastObjectId_ = objectId; }
+    void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
 
     void draw(BoxCollider& b) {
         if (!ImGui::BeginChild("BoxCollider", {0, childHeight(3)}, true)) {
@@ -26,7 +27,7 @@ public:
 
 private:
     SceneMutations& sceneMutations_;
-    std::string lastObjectId_;
+    std::optional<EntityHandle> lastObjectId_;
 
     static float childHeight(int rows) {
         return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y * 2.0f;
@@ -34,11 +35,12 @@ private:
 
     template<typename T>
     void trackDrag(const std::string& componentType, T& target) {
+        if (!lastObjectId_) return;
         if (ImGui::IsItemActivated()) {
-            sceneMutations_.beginEditByType(lastObjectId_, componentType);
+            sceneMutations_.beginEditByType(*lastObjectId_, componentType);
         }
         if (ImGui::IsItemDeactivatedAfterEdit()) {
-            sceneMutations_.endEditByType(lastObjectId_, componentType);
+            sceneMutations_.commitEditByType(*lastObjectId_, componentType);
         }
     }
 };

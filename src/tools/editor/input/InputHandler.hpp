@@ -35,7 +35,7 @@ public:
                  EditorOrbitCamera& editorOrbitCamera,
                  ObjectSelection& objectSelection,
                  ObjectTransformHandle& objectTransformHandle,
-                 Scene& sceneManager,
+                 EntityManager& entityManager,
                  SceneMutations& sceneMutations,
                  EditorGizmos& editorGizmos,
                  EditorSettings& rendererSettings) :
@@ -45,7 +45,7 @@ public:
         editorOrbitCamera_(editorOrbitCamera),
         objectSelection_(objectSelection),
         objectTransformHandle_(objectTransformHandle),
-        scene_(sceneManager),
+        entityManager_(entityManager),
         sceneMutations_(sceneMutations),
         editorGizmos_(editorGizmos),
         rendererSettings_(rendererSettings),
@@ -60,7 +60,7 @@ private:
     EditorOrbitCamera& editorOrbitCamera_;
     ObjectSelection& objectSelection_;
     ObjectTransformHandle& objectTransformHandle_;
-    Scene& scene_;
+    EntityManager& entityManager_;
     SceneMutations& sceneMutations_;
     EditorGizmos& editorGizmos_;
     EditorSettings& rendererSettings_;
