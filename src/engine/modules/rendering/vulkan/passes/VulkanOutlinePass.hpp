@@ -5,9 +5,9 @@
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/structs.hpp"
 #include "data/assets/Shader.hpp"
-#include "systems/assets/AssetManager.hpp"
-#include "systems/assets/BuiltinAssetNames.hpp"
-#include "systems/core/GameWindow.hpp"
+#include "modules/assets/AssetManager.hpp"
+#include "modules/assets/BuiltinAssetNames.hpp"
+#include "modules/core/GameWindow.hpp"
 
 class VulkanOutlinePass {
 public:

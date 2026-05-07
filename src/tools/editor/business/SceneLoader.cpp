@@ -1,7 +1,7 @@
 #include "SceneLoader.hpp"
 #include <fstream>
 #include "../../../engine/GameEngine.hpp"
-#include "../../../engine/systems/scene/Scene.hpp"
+#include "../../../engine/modules/scene/Scene.hpp"
 #include "../../../engine/utils/JsonUtils.hpp"
 #include "ObjectSelection.hpp"
 

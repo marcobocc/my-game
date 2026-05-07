@@ -1,5 +1,5 @@
 #pragma once
-#include "systems/scene/ComponentStorage.hpp"
+#include "modules/scene/ComponentStorage.hpp"
 
 class GameObject {
 public:

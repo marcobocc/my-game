@@ -1,7 +1,7 @@
 #pragma once
 #include <vulkan/vulkan.h>
 #include "../core/utils/structs.hpp"
-#include "systems/ui/UserInterface.hpp"
+#include "modules/ui/UserInterface.hpp"
 
 class VulkanSwapchainManager;
 class GameWindow;

@@ -2,8 +2,8 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
-#include "systems/assets/AssetManager.hpp"
-#include "systems/assets/BuiltinAssetNames.hpp"
+#include "modules/assets/AssetManager.hpp"
+#include "modules/assets/BuiltinAssetNames.hpp"
 
 class SceneMutations;
 

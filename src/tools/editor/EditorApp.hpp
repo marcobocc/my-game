@@ -1,10 +1,10 @@
 #pragma once
 #include <string>
 #include "../../engine/GameEngine.hpp"
-#include "../../engine/systems/core/TimeManager.hpp"
-#include "../../engine/systems/input/InputSystem.hpp"
-#include "../../engine/systems/physics/PhysicsSystem.hpp"
-#include "../../engine/systems/scene/Scene.hpp"
+#include "../../engine/modules/core/TimeManager.hpp"
+#include "../../engine/modules/input/InputSystem.hpp"
+#include "../../engine/modules/physics/PhysicsSystem.hpp"
+#include "../../engine/modules/scene/Scene.hpp"
 #include "business/EditorOrbitCamera.hpp"
 #include "business/EditorSettings.hpp"
 #include "business/SceneLoader.hpp"

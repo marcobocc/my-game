@@ -1,6 +1,6 @@
 #pragma once
 #include <unordered_map>
-#include "systems/core/GameWindow.hpp"
+#include "modules/core/GameWindow.hpp"
 
 class InputSystem {
 public:

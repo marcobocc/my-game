@@ -4,7 +4,7 @@
 #include <vector>
 #include "../../../../engine/data/components/Camera.hpp"
 #include "../../../../engine/data/components/Transform.hpp"
-#include "../../../../engine/systems/rendering/vulkan/passes/VulkanGizmoPass.hpp"
+#include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "../../input/PickingSystem.hpp"
 
 class AssetManager;

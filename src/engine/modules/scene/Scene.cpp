@@ -7,8 +7,8 @@
 #include "data/components/Camera.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
-#include "systems/assets/AssetManager.hpp"
-#include "systems/assets/BuiltinAssetNames.hpp"
+#include "modules/assets/AssetManager.hpp"
+#include "modules/assets/BuiltinAssetNames.hpp"
 
 Scene::Scene(AssetManager& assetManager) :
     assetManager_(assetManager),

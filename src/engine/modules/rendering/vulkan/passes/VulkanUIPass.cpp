@@ -4,7 +4,7 @@
 #include <imgui_impl_vulkan.h>
 #include <volk.h>
 #include "../core/VulkanSwapchainManager.hpp"
-#include "systems/core/GameWindow.hpp"
+#include "modules/core/GameWindow.hpp"
 
 VulkanUIPass::VulkanUIPass(const VulkanContext& vulkanContext,
                            VulkanSwapchainManager& swapchainManager,

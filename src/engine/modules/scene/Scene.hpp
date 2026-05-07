@@ -6,10 +6,10 @@
 #include <unordered_map>
 #include <utility>
 
-#include "systems/assets/BuiltinAssetNames.hpp"
-#include "systems/scene/ComponentStorage.hpp"
-#include "systems/scene/DefaultOptions.hpp"
-#include "systems/scene/GameObject.hpp"
+#include "modules/assets/BuiltinAssetNames.hpp"
+#include "modules/scene/ComponentStorage.hpp"
+#include "modules/scene/DefaultOptions.hpp"
+#include "modules/scene/GameObject.hpp"
 
 class AssetManager;
 

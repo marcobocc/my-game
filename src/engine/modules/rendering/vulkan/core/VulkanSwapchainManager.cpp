@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <volk.h>
-#include "systems/core/GameWindow.hpp"
+#include "modules/core/GameWindow.hpp"
 #include "utils/error_handling.hpp"
 #include "utils/memory.hpp"
 

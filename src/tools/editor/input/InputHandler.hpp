@@ -1,6 +1,6 @@
 #pragma once
 #include "../../../engine/GameEngine.hpp"
-#include "../../../engine/systems/core/GameWindow.hpp"
+#include "../../../engine/modules/core/GameWindow.hpp"
 #include "PickingSystem.hpp"
 
 

@@ -5,8 +5,8 @@
 #include "../core/utils/structs.hpp"
 #include "data/components/Camera.hpp"
 #include "data/components/Transform.hpp"
-#include "systems/assets/AssetManager.hpp"
-#include "systems/assets/BuiltinAssetNames.hpp"
+#include "modules/assets/AssetManager.hpp"
+#include "modules/assets/BuiltinAssetNames.hpp"
 
 class VulkanGridPass {
 public:

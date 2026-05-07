@@ -6,8 +6,8 @@
 #include <vector>
 #include "../../../engine/data/components/Camera.hpp"
 #include "../../../engine/data/components/Transform.hpp"
-#include "../../../engine/systems/assets/AssetManager.hpp"
-#include "../../../engine/systems/input/RaycastPickingSystem.hpp"
+#include "../../../engine/modules/assets/AssetManager.hpp"
+#include "../../../engine/modules/input/RaycastPickingSystem.hpp"
 #include "../../../engine/utils/math/Ray.hpp"
 #include "../gizmos.hpp"
 

@@ -2,7 +2,7 @@
 #include <log4cxx/consoleappender.h>
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
-#include "../../engine/systems/core/GameWindow.hpp"
+#include "../../engine/modules/core/GameWindow.hpp"
 #include "EditorWiringContainer.hpp"
 
 int main(int argc, char* argv[]) {

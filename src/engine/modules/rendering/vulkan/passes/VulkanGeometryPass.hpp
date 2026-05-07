@@ -8,8 +8,8 @@
 #include "data/assets/Material.hpp"
 #include "data/assets/Mesh.hpp"
 #include "data/components/Camera.hpp"
-#include "systems/assets/AssetManager.hpp"
-#include "systems/core/GameWindow.hpp"
+#include "modules/assets/AssetManager.hpp"
+#include "modules/core/GameWindow.hpp"
 
 class VulkanGeometryPass {
 public:

@@ -1,11 +1,11 @@
 #pragma once
 #include <filesystem>
 #include "../../engine/GameEngineWiringContainer.hpp"
-#include "../../engine/systems/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "../../engine/systems/rendering/vulkan/passes/VulkanGridPass.hpp"
-#include "../../engine/systems/rendering/vulkan/passes/VulkanObjectIdPass.hpp"
-#include "../../engine/systems/rendering/vulkan/passes/VulkanOutlinePass.hpp"
-#include "../../engine/systems/rendering/vulkan/passes/VulkanUIPass.hpp"
+#include "../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
+#include "../../engine/modules/rendering/vulkan/passes/VulkanGridPass.hpp"
+#include "../../engine/modules/rendering/vulkan/passes/VulkanObjectIdPass.hpp"
+#include "../../engine/modules/rendering/vulkan/passes/VulkanOutlinePass.hpp"
+#include "../../engine/modules/rendering/vulkan/passes/VulkanUIPass.hpp"
 #include "EditorApp.hpp"
 #include "business/EditorGizmos.hpp"
 #include "business/EditorOrbitCamera.hpp"

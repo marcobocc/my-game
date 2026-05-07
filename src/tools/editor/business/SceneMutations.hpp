@@ -4,8 +4,8 @@
 #include <string>
 #include "../../../engine/GameEngine.hpp"
 #include "UndoHistory.hpp"
-#include "systems/scene/GameObject.hpp"
-#include "systems/scene/Scene.hpp"
+#include "modules/scene/GameObject.hpp"
+#include "modules/scene/Scene.hpp"
 
 class ObjectSelection;
 

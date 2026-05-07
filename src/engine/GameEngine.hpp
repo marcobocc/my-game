@@ -5,10 +5,10 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "systems/assets/AssetManager.hpp"
-#include "systems/core/GameWindow.hpp"
-#include "systems/scene/GameObject.hpp"
-#include "systems/scene/Scene.hpp"
+#include "modules/assets/AssetManager.hpp"
+#include "modules/core/GameWindow.hpp"
+#include "modules/scene/GameObject.hpp"
+#include "modules/scene/Scene.hpp"
 
 struct AABB;
 struct Camera;

@@ -6,7 +6,7 @@
 #include <unordered_set>
 #include "data/assets/Material.hpp"
 #include "data/components/Renderer.hpp"
-#include "systems/assets/AssetManager.hpp"
+#include "modules/assets/AssetManager.hpp"
 
 class SceneMutations;
 class EditorGizmos;

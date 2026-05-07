@@ -4,7 +4,7 @@
 #include <string>
 #include "../../../business/SceneLoader.hpp"
 #include "../../../business/SceneMutations.hpp"
-#include "systems/ui/ImguiWidget.hpp"
+#include "modules/ui/ImguiWidget.hpp"
 
 
 class SceneLoader;

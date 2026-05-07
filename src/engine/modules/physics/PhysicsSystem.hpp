@@ -1,8 +1,8 @@
 #pragma once
 #include <functional>
 #include <unordered_set>
-#include "systems/physics/collision_utils.hpp"
-#include "systems/scene/Scene.hpp"
+#include "modules/physics/collision_utils.hpp"
+#include "modules/scene/Scene.hpp"
 
 class PhysicsSystem {
 public:

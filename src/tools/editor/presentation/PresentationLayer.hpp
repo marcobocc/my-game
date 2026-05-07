@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
-#include "../../../engine/systems/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "../../../engine/systems/ui/UserInterface.hpp"
+#include "../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
+#include "../../../engine/modules/ui/UserInterface.hpp"
 
 
 class SceneLoader;

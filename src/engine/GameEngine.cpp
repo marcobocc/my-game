@@ -1,11 +1,11 @@
 #include "GameEngine.hpp"
 #include "data/components/Camera.hpp"
 #include "data/components/Transform.hpp"
-#include "systems/assets/AssetManager.hpp"
-#include "systems/core/TimeManager.hpp"
-#include "systems/input/InputSystem.hpp"
-#include "systems/physics/PhysicsSystem.hpp"
-#include "systems/rendering/GameRenderSystem.hpp"
+#include "modules/assets/AssetManager.hpp"
+#include "modules/core/TimeManager.hpp"
+#include "modules/input/InputSystem.hpp"
+#include "modules/physics/PhysicsSystem.hpp"
+#include "modules/rendering/GameRenderSystem.hpp"
 
 GameEngine::GameEngine(GameWindow& window,
                        TimeManager& time,

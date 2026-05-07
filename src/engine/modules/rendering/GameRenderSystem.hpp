@@ -3,7 +3,7 @@
 #include "data/components/Camera.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
-#include "systems/scene/Scene.hpp"
+#include "modules/scene/Scene.hpp"
 #include "vulkan/VulkanGameRenderer.hpp"
 
 class GameRenderSystem {

@@ -4,8 +4,8 @@
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "../../../../engine/systems/rendering/vulkan/core/RenderGraph.hpp"
-#include "../../../../engine/systems/rendering/vulkan/core/utils/structs.hpp"
+#include "../../../../engine/modules/rendering/vulkan/core/RenderGraph.hpp"
+#include "../../../../engine/modules/rendering/vulkan/core/utils/structs.hpp"
 #include "EditorRenderData.hpp"
 #include "data/components/Camera.hpp"
 #include "data/components/Transform.hpp"

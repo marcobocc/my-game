@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <vector>
-#include "systems/ui/ImguiWidget.hpp"
+#include "modules/ui/ImguiWidget.hpp"
 
 class UserInterface {
 public:

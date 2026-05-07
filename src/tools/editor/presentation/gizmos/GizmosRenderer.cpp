@@ -2,9 +2,9 @@
 #include <glm/gtc/constants.hpp>
 #include "../../../../engine/data/assets/Mesh.hpp"
 #include "../../../../engine/data/components/Renderer.hpp"
-#include "../../../../engine/systems/assets/AssetManager.hpp"
-#include "../../../../engine/systems/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "../../../../engine/systems/scene/Scene.hpp"
+#include "../../../../engine/modules/assets/AssetManager.hpp"
+#include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
+#include "../../../../engine/modules/scene/Scene.hpp"
 #include "../../../../engine/utils/math/AABB.hpp"
 #include "../../../../engine/utils/math/BVH.hpp"
 #include "../../../../engine/utils/math/BoundingSphere.hpp"
