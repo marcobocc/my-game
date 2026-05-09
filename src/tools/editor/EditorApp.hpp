@@ -8,6 +8,7 @@
 #include "business/EditorOrbitCamera.hpp"
 #include "business/EditorSettings.hpp"
 #include "business/SceneLoader.hpp"
+#include "business/scene_editing/ObjectPrefabs.hpp"
 #include "input/InputHandler.hpp"
 #include "presentation/PresentationLayer.hpp"
 // TODO: Refactor UI panels to use EntityManager
@@ -80,6 +81,7 @@ private:
         if (sv.width > 0 && sv.height > 0)
             editorOrbitCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
         sceneLoader_.newScene();
+        entityManager_.createFromJson(primitives::cube());
     }
 
     void setupViewport() {
