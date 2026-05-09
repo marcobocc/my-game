@@ -25,10 +25,6 @@ void SceneMutations::removeComponentByType(EntityHandle entity, const std::strin
     }
 }
 
-void SceneMutations::beginEditByType(EntityHandle entity, const std::string& componentType) { beginEdit(entity); }
-
-void SceneMutations::commitEditByType(EntityHandle entity, const std::string& componentType) { commitEdit(entity); }
-
 void SceneMutations::clearSelectionIfSelected(EntityHandle deletedId) {
     auto selected = objectSelection_.getSelectedEntityId();
     if (selected && *selected == deletedId) {

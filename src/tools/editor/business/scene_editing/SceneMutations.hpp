@@ -13,9 +13,9 @@ public:
         engine_(engine),
         objectSelection_(objectSelection) {}
 
-    UndoHistory& undoHistory() { return undoHistory_; }
-
-    void beginEdit(EntityHandle entity) { pendingSnapshot_.emplace(entity, entityManager_.serializeToJson(entity)); }
+    void beginEdit(EntityHandle entity) {
+        if (!pendingSnapshot_.has_value()) pendingSnapshot_.emplace(entity, entityManager_.serializeToJson(entity));
+    }
 
     void commitEdit(EntityHandle entity) {
         if (!pendingSnapshot_.has_value()) return;
@@ -43,10 +43,11 @@ public:
         clearSelectionIfSelected(entity);
     }
 
+    void undo() { undoHistory_.undo(); }
+    void redo() { undoHistory_.redo(); }
+
     void addComponentByType(EntityHandle entity, const std::string& componentType);
     void removeComponentByType(EntityHandle entity, const std::string& componentType);
-    void beginEditByType(EntityHandle entity, const std::string& componentType);
-    void commitEditByType(EntityHandle entity, const std::string& componentType);
 
 private:
     EntityManager& entityManager_;

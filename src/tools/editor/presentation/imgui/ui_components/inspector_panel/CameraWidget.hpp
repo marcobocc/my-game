@@ -19,11 +19,11 @@ public:
         ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "Camera");
         ImGui::Spacing();
         ImGui::DragFloat("FOV", &c.fov, 0.5f, 1.0f, 179.0f);
-        trackDrag("Camera", c.fov);
+        trackDrag();
         ImGui::DragFloat("Near Plane", &c.nearPlane, 0.01f, 0.001f, 1000.0f);
-        trackDrag("Camera", c.nearPlane);
+        trackDrag();
         ImGui::DragFloat("Far Plane", &c.farPlane, 0.5f, 0.1f, 10000.0f);
-        trackDrag("Camera", c.farPlane);
+        trackDrag();
         ImGui::Text("Aspect: %.3f", c.aspect);
         ImGui::EndChild();
     }
@@ -36,14 +36,9 @@ private:
         return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y * 2.0f;
     }
 
-    template<typename T>
-    void trackDrag(const std::string& componentType, T& target) {
+    void trackDrag() {
         if (!lastObjectId_) return;
-        if (ImGui::IsItemActivated()) {
-            sceneMutations_.beginEditByType(*lastObjectId_, componentType);
-        }
-        if (ImGui::IsItemDeactivatedAfterEdit()) {
-            sceneMutations_.commitEditByType(*lastObjectId_, componentType);
-        }
+        if (ImGui::IsItemActivated()) sceneMutations_.beginEdit(*lastObjectId_);
+        if (ImGui::IsItemDeactivatedAfterEdit()) sceneMutations_.commitEdit(*lastObjectId_);
     }
 };

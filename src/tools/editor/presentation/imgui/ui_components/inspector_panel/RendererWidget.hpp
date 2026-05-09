@@ -4,13 +4,12 @@
 #include <optional>
 #include <string>
 #include <unordered_set>
+#include "../../../../business/EditorGizmos.hpp"
+#include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "data/assets/Material.hpp"
 #include "data/components/Renderer.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityManager.hpp"
-
-class SceneMutations;
-class EditorGizmos;
 
 class RendererWidget {
 public:
@@ -42,12 +41,8 @@ public:
             if (ImGui::ColorEdit4("Base color", col)) {
                 r.baseColorOverride = glm::vec4(col[0], col[1], col[2], col[3]);
             }
-            if (ImGui::IsItemActivated()) {
-                sceneMutations_.beginEditByType(objectId, "Renderer");
-            }
-            if (ImGui::IsItemDeactivatedAfterEdit()) {
-                sceneMutations_.commitEditByType(objectId, "Renderer");
-            }
+            if (ImGui::IsItemActivated()) sceneMutations_.beginEdit(objectId);
+            if (ImGui::IsItemDeactivatedAfterEdit()) sceneMutations_.commitEdit(objectId);
         }
 
         ImGui::Spacing();

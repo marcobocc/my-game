@@ -26,9 +26,9 @@ void InputHandler::handleKeyboardInput() {
     // Undo / Redo
     if (ctrl && engine_.isKeyPressed(GLFW_KEY_Z)) {
         if (shift)
-            sceneMutations_.undoHistory().redo();
+            sceneMutations_.redo();
         else
-            sceneMutations_.undoHistory().undo();
+            sceneMutations_.undo();
     }
 
     // Toggles

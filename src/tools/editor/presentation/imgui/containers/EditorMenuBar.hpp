@@ -25,8 +25,8 @@ public:
         }
 
         if (ImGui::BeginMenu("Edit")) {
-            if (ImGui::MenuItem("Undo", "Ctrl+Z")) sceneMutations_.undoHistory().undo();
-            if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) sceneMutations_.undoHistory().redo();
+            if (ImGui::MenuItem("Undo", "Ctrl+Z")) sceneMutations_.undo();
+            if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) sceneMutations_.redo();
             ImGui::EndMenu();
         }
 
