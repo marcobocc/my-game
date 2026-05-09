@@ -64,7 +64,7 @@ glm::vec3 EditorOrbitCamera::computePosition() const {
 
 void EditorOrbitCamera::moveFromKeyboard(uint8_t direction, bool sprint, double deltaTime) {
     glm::vec3 camPos = computePosition();
-    glm::vec3 forward = glm::normalize(glm::vec3(0.0f, 0.0f, 0.0f) - camPos);
+    glm::vec3 forward = glm::normalize(orbitTarget_ - camPos);
     glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
 
     glm::vec3 move{0.0f};
