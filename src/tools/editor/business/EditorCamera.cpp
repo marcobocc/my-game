@@ -1,11 +1,11 @@
-#include "EditorOrbitCamera.hpp"
+#include "EditorCamera.hpp"
 #include <algorithm>
 #include <cmath>
 #include <glm/gtc/constants.hpp>
 
-EditorOrbitCamera::EditorOrbitCamera() { resetToDefault(); }
+EditorCamera::EditorCamera() { resetToDefault(); }
 
-void EditorOrbitCamera::resetToDefault() {
+void EditorCamera::resetToDefault() {
     orbitTarget_ = {0.0f, 0.0f, 0.0f};
     orbitDistance_ = INITIAL_ORBIT_DISTANCE;
     orbitYaw_ = INITIAL_ORBIT_YAW;
@@ -13,7 +13,7 @@ void EditorOrbitCamera::resetToDefault() {
     applyTransform();
 }
 
-void EditorOrbitCamera::resetFromTransform(const Transform& t) {
+void EditorCamera::resetFromTransform(const Transform& t) {
     orbitTarget_ = {0.0f, 0.0f, 0.0f};
     orbitDistance_ = glm::length(t.position);
     orbitPitch_ = std::asin(t.position.y / orbitDistance_);
@@ -21,40 +21,37 @@ void EditorOrbitCamera::resetFromTransform(const Transform& t) {
     applyTransform();
 }
 
-void EditorOrbitCamera::orbit(float deltaX, float deltaY) {
+void EditorCamera::orbit(float deltaX, float deltaY) {
     orbitYaw_ -= deltaX * ORBIT_SENSITIVITY;
     orbitPitch_ = glm::clamp(orbitPitch_ + deltaY * ORBIT_SENSITIVITY,
                              -glm::half_pi<float>() + PITCH_CLAMP_MARGIN,
                              glm::half_pi<float>() - PITCH_CLAMP_MARGIN);
-    applyTransform();
+    glm::vec3 eulerAngles(-orbitPitch_, orbitYaw_, 0.0f);
+    transform_.rotation = glm::normalize(glm::quat(eulerAngles));
 }
 
-void EditorOrbitCamera::pan(float deltaX, float deltaY) {
-    glm::vec3 camPos = computePosition();
-    glm::vec3 forward = glm::normalize(orbitTarget_ - camPos);
+void EditorCamera::pan(float deltaX, float deltaY) {
+    glm::vec3 forward = glm::normalize(transform_.rotation * glm::vec3(0.0f, 0.0f, -1.0f));
     glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
     glm::vec3 up = glm::cross(right, forward);
-    orbitTarget_ -= right * (deltaX * PAN_SENSITIVITY);
-    orbitTarget_ += up * (deltaY * PAN_SENSITIVITY);
-    applyTransform();
+    transform_.position -= right * (deltaX * PAN_SENSITIVITY);
+    transform_.position += up * (deltaY * PAN_SENSITIVITY);
 }
 
-void EditorOrbitCamera::zoom(double scrollDelta) {
+void EditorCamera::zoom(double scrollDelta) {
     if (scrollDelta != 0.0) {
-        orbitDistance_ =
-                std::max(MIN_ORBIT_DISTANCE, orbitDistance_ - static_cast<float>(scrollDelta) * ZOOM_SENSITIVITY);
-        applyTransform();
+        glm::vec3 forward = glm::normalize(transform_.rotation * glm::vec3(0.0f, 0.0f, -1.0f));
+        transform_.position += forward * static_cast<float>(scrollDelta) * ZOOM_SENSITIVITY;
     }
 }
 
-void EditorOrbitCamera::moveTarget(const glm::vec3& direction, float speed, double deltaTime) {
+void EditorCamera::moveTarget(const glm::vec3& direction, float speed, double deltaTime) {
     if (glm::length(direction) > 0.0f) {
-        orbitTarget_ += glm::normalize(direction) * speed * static_cast<float>(deltaTime);
-        applyTransform();
+        transform_.position += glm::normalize(direction) * speed * static_cast<float>(deltaTime);
     }
 }
 
-glm::vec3 EditorOrbitCamera::computePosition() const {
+glm::vec3 EditorCamera::computePosition() const {
     return {
             orbitTarget_.x + orbitDistance_ * std::cos(orbitPitch_) * std::sin(orbitYaw_),
             orbitTarget_.y + orbitDistance_ * std::sin(orbitPitch_),
@@ -62,7 +59,7 @@ glm::vec3 EditorOrbitCamera::computePosition() const {
     };
 }
 
-void EditorOrbitCamera::moveFromKeyboard(uint8_t direction, bool sprint, double deltaTime) {
+void EditorCamera::moveFromKeyboard(uint8_t direction, bool sprint, double deltaTime) {
     glm::vec3 camPos = computePosition();
     glm::vec3 forward = glm::normalize(orbitTarget_ - camPos);
     glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));
@@ -77,7 +74,7 @@ void EditorOrbitCamera::moveFromKeyboard(uint8_t direction, bool sprint, double 
     moveTarget(move, speed, deltaTime);
 }
 
-void EditorOrbitCamera::applyTransform() {
+void EditorCamera::applyTransform() {
     transform_.position = computePosition();
     glm::vec3 forward = glm::normalize(orbitTarget_ - transform_.position);
     glm::vec3 right = glm::normalize(glm::cross(forward, glm::vec3(0.0f, 1.0f, 0.0f)));

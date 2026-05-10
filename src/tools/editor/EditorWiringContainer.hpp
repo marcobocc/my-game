@@ -7,8 +7,8 @@
 #include "../../engine/modules/rendering/vulkan/passes/VulkanOutlinePass.hpp"
 #include "../../engine/modules/rendering/vulkan/passes/VulkanUIPass.hpp"
 #include "EditorApp.hpp"
+#include "business/EditorCamera.hpp"
 #include "business/EditorGizmos.hpp"
-#include "business/EditorOrbitCamera.hpp"
 #include "business/EditorSettings.hpp"
 #include "business/ObjectSelection.hpp"
 #include "business/ObjectTransformHandle.hpp"
@@ -55,23 +55,18 @@ public:
         // Editor business logic providers
         // -------------------------------------------------------------------------------------------------------------
         editorSettings_(rendererSettings_),
-        editorOrbitCamera_(),
+        editorCamera_(),
         gizmosBuilder_(assetManager_, entityManager_),
         pickingSystem_(assetManager_),
         sceneLoader_(entityManager_, objectSelection_, engine_),
         sceneMutations_(entityManager_, engine_, objectSelection_),
-        objectTransformHandle_(window,
-                               engine_,
-                               sceneMutations_,
-                               editorOrbitCamera_,
-                               objectSelection_,
-                               editorSettings_,
-                               entityManager_),
+        objectTransformHandle_(
+                window, engine_, sceneMutations_, editorCamera_, objectSelection_, editorSettings_, entityManager_),
         // -------------------------------------------------------------------------------------------------------------
         // Presentation and input handling
         // -------------------------------------------------------------------------------------------------------------
         presentationLayer_(vulkanEditorRenderer_,
-                           editorOrbitCamera_,
+                           editorCamera_,
                            objectSelection_,
                            editorGizmos_,
                            editorSettings_,
@@ -88,7 +83,7 @@ public:
         inputHandler_(window,
                       engine_,
                       pickingSystem_,
-                      editorOrbitCamera_,
+                      editorCamera_,
                       objectSelection_,
                       objectTransformHandle_,
                       entityManager_,
@@ -101,7 +96,7 @@ public:
         editorApp_(window,
                    engine_,
                    entityManager_,
-                   editorOrbitCamera_,
+                   editorCamera_,
                    inputHandler_,
                    presentationLayer_,
                    editorSettings_,
@@ -125,7 +120,7 @@ private:
     ObjectSelection objectSelection_;
     EditorGizmos editorGizmos_;
     EditorSettings editorSettings_;
-    EditorOrbitCamera editorOrbitCamera_;
+    EditorCamera editorCamera_;
     GizmosRenderer gizmosBuilder_;
     PickingSystem pickingSystem_;
     SceneLoader sceneLoader_;

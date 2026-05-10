@@ -10,7 +10,7 @@ class PickingSystem;
 class AssetManager;
 class SceneMutations;
 class VulkanEditorBackend;
-class EditorOrbitCamera;
+class EditorCamera;
 class GizmosRenderer;
 class ObjectSelection;
 class EditorGizmos;
@@ -40,7 +40,7 @@ class PresentationLayer {
 
 public:
     PresentationLayer(VulkanEditorBackend& renderer,
-                      EditorOrbitCamera& editorOrbitCamera,
+                      EditorCamera& editorOrbitCamera,
                       ObjectSelection& objectSelection,
                       EditorGizmos& editorGizmos,
                       EditorSettings& editorSettings,
@@ -65,7 +65,7 @@ private:
     void buildOutlines();
 
     VulkanEditorBackend& renderer_;
-    EditorOrbitCamera& editorOrbitCamera_;
+    EditorCamera& editorOrbitCamera_;
     ObjectSelection& objectSelection_;
     EditorGizmos& editorGizmos_;
     EditorSettings& editorSettings_;

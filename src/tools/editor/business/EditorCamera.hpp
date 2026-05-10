@@ -3,7 +3,7 @@
 #include "../../../engine/data/components/Camera.hpp"
 #include "../../../engine/data/components/Transform.hpp"
 
-class EditorOrbitCamera {
+class EditorCamera {
 public:
     static constexpr float ORBIT_SENSITIVITY = 0.005f;
     static constexpr float PAN_SENSITIVITY = 0.01f;
@@ -16,7 +16,7 @@ public:
     static constexpr float MIN_ORBIT_DISTANCE = 0.1f;
     static constexpr float PITCH_CLAMP_MARGIN = 0.05f;
 
-    EditorOrbitCamera();
+    EditorCamera();
 
     const Camera& getCamera() const { return camera_; }
     const Transform& getCameraTransform() const { return transform_; }

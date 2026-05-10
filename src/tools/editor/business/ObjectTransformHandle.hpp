@@ -12,7 +12,7 @@
 class GameWindow;
 class GameEngine;
 class SceneMutations;
-class EditorOrbitCamera;
+class EditorCamera;
 class ObjectSelection;
 class EditorSettings;
 
@@ -66,7 +66,7 @@ public:
     ObjectTransformHandle(GameWindow& window,
                           GameEngine& engine,
                           SceneMutations& sceneMutations,
-                          EditorOrbitCamera& editorOrbitCamera,
+                          EditorCamera& editorOrbitCamera,
                           ObjectSelection& objectSelection,
                           EditorSettings& rendererSettings,
                           EntityManager& entityManager) :
@@ -101,7 +101,7 @@ private:
     GameWindow& window_;
     GameEngine& engine_;
     SceneMutations& sceneMutations_;
-    EditorOrbitCamera& editorOrbitCamera_;
+    EditorCamera& editorOrbitCamera_;
     ObjectSelection& objectSelection_;
     EditorSettings& rendererSettings_;
     EntityManager& entityManager_;

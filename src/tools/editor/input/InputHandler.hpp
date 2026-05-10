@@ -5,7 +5,7 @@
 
 
 class EditorGizmos;
-class EditorOrbitCamera;
+class EditorCamera;
 class ObjectSelection;
 class ObjectTransformHandle;
 class Scene;
@@ -32,7 +32,7 @@ public:
     InputHandler(GameWindow& window,
                  GameEngine& engine,
                  PickingSystem& pickingSystem,
-                 EditorOrbitCamera& editorOrbitCamera,
+                 EditorCamera& editorCamera,
                  ObjectSelection& objectSelection,
                  ObjectTransformHandle& objectTransformHandle,
                  EntityManager& entityManager,
@@ -42,7 +42,7 @@ public:
         window_(window),
         engine_(engine),
         pickingSystem_(pickingSystem),
-        editorOrbitCamera_(editorOrbitCamera),
+        editorCamera_(editorCamera),
         objectSelection_(objectSelection),
         objectTransformHandle_(objectTransformHandle),
         entityManager_(entityManager),
@@ -57,7 +57,7 @@ private:
     GameWindow& window_;
     GameEngine& engine_;
     PickingSystem& pickingSystem_;
-    EditorOrbitCamera& editorOrbitCamera_;
+    EditorCamera& editorCamera_;
     ObjectSelection& objectSelection_;
     ObjectTransformHandle& objectTransformHandle_;
     EntityManager& entityManager_;

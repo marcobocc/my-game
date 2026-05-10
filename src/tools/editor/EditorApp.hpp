@@ -5,7 +5,7 @@
 #include "../../engine/modules/input/InputSystem.hpp"
 #include "../../engine/modules/physics/PhysicsSystem.hpp"
 #include "../../engine/modules/scene/EntityManager.hpp"
-#include "business/EditorOrbitCamera.hpp"
+#include "business/EditorCamera.hpp"
 #include "business/EditorSettings.hpp"
 #include "business/SceneLoader.hpp"
 #include "business/scene_editing/ObjectPrefabs.hpp"
@@ -22,7 +22,7 @@ public:
     EditorApp(GameWindow& window,
               GameEngine& engine,
               EntityManager& entityManager,
-              EditorOrbitCamera& editorOrbitCamera,
+              EditorCamera& editorOrbitCamera,
               InputHandler& inputHandler,
               PresentationLayer& presentationLayer,
               EditorSettings& rendererSettings,
@@ -101,7 +101,7 @@ private:
     TimeManager& time_;
     InputSystem& inputSystem_;
     PhysicsSystem& physicsSystem_;
-    EditorOrbitCamera& editorOrbitCamera_;
+    EditorCamera& editorOrbitCamera_;
     EditorSettings& rendererSettings_;
     PresentationLayer& presentationLayer_;
     SceneLoader& sceneLoader_;

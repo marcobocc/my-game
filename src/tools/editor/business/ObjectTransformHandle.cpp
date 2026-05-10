@@ -3,7 +3,7 @@
 #include "../../../engine/GameEngine.hpp"
 #include "../../../engine/data/components/Transform.hpp"
 #include "../../../engine/modules/input/RaycastPickingSystem.hpp"
-#include "EditorOrbitCamera.hpp"
+#include "EditorCamera.hpp"
 #include "EditorSettings.hpp"
 #include "ObjectSelection.hpp"
 #include "scene_editing/SceneMutations.hpp"

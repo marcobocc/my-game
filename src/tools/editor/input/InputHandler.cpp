@@ -2,8 +2,8 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include "../../../engine/GameEngine.hpp"
+#include "../business/EditorCamera.hpp"
 #include "../business/EditorGizmos.hpp"
-#include "../business/EditorOrbitCamera.hpp"
 #include "../business/EditorSettings.hpp"
 #include "../business/ObjectSelection.hpp"
 #include "../business/ObjectTransformHandle.hpp"
@@ -79,7 +79,7 @@ void InputHandler::handleKeyboardInput() {
 
     // Camera reset
     if (engine_.isKeyPressed(GLFW_KEY_F)) {
-        editorOrbitCamera_.resetToDefault();
+        editorCamera_.resetToDefault();
     }
 
     // Object sceneMutations
@@ -107,8 +107,8 @@ void InputHandler::processMouseInteraction(double mouseX, double mouseY, bool le
                                           static_cast<uint32_t>(sv.y),
                                           static_cast<uint32_t>(sv.width),
                                           static_cast<uint32_t>(sv.height),
-                                          editorOrbitCamera_.getCamera(),
-                                          editorOrbitCamera_.getCameraTransform(),
+                                          editorCamera_.getCamera(),
+                                          editorCamera_.getCameraTransform(),
                                           entityManager_);
         if (result) {
             if (auto* sceneHit = std::get_if<SceneObjectHit>(&*result)) {
@@ -131,7 +131,9 @@ void InputHandler::processCameraInput(double mouseX, double mouseY, double delta
         if (wasOrbiting_) {
             float dx = static_cast<float>(mouseX - lastMouseX_);
             float dy = static_cast<float>(mouseY - lastMouseY_);
-            editorOrbitCamera_.orbit(dx, dy);
+            if (dx != 0.0f || dy != 0.0f) {
+                editorCamera_.orbit(dx, dy);
+            }
         }
         wasOrbiting_ = true;
     } else {
@@ -143,7 +145,7 @@ void InputHandler::processCameraInput(double mouseX, double mouseY, double delta
         if (wasPanning_) {
             float dx = static_cast<float>(mouseX - lastMouseX_);
             float dy = static_cast<float>(mouseY - lastMouseY_);
-            editorOrbitCamera_.pan(dx, dy);
+            editorCamera_.pan(dx, dy);
         }
         wasPanning_ = true;
     } else {
@@ -153,7 +155,7 @@ void InputHandler::processCameraInput(double mouseX, double mouseY, double delta
     // Handle zoom
     double scroll = engine_.getScrollDelta();
     if (scroll != 0.0) {
-        editorOrbitCamera_.zoom(scroll);
+        editorCamera_.zoom(scroll);
     }
 
     // Handle keyboard movement
@@ -165,7 +167,7 @@ void InputHandler::processCameraInput(double mouseX, double mouseY, double delta
 
     if (moveDir != 0) {
         bool sprint = engine_.isKeyDown(GLFW_KEY_LEFT_SHIFT);
-        editorOrbitCamera_.moveFromKeyboard(moveDir, sprint, deltaTime);
+        editorCamera_.moveFromKeyboard(moveDir, sprint, deltaTime);
     }
 
     lastMouseX_ = mouseX;

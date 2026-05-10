@@ -2,8 +2,8 @@
 #include "../../../engine/data/components/Renderer.hpp"
 #include "../../../engine/modules/assets/AssetManager.hpp"
 #include "../../../engine/modules/scene/EntityManager.hpp"
+#include "../business/EditorCamera.hpp"
 #include "../business/EditorGizmos.hpp"
-#include "../business/EditorOrbitCamera.hpp"
 #include "../business/ObjectSelection.hpp"
 #include "../business/ObjectTransformHandle.hpp"
 #include "../business/scene_editing/SceneMutations.hpp"
@@ -18,7 +18,7 @@
 #include "vulkan/VulkanEditorBackend.hpp"
 
 PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
-                                     EditorOrbitCamera& editorOrbitCamera,
+                                     EditorCamera& editorOrbitCamera,
                                      ObjectSelection& objectSelection,
                                      EditorGizmos& editorGizmos,
                                      EditorSettings& editorSettings,
