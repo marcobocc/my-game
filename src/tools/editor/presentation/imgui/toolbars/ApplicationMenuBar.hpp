@@ -4,34 +4,34 @@
 #include <string>
 #include "../../../business/SceneLoader.hpp"
 #include "../../../business/scene_editing/SceneMutations.hpp"
+#include "../ImguiStyling.hpp"
 #include "modules/ui/ImguiWidget.hpp"
 
 
 class SceneLoader;
-class EditorMenuBar : public ImguiWidget {
+class ApplicationMenuBar : public ImguiWidget {
 public:
-    explicit EditorMenuBar(SceneMutations& sceneMutations, SceneLoader& editorWorkspace) :
+    explicit ApplicationMenuBar(SceneMutations& sceneMutations, SceneLoader& editorWorkspace) :
         sceneMutations_(sceneMutations),
         editorWorkspace_(editorWorkspace) {}
 
     void draw() override {
-        if (!ImGui::BeginMainMenuBar()) return;
+        ImguiStyling::withMenuBar(ImVec4(0.08f, 0.08f, 0.08f, 1.00f), [this] {
+            if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("Save", "Ctrl+S", false, scenePath_.has_value())) handleSave();
+                if (ImGui::MenuItem("Save As...")) openSaveDialog();
+                if (ImGui::MenuItem("Open...")) openLoadDialog();
+                ImGui::EndMenu();
+            }
 
-        if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Save", "Ctrl+S", false, scenePath_.has_value())) handleSave();
-            if (ImGui::MenuItem("Save As...")) openSaveDialog();
-            if (ImGui::MenuItem("Open...")) openLoadDialog();
-            ImGui::EndMenu();
-        }
+            if (ImGui::BeginMenu("Edit")) {
+                if (ImGui::MenuItem("Undo", "Ctrl+Z")) sceneMutations_.undo();
+                if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) sceneMutations_.redo();
+                ImGui::EndMenu();
+            }
 
-        if (ImGui::BeginMenu("Edit")) {
-            if (ImGui::MenuItem("Undo", "Ctrl+Z")) sceneMutations_.undo();
-            if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) sceneMutations_.redo();
-            ImGui::EndMenu();
-        }
-
-        if (sceneName_) ImGui::TextDisabled("  %s", sceneName_->c_str());
-        ImGui::EndMainMenuBar();
+            if (sceneName_) ImGui::TextDisabled("  %s", sceneName_->c_str());
+        });
     }
 
 private:

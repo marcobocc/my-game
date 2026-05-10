@@ -8,7 +8,7 @@
 #include "../business/ObjectTransformHandle.hpp"
 #include "../business/scene_editing/SceneMutations.hpp"
 #include "../input/PickingSystem.hpp"
-#include "../presentation/imgui/toolbars/EditorMenuBar.hpp"
+#include "../presentation/imgui/toolbars/ApplicationMenuBar.hpp"
 #include "../presentation/imgui/toolbars/SceneViewToolbar.hpp"
 #include "gizmos/GizmosBuilder.hpp"
 #include "imgui/panels/assets/AssetsPanel.hpp"
@@ -47,7 +47,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     editorWorkspace_(editorWorkspace),
     assetManager_(assetManager),
     engine_(engine) {
-    userInterface_.emplace<EditorMenuBar>(sceneMutations, editorWorkspace);
+    userInterface_.emplace<ApplicationMenuBar>(sceneMutations, editorWorkspace);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
     userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations, engine_);
     userInterface_.emplace<AssetsPanel>(assetManager_);

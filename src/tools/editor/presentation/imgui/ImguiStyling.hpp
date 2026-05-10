@@ -116,4 +116,22 @@ public:
         ImGui::PopStyleColor(2);
         ImGui::PopStyleVar(3);
     }
+
+    template<typename Fn>
+    static void withMenuBar(ImVec4 bgColor, Fn&& fn) {
+        ImGui::PushStyleColor(ImGuiCol_MenuBarBg, bgColor);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 8));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 6));
+        ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.0f);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.12f, 0.12f, 0.12f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.20f, 0.20f, 0.20f, 1.0f));
+
+        if (!ImGui::BeginMainMenuBar()) return;
+        fn();
+        ImGui::EndMainMenuBar();
+
+        ImGui::PopStyleColor(2);
+        ImGui::PopStyleVar(3);
+        ImGui::PopStyleColor();
+    }
 };
