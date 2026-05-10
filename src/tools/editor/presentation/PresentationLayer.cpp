@@ -12,6 +12,7 @@
 #include "../presentation/imgui/containers/EditorMenuBar.hpp"
 #include "../presentation/imgui/containers/HierarchyPanel.hpp"
 #include "../presentation/imgui/containers/InspectorPanel.hpp"
+#include "../presentation/imgui/containers/SceneViewToolbar.hpp"
 #include "gizmos/GizmosBuilder.hpp"
 #include "vulkan/EditorRenderData.hpp"
 #include "vulkan/VulkanEditorBackend.hpp"
@@ -45,6 +46,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     editorWorkspace_(editorWorkspace),
     assetManager_(assetManager) {
     userInterface_.emplace<EditorMenuBar>(sceneMutations, editorWorkspace);
+    userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
     userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations);
     userInterface_.emplace<AssetsExplorer>(assetManager_);
     userInterface_.emplace<InspectorPanel>(
