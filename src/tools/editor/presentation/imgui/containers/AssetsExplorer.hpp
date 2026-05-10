@@ -37,15 +37,17 @@ public:
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         ImVec2 barMin = ImGui::GetCursorScreenPos();
         ImVec2 barMax = {barMin.x + ImGui::GetContentRegionAvail().x + windowPadding.x, barMin.y + barHeight};
-        drawList->AddRectFilled(barMin, barMax, ImGui::GetColorU32({0.2f, 0.2f, 0.2f, 0.5f}));
+        drawList->AddRectFilled(barMin, barMax, ImGui::GetColorU32(ImGuiCol_Header));
 
         ImGui::SetCursorPos({windowPadding.x, ImGui::GetCursorPosY() + windowPadding.y * 0.5f});
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 4.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {6.0f, 3.0f});
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.18f, 0.18f, 0.19f, 1.0f));
         ImGui::SetWindowFontScale(0.85f);
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.15f);
         ImGui::InputTextWithHint("##AssetsSearch", "Search...", searchBuffer_, SEARCH_BUFFER_SIZE);
         ImGui::SetWindowFontScale(1.0f);
+        ImGui::PopStyleColor();
         ImGui::PopStyleVar(2);
 
         ImGui::SameLine(0.0f, 5.0f);

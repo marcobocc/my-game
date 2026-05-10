@@ -12,7 +12,7 @@ public:
             return;
         }
         ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "%s", title_);
-        ImGui::Spacing();
+        ImGui::Dummy({0.0f, 2.0f});
         contents();
         ImGui::EndChild();
     }
@@ -41,7 +41,7 @@ public:
             }
             ImGui::EndPopup();
         }
-        ImGui::Spacing();
+        ImGui::Dummy({0.0f, 2.0f});
         contents();
         ImGui::EndChild();
     }

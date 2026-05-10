@@ -50,11 +50,13 @@ public:
                                            ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
         ImGui::Begin("Inspector", nullptr, flags);
 
-        ImGui::Spacing();
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 3.0f));
+
+        ImGui::Dummy({0.0f, 2.0f});
         ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "Inspector");
-        ImGui::Spacing();
+        ImGui::Dummy({0.0f, 2.0f});
         ImGui::Separator();
-        ImGui::Spacing();
+        ImGui::Dummy({0.0f, 4.0f});
 
         auto selectedId = objectSelection_.getSelectedEntityId();
         if (!selectedId.has_value()) {
@@ -66,6 +68,8 @@ public:
             boxColliderWidget_.setCurrentObjectId(entity);
             drawObject(entity);
         }
+
+        ImGui::PopStyleVar();
 
         ImGui::End();
     }
@@ -81,7 +85,7 @@ private:
                     [&] { transformWidget_.draw(*transform); },
                     [this, entity] { sceneMutations_.removeComponent<Transform>(entity); });
         }
-        ImGui::Spacing();
+        ImGui::Dummy({0.0f, 4.0f});
         if (entityManager_.hasComponent<Camera>(entity)) {
             auto* camera = entityManager_.getComponent<Camera>(entity);
             cameraContainer_.drawWithContextMenu(
@@ -89,7 +93,7 @@ private:
                     [&] { cameraWidget_.draw(*camera); },
                     [this, entity] { sceneMutations_.removeComponent<Camera>(entity); });
         }
-        ImGui::Spacing();
+        ImGui::Dummy({0.0f, 4.0f});
         if (entityManager_.hasComponent<Renderer>(entity)) {
             auto* renderer = entityManager_.getComponent<Renderer>(entity);
             rendererContainer_.drawWithContextMenu(
@@ -97,7 +101,7 @@ private:
                     [&] { rendererWidget_.draw(*renderer, entity); },
                     [this, entity] { sceneMutations_.removeComponent<Renderer>(entity); });
         }
-        ImGui::Spacing();
+        ImGui::Dummy({0.0f, 4.0f});
         if (entityManager_.hasComponent<BoxCollider>(entity)) {
             auto* boxCollider = entityManager_.getComponent<BoxCollider>(entity);
             boxColliderContainer_.drawWithContextMenu(
@@ -105,13 +109,13 @@ private:
                     [&] { boxColliderWidget_.draw(*boxCollider); },
                     [this, entity] { sceneMutations_.removeComponent<BoxCollider>(entity); });
         }
-        ImGui::Spacing();
+        ImGui::Dummy({0.0f, 4.0f});
         drawAddComponent(entity);
     }
 
     void drawAddComponent(EntityHandle entity) {
         ImGui::Separator();
-        ImGui::Spacing();
+        ImGui::Dummy({0.0f, 4.0f});
         if (ImGui::Button("+ Add Component", {ImGui::GetContentRegionAvail().x, 0})) {
             ImGui::OpenPopup("AddComponentMenu");
         }
