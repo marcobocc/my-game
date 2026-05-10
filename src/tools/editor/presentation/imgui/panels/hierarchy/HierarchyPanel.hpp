@@ -1,18 +1,17 @@
 #pragma once
 #include <imgui.h>
-#include <optional>
 #include <string>
-#include "../../../business/ObjectSelection.hpp"
-#include "../../../business/scene_editing/SceneMutations.hpp"
-
-class SceneMutations;
-#include "../ui_components/hierarchy_panel/HierarchyDropdownMenu.hpp"
+#include "../../../../business/ObjectSelection.hpp"
+#include "../../ImguiStyling.hpp"
+#include "../EditorPanel.hpp"
+#include "HierarchyDropdownMenu.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityManager.hpp"
 #include "modules/scene/EntityMetadata.hpp"
-#include "modules/ui/ImguiWidget.hpp"
 
-class HierarchyPanel : public ImguiWidget {
+class SceneMutations;
+
+class HierarchyPanel : public EditorPanel {
 public:
     static constexpr float PANEL_WIDTH_RATIO = 0.15f;
     static constexpr float ASSETS_HEIGHT_RATIO = 0.3f;
@@ -33,22 +32,12 @@ public:
         float width = viewport->Size.x * PANEL_WIDTH_RATIO;
         float height = viewport->Size.y - menuBarHeight - (viewport->Size.y * ASSETS_HEIGHT_RATIO);
 
-        ImGui::SetNextWindowPos({viewport->Pos.x, viewport->Pos.y + menuBarHeight});
-        ImGui::SetNextWindowSize({width, height});
-        ImGui::SetNextWindowBgAlpha(0.95f);
+        ImVec2 position = {viewport->Pos.x, viewport->Pos.y + menuBarHeight};
+        ImVec2 size = {width, height};
+        EditorPanel::draw("Objects Hierarchy", position, size);
+    }
 
-        constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-                                           ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                                           ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-        ImGui::Begin("Hierarchy", nullptr, flags);
-
-        ImGui::Spacing();
-        ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "Objects Hierarchy");
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-
+    void drawBody() override {
         auto selectedId = objectSelection_.getSelectedEntityId();
 
         for (EntityHandle e: entityManager_.getEntities()) {
@@ -84,12 +73,7 @@ public:
             openContextMenu = false;
         }
 
-        if (ImGui::BeginPopup("HierarchyContextMenu")) {
-            dropdownMenu_.draw(contextTargetId);
-            ImGui::EndPopup();
-        }
-
-        ImGui::End();
+        ImguiStyling::withPopup("HierarchyContextMenu", [&] { dropdownMenu_.draw(contextTargetId); });
     }
 
 private:

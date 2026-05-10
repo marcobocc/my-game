@@ -1,22 +1,22 @@
 #pragma once
 #include <imgui.h>
 #include <optional>
-#include "../../../business/ObjectSelection.hpp"
-#include "../../../business/scene_editing/SceneMutations.hpp"
-#include "../ui_components/inspector_panel/BoxColliderWidget.hpp"
-#include "../ui_components/inspector_panel/CameraWidget.hpp"
-#include "../ui_components/inspector_panel/RendererWidget.hpp"
-#include "../ui_components/inspector_panel/TransformWidget.hpp"
-#include "ComponentContainer.hpp"
+#include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/scene_editing/SceneMutations.hpp"
+#include "../../ImguiStyling.hpp"
+#include "../EditorPanel.hpp"
+#include "BoxColliderWidget.hpp"
+#include "CameraWidget.hpp"
+#include "RendererWidget.hpp"
+#include "TransformWidget.hpp"
 #include "data/components/BoxCollider.hpp"
 #include "data/components/Camera.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityManager.hpp"
-#include "modules/ui/ImguiWidget.hpp"
 
-class InspectorPanel : public ImguiWidget {
+class InspectorPanel : public EditorPanel {
 public:
     InspectorPanel(ObjectSelection& objectSelection,
                    EntityManager& entityManager,
@@ -31,36 +31,28 @@ public:
         transformWidget_(sceneMutations),
         rendererWidget_(assetManager, sceneMutations, debugViz),
         boxColliderWidget_(sceneMutations),
-        cameraWidget_(sceneMutations),
-        transformContainer_("Transform", 4),
-        cameraContainer_("Camera", 5),
-        rendererContainer_("Renderer", 7),
-        boxColliderContainer_("Box Collider", 3) {}
+        cameraWidget_(sceneMutations) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         float menuBarHeight = ImGui::GetFrameHeight();
         float width = viewport->Size.x * PANEL_WIDTH_RATIO;
-        ImGui::SetNextWindowPos({viewport->Pos.x + viewport->Size.x - width, viewport->Pos.y + menuBarHeight});
-        ImGui::SetNextWindowSize({width, viewport->Size.y - menuBarHeight});
-        ImGui::SetNextWindowBgAlpha(0.95f);
+        ImVec2 position = {viewport->Pos.x + viewport->Size.x - width, viewport->Pos.y + menuBarHeight};
+        ImVec2 size = {width, viewport->Size.y - menuBarHeight};
+        EditorPanel::draw("Inspector", position, size);
+    }
 
-        constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
-                                           ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                                           ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-        ImGui::Begin("Inspector", nullptr, flags);
-
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6.0f, 3.0f));
-
-        ImGui::Dummy({0.0f, 2.0f});
-        ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "Inspector");
-        ImGui::Dummy({0.0f, 2.0f});
-        ImGui::Separator();
-        ImGui::Dummy({0.0f, 4.0f});
-
+    void drawBody() override {
         auto selectedId = objectSelection_.getSelectedEntityId();
         if (!selectedId.has_value()) {
-            ImGui::TextDisabled("No object selected");
+            ImguiStyling::withBodyStyling([&] {
+                ImGui::BeginChild("##NoSelection",
+                                  ImVec2(0, 0),
+                                  ImGuiChildFlags_AlwaysUseWindowPadding,
+                                  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+                ImGui::TextDisabled("No object selected");
+                ImGui::EndChild();
+            });
         } else {
             EntityHandle entity = *selectedId;
             transformWidget_.setCurrentObjectId(entity);
@@ -68,10 +60,6 @@ public:
             boxColliderWidget_.setCurrentObjectId(entity);
             drawObject(entity);
         }
-
-        ImGui::PopStyleVar();
-
-        ImGui::End();
     }
 
     static constexpr float PANEL_WIDTH_RATIO = 0.25f;
@@ -80,36 +68,27 @@ private:
     void drawObject(EntityHandle entity) {
         if (entityManager_.hasComponent<Transform>(entity)) {
             auto* transform = entityManager_.getComponent<Transform>(entity);
-            transformContainer_.drawWithContextMenu(
-                    "TransformContext",
-                    [&] { transformWidget_.draw(*transform); },
-                    [this, entity] { sceneMutations_.removeComponent<Transform>(entity); });
+            transformWidget_.setComponent(*transform);
+            transformWidget_.draw("TransformContext",
+                                  [this, entity] { sceneMutations_.removeComponent<Transform>(entity); });
         }
-        ImGui::Dummy({0.0f, 4.0f});
         if (entityManager_.hasComponent<Camera>(entity)) {
             auto* camera = entityManager_.getComponent<Camera>(entity);
-            cameraContainer_.drawWithContextMenu(
-                    "CameraContext",
-                    [&] { cameraWidget_.draw(*camera); },
-                    [this, entity] { sceneMutations_.removeComponent<Camera>(entity); });
+            cameraWidget_.setComponent(*camera);
+            cameraWidget_.draw("CameraContext", [this, entity] { sceneMutations_.removeComponent<Camera>(entity); });
         }
-        ImGui::Dummy({0.0f, 4.0f});
         if (entityManager_.hasComponent<Renderer>(entity)) {
             auto* renderer = entityManager_.getComponent<Renderer>(entity);
-            rendererContainer_.drawWithContextMenu(
-                    "RendererContext",
-                    [&] { rendererWidget_.draw(*renderer, entity); },
-                    [this, entity] { sceneMutations_.removeComponent<Renderer>(entity); });
+            rendererWidget_.setComponent(*renderer, entity);
+            rendererWidget_.draw("RendererContext",
+                                 [this, entity] { sceneMutations_.removeComponent<Renderer>(entity); });
         }
-        ImGui::Dummy({0.0f, 4.0f});
         if (entityManager_.hasComponent<BoxCollider>(entity)) {
             auto* boxCollider = entityManager_.getComponent<BoxCollider>(entity);
-            boxColliderContainer_.drawWithContextMenu(
-                    "BoxColliderContext",
-                    [&] { boxColliderWidget_.draw(*boxCollider); },
-                    [this, entity] { sceneMutations_.removeComponent<BoxCollider>(entity); });
+            boxColliderWidget_.setComponent(*boxCollider);
+            boxColliderWidget_.draw("BoxColliderContext",
+                                    [this, entity] { sceneMutations_.removeComponent<BoxCollider>(entity); });
         }
-        ImGui::Dummy({0.0f, 4.0f});
         drawAddComponent(entity);
     }
 
@@ -119,7 +98,7 @@ private:
         if (ImGui::Button("+ Add Component", {ImGui::GetContentRegionAvail().x, 0})) {
             ImGui::OpenPopup("AddComponentMenu");
         }
-        if (ImGui::BeginPopup("AddComponentMenu")) {
+        ImguiStyling::withPopup("AddComponentMenu", [&] {
             if (!entityManager_.hasComponent<Transform>(entity)) {
                 if (ImGui::MenuItem("Transform")) sceneMutations_.addComponent<Transform>(entity);
             }
@@ -136,8 +115,7 @@ private:
                 entityManager_.hasComponent<Renderer>(entity) && entityManager_.hasComponent<BoxCollider>(entity)) {
                 ImGui::TextDisabled("All components added");
             }
-            ImGui::EndPopup();
-        }
+        });
     }
 
     ObjectSelection& objectSelection_;
@@ -149,8 +127,4 @@ private:
     RendererWidget rendererWidget_;
     BoxColliderWidget boxColliderWidget_;
     CameraWidget cameraWidget_;
-    ComponentContainer transformContainer_;
-    ComponentContainer cameraContainer_;
-    ComponentContainer rendererContainer_;
-    ComponentContainer boxColliderContainer_;
 };

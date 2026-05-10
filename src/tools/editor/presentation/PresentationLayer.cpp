@@ -8,12 +8,12 @@
 #include "../business/ObjectTransformHandle.hpp"
 #include "../business/scene_editing/SceneMutations.hpp"
 #include "../input/PickingSystem.hpp"
-#include "../presentation/imgui/containers/AssetsExplorer.hpp"
-#include "../presentation/imgui/containers/EditorMenuBar.hpp"
-#include "../presentation/imgui/containers/HierarchyPanel.hpp"
-#include "../presentation/imgui/containers/InspectorPanel.hpp"
-#include "../presentation/imgui/containers/SceneViewToolbar.hpp"
+#include "../presentation/imgui/toolbars/EditorMenuBar.hpp"
+#include "../presentation/imgui/toolbars/SceneViewToolbar.hpp"
 #include "gizmos/GizmosBuilder.hpp"
+#include "imgui/panels/assets/AssetsPanel.hpp"
+#include "imgui/panels/hierarchy/HierarchyPanel.hpp"
+#include "imgui/panels/inspector/InspectorPanel.hpp"
 #include "vulkan/EditorRenderData.hpp"
 #include "vulkan/VulkanEditorBackend.hpp"
 
@@ -48,7 +48,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     userInterface_.emplace<EditorMenuBar>(sceneMutations, editorWorkspace);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
     userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations);
-    userInterface_.emplace<AssetsExplorer>(assetManager_);
+    userInterface_.emplace<AssetsPanel>(assetManager_);
     userInterface_.emplace<InspectorPanel>(
             objectSelection_, entityManager_, assetManager_, sceneMutations, editorGizmos_);
 }

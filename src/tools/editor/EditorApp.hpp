@@ -11,6 +11,7 @@
 #include "business/scene_editing/ObjectPrefabs.hpp"
 #include "input/InputHandler.hpp"
 #include "presentation/PresentationLayer.hpp"
+#include "presentation/imgui/ImguiStyling.hpp"
 
 class HierarchyPanel;
 class InspectorPanel;
@@ -41,6 +42,7 @@ public:
         sceneLoader_(sceneLoader),
         inputHandler_(inputHandler) {
         initEditor();
+        ImguiStyling::ApplyEditorStyle();
     }
 
     void run() {

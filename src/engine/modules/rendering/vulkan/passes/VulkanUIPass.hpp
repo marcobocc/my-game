@@ -21,5 +21,4 @@ private:
 
     void beginRendering(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent) const;
     void endRendering(VkCommandBuffer cmd);
-    void ApplyEditorStyle() const;
 };
