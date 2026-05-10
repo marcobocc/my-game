@@ -43,18 +43,18 @@ private:
 
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 0));
         ImGui::SetNextItemWidth(width);
-        changed |= ImGui::DragFloat("##X", &value.x, speed, 0, 0, "X: %.2f");
-        trackDrag();
+        changed |= ImGui::InputFloat("##X", &value.x, 0, 0, "X: %.2f");
+        trackEdit();
 
         ImGui::SameLine();
         ImGui::SetNextItemWidth(width);
-        changed |= ImGui::DragFloat("##Y", &value.y, speed, 0, 0, "Y: %.2f");
-        trackDrag();
+        changed |= ImGui::InputFloat("##Y", &value.y, 0, 0, "Y: %.2f");
+        trackEdit();
 
         ImGui::SameLine();
         ImGui::SetNextItemWidth(width);
-        changed |= ImGui::DragFloat("##Z", &value.z, speed, 0, 0, "Z: %.2f");
-        trackDrag();
+        changed |= ImGui::InputFloat("##Z", &value.z, 0, 0, "Z: %.2f");
+        trackEdit();
 
         ImGui::PopStyleVar();
         ImGui::Columns(1);
@@ -63,7 +63,7 @@ private:
         return changed;
     }
 
-    void trackDrag() {
+    void trackEdit() {
         if (!lastObjectId_) return;
         if (ImGui::IsItemActivated()) sceneMutations_.beginEdit(*lastObjectId_);
         if (ImGui::IsItemDeactivatedAfterEdit()) sceneMutations_.commitEdit(*lastObjectId_);
