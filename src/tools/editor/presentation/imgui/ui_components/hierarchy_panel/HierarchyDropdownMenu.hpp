@@ -1,9 +1,14 @@
 #pragma once
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include <optional>
 #include <string>
 #include "../../../../business/scene_editing/ObjectPrefabs.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
+#include "data/assets/Model.hpp"
+#include "data/components/Renderer.hpp"
+#include "data/components/Transform.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityMetadata.hpp"
 
@@ -59,11 +64,23 @@ private:
             } else {
                 for (const auto& modelName: models) {
                     if (ImGui::MenuItem(modelName.c_str())) {
-                        sceneMutations_.createObject({{"metadata", {{"name", modelName}}}});
+                        loadModel(modelName);
                     }
                 }
             }
             ImGui::EndMenu();
         }
+    }
+
+    void loadModel(const std::string& modelName) {
+        auto* model = assetManager_.get<Model>(modelName);
+        if (!model) return;
+        Transform t{glm::vec3(0.0f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), glm::vec3(1.0f)};
+        Renderer r{model->getMeshName(), model->getMaterialName(), std::nullopt, true};
+        sceneMutations_.createObject({
+                {"metadata", {{"name", modelName}}},
+                {"transform", t.serialize()},
+                {"renderer", r.serialize()},
+        });
     }
 };
