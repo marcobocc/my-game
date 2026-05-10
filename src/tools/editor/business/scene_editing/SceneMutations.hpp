@@ -1,10 +1,9 @@
 #pragma once
 #include <optional>
 #include "../../../../engine/GameEngine.hpp"
+#include "../ObjectSelection.hpp"
 #include "UndoHistory.hpp"
 #include "modules/scene/EntityManager.hpp"
-
-class ObjectSelection;
 
 class SceneMutations {
 public:
@@ -32,6 +31,7 @@ public:
         nlohmann::json snapshot = entityManager_.serializeToJson(e);
         undoHistory_.push([this, e] { entityManager_.destroyEntity(e); },
                           [this, e, snapshot] { entityManager_.upsertFromJson(snapshot, e); });
+        objectSelection_.selectObject(e);
         return e;
     }
 

@@ -21,7 +21,7 @@ using EntityHandle = uint64_t;
 
 class ViewportContextMenu : public ImguiWidget {
 public:
-    static constexpr float DRAG_THRESHOLD = 25.0f;  // 5 pixels squared
+    static constexpr float DRAG_THRESHOLD = 25.0f; // 5 pixels squared
 
     ViewportContextMenu(AssetManager& assetManager,
                         SceneMutations& sceneMutations,
