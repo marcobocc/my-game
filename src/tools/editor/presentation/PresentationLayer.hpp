@@ -3,6 +3,7 @@
 #include "../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "../../../engine/modules/scene/EntityManager.hpp"
 #include "../../../engine/modules/ui/UserInterface.hpp"
+#include "imgui/panels/viewport/ViewportContextMenu.hpp"
 
 
 class SceneLoader;

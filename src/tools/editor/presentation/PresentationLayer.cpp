@@ -6,6 +6,7 @@
 #include "../business/EditorGizmos.hpp"
 #include "../business/ObjectSelection.hpp"
 #include "../business/ObjectTransformHandle.hpp"
+#include "../business/scene_editing/ObjectPrefabs.hpp"
 #include "../business/scene_editing/SceneMutations.hpp"
 #include "../input/PickingSystem.hpp"
 #include "../presentation/imgui/toolbars/ApplicationMenuBar.hpp"
@@ -53,6 +54,9 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     userInterface_.emplace<AssetsPanel>(assetManager_);
     userInterface_.emplace<InspectorPanel>(
             objectSelection_, entityManager_, assetManager_, sceneMutations, editorGizmos_);
+    userInterface_.emplace<ViewportContextMenu>(assetManager_, sceneMutations, [&sceneMutations](uint32_t lod) {
+        sceneMutations.createObject(primitives::sphere(lod));
+    });
 }
 
 void PresentationLayer::buildOutlines() {
