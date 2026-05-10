@@ -65,9 +65,11 @@ private:
     static SceneViewport computeSceneViewport(int w, int h) {
         constexpr float HIERARCHY_WIDTH_RATIO = 0.15f;
         constexpr float INSPECTOR_WIDTH_RATIO = 0.25f;
+        constexpr float ASSETS_HEIGHT_RATIO = 0.3f;
         int left = static_cast<int>(static_cast<float>(w) * HIERARCHY_WIDTH_RATIO);
         int right = static_cast<int>(static_cast<float>(w) * (1.0f - INSPECTOR_WIDTH_RATIO));
-        return {left, 0, right - left, h};
+        int bottom = static_cast<int>(static_cast<float>(h) * (1.0f - ASSETS_HEIGHT_RATIO));
+        return {left, 0, right - left, bottom};
     }
 
     void initEditor() {

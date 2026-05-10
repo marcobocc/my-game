@@ -8,6 +8,7 @@
 #include "../business/ObjectTransformHandle.hpp"
 #include "../business/scene_editing/SceneMutations.hpp"
 #include "../input/PickingSystem.hpp"
+#include "../presentation/imgui/containers/AssetsExplorer.hpp"
 #include "../presentation/imgui/containers/EditorMenuBar.hpp"
 #include "../presentation/imgui/containers/HierarchyPanel.hpp"
 #include "../presentation/imgui/containers/InspectorPanel.hpp"
@@ -45,6 +46,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     assetManager_(assetManager) {
     userInterface_.emplace<EditorMenuBar>(sceneMutations, editorWorkspace);
     userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations);
+    userInterface_.emplace<AssetsExplorer>(assetManager_);
     userInterface_.emplace<InspectorPanel>(
             objectSelection_, entityManager_, assetManager_, sceneMutations, editorGizmos_);
 }

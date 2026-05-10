@@ -15,6 +15,7 @@ class SceneMutations;
 class HierarchyPanel : public ImguiWidget {
 public:
     static constexpr float PANEL_WIDTH_RATIO = 0.15f;
+    static constexpr float ASSETS_HEIGHT_RATIO = 0.3f;
 
     HierarchyPanel(ObjectSelection& objectSelection,
                    EntityManager& entityManager,
@@ -30,9 +31,10 @@ public:
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         float menuBarHeight = ImGui::GetFrameHeight();
         float width = viewport->Size.x * PANEL_WIDTH_RATIO;
+        float height = viewport->Size.y - menuBarHeight - (viewport->Size.y * ASSETS_HEIGHT_RATIO);
 
         ImGui::SetNextWindowPos({viewport->Pos.x, viewport->Pos.y + menuBarHeight});
-        ImGui::SetNextWindowSize({width, viewport->Size.y - menuBarHeight});
+        ImGui::SetNextWindowSize({width, height});
         ImGui::SetNextWindowBgAlpha(0.95f);
 
         constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |

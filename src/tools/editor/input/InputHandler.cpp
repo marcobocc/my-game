@@ -10,13 +10,19 @@
 #include "../business/scene_editing/SceneMutations.hpp"
 
 void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
+    bool imguiCapturingInput = ImGui::GetIO().WantTextInput || ImGui::GetIO().WantCaptureMouse;
+
     handleKeyboardInput();
 
-    bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
-    processGizmoDrag(mouseX, mouseY, leftDown);
-    processMouseInteraction(mouseX, mouseY, leftDown);
-    processCameraInput(mouseX, mouseY, deltaTime);
-    wasLeftDown_ = leftDown;
+    if (!imguiCapturingInput) {
+        bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
+        processGizmoDrag(mouseX, mouseY, leftDown);
+        processMouseInteraction(mouseX, mouseY, leftDown);
+        processCameraInput(mouseX, mouseY, deltaTime);
+        wasLeftDown_ = leftDown;
+    } else {
+        wasLeftDown_ = false;
+    }
 }
 
 void InputHandler::handleKeyboardInput() {
