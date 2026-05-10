@@ -101,4 +101,19 @@ public:
         ImGui::PopStyleColor(2);
         ImGui::PopStyleVar(3);
     }
+
+    template<typename Fn>
+    static void withPopupModal(const char* name, Fn&& fn) {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10, 8));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 6));
+        ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.0f);
+        ImGui::PushStyleColor(ImGuiCol_PopupBg, ImVec4(0.14f, 0.14f, 0.14f, 0.80f));
+        ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.30f, 0.30f, 0.30f, 0.80f));
+        if (ImGui::BeginPopupModal(name, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            fn();
+            ImGui::EndPopup();
+        }
+        ImGui::PopStyleColor(2);
+        ImGui::PopStyleVar(3);
+    }
 };

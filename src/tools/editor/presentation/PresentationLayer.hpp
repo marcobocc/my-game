@@ -17,6 +17,7 @@ class EditorGizmos;
 class EditorSettings;
 class ObjectTransformHandle;
 class EventBus;
+class GameEngine;
 struct RendererSettings;
 struct DrawCall;
 
@@ -51,7 +52,8 @@ public:
                       PickingSystem& pickingService,
                       SceneMutations& sceneMutations,
                       SceneLoader& editorWorkspace,
-                      AssetManager& assetManager);
+                      AssetManager& assetManager,
+                      GameEngine& engine);
 
     // --------------------------------------------------------
     // Rendering
@@ -76,6 +78,7 @@ private:
     SceneMutations& sceneMutations_;
     SceneLoader& editorWorkspace_;
     AssetManager& assetManager_;
+    GameEngine& engine_;
     std::vector<DrawCall> outlineQueue_;
     std::vector<VulkanGizmoPass::GizmoVertex> builtGizmoLines_;
 };

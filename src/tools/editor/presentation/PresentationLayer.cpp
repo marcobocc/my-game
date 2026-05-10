@@ -30,7 +30,8 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      PickingSystem& pickingService,
                                      SceneMutations& sceneMutations,
                                      SceneLoader& editorWorkspace,
-                                     AssetManager& assetManager) :
+                                     AssetManager& assetManager,
+                                     GameEngine& engine) :
     renderer_(renderer),
     editorOrbitCamera_(editorOrbitCamera),
     objectSelection_(objectSelection),
@@ -44,10 +45,11 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     pickingSystem_(pickingService),
     sceneMutations_(sceneMutations),
     editorWorkspace_(editorWorkspace),
-    assetManager_(assetManager) {
+    assetManager_(assetManager),
+    engine_(engine) {
     userInterface_.emplace<EditorMenuBar>(sceneMutations, editorWorkspace);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
-    userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations);
+    userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations, engine_);
     userInterface_.emplace<AssetsPanel>(assetManager_);
     userInterface_.emplace<InspectorPanel>(
             objectSelection_, entityManager_, assetManager_, sceneMutations, editorGizmos_);

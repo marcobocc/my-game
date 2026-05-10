@@ -2,9 +2,11 @@
 #include <imgui.h>
 #include <string>
 #include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/scene_editing/ObjectPrefabs.hpp"
 #include "../../ImguiStyling.hpp"
 #include "../EditorPanel.hpp"
 #include "HierarchyDropdownMenu.hpp"
+#include "SpherePopupModal.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityManager.hpp"
 #include "modules/scene/EntityMetadata.hpp"
@@ -19,12 +21,15 @@ public:
     HierarchyPanel(ObjectSelection& objectSelection,
                    EntityManager& entityManager,
                    AssetManager& assetManager,
-                   SceneMutations& sceneMutations) :
+                   SceneMutations& sceneMutations,
+                   GameEngine& engine) :
         objectSelection_(objectSelection),
         entityManager_(entityManager),
         assetManager_(assetManager),
         sceneMutations_(sceneMutations),
-        dropdownMenu_(assetManager, sceneMutations) {}
+        engine_(engine),
+        spherePopupModal_([this](uint32_t lod) { sceneMutations_.createObject(primitives::sphere(lod)); }),
+        dropdownMenu_(assetManager, sceneMutations, &spherePopupModal_) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -38,8 +43,9 @@ public:
     }
 
     void drawBody() override {
+        spherePopupModal_.draw();
         auto selectedId = objectSelection_.getSelectedEntityId();
-
+        ImGui::Separator();
         for (EntityHandle e: entityManager_.getEntities()) {
             std::string label;
             if (const auto* meta = entityManager_.getMetadata(e)) {
@@ -81,6 +87,8 @@ private:
     EntityManager& entityManager_;
     AssetManager& assetManager_;
     SceneMutations& sceneMutations_;
+    GameEngine& engine_;
+    SpherePopupModal spherePopupModal_;
     HierarchyDropdownMenu dropdownMenu_;
 
     std::optional<EntityHandle> contextTargetId;

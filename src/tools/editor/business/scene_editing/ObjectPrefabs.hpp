@@ -20,5 +20,7 @@ namespace primitives {
     } // namespace details
     inline nlohmann::json cube() { return details::makePrimitive(PRIMITIVE_GEOMETRY_CUBE, "Cube"); }
     inline nlohmann::json plane() { return details::makePrimitive(PRIMITIVE_GEOMETRY_PLANE, "Plane"); }
-    inline nlohmann::json sphere() { return details::makePrimitive("_PRIMITIVE_SPHERE_6", "Sphere"); }
+    inline nlohmann::json sphere(uint32_t resolution) {
+        return details::makePrimitive("_PRIMITIVE_SPHERE_" + std::to_string(resolution), "Sphere");
+    }
 } // namespace primitives

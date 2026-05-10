@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
@@ -6,19 +7,22 @@
 #include <string>
 #include "../../../../business/scene_editing/ObjectPrefabs.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
+#include "SpherePopupModal.hpp"
 #include "data/assets/Model.hpp"
 #include "data/components/Renderer.hpp"
 #include "data/components/Transform.hpp"
 #include "modules/assets/AssetManager.hpp"
-#include "modules/scene/EntityMetadata.hpp"
 
 class SceneMutations;
 
 class HierarchyDropdownMenu {
 public:
-    HierarchyDropdownMenu(AssetManager& assetManager, SceneMutations& sceneMutations) :
+    HierarchyDropdownMenu(AssetManager& assetManager,
+                          SceneMutations& sceneMutations,
+                          SpherePopupModal* spherePopupModal = nullptr) :
         assetManager_(assetManager),
-        sceneMutations_(sceneMutations) {}
+        sceneMutations_(sceneMutations),
+        spherePopupModal_(spherePopupModal) {}
 
     void draw(std::optional<EntityHandle> selectedItem) {
         if (selectedItem) {
@@ -31,7 +35,18 @@ public:
             sceneMutations_.createObject({{"metadata", {{"name", "Object"}}}});
         }
         if (ImGui::BeginMenu("3D Object")) {
-            drawPrimitivesSubmenu();
+            if (ImGui::MenuItem("Cube")) {
+                sceneMutations_.createObject(primitives::cube());
+            }
+            if (ImGui::MenuItem("Plane")) {
+                sceneMutations_.createObject(primitives::plane());
+            }
+            if (ImGui::MenuItem("Sphere")) {
+                if (spherePopupModal_) {
+                    spherePopupModal_->requestCreation();
+                }
+            }
+            ImGui::Separator();
             drawModelsSubmenu();
             ImGui::EndMenu();
         }
@@ -40,21 +55,7 @@ public:
 private:
     AssetManager& assetManager_;
     SceneMutations& sceneMutations_;
-
-    void drawPrimitivesSubmenu() {
-        if (ImGui::BeginMenu("Primitives")) {
-            if (ImGui::MenuItem("Cube")) {
-                sceneMutations_.createObject(primitives::cube());
-            }
-            if (ImGui::MenuItem("Plane")) {
-                sceneMutations_.createObject(primitives::plane());
-            }
-            if (ImGui::MenuItem("Sphere")) {
-                sceneMutations_.createObject(primitives::sphere());
-            }
-            ImGui::EndMenu();
-        }
-    }
+    SpherePopupModal* spherePopupModal_;
 
     void drawModelsSubmenu() {
         if (ImGui::BeginMenu("Models")) {
