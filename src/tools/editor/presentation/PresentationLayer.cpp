@@ -71,6 +71,23 @@ void PresentationLayer::buildGizmos() {
     builtGizmoLines_.clear();
     pickingSystem_.clearHandles();
 
+    auto aabbEnabled = editorGizmos_.getObjectsWithAABBEnabled();
+    for (const auto& objectId: aabbEnabled) {
+        auto aabbGizmo = gizmosBuilder_.buildGizmoObjectAABB(objectId, {0.0f, 1.0f, 0.0f});
+        builtGizmoLines_.insert(builtGizmoLines_.end(), aabbGizmo.begin(), aabbGizmo.end());
+    }
+
+    auto boundingSpheresEnabled = editorGizmos_.getObjectsWithBoundingSpheresEnabled();
+    for (const auto& objectId: boundingSpheresEnabled) {
+        auto sphereGizmo = gizmosBuilder_.buildGizmoObjectBoundingSphere(objectId, {1.0f, 1.0f, 0.0f});
+        builtGizmoLines_.insert(builtGizmoLines_.end(), sphereGizmo.begin(), sphereGizmo.end());
+    }
+
+    if (editorGizmos_.bvhEnabled()) {
+        auto bvhGizmo = gizmosBuilder_.buildGizmoBVH({1.0f, 1.0f, 0.0f});
+        builtGizmoLines_.insert(builtGizmoLines_.end(), bvhGizmo.begin(), bvhGizmo.end());
+    }
+
     auto selectedId = objectSelection_.getSelectedEntityId();
     if (!selectedId.has_value()) return;
 
@@ -96,23 +113,6 @@ void PresentationLayer::buildGizmos() {
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);
         }
-    }
-
-    auto aabbEnabled = editorGizmos_.getObjectsWithAABBEnabled();
-    for (const auto& objectId: aabbEnabled) {
-        auto aabbGizmo = gizmosBuilder_.buildGizmoObjectAABB(objectId, {0.0f, 1.0f, 0.0f});
-        builtGizmoLines_.insert(builtGizmoLines_.end(), aabbGizmo.begin(), aabbGizmo.end());
-    }
-
-    auto boundingSpheresEnabled = editorGizmos_.getObjectsWithBoundingSpheresEnabled();
-    for (const auto& objectId: boundingSpheresEnabled) {
-        auto sphereGizmo = gizmosBuilder_.buildGizmoObjectBoundingSphere(objectId, {1.0f, 1.0f, 0.0f});
-        builtGizmoLines_.insert(builtGizmoLines_.end(), sphereGizmo.begin(), sphereGizmo.end());
-    }
-
-    if (editorGizmos_.bvhEnabled()) {
-        auto bvhGizmo = gizmosBuilder_.buildGizmoBVH({1.0f, 1.0f, 0.0f});
-        builtGizmoLines_.insert(builtGizmoLines_.end(), bvhGizmo.begin(), bvhGizmo.end());
     }
 }
 
