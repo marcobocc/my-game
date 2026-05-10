@@ -22,23 +22,23 @@ public:
         if (pendingSnapshot_->first != entity) return;
         nlohmann::json before = pendingSnapshot_->second;
         nlohmann::json after = entityManager_.serializeToJson(entity);
-        undoHistory_.push([this, entity, before] { entityManager_.replaceFromJson(entity, before); },
-                          [this, entity, after] { entityManager_.replaceFromJson(entity, after); });
+        undoHistory_.push([this, entity, before] { entityManager_.upsertFromJson(before, entity); },
+                          [this, entity, after] { entityManager_.upsertFromJson(after, entity); });
         pendingSnapshot_.reset();
     }
 
     EntityHandle createObject(const nlohmann::json& objectData) {
-        EntityHandle e = entityManager_.createFromJson(objectData);
+        EntityHandle e = entityManager_.upsertFromJson(objectData);
         nlohmann::json snapshot = entityManager_.serializeToJson(e);
         undoHistory_.push([this, e] { entityManager_.destroyEntity(e); },
-                          [this, e, snapshot] { entityManager_.createFromJson(snapshot, e); });
+                          [this, e, snapshot] { entityManager_.upsertFromJson(snapshot, e); });
         return e;
     }
 
     void destroyObject(EntityHandle entity) {
         nlohmann::json snapshot = entityManager_.serializeToJson(entity);
         entityManager_.destroyEntity(entity);
-        undoHistory_.push([this, entity, snapshot] { entityManager_.createFromJson(snapshot, entity); },
+        undoHistory_.push([this, entity, snapshot] { entityManager_.upsertFromJson(snapshot, entity); },
                           [this, entity] { entityManager_.destroyEntity(entity); });
         clearSelectionIfSelected(entity);
     }

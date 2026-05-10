@@ -29,7 +29,7 @@ void SceneLoader::loadScene(const char* path) {
         auto json = JsonUtils::loadJson(path);
         entityManager_.clear();
         for (const auto& entityJson: json.at("entities"))
-            entityManager_.createFromJson(entityJson);
+            entityManager_.upsertFromJson(entityJson);
         objectSelection_.clearSelection();
         if (onSceneNameChanged_) {
             std::string pathStr(path);

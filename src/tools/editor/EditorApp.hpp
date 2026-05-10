@@ -81,7 +81,7 @@ private:
         if (sv.width > 0 && sv.height > 0)
             editorOrbitCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
         sceneLoader_.newScene();
-        entityManager_.createFromJson(primitives::cube());
+        entityManager_.upsertFromJson(primitives::cube());
     }
 
     void setupViewport() {

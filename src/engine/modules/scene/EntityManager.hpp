@@ -48,7 +48,7 @@ namespace detail {
                 location = static_cast<uint32_t>(freeLocationsList_.back());
                 freeLocationsList_.pop_back();
                 ++allocationMetadata_[location].generation;
-                allocationMetadata_[location].entityTag = {};
+                allocationMetadata_[location].metadata = {};
             } else {
                 location = static_cast<uint32_t>(allocationMetadata_.size());
                 allocationMetadata_.emplace_back();
@@ -69,7 +69,7 @@ namespace detail {
             uint32_t index = *entityLocation;
             (std::get<ComponentArray<Components>>(componentStorages_).remove(index), ...);
             componentMasks_[index].reset();
-            allocationMetadata_[index].entityTag = {};
+            allocationMetadata_[index].metadata = {};
             allocationMetadata_[index].logicalId = INVALID_HANDLE;
             ++allocationMetadata_[index].generation;
             handlesIndex_.erase(entity);
@@ -176,7 +176,7 @@ namespace detail {
             nlohmann::json j;
             const uint32_t* entityLocation = getEntityLocation(entity);
             if (!entityLocation) return j;
-            j["metadata"] = {{"name", allocationMetadata_[*entityLocation].entityTag}};
+            j["metadata"] = {{"name", allocationMetadata_[*entityLocation].metadata.entityName}};
             if (auto* t = getComponent<Transform>(entity)) j["transform"] = t->serialize();
             if (auto* c = getComponent<Camera>(entity)) j["camera"] = c->serialize();
             if (auto* r = getComponent<Renderer>(entity)) j["renderer"] = r->serialize();
@@ -184,32 +184,19 @@ namespace detail {
             return j;
         }
 
-        EntityHandle createFromJson(const nlohmann::json& j, EntityHandle logicalId = INVALID_HANDLE) {
-            EntityHandle entity = createEntity(logicalId);
+        EntityHandle upsertFromJson(const nlohmann::json& j, EntityHandle entity = INVALID_HANDLE) {
+            if (entity != INVALID_HANDLE && exists(entity)) destroyEntity(entity);
+            entity = createEntity(entity);
             uint32_t* entityLocation = getEntityLocation(entity);
             if (!entityLocation) return INVALID_HANDLE;
             const auto& meta = j.value("metadata", nlohmann::json{});
-            allocationMetadata_[*entityLocation].entityTag = meta.value("name", "");
-            allocationMetadata_[*entityLocation].metadata.entityName = allocationMetadata_[*entityLocation].entityTag;
+            allocationMetadata_[*entityLocation].metadata.entityName = meta.value("name", "");
             if (j.contains("transform")) upsertComponent<Transform>(entity, Transform::deserialize(j["transform"]));
             if (j.contains("camera")) upsertComponent<Camera>(entity, Camera::deserialize(j["camera"]));
             if (j.contains("renderer")) upsertComponent<Renderer>(entity, Renderer::deserialize(j["renderer"]));
             if (j.contains("boxCollider"))
                 upsertComponent<BoxCollider>(entity, BoxCollider::deserialize(j["boxCollider"]));
             return entity;
-        }
-
-        void replaceFromJson(EntityHandle entity, const nlohmann::json& j) {
-            uint32_t* entityLocation = getEntityLocation(entity);
-            if (!entityLocation) return;
-            const auto& meta = j.value("metadata", nlohmann::json{});
-            allocationMetadata_[*entityLocation].entityTag = meta.value("name", "");
-            allocationMetadata_[*entityLocation].metadata.entityName = allocationMetadata_[*entityLocation].entityTag;
-            if (j.contains("transform")) upsertComponent<Transform>(entity, Transform::deserialize(j["transform"]));
-            if (j.contains("camera")) upsertComponent<Camera>(entity, Camera::deserialize(j["camera"]));
-            if (j.contains("renderer")) upsertComponent<Renderer>(entity, Renderer::deserialize(j["renderer"]));
-            if (j.contains("boxCollider"))
-                upsertComponent<BoxCollider>(entity, BoxCollider::deserialize(j["boxCollider"]));
         }
 
     private:
@@ -235,7 +222,6 @@ namespace detail {
             uint32_t generation = 0;
 
             EntityHandle logicalId = INVALID_HANDLE;
-            std::string entityTag;
             EntityMetadata metadata;
         };
 
