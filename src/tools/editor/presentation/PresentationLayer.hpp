@@ -3,7 +3,6 @@
 #include "../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "../../../engine/modules/scene/EntityManager.hpp"
 #include "../../../engine/modules/ui/UserInterface.hpp"
-#include "imgui/panels/viewport/ViewportContextMenu.hpp"
 
 
 class SceneLoader;
@@ -54,6 +53,7 @@ public:
                       SceneMutations& sceneMutations,
                       SceneLoader& editorWorkspace,
                       AssetManager& assetManager,
+                      GameWindow& window,
                       GameEngine& engine);
 
     // --------------------------------------------------------
@@ -80,6 +80,7 @@ private:
     SceneLoader& editorWorkspace_;
     AssetManager& assetManager_;
     GameEngine& engine_;
+    GameWindow& window_;
     std::vector<DrawCall> outlineQueue_;
     std::vector<VulkanGizmoPass::GizmoVertex> builtGizmoLines_;
 };

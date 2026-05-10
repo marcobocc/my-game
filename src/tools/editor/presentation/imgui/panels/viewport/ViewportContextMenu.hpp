@@ -9,18 +9,37 @@
 
 class SceneMutations;
 class AssetManager;
+class ObjectSelection;
+class GameWindow;
+class EditorCamera;
+class PickingSystem;
+
+struct SceneObjectHit;
+struct GizmoHit;
+
+using EntityHandle = uint64_t;
 
 class ViewportContextMenu : public ImguiWidget {
 public:
+    static constexpr float DRAG_THRESHOLD = 25.0f;  // 5 pixels squared
+
     ViewportContextMenu(AssetManager& assetManager,
                         SceneMutations& sceneMutations,
+                        ObjectSelection& objectSelection,
+                        EntityManager& entityManager,
+                        PickingSystem& pickingSystem,
+                        GameWindow& window,
+                        EditorCamera& editorCamera,
                         std::function<void(uint32_t)> onSphereCreated = nullptr) :
+        assetManager_(assetManager),
+        sceneMutations_(sceneMutations),
+        objectSelection_(objectSelection),
+        entityManager_(entityManager),
+        pickingSystem_(pickingSystem),
+        window_(window),
+        editorCamera_(editorCamera),
         spherePopupModal_(onSphereCreated),
-        dropdownMenu_(assetManager, sceneMutations, &spherePopupModal_),
-        openContextMenu(false),
-        rightClickStartX_(0.0f),
-        rightClickStartY_(0.0f),
-        hasMovedSinceRightClick_(false) {}
+        dropdownMenu_(assetManager, sceneMutations, &spherePopupModal_) {}
 
     void draw() override {
         spherePopupModal_.draw();
@@ -38,29 +57,65 @@ public:
             ImVec2 mousePos = ImGui::GetMousePos();
             float dx = mousePos.x - rightClickStartX_;
             float dy = mousePos.y - rightClickStartY_;
-            if (dx * dx + dy * dy > 25.0f) { // threshold of 5 pixels
+            if (dx * dx + dy * dy > DRAG_THRESHOLD) {
                 hasMovedSinceRightClick_ = true;
             }
         }
 
         // Open popup only if right-click released without significant movement
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && !hasMovedSinceRightClick_) {
-            openContextMenu = true;
-        }
+            // Use picking system to see what was clicked
+            auto sv = window_.getSceneViewport();
+            auto result = pickingSystem_.pick(static_cast<uint32_t>(rightClickStartX_),
+                                              static_cast<uint32_t>(rightClickStartY_),
+                                              static_cast<uint32_t>(sv.x),
+                                              static_cast<uint32_t>(sv.y),
+                                              static_cast<uint32_t>(sv.width),
+                                              static_cast<uint32_t>(sv.height),
+                                              editorCamera_.getCamera(),
+                                              editorCamera_.getCameraTransform(),
+                                              entityManager_);
 
-        if (openContextMenu) {
+            contextTargetId_.reset();
+
+            // Show delete only if we hit an object AND it's currently selected
+            if (result) {
+                EntityHandle hitId = {};
+                bool hasHit = false;
+
+                if (auto* sceneHit = std::get_if<SceneObjectHit>(&*result)) {
+                    hitId = sceneHit->objectId;
+                    hasHit = true;
+                } else if (auto* gizmoHit = std::get_if<GizmoHit>(&*result)) {
+                    hitId = gizmoHit->objectId;
+                    hasHit = true;
+                }
+
+                if (hasHit) {
+                    auto selectedId = objectSelection_.getSelectedEntityId();
+                    if (selectedId && *selectedId == hitId) {
+                        contextTargetId_ = hitId;
+                    }
+                }
+            }
             ImGui::OpenPopup("ViewportContextMenu");
-            openContextMenu = false;
         }
 
-        ImguiStyling::withPopup("ViewportContextMenu", [&] { dropdownMenu_.draw(std::nullopt); });
+        ImguiStyling::withPopup("ViewportContextMenu", [&] { dropdownMenu_.draw(contextTargetId_); });
     }
 
 private:
+    AssetManager& assetManager_;
+    SceneMutations& sceneMutations_;
+    ObjectSelection& objectSelection_;
+    EntityManager& entityManager_;
+    PickingSystem& pickingSystem_;
+    GameWindow& window_;
+    EditorCamera& editorCamera_;
     SpherePopupModal spherePopupModal_;
     HierarchyDropdownMenu dropdownMenu_;
-    bool openContextMenu;
-    float rightClickStartX_;
-    float rightClickStartY_;
-    bool hasMovedSinceRightClick_;
+    float rightClickStartX_ = 0.0f;
+    float rightClickStartY_ = 0.0f;
+    bool hasMovedSinceRightClick_ = false;
+    std::optional<EntityHandle> contextTargetId_;
 };

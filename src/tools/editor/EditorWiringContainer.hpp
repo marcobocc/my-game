@@ -79,6 +79,7 @@ public:
                            sceneMutations_,
                            sceneLoader_,
                            assetManager_,
+                           window,
                            engine_),
         inputHandler_(window,
                       engine_,

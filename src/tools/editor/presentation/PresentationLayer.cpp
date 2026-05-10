@@ -15,6 +15,7 @@
 #include "imgui/panels/assets/AssetsPanel.hpp"
 #include "imgui/panels/hierarchy/HierarchyPanel.hpp"
 #include "imgui/panels/inspector/InspectorPanel.hpp"
+#include "imgui/panels/viewport/ViewportContextMenu.hpp"
 #include "vulkan/EditorRenderData.hpp"
 #include "vulkan/VulkanEditorBackend.hpp"
 
@@ -32,6 +33,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      SceneMutations& sceneMutations,
                                      SceneLoader& editorWorkspace,
                                      AssetManager& assetManager,
+                                     GameWindow& window,
                                      GameEngine& engine) :
     renderer_(renderer),
     editorOrbitCamera_(editorOrbitCamera),
@@ -47,16 +49,23 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     sceneMutations_(sceneMutations),
     editorWorkspace_(editorWorkspace),
     assetManager_(assetManager),
-    engine_(engine) {
+    engine_(engine),
+    window_(window) {
     userInterface_.emplace<ApplicationMenuBar>(sceneMutations, editorWorkspace);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
     userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations, engine_);
     userInterface_.emplace<AssetsPanel>(assetManager_);
     userInterface_.emplace<InspectorPanel>(
             objectSelection_, entityManager_, assetManager_, sceneMutations, editorGizmos_);
-    userInterface_.emplace<ViewportContextMenu>(assetManager_, sceneMutations, [&sceneMutations](uint32_t lod) {
-        sceneMutations.createObject(primitives::sphere(lod));
-    });
+    userInterface_.emplace<ViewportContextMenu>(
+            assetManager_,
+            sceneMutations,
+            objectSelection_,
+            entityManager_,
+            pickingSystem_,
+            window_,
+            editorOrbitCamera,
+            [&sceneMutations](uint32_t lod) { sceneMutations.createObject(primitives::sphere(lod)); });
 }
 
 void PresentationLayer::buildOutlines() {
