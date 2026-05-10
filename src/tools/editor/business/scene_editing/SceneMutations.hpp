@@ -46,8 +46,15 @@ public:
     void undo() { undoHistory_.undo(); }
     void redo() { undoHistory_.redo(); }
 
-    void addComponentByType(EntityHandle entity, const std::string& componentType);
-    void removeComponentByType(EntityHandle entity, const std::string& componentType);
+    template<typename Component>
+    void addComponent(EntityHandle entity) {
+        entityManager_.upsertComponent<Component>(entity);
+    }
+
+    template<typename Component>
+    void removeComponent(EntityHandle entity) {
+        entityManager_.removeComponent<Component>(entity);
+    }
 
 private:
     EntityManager& entityManager_;

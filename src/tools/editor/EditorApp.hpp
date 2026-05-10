@@ -11,13 +11,9 @@
 #include "business/scene_editing/ObjectPrefabs.hpp"
 #include "input/InputHandler.hpp"
 #include "presentation/PresentationLayer.hpp"
-// TODO: Refactor UI panels to use EntityManager
-// #include "presentation/imgui/containers/HierarchyPanel.hpp"
-// #include "presentation/imgui/containers/InspectorPanel.hpp"
 
 class HierarchyPanel;
 class InspectorPanel;
-
 class GameWindow;
 
 class EditorApp {

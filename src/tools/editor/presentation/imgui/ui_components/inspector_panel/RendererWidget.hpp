@@ -19,15 +19,6 @@ public:
         debugViz_(debugViz) {}
 
     void draw(Renderer& r, EntityHandle objectId) {
-        int rows = 5;
-        rows += 2; // AABB and bounding sphere toggles
-
-        if (!ImGui::BeginChild("Renderer", {0, childHeight(rows)}, true)) {
-            ImGui::EndChild();
-            return;
-        }
-        ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "Renderer");
-        ImGui::Spacing();
         ImGui::Text("Mesh: %s", r.meshName.c_str());
         ImGui::Text("Material: %s", r.materialName.c_str());
 
@@ -58,16 +49,10 @@ public:
         if (ImGui::Checkbox("Show Bounding Sphere", &showSphere)) {
             debugViz_.toggleBoundingSphere(objectId);
         }
-
-        ImGui::EndChild();
     }
 
 private:
     AssetManager& assetManager_;
     SceneMutations& sceneMutations_;
     EditorGizmos& debugViz_;
-
-    static float childHeight(int rows) {
-        return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y * 2.0f;
-    }
 };
