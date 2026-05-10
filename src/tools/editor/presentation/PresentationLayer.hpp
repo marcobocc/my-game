@@ -35,6 +35,8 @@ struct DrawCall;
     Lighting settings are now managed by EditorSettings through events.
 */
 class PresentationLayer {
+    inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("PresentationLayer");
+
 public:
     PresentationLayer(VulkanEditorBackend& renderer,
                       EditorOrbitCamera& editorOrbitCamera,

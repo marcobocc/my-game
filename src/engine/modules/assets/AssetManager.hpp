@@ -8,6 +8,8 @@
 #include "data/assets/Mesh.hpp"
 
 class AssetManager {
+    inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetManager");
+
 public:
     explicit AssetManager(AssetImporter& importer, AssetStorage& cache) : assetImporter_(importer), storage_(cache) {}
 
@@ -22,7 +24,7 @@ public:
         }
 
         bool importSuccessful = assetImporter_.import(name);
-        if (!importSuccessful) throw std::runtime_error("Could not load asset: " + name);
+        if (!importSuccessful) LOG4CXX_WARN(LOGGER, "Failed to import asset: " << name);
         return storage_.get<T>(name);
     }
 

@@ -120,6 +120,11 @@ void PresentationLayer::render(const EntityManager& entityManager,
     auto drawables = entityManager.query<Renderer, Transform>();
     for (auto& [entity, renderer, transform]: drawables) {
         if (!renderer->enabled) continue;
+        if (renderer->meshName.empty()) {
+            LOG4CXX_WARN(LOGGER,
+                         "Entity " << entity << " has Renderer component with no mesh assigned, skipping draw call.");
+            continue;
+        }
         drawQueue.push_back(DrawCall{*renderer, *transform, std::to_string(entity)});
     }
 

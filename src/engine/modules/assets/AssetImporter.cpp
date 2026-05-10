@@ -44,7 +44,7 @@ std::vector<std::string> AssetImporter::getAvailableAssets(const std::string& ex
 
 bool AssetImporter::import(const std::filesystem::path& relativePath) {
     auto it = availableAssetFiles_.find(relativePath);
-    if (it == availableAssetFiles_.end()) throw std::runtime_error("Asset not found: " + relativePath.string());
+    if (it == availableAssetFiles_.end()) LOG4CXX_WARN(LOGGER, "Asset not found: '" << relativePath << "'");
     auto ext = relativePath.extension().string();
 
     bool importSuccessful = false;
