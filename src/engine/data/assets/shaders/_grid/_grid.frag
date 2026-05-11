@@ -40,7 +40,7 @@ void main() {
     float axisX = 1.0 - clamp(abs(hit.x) / (fwidth(hit.x) * axisWidth), 0.0, 1.0);
     float axisZ = 1.0 - clamp(abs(hit.z) / (fwidth(hit.z) * axisWidth), 0.0, 1.0);
 
-    vec3 color = vec3(0.2) * intensity;
+    vec3 color = vec3(0.3) * intensity;
     color = mix(color, vec3(0, 0, 1), axisX);
     color = mix(color, vec3(1, 0, 0), axisZ);
 

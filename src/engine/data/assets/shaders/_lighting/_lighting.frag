@@ -19,7 +19,7 @@ const vec3 AMBIENT = vec3(0.15);
 void main() {
     vec4 albedoSample = texture(albedoSampler, inUV);
     if (albedoSample.a == 0.0) {
-        outColor = vec4(0.1, 0.1, 0.1, 1.0);
+        outColor = vec4(0.15, 0.15, 0.15, 1.0);
         return;
     }
 
