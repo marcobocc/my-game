@@ -17,12 +17,15 @@ protected:
         constexpr ImGuiWindowFlags defaultFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse |
                                                   ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
                                                   ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
         ImGui::Begin(title, nullptr, defaultFlags | flags);
 
         drawHeader(title);
         drawBody();
 
         ImGui::End();
+        ImGui::PopStyleVar();
     }
 
     virtual void drawBody() = 0;
