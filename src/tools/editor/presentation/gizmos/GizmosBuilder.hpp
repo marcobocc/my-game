@@ -9,6 +9,7 @@
 
 class AssetManager;
 class Scene;
+class EditorSettings;
 struct AABB;
 struct BoundingSphere;
 
@@ -21,7 +22,7 @@ struct GizmoTransformHandle {
 
 class GizmosRenderer {
 public:
-    GizmosRenderer(AssetManager& assetManager, EntityManager& entityManager);
+    GizmosRenderer(AssetManager& assetManager, EntityManager& entityManager, EditorSettings& editorSettings);
 
     GizmoObject buildGizmoLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color);
     GizmoObject buildGizmoCube(const glm::vec3& center, float halfSize, const glm::vec3& color);
@@ -42,4 +43,5 @@ private:
 
     AssetManager& assetManager_;
     EntityManager& entityManager_;
+    EditorSettings& editorSettings_;
 };

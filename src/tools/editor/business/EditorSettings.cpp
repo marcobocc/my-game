@@ -41,3 +41,9 @@ void EditorSettings::enableSnapping() { gridSnappingEnabled_ = true; }
 void EditorSettings::disableSnapping() { gridSnappingEnabled_ = false; }
 
 void EditorSettings::toggleSnapping() { gridSnappingEnabled_ = !gridSnappingEnabled_; }
+
+void EditorSettings::enableLocalTransform() { localTransform_ = true; }
+
+void EditorSettings::disableLocalTransform() { localTransform_ = false; }
+
+void EditorSettings::toggleLocalTransform() { localTransform_ = !localTransform_; }

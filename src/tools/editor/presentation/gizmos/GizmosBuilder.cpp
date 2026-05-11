@@ -1,5 +1,6 @@
 #include "GizmosBuilder.hpp"
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include "../../../../engine/data/assets/Mesh.hpp"
 #include "../../../../engine/data/components/Renderer.hpp"
 #include "../../../../engine/modules/assets/AssetManager.hpp"
@@ -8,10 +9,14 @@
 #include "../../../../engine/utils/math/AABB.hpp"
 #include "../../../../engine/utils/math/BVH.hpp"
 #include "../../../../engine/utils/math/BoundingSphere.hpp"
+#include "../../business/EditorSettings.hpp"
 
-GizmosRenderer::GizmosRenderer(AssetManager& assetManager, EntityManager& entityManager) :
+GizmosRenderer::GizmosRenderer(AssetManager& assetManager,
+                               EntityManager& entityManager,
+                               EditorSettings& editorSettings) :
     assetManager_(assetManager),
-    entityManager_(entityManager) {}
+    entityManager_(entityManager),
+    editorSettings_(editorSettings) {}
 
 void GizmosRenderer::addGizmoLine(GizmoObject& gizmoObject,
                                   const glm::vec3& from,
@@ -20,6 +25,11 @@ void GizmosRenderer::addGizmoLine(GizmoObject& gizmoObject,
     if (gizmoObject.size() >= VulkanGizmoPass::MAX_LINES * 2) return;
     gizmoObject.push_back({from, color});
     gizmoObject.push_back({to, color});
+}
+
+static glm::vec3 rotateVector(const glm::vec3& vector, const glm::quat& rotation) {
+    glm::mat3 rotationMatrix = glm::mat3_cast(rotation);
+    return rotationMatrix * vector;
 }
 
 GizmoObject GizmosRenderer::buildGizmoLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) {
@@ -166,6 +176,7 @@ GizmosRenderer::buildTranslationGizmo(EntityHandle objectId, const Camera& camer
     auto* transform = entityManager_.getComponent<Transform>(objectId);
     if (!transform) return result;
 
+    bool isLocal = editorSettings_.isLocalTransformEnabled();
     glm::vec3 origin = transform->position;
 
     float dist = glm::length(cameraTransform.position - origin);
@@ -185,6 +196,7 @@ GizmosRenderer::buildTranslationGizmo(EntityHandle objectId, const Camera& camer
 
     for (int i = 0; i < 3; ++i) {
         glm::vec3 dir = axes[i];
+        if (isLocal) dir = rotateVector(dir, transform->rotation);
         glm::vec3 color = colors[i];
         glm::vec3 tip = origin + dir * shaftLength;
 
@@ -212,6 +224,7 @@ GizmosRenderer::buildRotationGizmo(EntityHandle objectId, const Camera& camera, 
     auto* transform = entityManager_.getComponent<Transform>(objectId);
     if (!transform) return result;
 
+    bool isLocal = editorSettings_.isLocalTransformEnabled();
     glm::vec3 origin = transform->position;
 
     float dist = glm::length(cameraTransform.position - origin);
@@ -230,6 +243,10 @@ GizmosRenderer::buildRotationGizmo(EntityHandle objectId, const Camera& camera, 
         glm::vec3 color = colors[i];
         glm::vec3 p1 = perp1s[i];
         glm::vec3 p2 = perp2s[i];
+        if (isLocal) {
+            p1 = rotateVector(p1, transform->rotation);
+            p2 = rotateVector(p2, transform->rotation);
+        }
 
         glm::vec3 prevPt{};
         for (int s = 0; s <= segments; ++s) {
@@ -253,6 +270,7 @@ GizmosRenderer::buildScaleGizmo(EntityHandle objectId, const Camera& camera, con
     auto* transform = entityManager_.getComponent<Transform>(objectId);
     if (!transform) return result;
 
+    bool isLocal = editorSettings_.isLocalTransformEnabled();
     glm::vec3 origin = transform->position;
 
     float dist = glm::length(cameraTransform.position - origin);
@@ -271,6 +289,7 @@ GizmosRenderer::buildScaleGizmo(EntityHandle objectId, const Camera& camera, con
 
     for (int i = 0; i < 3; ++i) {
         glm::vec3 dir = axes[i];
+        dir = rotateVector(dir, transform->rotation);
         glm::vec3 color = colors[i];
         glm::vec3 tip = origin + dir * shaftLength;
 

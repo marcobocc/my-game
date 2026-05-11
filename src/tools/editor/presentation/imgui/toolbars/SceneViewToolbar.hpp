@@ -50,9 +50,14 @@ public:
         ImGui::Text("Scene");
 
         ImGui::SameLine();
+        ImGui::Dummy({40.0f, 0.0f});
+        ImGui::SameLine();
 
-        auto drawButton = [&](const char* label, bool enabled, auto callback) {
-            ImVec4 color = enabled ? ImVec4{0.2f, 0.5f, 0.8f, 1.0f} : ImVec4{0.4f, 0.4f, 0.4f, 1.0f};
+        auto drawButton = [&](const char* label,
+                              bool enabled,
+                              auto callback,
+                              ImVec4 enabledColor = ImVec4{0.2f, 0.5f, 0.8f, 1.0f}) {
+            ImVec4 color = enabled ? enabledColor : ImVec4{0.4f, 0.4f, 0.4f, 1.0f};
 
             ImGui::PushStyleColor(ImGuiCol_Button, color);
             ImGui::PushStyleColor(ImGuiCol_ButtonHovered, color);
@@ -65,7 +70,19 @@ public:
             if (pressed) callback();
         };
 
-        // Right-align buttons
+        const char* transformMode = editorSettings_.isLocalTransformEnabled() ? "Local Transform" : "World Transform";
+        drawButton(transformMode, editorSettings_.isLocalTransformEnabled(), [&] {
+            editorSettings_.toggleLocalTransform();
+        });
+        ImGui::SameLine();
+        drawButton(
+                "Snap",
+                editorSettings_.isGridSnappingEnabled(),
+                [&] { editorSettings_.toggleSnapping(); },
+                ImVec4{0.8f, 0.4f, 0.0f, 1.0f});
+
+        // Right-align remaining buttons
+        ImGui::SameLine();
         float availableWidth = ImGui::GetContentRegionAvail().x;
         float buttonWidths = ImGui::CalcTextSize("Grid").x + ImGui::GetStyle().FramePadding.x * 2 +
                              ImGui::CalcTextSize("Lighting").x + ImGui::GetStyle().FramePadding.x * 2 +
@@ -74,13 +91,9 @@ public:
         ImGui::SetCursorPosX(ImGui::GetCursorPosX() + availableWidth - buttonWidths);
 
         drawButton("Grid", editorSettings_.isGridEnabled(), [&] { editorSettings_.toggleGrid(); });
-
         ImGui::SameLine();
-
         drawButton("Lighting", editorSettings_.isLightingEnabled(), [&] { editorSettings_.toggleLighting(); });
-
         ImGui::SameLine();
-
         drawButton("BVH", editorGizmos_.bvhEnabled(), [&] { editorGizmos_.toggleBVH(); });
 
         ImGui::EndChild();

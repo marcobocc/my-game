@@ -45,6 +45,15 @@ glm::vec3 ObjectTransformHandle::axisToDir(GizmoAxis axis) {
     return {1, 0, 0};
 }
 
+glm::vec3 ObjectTransformHandle::transformAxisToLocalSpace(GizmoAxis axis, const Transform& transform) {
+    if (!rendererSettings_.isLocalTransformEnabled()) {
+        return axisToDir(axis);
+    }
+    glm::vec3 worldAxis = axisToDir(axis);
+    glm::mat3 rotationMatrix = glm::mat3_cast(transform.rotation);
+    return glm::normalize(rotationMatrix * worldAxis);
+}
+
 void ObjectTransformHandle::beginTranslationDrag(GizmoAxis axis, double mouseX, double mouseY) {
     auto selectedId = objectSelection_.getSelectedEntityId();
     if (!selectedId) return;
@@ -52,7 +61,7 @@ void ObjectTransformHandle::beginTranslationDrag(GizmoAxis axis, double mouseX, 
     auto* transformPtr = entityManager_.getComponent<Transform>(*selectedId);
     if (!transformPtr) return;
 
-    glm::vec3 axisDir = axisToDir(axis);
+    glm::vec3 axisDir = transformAxisToLocalSpace(axis, *transformPtr);
     glm::vec3 origin = transformPtr->position;
 
     glm::vec3 camDir = glm::normalize(editorOrbitCamera_.getCameraTransform().position - origin);
@@ -108,7 +117,7 @@ void ObjectTransformHandle::beginRotationDrag(GizmoAxis axis, double mouseX, dou
     auto* transformPtr = entityManager_.getComponent<Transform>(*selectedId);
     if (!transformPtr) return;
 
-    glm::vec3 axisDir = axisToDir(axis);
+    glm::vec3 axisDir = transformAxisToLocalSpace(axis, *transformPtr);
     glm::vec3 origin = transformPtr->position;
 
     Ray ray = buildMouseRay(mouseX, mouseY);
@@ -169,7 +178,9 @@ void ObjectTransformHandle::beginScaleDrag(GizmoAxis axis, double mouseX, double
         axisDir = glm::normalize(editorOrbitCamera_.getCameraTransform().getRight());
         planeNormal = glm::normalize(editorOrbitCamera_.getCameraTransform().position - origin);
     } else {
-        axisDir = axisToDir(axis);
+        glm::vec3 worldAxis = axisToDir(axis);
+        glm::mat3 rotationMatrix = glm::mat3_cast(transformPtr->rotation);
+        axisDir = glm::normalize(rotationMatrix * worldAxis);
         glm::vec3 camDir = glm::normalize(editorOrbitCamera_.getCameraTransform().position - origin);
         planeNormal = glm::normalize(camDir - glm::dot(camDir, axisDir) * axisDir);
         if (glm::length(planeNormal) < 1e-5f) planeNormal = editorOrbitCamera_.getCameraTransform().getUp();

@@ -56,7 +56,7 @@ public:
         // -------------------------------------------------------------------------------------------------------------
         editorSettings_(rendererSettings_),
         editorCamera_(),
-        gizmosBuilder_(assetManager_, entityManager_),
+        gizmosBuilder_(assetManager_, entityManager_, editorSettings_),
         pickingSystem_(assetManager_),
         sceneLoader_(entityManager_, objectSelection_, engine_),
         sceneMutations_(entityManager_, engine_, objectSelection_),

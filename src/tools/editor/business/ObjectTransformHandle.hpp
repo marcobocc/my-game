@@ -115,4 +115,6 @@ private:
     Ray buildMouseRay(double mouseX, double mouseY) const;
 
     static glm::vec3 axisToDir(GizmoAxis axis);
+
+    glm::vec3 transformAxisToLocalSpace(GizmoAxis axis, const Transform& transform);
 };

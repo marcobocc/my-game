@@ -24,6 +24,11 @@ public:
     void disableSnapping();
     void toggleSnapping();
 
+    bool isLocalTransformEnabled() const { return localTransform_; }
+    void enableLocalTransform();
+    void disableLocalTransform();
+    void toggleLocalTransform();
+
 private:
     RendererSettings& rendererSettings_;
 
@@ -31,6 +36,7 @@ private:
     bool gridEnabled_ = true;
     bool gridSnappingEnabled_ = true;
     bool lightingEnabled_ = true;
+    bool localTransform_ = false;
 
     static constexpr float GRID_RESCALE_FACTOR = 1.5f;
     static constexpr float GRID_SCALE_UPPER_BOUND = 3.375f;
