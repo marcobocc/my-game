@@ -119,7 +119,8 @@ bool AssetImporter::importShader(const std::filesystem::path& relativePath) cons
                                                      def.enableAlphaBlend,
                                                      def.noVertexInput,
                                                      def.lineTopology,
-                                                     def.positionColorVertexLayout));
+                                                     def.positionColorVertexLayout,
+                                                     def.tangentVertexLayout));
     return true;
 }
 
@@ -150,7 +151,42 @@ bool AssetImporter::importMaterial(const std::filesystem::path& relativePath) co
                                                    << " required by material: " << name);
         return false;
     }
-    storage_.insert<Material>(name, std::make_unique<Material>(name, def.shaderName, def.tint, def.albedoTexture));
+    if (!def.normalTexture.empty() && !importTexture(def.normalTexture)) {
+        LOG4CXX_ERROR(LOGGER,
+                      "Failed to import texture: " << std::filesystem::path(def.normalTexture)
+                                                   << " required by material: " << name);
+        return false;
+    }
+    if (!def.roughnessTexture.empty() && !importTexture(def.roughnessTexture)) {
+        LOG4CXX_ERROR(LOGGER,
+                      "Failed to import texture: " << std::filesystem::path(def.roughnessTexture)
+                                                   << " required by material: " << name);
+        return false;
+    }
+    if (!def.metallicTexture.empty() && !importTexture(def.metallicTexture)) {
+        LOG4CXX_ERROR(LOGGER,
+                      "Failed to import texture: " << std::filesystem::path(def.metallicTexture)
+                                                   << " required by material: " << name);
+        return false;
+    }
+    if (!def.aoTexture.empty() && !importTexture(def.aoTexture)) {
+        LOG4CXX_ERROR(LOGGER,
+                      "Failed to import texture: " << std::filesystem::path(def.aoTexture)
+                                                   << " required by material: " << name);
+        return false;
+    }
+    storage_.insert<Material>(name,
+                              std::make_unique<Material>(name,
+                                                         def.shaderName,
+                                                         def.tint,
+                                                         def.albedoTexture,
+                                                         def.normalTexture,
+                                                         def.roughnessTexture,
+                                                         def.metallicTexture,
+                                                         def.aoTexture,
+                                                         def.metallic,
+                                                         def.roughness,
+                                                         def.ao));
     return true;
 }
 

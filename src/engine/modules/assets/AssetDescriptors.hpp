@@ -29,6 +29,7 @@ struct ShaderDescriptor {
     bool noVertexInput;
     bool lineTopology;
     bool positionColorVertexLayout;
+    bool tangentVertexLayout;
 
     static ShaderDescriptor fromFile(const std::filesystem::path& absolutePath, const std::string& name) {
         auto j = JsonUtils::loadJson(absolutePath);
@@ -41,7 +42,8 @@ struct ShaderDescriptor {
                 .enableAlphaBlend = JsonUtils::getOptional<bool>(j, "enableAlphaBlend", false),
                 .noVertexInput = JsonUtils::getOptional<bool>(j, "noVertexInput", false),
                 .lineTopology = JsonUtils::getOptional<bool>(j, "lineTopology", false),
-                .positionColorVertexLayout = JsonUtils::getOptional<bool>(j, "positionColorVertexLayout", false)};
+                .positionColorVertexLayout = JsonUtils::getOptional<bool>(j, "positionColorVertexLayout", false),
+                .tangentVertexLayout = JsonUtils::getOptional<bool>(j, "tangentVertexLayout", false)};
     }
 };
 
@@ -50,13 +52,27 @@ struct MaterialDescriptor {
     std::string shaderName;
     glm::vec4 tint;
     std::string albedoTexture;
+    std::string normalTexture;
+    std::string roughnessTexture;
+    std::string metallicTexture;
+    std::string aoTexture;
+    float metallic;
+    float roughness;
+    float ao;
 
     static MaterialDescriptor fromFile(const std::filesystem::path& absolutePath, const std::string& name) {
         auto j = JsonUtils::loadJson(absolutePath);
         return {.name = name,
                 .shaderName = JsonUtils::getOptional<std::string>(j, "shaderName", GBUFFER_SHADER),
                 .tint = JsonUtils::getOptional<glm::vec4>(j, "tint", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f}),
-                .albedoTexture = JsonUtils::getOptional<std::string>(j, "albedoTexture", EMPTY_TEXTURE)};
+                .albedoTexture = JsonUtils::getOptional<std::string>(j, "albedoTexture", EMPTY_TEXTURE),
+                .normalTexture = JsonUtils::getOptional<std::string>(j, "normalTexture", EMPTY_TEXTURE),
+                .roughnessTexture = JsonUtils::getOptional<std::string>(j, "roughnessTexture", EMPTY_TEXTURE),
+                .metallicTexture = JsonUtils::getOptional<std::string>(j, "metallicTexture", EMPTY_TEXTURE),
+                .aoTexture = JsonUtils::getOptional<std::string>(j, "aoTexture", EMPTY_TEXTURE),
+                .metallic = JsonUtils::getOptional<float>(j, "metallic", 0.0f),
+                .roughness = JsonUtils::getOptional<float>(j, "roughness", 1.0f),
+                .ao = JsonUtils::getOptional<float>(j, "ao", 1.0f)};
     }
 };
 

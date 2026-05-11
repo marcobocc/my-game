@@ -25,7 +25,17 @@ public:
         } else {
             materialName = relativePath.string();
         }
-        Material defaultMaterial(materialName, GBUFFER_SHADER, glm::vec4(1.0f), EMPTY_TEXTURE);
+        Material defaultMaterial(materialName,
+                                 GBUFFER_SHADER,
+                                 glm::vec4(1.0f),
+                                 EMPTY_TEXTURE,
+                                 EMPTY_TEXTURE,
+                                 EMPTY_TEXTURE,
+                                 EMPTY_TEXTURE,
+                                 EMPTY_TEXTURE,
+                                 0.0f,
+                                 1.0f,
+                                 1.0f);
         nlohmann::json snapshot = serializeMaterial(defaultMaterial);
         upsertMaterial(materialName, snapshot);
         undoHistory_.push([this, materialName] { deleteMaterial_Command(materialName); },
@@ -76,6 +86,76 @@ public:
         }
     }
 
+    void setNormalTexture(const std::string& materialName, const std::string& normalTexture) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["normalTexture"] = normalTexture;
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+
+    void setRoughnessTexture(const std::string& materialName, const std::string& roughnessTexture) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["roughnessTexture"] = roughnessTexture;
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+
+    void setMetallicTexture(const std::string& materialName, const std::string& metallicTexture) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["metallicTexture"] = metallicTexture;
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+
+    void setAoTexture(const std::string& materialName, const std::string& aoTexture) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["aoTexture"] = aoTexture;
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+
+    void setMetallic(const std::string& materialName, float metallic) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["metallic"] = metallic;
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+
+    void setRoughness(const std::string& materialName, float roughness) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["roughness"] = roughness;
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+
+    void setAo(const std::string& materialName, float ao) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["ao"] = ao;
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+
     bool isBuiltin(const std::string& materialName) const { return assetManager_.isBuiltin(materialName); }
 
 private:
@@ -99,6 +179,13 @@ private:
         j["shaderName"] = material.getShaderName();
         j["tint"] = JsonUtils::serializeVec4(material.getTint());
         j["albedoTexture"] = material.getAlbedoTexture();
+        j["normalTexture"] = material.getNormalTexture();
+        j["roughnessTexture"] = material.getRoughnessTexture();
+        j["metallicTexture"] = material.getMetallicTexture();
+        j["aoTexture"] = material.getAoTexture();
+        j["metallic"] = material.getMetallic();
+        j["roughness"] = material.getRoughness();
+        j["ao"] = material.getAo();
         return j;
     }
 
