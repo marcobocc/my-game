@@ -17,7 +17,10 @@ public:
                                 UndoHistory& undoHistory) :
         sceneMutations_(sceneMutations),
         editorWorkspace_(editorWorkspace),
-        undoHistory_(undoHistory) {}
+        undoHistory_(undoHistory) {
+        editorWorkspace_.setOnSceneNameChanged([this](const std::string& name) { sceneName_ = name; });
+        editorWorkspace_.setOnScenePathChanged([this](const std::filesystem::path& path) { scenePath_ = path; });
+    }
 
     void draw() override {
         ImguiStyling::withMenuBar(ImVec4(0.08f, 0.08f, 0.08f, 1.00f), [this] {

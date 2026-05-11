@@ -63,10 +63,10 @@ public:
         editorCamera_(),
         gizmosBuilder_(assetManager_, entityManager_, editorSettings_),
         pickingSystem_(assetManager_),
-        sceneLoader_(entityManager_, objectSelection_, engine_),
         undoHistory_(),
         sceneMutations_(entityManager_, engine_, objectSelection_, undoHistory_),
         materialMutations_(assetManager_, objectSelection_, undoHistory_),
+        sceneLoader_(entityManager_, objectSelection_, engine_, &materialMutations_),
         objectTransformHandle_(
                 window, engine_, sceneMutations_, editorCamera_, objectSelection_, editorSettings_, entityManager_),
         // -------------------------------------------------------------------------------------------------------------

@@ -160,7 +160,7 @@ public:
         }
     }
 
-    void setScaleInvariantUV(const std::string& materialName, int scaleInvariantUV) const {
+    void setScaleInvariantUV(const std::string& materialName, bool scaleInvariantUV) const {
         if (isBuiltin(materialName)) return;
         if (const Material* mat = assetManager_.get<Material>(materialName)) {
             nlohmann::json oldSnapshot = serializeMaterial(*mat);
@@ -190,8 +190,11 @@ public:
     }
 
     void flushDirtyMaterials() {
-        for (const auto& [name, snapshot]: dirtyMaterials_) {
-            saveMaterial(name, snapshot);
+        for (const auto& name: dirtyMaterials_ | std::views::keys) {
+            if (const Material* mat = assetManager_.get<Material>(name)) {
+                nlohmann::json fullSnapshot = serializeMaterial(*mat);
+                saveMaterial(name, fullSnapshot);
+            }
         }
         dirtyMaterials_.clear();
     }
@@ -259,7 +262,8 @@ private:
                 mat->tiling_ = JsonUtils::getOptional<glm::vec2>(snapshot, "tiling", mat->tiling_);
             if (snapshot.contains("offset"))
                 mat->offset_ = JsonUtils::getOptional<glm::vec2>(snapshot, "offset", mat->offset_);
-            if (snapshot.contains("scaleInvariantUV")) mat->scaleInvariantUV_ = snapshot["scaleInvariantUV"].get<int>();
+            if (snapshot.contains("scaleInvariantUV"))
+                mat->scaleInvariantUV_ = snapshot["scaleInvariantUV"].get<bool>();
         }
         dirtyMaterials_[materialName] = snapshot;
     }

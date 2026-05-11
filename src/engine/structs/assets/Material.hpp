@@ -37,7 +37,7 @@ public:
 
     const glm::vec2& getTiling() const { return tiling_; }
     const glm::vec2& getOffset() const { return offset_; }
-    int getScaleInvariantUV() const { return scaleInvariantUV_; }
+    bool getScaleInvariantUV() const { return scaleInvariantUV_; }
 
     const std::string& getShaderName() const { return shaderName_; }
     const glm::vec4& getTint() const { return tint_; }

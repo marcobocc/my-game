@@ -62,6 +62,8 @@ public:
 
             float gridScale = rendererSettings_.getGridScale();
             presentationLayer_.render(entityManager_, gridScale, {});
+
+
             time_.endFrame();
         }
     }

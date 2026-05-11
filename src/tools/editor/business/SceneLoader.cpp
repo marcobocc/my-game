@@ -6,6 +6,7 @@
 #include "../../../engine/modules/scene/EntityManager.hpp"
 #include "../../../engine/utils/JsonUtils.hpp"
 #include "ObjectSelection.hpp"
+#include "asset_editing/MaterialMutations.hpp"
 #include "structs/components/Light.hpp"
 #include "structs/components/Transform.hpp"
 
@@ -23,6 +24,11 @@ void SceneLoader::newScene() {
 }
 
 void SceneLoader::saveScene(const char* path) {
+    // Flush any dirty materials to disk before saving the scene
+    if (materialMutations_) {
+        materialMutations_->flushDirtyMaterials();
+    }
+
     std::ofstream f(path);
     if (!f) return;
     nlohmann::json root;
@@ -51,6 +57,9 @@ void SceneLoader::loadScene(const char* path) {
             size_t lastSlash = pathStr.find_last_of("/\\");
             std::string filename = (lastSlash != std::string::npos) ? pathStr.substr(lastSlash + 1) : pathStr;
             onSceneNameChanged_(filename);
+        }
+        if (onScenePathChanged_) {
+            onScenePathChanged_(std::filesystem::path(path));
         }
     } catch (const std::exception&) {
         // Scene loading failed
