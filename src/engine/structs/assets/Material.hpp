@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/vec2.hpp>
 #include <glm/vec4.hpp>
 #include <string>
 #include "Asset.hpp"
@@ -15,7 +16,9 @@ public:
              const std::string& aoTexture,
              float metallic,
              float roughness,
-             float ao) :
+             float ao,
+             const glm::vec2& tiling = glm::vec2(1.0f, 1.0f),
+             const glm::vec2& offset = glm::vec2(0.0f, 0.0f)) :
         Asset(name),
         shaderName_(shaderName),
         tint_(tint),
@@ -26,7 +29,11 @@ public:
         aoTexture_(aoTexture),
         metallic_(metallic),
         roughness_(roughness),
-        ao_(ao) {}
+        ao_(ao),
+        tiling_(tiling),
+        offset_(offset) {}
+    const glm::vec2& getTiling() const { return tiling_; }
+    const glm::vec2& getOffset() const { return offset_; }
 
     const std::string& getShaderName() const { return shaderName_; }
     const glm::vec4& getTint() const { return tint_; }
@@ -50,4 +57,6 @@ private:
     float metallic_;
     float roughness_;
     float ao_;
+    glm::vec2 tiling_;
+    glm::vec2 offset_;
 };

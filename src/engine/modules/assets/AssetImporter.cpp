@@ -186,7 +186,9 @@ bool AssetImporter::importMaterial(const std::filesystem::path& relativePath) co
                                                          def.aoTexture,
                                                          def.metallic,
                                                          def.roughness,
-                                                         def.ao));
+                                                         def.ao,
+                                                         def.tiling,
+                                                         def.offset));
     return true;
 }
 

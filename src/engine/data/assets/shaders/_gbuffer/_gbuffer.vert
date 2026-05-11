@@ -11,6 +11,8 @@ layout(location = 2) out vec2 outUV;
 layout(push_constant) uniform PushConstants {
     mat4 model;
     vec4 tint;
+    vec2 tiling;
+    vec2 offset;
 } pc;
 
 layout(set = 0, binding = 0) uniform CameraUBO {
@@ -21,6 +23,6 @@ layout(set = 0, binding = 0) uniform CameraUBO {
 void main() {
     gl_Position = camera.proj * camera.view * pc.model * vec4(inPos, 1.0);
     outTint = pc.tint.rgb;
-    outUV = inUV;
+    outUV = inUV * pc.tiling + pc.offset;
     outNormal = mat3(pc.model) * inNormal;
 }

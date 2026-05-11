@@ -16,10 +16,7 @@ public:
         drawHeader(contextId, onRemove);
 
         ImguiStyling::withBodyStyling([this] {
-            ImGui::BeginChild("##Body",
-                              ImVec2(0, 0),
-                              ImGuiChildFlags_AlwaysUseWindowPadding,
-                              ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+            ImGui::BeginChild("##Body", ImVec2(0, 0), ImGuiChildFlags_AlwaysUseWindowPadding);
 
             drawBody();
             ImGui::EndChild();

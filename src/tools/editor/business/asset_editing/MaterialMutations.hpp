@@ -156,6 +156,25 @@ public:
         }
     }
 
+    void setTiling(const std::string& materialName, const glm::vec2& tiling) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["tiling"] = JsonUtils::serializeVec2(tiling);
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+    void setOffset(const std::string& materialName, const glm::vec2& offset) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["offset"] = JsonUtils::serializeVec2(offset);
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+
     bool isBuiltin(const std::string& materialName) const { return assetManager_.isBuiltin(materialName); }
 
 private:
@@ -186,6 +205,8 @@ private:
         j["metallic"] = material.getMetallic();
         j["roughness"] = material.getRoughness();
         j["ao"] = material.getAo();
+        j["tiling"] = JsonUtils::serializeVec2(material.getTiling());
+        j["offset"] = JsonUtils::serializeVec2(material.getOffset());
         return j;
     }
 

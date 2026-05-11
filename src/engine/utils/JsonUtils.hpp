@@ -58,10 +58,22 @@ namespace JsonUtils {
         }
     }
 
+    template<>
+    inline glm::vec2 getOptional(const nlohmann::json& j, const char* key, glm::vec2 defaultValue) {
+        if (!j.contains(key)) return defaultValue;
+        try {
+            auto arr = j.at(key).get<std::array<float, 2>>();
+            return glm::vec2(arr[0], arr[1]);
+        } catch (...) {
+            throw std::runtime_error(std::string("Invalid type for optional field: ") + key);
+        }
+    }
+
     // ---------------------------------------------------------------------------
     // GLM helpers
     // ---------------------------------------------------------------------------
 
+    inline nlohmann::json serializeVec2(const glm::vec2& v) { return {v.x, v.y}; }
     inline nlohmann::json serializeVec3(const glm::vec3& v) { return {v.x, v.y, v.z}; }
     inline nlohmann::json serializeVec4(const glm::vec4& v) { return {v.x, v.y, v.z, v.w}; }
 

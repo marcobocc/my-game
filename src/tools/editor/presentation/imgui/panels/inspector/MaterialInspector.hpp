@@ -12,7 +12,7 @@ public:
     MaterialInspector(AssetManager& assetManager,
                       ObjectSelection& objectSelection,
                       MaterialMutations& materialMutations) :
-        ComponentContainer("Material", 12),
+        ComponentContainer("Material", 14),
         assetManager_(assetManager),
         objectSelection_(objectSelection),
         materialMutations_(materialMutations),
@@ -154,6 +154,19 @@ private:
                 float ao = mat->getAo();
                 if (ImGui::SliderFloat("##ao", &ao, 0.0f, 1.0f)) {
                     materialMutations_.setAo(*selectedAsset, ao);
+                }
+            });
+
+            row("Tiling", [&] {
+                glm::vec2 tiling = mat->getTiling();
+                if (ImGui::InputFloat2("##tiling", &tiling.x)) {
+                    materialMutations_.setTiling(*selectedAsset, tiling);
+                }
+            });
+            row("Offset", [&] {
+                glm::vec2 offset = mat->getOffset();
+                if (ImGui::InputFloat2("##offset", &offset.x)) {
+                    materialMutations_.setOffset(*selectedAsset, offset);
                 }
             });
 
