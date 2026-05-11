@@ -38,7 +38,7 @@ public:
         ImVec2 p0 = ImGui::GetWindowPos();
         ImVec2 sz = ImGui::GetWindowSize();
         ImGui::GetWindowDrawList()->AddRectFilled(
-                p0, {p0.x + sz.x, p0.y + sz.y}, ImGui::GetColorU32({0.15f, 0.15f, 0.15f, 1.0f}), 4.0f);
+                p0, {p0.x + sz.x, p0.y + sz.y}, ImGui::GetColorU32({0.05f, 0.05f, 0.05f, 1.0f}), 4.0f);
 
         ImGui::BeginChild(
                 "ToolbarRow", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
