@@ -111,7 +111,7 @@ GizmoObject GizmosRenderer::buildGizmoObjectAABB(EntityHandle objectId, const gl
 
 GizmoObject GizmosRenderer::buildGizmoBoundingSphere(const BoundingSphere& sphere, const glm::vec3& color) {
     GizmoObject gizmoObject;
-    constexpr int segments = 16;
+    constexpr int segments = 48;
     const glm::vec3 perp1s[3] = {{0, 1, 0}, {1, 0, 0}, {1, 0, 0}};
     const glm::vec3 perp2s[3] = {{0, 0, 1}, {0, 0, 1}, {0, 1, 0}};
 
