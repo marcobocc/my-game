@@ -12,7 +12,7 @@ public:
     MaterialInspector(AssetManager& assetManager,
                       ObjectSelection& objectSelection,
                       MaterialMutations& materialMutations) :
-        ComponentContainer("Material", 14),
+        ComponentContainer("Material", 18),
         assetManager_(assetManager),
         objectSelection_(objectSelection),
         materialMutations_(materialMutations),
@@ -159,13 +159,13 @@ private:
 
             row("Tiling", [&] {
                 glm::vec2 tiling = mat->getTiling();
-                if (ImGui::InputFloat2("##tiling", &tiling.x)) {
+                if (ImGui::DragFloat2("##tiling", &tiling.x, 0.1f, 0.0f, 100.0f, "%.3f")) {
                     materialMutations_.setTiling(*selectedAsset, tiling);
                 }
             });
             row("Offset", [&] {
                 glm::vec2 offset = mat->getOffset();
-                if (ImGui::InputFloat2("##offset", &offset.x)) {
+                if (ImGui::DragFloat2("##offset", &offset.x, 0.01f, -100.0f, 100.0f, "%.3f")) {
                     materialMutations_.setOffset(*selectedAsset, offset);
                 }
             });
