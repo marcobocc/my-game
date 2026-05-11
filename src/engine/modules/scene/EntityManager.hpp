@@ -6,11 +6,11 @@
 #include <vector>
 #include "ComponentArray.hpp"
 #include "EntityMetadata.hpp"
-#include "structs/components/BoxCollider.hpp"
-#include "structs/components/Camera.hpp"
-#include "structs/components/Light.hpp"
-#include "structs/components/Renderer.hpp"
-#include "structs/components/Transform.hpp"
+#include "components/BoxCollider.hpp"
+#include "components/Camera.hpp"
+#include "components/Light.hpp"
+#include "components/Renderer.hpp"
+#include "components/Transform.hpp"
 
 using EntityHandle = uint64_t;
 static constexpr EntityHandle INVALID_HANDLE = std::numeric_limits<EntityHandle>::max();

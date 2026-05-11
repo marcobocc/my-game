@@ -1,20 +1,26 @@
 #pragma once
+#include <filesystem>
+#include <fstream>
 #include <glm/glm.hpp>
+#include <memory>
+#include <nlohmann/json.hpp>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include "Asset.hpp"
+#include "CPUResource.hpp"
+#include "utils/JsonUtils.hpp"
 #include "utils/math/AABB.hpp"
 #include "utils/math/BoundingSphere.hpp"
 
-class Mesh final : public Asset {
+class MeshResource final : public CPUResource {
 public:
-    Mesh(const std::string& name,
-         std::vector<glm::vec3> positions,
-         std::vector<glm::vec2> uvs,
-         std::vector<glm::vec3> colors,
-         std::vector<uint32_t> indices,
-         std::vector<glm::vec3> normals) :
-        Asset(name),
+    MeshResource(const std::string& name,
+                 std::vector<glm::vec3> positions,
+                 std::vector<glm::vec2> uvs,
+                 std::vector<glm::vec3> colors,
+                 std::vector<uint32_t> indices,
+                 std::vector<glm::vec3> normals) :
+        CPUResource(name),
         positions_(std::move(positions)),
         uvs_(std::move(uvs)),
         colors_(std::move(colors)),
@@ -24,13 +30,6 @@ public:
         aabb_(positions_),
         boundingSphere_(positions_) {}
 
-    bool hasIndices() const { return !indices_.empty(); }
-    bool hasUvs() const { return !uvs_.empty(); }
-    bool hasColors() const { return !colors_.empty(); }
-    bool hasNormals() const { return !normals_.empty(); }
-    bool hasTangents() const { return !tangents_.empty(); }
-    size_t getVertexCount() const { return positions_.size(); }
-
     const std::vector<glm::vec3>& getPositions() const { return positions_; }
     const std::vector<glm::vec2>& getUvs() const { return uvs_; }
     const std::vector<glm::vec3>& getColors() const { return colors_; }
@@ -39,6 +38,14 @@ public:
     const std::vector<glm::vec4>& getTangents() const { return tangents_; }
     AABB getAABB() const { return aabb_; }
     BoundingSphere getBoundingSphere() const { return boundingSphere_; }
+
+
+    bool hasIndices() const { return !indices_.empty(); }
+    bool hasUvs() const { return !uvs_.empty(); }
+    bool hasColors() const { return !colors_.empty(); }
+    bool hasNormals() const { return !normals_.empty(); }
+    bool hasTangents() const { return !tangents_.empty(); }
+    size_t getVertexCount() const { return positions_.size(); }
 
 private:
     static std::vector<glm::vec4> computeTangents(const std::vector<glm::vec3>& positions,

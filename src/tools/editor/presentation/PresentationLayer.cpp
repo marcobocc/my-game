@@ -1,13 +1,12 @@
 #include "PresentationLayer.hpp"
-#include "../../../engine/modules/assets/AssetManager.hpp"
 #include "../../../engine/modules/scene/EntityManager.hpp"
-#include "../../../engine/structs/components/Renderer.hpp"
+#include "../../../engine/modules/scene/components/Renderer.hpp"
 #include "../business/EditorCamera.hpp"
 #include "../business/EditorGizmos.hpp"
 #include "../business/ObjectSelection.hpp"
 #include "../business/ObjectTransformHandle.hpp"
+#include "../business/asset_editing/EditorAssetRepository.hpp"
 #include "../business/asset_editing/MaterialMutations.hpp"
-#include "../business/scene_editing/ObjectPrefabs.hpp"
 #include "../business/scene_editing/SceneMutations.hpp"
 #include "../input/PickingSystem.hpp"
 #include "../presentation/imgui/toolbars/ApplicationMenuBar.hpp"
@@ -32,9 +31,9 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      UserInterface& userInterface,
                                      PickingSystem& pickingService,
                                      SceneMutations& sceneMutations,
+                                     EditorAssetRepository& assetRepository,
                                      MaterialMutations& materialMutations,
                                      SceneLoader& editorWorkspace,
-                                     AssetManager& assetManager,
                                      GameWindow& window,
                                      GameEngine& engine,
                                      UndoHistory& undoHistory) :
@@ -50,22 +49,22 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     userInterface_(userInterface),
     pickingSystem_(pickingService),
     sceneMutations_(sceneMutations),
+    assetRepository_(assetRepository),
     editorWorkspace_(editorWorkspace),
-    assetManager_(assetManager),
     engine_(engine),
     window_(window) {
     userInterface_.emplace<ApplicationMenuBar>(sceneMutations, editorWorkspace, undoHistory);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
-    userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations, engine_);
-    userInterface_.emplace<AssetsPanel>(assetManager_, objectSelection_, materialMutations);
+    userInterface_.emplace<HierarchyPanel>(assetRepository_, objectSelection_, entityManager_, sceneMutations, engine_);
+    userInterface_.emplace<AssetsPanel>(assetRepository_, objectSelection_, materialMutations);
     userInterface_.emplace<InspectorPanel>(
-            objectSelection_, entityManager_, assetManager_, sceneMutations, materialMutations, editorGizmos_);
+            objectSelection_, entityManager_, assetRepository_, sceneMutations, materialMutations, editorGizmos_);
     userInterface_.emplace<EditorSceneViewport>(
-            assetManager_,
+            assetRepository_,
             sceneMutations,
             objectSelection_,
             entityManager_,
-            pickingSystem_,
+            pickingService,
             window_,
             editorOrbitCamera,
             [&sceneMutations](uint32_t lod) { sceneMutations.createObject(primitives::sphere(lod)); });

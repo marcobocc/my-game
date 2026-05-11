@@ -137,7 +137,9 @@ inline VulkanContext initVulkanContext() {
 
     // Create descriptor pool
     std::vector<VkDescriptorPoolSize> poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100},
-                                                   {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100}};
+                                                   {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100},
+                                                   {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100},
+                                                   {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100}};
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());

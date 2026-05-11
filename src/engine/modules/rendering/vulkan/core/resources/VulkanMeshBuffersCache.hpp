@@ -1,9 +1,9 @@
 #pragma once
 #include <unordered_map>
+#include "../../../../../modules/asset_management/resources/MeshResource.hpp"
 #include "../utils/buffers.hpp"
 #include "../utils/structs.hpp"
 #include "VulkanVertexLayouts.hpp"
-#include "structs/assets/Mesh.hpp"
 
 struct VulkanMeshBuffers {
     VulkanBuffer vertexBuffer;
@@ -14,8 +14,8 @@ class VulkanMeshBuffersCache {
 public:
     explicit VulkanMeshBuffersCache(VulkanContext& context) : context_(context) {}
 
-    VulkanMeshBuffers& get(const Mesh& meshAsset) {
-        auto it = cache_.find(meshAsset.getName());
+    VulkanMeshBuffers& get(const MeshResource& meshAsset) {
+        auto it = cache_.find(meshAsset.name);
         if (it != cache_.end()) return it->second;
 
         const std::vector<float> packedVertices = packMeshData(meshAsset);
@@ -37,7 +37,7 @@ public:
                                             meshAsset.getIndices().data()),
         };
 
-        auto [insertedIt, _] = cache_.emplace(meshAsset.getName(), std::move(meshBuffers));
+        auto [insertedIt, _] = cache_.emplace(meshAsset.name, std::move(meshBuffers));
         return insertedIt->second;
     }
 

@@ -1,15 +1,15 @@
 #pragma once
 #include <array>
 #include <vector>
+#include "../../../../modules/asset_management/resources/MeshResource.hpp"
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/buffers.hpp"
 #include "../core/utils/descriptors.hpp"
 #include "../core/utils/structs.hpp"
-#include "modules/assets/AssetManager.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/assets/Material.hpp"
 #include "modules/core/GameWindow.hpp"
-#include "structs/assets/Material.hpp"
-#include "structs/assets/Mesh.hpp"
-#include "structs/components/Camera.hpp"
+#include "modules/scene/components/Camera.hpp"
 
 class VulkanGeometryPass {
 public:
@@ -19,11 +19,11 @@ public:
 
     VulkanGeometryPass(const VulkanContext& context,
                        VulkanResourcesManager& resourcesManager,
-                       AssetManager& assetManager,
+                       AssetLoader& assetLoader,
                        GameWindow& window) :
         context_(const_cast<VulkanContext&>(context)),
         resourcesManager_(resourcesManager),
-        assetManager_(assetManager),
+        assetLoader_(assetLoader),
         window_(window) {
         createUBOLayout();
     }
@@ -79,7 +79,8 @@ private:
     }
 
     void renderEntity(VkCommandBuffer cmd, VkDescriptorSet geometryDescriptorSet, const DrawCall& drawCall) const {
-        const Material* material = assetManager_.get<Material>(drawCall.renderer.materialName);
+        const Material* material = assetLoader_.get<Material>(drawCall.renderer.materialName);
+        if (!material) return;
         static constexpr std::array<VkFormat, 2> colorFormats{ALBEDO_FORMAT, NORMAL_FORMAT};
         auto [pipeline, texturesDescriptorSet] = resourcesManager_.getMaterial(*material, colorFormats, DEPTH_FORMAT);
 
@@ -97,10 +98,10 @@ private:
             int scaleInvariantUV;
         } pc{};
         pc.modelMatrix = drawCall.transform.getModelMatrix();
-        pc.tint = drawCall.renderer.tintOverride.value_or(material->getTint());
-        pc.tiling = material->getTiling();
-        pc.offset = material->getOffset();
-        pc.scaleInvariantUV = material->getScaleInvariantUV();
+        pc.tint = drawCall.renderer.tintOverride.value_or(material->tint);
+        pc.tiling = material->tiling;
+        pc.offset = material->offset;
+        pc.scaleInvariantUV = material->scaleInvariantUV;
         vkCmdPushConstants(cmd,
                            pipeline->layout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -108,7 +109,7 @@ private:
                            sizeof(PushConstants),
                            &pc);
 
-        const Mesh* mesh = assetManager_.get<Mesh>(drawCall.renderer.meshName);
+        const MeshResource* mesh = assetLoader_.get<MeshResource>(drawCall.renderer.meshName);
         const auto& meshBuffers = resourcesManager_.getMesh(*mesh);
         std::array<VkDeviceSize, 1> offsets{};
         vkCmdBindVertexBuffers(cmd, 0, 1, &meshBuffers.vertexBuffer.buffer, offsets.data());
@@ -193,7 +194,7 @@ private:
 
     VulkanContext& context_;
     VulkanResourcesManager& resourcesManager_;
-    AssetManager& assetManager_;
+    AssetLoader& assetLoader_;
     GameWindow& window_;
 
     VkDescriptorSetLayout perFrameUBOLayout_ = VK_NULL_HANDLE;

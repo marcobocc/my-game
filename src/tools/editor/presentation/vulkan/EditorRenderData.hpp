@@ -3,9 +3,9 @@
 #include <vector>
 #include "../../../../engine/modules/rendering/vulkan/core/utils/structs.hpp"
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "../../../../engine/structs/components/Camera.hpp"
-#include "../../../../engine/structs/components/Light.hpp"
-#include "../../../../engine/structs/components/Transform.hpp"
+#include "../../../../engine/modules/scene/components/Camera.hpp"
+#include "../../../../engine/modules/scene/components/Light.hpp"
+#include "../../../../engine/modules/scene/components/Transform.hpp"
 
 struct EditorRenderData {
     const Camera& camera;

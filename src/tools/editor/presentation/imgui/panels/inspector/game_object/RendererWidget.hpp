@@ -5,18 +5,18 @@
 #include <string>
 #include <unordered_set>
 #include "../../../../../business/EditorGizmos.hpp"
+#include "../../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../../business/scene_editing/SceneMutations.hpp"
 #include "../ComponentContainer.hpp"
-#include "modules/assets/AssetManager.hpp"
+#include "modules/asset_management/assets/Material.hpp"
 #include "modules/scene/EntityManager.hpp"
-#include "structs/assets/Material.hpp"
-#include "structs/components/Renderer.hpp"
+#include "modules/scene/components/Renderer.hpp"
 
 class RendererWidget : public ComponentContainer {
 public:
-    RendererWidget(AssetManager& assetManager, SceneMutations& sceneMutations, EditorGizmos& debugViz) :
+    RendererWidget(EditorAssetRepository& assetRepository, SceneMutations& sceneMutations, EditorGizmos& debugViz) :
         ComponentContainer("Renderer", 8),
-        assetManager_(assetManager),
+        assetRepository_(assetRepository),
         sceneMutations_(sceneMutations),
         debugViz_(debugViz) {}
 
@@ -26,7 +26,7 @@ public:
     }
 
 private:
-    AssetManager& assetManager_;
+    EditorAssetRepository& assetRepository_;
     SceneMutations& sceneMutations_;
     EditorGizmos& debugViz_;
     Renderer* component_ = nullptr;
@@ -50,8 +50,8 @@ private:
             }
         });
 
-        if (const Material* mat = assetManager_.get<Material>(component_->materialName)) {
-            glm::vec4 color = component_->tintOverride.value_or(mat->getTint());
+        if (const Material* mat = assetRepository_.get<Material>(component_->materialName)) {
+            glm::vec4 color = component_->tintOverride.value_or(mat->tint);
             float col[4] = {color.r, color.g, color.b, color.a};
             if (ImGui::ColorEdit4("Tint", col)) {
                 component_->tintOverride = glm::vec4(col[0], col[1], col[2], col[3]);

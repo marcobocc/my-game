@@ -2,24 +2,24 @@
 #include <string>
 #include <vector>
 #include <volk.h>
+#include "../../../../modules/asset_management/resources/MeshResource.hpp"
+#include "../../../../modules/asset_management/resources/ShaderResource.hpp"
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/buffers.hpp"
 #include "../core/utils/structs.hpp"
-#include "modules/assets/AssetManager.hpp"
-#include "modules/assets/BuiltinAssetNames.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/BuiltinAssetNames.hpp"
 #include "modules/core/GameWindow.hpp"
-#include "structs/assets/Mesh.hpp"
-#include "structs/assets/Shader.hpp"
-#include "structs/components/Camera.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 class VulkanObjectIdPass {
 public:
     VulkanObjectIdPass(const VulkanContext& context,
-                       AssetManager& assetManager,
+                       AssetLoader& assetLoader,
                        VulkanResourcesManager& resourcesManager) :
         context_(context),
-        assetManager_(assetManager),
+        assetLoader_(assetLoader),
         resourcesManager_(resourcesManager) {
         createUBO();
         initPipeline();
@@ -117,7 +117,7 @@ public:
                                sizeof(ObjectIdPush),
                                &push);
 
-            const Mesh* mesh = assetManager_.get<Mesh>(dc.renderer.meshName);
+            const MeshResource* mesh = assetLoader_.get<MeshResource>(dc.renderer.meshName);
             const auto& meshBuffers = resourcesManager_.getMesh(*mesh);
             VkDeviceSize offset = 0;
             vkCmdBindVertexBuffers(cmd, 0, 1, &meshBuffers.vertexBuffer.buffer, &offset);
@@ -139,7 +139,7 @@ private:
     }
 
     void initPipeline() {
-        const Shader* shader = assetManager_.get<Shader>(OBJECT_ID_SHADER);
+        const ShaderResource* shader = assetLoader_.get<ShaderResource>(OBJECT_ID_SHADER);
         if (!shader) return;
         pipeline_ = &resourcesManager_.getPipeline(*shader, VK_FORMAT_R32_UINT, VK_FORMAT_D32_SFLOAT);
 
@@ -168,7 +168,7 @@ private:
     }
 
     const VulkanContext& context_;
-    AssetManager& assetManager_;
+    AssetLoader& assetLoader_;
     VulkanResourcesManager& resourcesManager_;
 
     VulkanBuffer perFrameUBOBuffer_{};

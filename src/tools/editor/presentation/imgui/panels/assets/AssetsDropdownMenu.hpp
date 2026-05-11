@@ -3,29 +3,24 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
-#include "../../../../business/ObjectSelection.hpp"
 #include "../../../../business/asset_editing/MaterialMutations.hpp"
-#include "modules/assets/AssetManager.hpp"
 
 class AssetsDropdownMenu {
 public:
-    AssetsDropdownMenu(AssetManager& assetManager,
-                       ObjectSelection& objectSelection,
-                       MaterialMutations& materialMutations) :
-        assetManager_(assetManager),
+    AssetsDropdownMenu(ObjectSelection& objectSelection, MaterialMutations& materialMutations) :
         objectSelection_(objectSelection),
         materialMutations_(materialMutations) {}
 
-    void draw(std::optional<std::string> selectedAsset) {
+    void draw(const std::optional<std::string>& selectedAsset) {
         if (selectedAsset) {
-            bool isBuiltin = materialMutations_.isBuiltin(*selectedAsset);
-            if (isBuiltin) {
+            bool isMutable = materialMutations_.isMutable(*selectedAsset);
+            if (isMutable) {
                 ImGui::BeginDisabled();
             }
             if (ImGui::MenuItem("Delete")) {
                 deleteMaterial(*selectedAsset);
             }
-            if (isBuiltin) {
+            if (isMutable) {
                 ImGui::EndDisabled();
             }
             ImGui::Separator();
@@ -39,7 +34,6 @@ public:
     }
 
 private:
-    AssetManager& assetManager_;
     ObjectSelection& objectSelection_;
     MaterialMutations& materialMutations_;
 

@@ -2,24 +2,24 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <volk.h>
+#include "../../../../modules/asset_management/resources/ShaderResource.hpp"
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/buffers.hpp"
 #include "../core/utils/descriptors.hpp"
 #include "../core/utils/structs.hpp"
-#include "modules/assets/AssetManager.hpp"
-#include "modules/assets/BuiltinAssetNames.hpp"
-#include "structs/assets/Shader.hpp"
-#include "structs/components/Light.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/BuiltinAssetNames.hpp"
+#include "modules/scene/components/Light.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 class VulkanLightingPass {
 public:
     VulkanLightingPass(const VulkanContext& context,
-                       AssetManager& assetManager,
+                       AssetLoader& assetLoader,
                        VulkanResourcesManager& resourcesManager,
                        VkFormat swapchainImageFormat) :
         context_(context),
-        assetManager_(assetManager),
+        assetLoader_(assetLoader),
         resourcesManager_(resourcesManager) {
         initPipeline(swapchainImageFormat);
     }
@@ -194,13 +194,13 @@ private:
     }
 
     void initPipeline(VkFormat swapchainImageFormat) {
-        const Shader* shader = assetManager_.get<Shader>(LIGHTING_SHADER);
+        const ShaderResource* shader = assetLoader_.get<ShaderResource>(LIGHTING_SHADER);
         if (!shader) return;
         pipeline_ = &resourcesManager_.getPipeline(*shader, swapchainImageFormat, VK_FORMAT_UNDEFINED);
     }
 
     const VulkanContext& context_;
-    AssetManager& assetManager_;
+    AssetLoader& assetLoader_;
     VulkanResourcesManager& resourcesManager_;
 
     VulkanPipeline* pipeline_ = nullptr;

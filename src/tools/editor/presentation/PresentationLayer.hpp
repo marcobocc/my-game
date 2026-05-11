@@ -7,7 +7,7 @@
 
 class SceneLoader;
 class PickingSystem;
-class AssetManager;
+class EditorAssetRepository;
 class SceneMutations;
 class MaterialMutations;
 class UndoHistory;
@@ -53,9 +53,9 @@ public:
                       UserInterface& userInterface,
                       PickingSystem& pickingService,
                       SceneMutations& sceneMutations,
+                      EditorAssetRepository& assetRepository,
                       MaterialMutations& materialMutations,
                       SceneLoader& editorWorkspace,
-                      AssetManager& assetManager,
                       GameWindow& window,
                       GameEngine& engine,
                       UndoHistory& undoHistory);
@@ -81,8 +81,8 @@ private:
     UserInterface& userInterface_;
     PickingSystem& pickingSystem_;
     SceneMutations& sceneMutations_;
+    EditorAssetRepository& assetRepository_;
     SceneLoader& editorWorkspace_;
-    AssetManager& assetManager_;
     GameEngine& engine_;
     GameWindow& window_;
     std::vector<DrawCall> outlineQueue_;

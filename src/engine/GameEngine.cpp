@@ -1,15 +1,15 @@
 #include "GameEngine.hpp"
-#include "modules/assets/AssetManager.hpp"
+#include "modules/asset_management/AssetCache.hpp"
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
 #include "modules/rendering/GameRenderSystem.hpp"
-#include "structs/components/Camera.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 GameEngine::GameEngine(GameWindow& window,
                        TimeManager& time,
-                       AssetManager& assetManager,
+                       AssetCache& loadedAssets,
                        InputSystem& inputSystem,
                        PhysicsSystem& physicsSystem,
                        EntityManager& entityManager,
@@ -18,7 +18,7 @@ GameEngine::GameEngine(GameWindow& window,
                        VulkanGameRenderer& renderer) :
     window_(window),
     time_(time),
-    assetManager_(assetManager),
+    loadedAssets_(loadedAssets),
     inputSystem_(inputSystem),
     physicsSystem_(physicsSystem),
     entityManager_(entityManager),
@@ -72,9 +72,3 @@ void GameEngine::setActiveCamera(const Camera& camera, const Transform& transfor
 }
 
 // --------------------------------------------------------
-// Assets API
-// --------------------------------------------------------
-
-std::vector<std::string> GameEngine::getAvailableAssets(const std::string& extension) const {
-    return assetManager_.getAvailableAssets(extension);
-}

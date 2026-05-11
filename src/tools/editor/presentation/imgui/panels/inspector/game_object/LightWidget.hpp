@@ -1,7 +1,7 @@
 #pragma once
 #include <imgui.h>
 #include "../ComponentContainer.hpp"
-#include "structs/components/Light.hpp"
+#include "modules/scene/components/Light.hpp"
 
 class SceneMutations;
 

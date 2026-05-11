@@ -6,9 +6,10 @@
 #include "../../../engine/modules/scene/EntityManager.hpp"
 #include "../../../engine/utils/JsonUtils.hpp"
 #include "ObjectSelection.hpp"
-#include "asset_editing/MaterialMutations.hpp"
-#include "structs/components/Light.hpp"
-#include "structs/components/Transform.hpp"
+#include "asset_editing/EditorAssetRepository.hpp"
+#include "modules/asset_management/assets/Material.hpp"
+#include "modules/scene/components/Light.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 void SceneLoader::newScene() {
     entityManager_.clear();
@@ -25,9 +26,7 @@ void SceneLoader::newScene() {
 
 void SceneLoader::saveScene(const char* path) {
     // Flush any dirty materials to disk before saving the scene
-    if (materialMutations_) {
-        materialMutations_->flushDirtyMaterials();
-    }
+    assetRepository_.commit<Material>();
 
     std::ofstream f(path);
     if (!f) return;

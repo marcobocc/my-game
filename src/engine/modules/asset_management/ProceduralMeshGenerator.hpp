@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <memory>
-#include "structs/assets/Mesh.hpp"
+#include "../../modules/asset_management/resources/MeshResource.hpp"
 
 class ProceduralMeshGenerator {
 public:
@@ -13,7 +13,7 @@ public:
      * @param name The mesh name including type and parameters
      * @return Unique pointer to Mesh object
      */
-    static std::unique_ptr<Mesh> generate(const std::string& name) {
+    static std::unique_ptr<MeshResource> generate(const std::string& name) {
         if (name.find("SPHERE") != std::string::npos) {
             size_t lastUnderscore = name.rfind('_');
             if (lastUnderscore != std::string::npos) {
@@ -35,7 +35,7 @@ private:
      * @param name The mesh name to assign
      * @return Unique pointer to Mesh object containing the sphere geometry
      */
-    static std::unique_ptr<Mesh> generateSphere(uint32_t resolution, const std::string& name) {
+    static std::unique_ptr<MeshResource> generateSphere(uint32_t resolution, const std::string& name) {
         std::vector<glm::vec3> positions;
         std::vector<glm::vec2> uvs;
         std::vector<glm::vec3> normals;
@@ -86,13 +86,13 @@ private:
 
         std::vector<glm::vec3> colors(positions.size(), glm::vec3(1.0f, 1.0f, 1.0f));
 
-        return std::make_unique<Mesh>(name, positions, uvs, colors, indices, normals);
+        return std::make_unique<MeshResource>(name, positions, uvs, colors, indices, normals);
     }
 
     /**
      * Generate a unit cube from -0.5 to 0.5 on all axes.
      */
-    static std::unique_ptr<Mesh> generateCube(const std::string& name) {
+    static std::unique_ptr<MeshResource> generateCube(const std::string& name) {
         std::vector<glm::vec3> positions = {// Front (+Z)
                                             {-0.5f, -0.5f, 0.5f},
                                             {0.5f, -0.5f, 0.5f},
@@ -168,13 +168,13 @@ private:
         std::vector<uint32_t> indices = {0,  2,  1,  0,  3,  2,  4,  6,  5,  4,  7,  6,  8,  10, 9,  8,  11, 10,
                                          12, 14, 13, 12, 15, 14, 16, 18, 17, 16, 19, 18, 20, 22, 21, 20, 23, 22};
 
-        return std::make_unique<Mesh>(name, positions, uvs, colors, indices, normals);
+        return std::make_unique<MeshResource>(name, positions, uvs, colors, indices, normals);
     }
 
     /**
      * Generate a flat plane in the XZ plane at Y=0, from -0.5 to 0.5.
      */
-    static std::unique_ptr<Mesh> generatePlane(const std::string& name) {
+    static std::unique_ptr<MeshResource> generatePlane(const std::string& name) {
         std::vector<glm::vec3> positions = {
                 {-0.5f, 0.0f, -0.5f}, {0.5f, 0.0f, -0.5f}, {0.5f, 0.0f, 0.5f}, {-0.5f, 0.0f, 0.5f}};
 
@@ -186,6 +186,6 @@ private:
 
         std::vector<uint32_t> indices = {0, 1, 2, 0, 2, 3};
 
-        return std::make_unique<Mesh>(name, positions, uvs, colors, indices, normals);
+        return std::make_unique<MeshResource>(name, positions, uvs, colors, indices, normals);
     }
 };

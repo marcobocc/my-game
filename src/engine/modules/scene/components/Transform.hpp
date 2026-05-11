@@ -4,7 +4,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
-#include "../../utils/JsonUtils.hpp"
+#include "../../../utils/JsonUtils.hpp"
 
 struct Transform {
     glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);

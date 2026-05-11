@@ -1,6 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "../../utils/JsonUtils.hpp"
+#include "../../../utils/JsonUtils.hpp"
 
 struct BoxCollider {
     glm::vec3 center{0.0f};

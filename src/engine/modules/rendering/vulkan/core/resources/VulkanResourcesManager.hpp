@@ -1,12 +1,12 @@
 #pragma once
 #include <span>
+#include "../../../../../modules/asset_management/resources/ShaderResource.hpp"
+#include "../../../../../modules/asset_management/resources/TextureResource.hpp"
 #include "VulkanMaterialCache.hpp"
 #include "VulkanMeshBuffersCache.hpp"
 #include "VulkanPipelineCache.hpp"
 #include "VulkanTextureCache.hpp"
-#include "structs/assets/Material.hpp"
-#include "structs/assets/Shader.hpp"
-#include "structs/assets/Texture.hpp"
+#include "modules/asset_management/assets/Material.hpp"
 
 class VulkanResourcesManager {
 public:
@@ -19,11 +19,11 @@ public:
         pipelineCache_(pipelineCache),
         materialCache_(materialCache) {}
 
-    VulkanMeshBuffers& getMesh(const Mesh& mesh) const { return meshBuffersCache_.get(mesh); }
+    VulkanMeshBuffers& getMesh(const MeshResource& mesh) const { return meshBuffersCache_.get(mesh); }
 
-    VulkanTexture& getTexture(const Texture& texture) const { return textureCache_.get(texture); }
+    VulkanTexture& getTexture(const TextureResource& texture) const { return textureCache_.get(texture); }
 
-    VulkanPipeline& getPipeline(const Shader& shader,
+    VulkanPipeline& getPipeline(const ShaderResource& shader,
                                 VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
                                 VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) const {
         return pipelineCache_.get(shader, colorFormat, depthFormat);

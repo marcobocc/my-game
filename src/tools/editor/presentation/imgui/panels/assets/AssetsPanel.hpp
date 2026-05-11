@@ -5,9 +5,9 @@
 #include "../../ImguiStyling.hpp"
 #include "../EditorPanel.hpp"
 #include "AssetsDropdownMenu.hpp"
-#include "modules/assets/AssetManager.hpp"
 
 class MaterialMutations;
+class EditorAssetRepository;
 
 class AssetsPanel : public EditorPanel {
 public:
@@ -15,10 +15,12 @@ public:
     static constexpr float INSPECTOR_WIDTH_RATIO = 0.25f;
     static constexpr int SEARCH_BUFFER_SIZE = 256;
 
-    AssetsPanel(AssetManager& assetManager, ObjectSelection& objectSelection, MaterialMutations& materialMutations) :
-        assetManager_(assetManager),
+    AssetsPanel(EditorAssetRepository& repository,
+                ObjectSelection& objectSelection,
+                MaterialMutations& materialMutations) :
+        repository_(repository),
         objectSelection_(objectSelection),
-        dropdownMenu_(assetManager, objectSelection, materialMutations) {
+        dropdownMenu_(objectSelection, materialMutations) {
         searchBuffer_[0] = '\0';
     }
 
@@ -40,7 +42,7 @@ public:
     }
 
 private:
-    AssetManager& assetManager_;
+    EditorAssetRepository& repository_;
     ObjectSelection& objectSelection_;
     AssetsDropdownMenu dropdownMenu_;
     char searchBuffer_[SEARCH_BUFFER_SIZE];
@@ -169,12 +171,12 @@ private:
     void drawAssetsList() {
         std::vector<std::string> allAssets;
 
-        auto meshes = assetManager_.getAvailableAssets(".mesh");
-        auto mats = assetManager_.getAvailableAssets(".mat");
-        auto shaders = assetManager_.getAvailableAssets(".shad");
-        auto texturesPng = assetManager_.getAvailableAssets(".png");
-        auto texturesJpg = assetManager_.getAvailableAssets(".jpg");
-        auto models = assetManager_.getAvailableAssets(".model");
+        auto meshes = repository_.list(".mesh");
+        auto mats = repository_.list(".mat");
+        auto shaders = repository_.list(".shad");
+        auto texturesPng = repository_.list(".png");
+        auto texturesJpg = repository_.list(".jpg");
+        auto models = repository_.list(".model");
 
         allAssets.insert(allAssets.end(), meshes.begin(), meshes.end());
         allAssets.insert(allAssets.end(), mats.begin(), mats.end());

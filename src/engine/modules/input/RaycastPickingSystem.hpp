@@ -2,12 +2,12 @@
 #include <glm/glm.hpp>
 #include <limits>
 #include <optional>
-#include "../../modules/assets/AssetManager.hpp"
+#include "../../modules/asset_management/AssetLoader.hpp"
+#include "../../modules/asset_management/resources/MeshResource.hpp"
 #include "../../modules/scene/EntityManager.hpp"
-#include "../../structs/assets/Mesh.hpp"
-#include "../../structs/components/Camera.hpp"
-#include "../../structs/components/Renderer.hpp"
-#include "../../structs/components/Transform.hpp"
+#include "../../modules/scene/components/Camera.hpp"
+#include "../../modules/scene/components/Renderer.hpp"
+#include "../../modules/scene/components/Transform.hpp"
 #include "../../utils/math/Ray.hpp"
 
 /*
@@ -25,7 +25,7 @@ public:
                                             const Camera& camera,
                                             const Transform& cameraTransform,
                                             EntityManager& entityManager,
-                                            AssetManager& assetManager) {
+                                            AssetLoader& assetLoader) {
         Ray ray = buildRay(ndcPos, camera, cameraTransform);
 
         std::optional<EntityHandle> best;
@@ -35,7 +35,7 @@ public:
         for (auto& [entity, transformPtr, rendererPtr]: objects) {
             if (!transformPtr || !rendererPtr) continue;
             if (!rendererPtr->enabled) continue;
-            const Mesh* mesh = assetManager.get<Mesh>(rendererPtr->meshName);
+            const MeshResource* mesh = assetLoader.get<MeshResource>(rendererPtr->meshName);
             if (!mesh) continue;
 
             AABB worldAABB = mesh->getAABB().applyTransform(transformPtr->getModelMatrix());
@@ -61,11 +61,11 @@ public:
                                                      const Camera& camera,
                                                      const Transform& cameraTransform,
                                                      EntityManager& entityManager,
-                                                     AssetManager& assetManager) {
+                                                     AssetLoader& assetLoader) {
         if (viewportWidth == 0 || viewportHeight == 0) return std::nullopt;
         float ndcX = (static_cast<float>(pixelX) - static_cast<float>(viewportX)) / static_cast<float>(viewportWidth);
         float ndcY = (static_cast<float>(pixelY) - static_cast<float>(viewportY)) / static_cast<float>(viewportHeight);
-        return pick({ndcX, ndcY}, camera, cameraTransform, entityManager, assetManager);
+        return pick({ndcX, ndcY}, camera, cameraTransform, entityManager, assetLoader);
     }
 
     static Ray buildRay(const glm::vec2& ndcPos, const Camera& camera, const Transform& cameraTransform) {

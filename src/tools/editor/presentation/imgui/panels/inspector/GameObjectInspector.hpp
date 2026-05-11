@@ -1,6 +1,7 @@
 #pragma once
 #include <imgui.h>
 #include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "../../ImguiStyling.hpp"
 #include "game_object/BoxColliderWidget.hpp"
@@ -8,28 +9,27 @@
 #include "game_object/LightWidget.hpp"
 #include "game_object/RendererWidget.hpp"
 #include "game_object/TransformWidget.hpp"
-#include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityManager.hpp"
-#include "structs/components/BoxCollider.hpp"
-#include "structs/components/Camera.hpp"
-#include "structs/components/Light.hpp"
-#include "structs/components/Renderer.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/scene/components/BoxCollider.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Light.hpp"
+#include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 class GameObjectInspector {
 public:
     GameObjectInspector(ObjectSelection& objectSelection,
                         EntityManager& entityManager,
-                        AssetManager& assetManager,
+                        EditorAssetRepository& assetRepository,
                         SceneMutations& sceneMutations,
                         EditorGizmos& debugViz) :
         objectSelection_(objectSelection),
         entityManager_(entityManager),
-        assetManager_(assetManager),
+        assetRepository_(assetRepository),
         sceneMutations_(sceneMutations),
         debugViz_(debugViz),
         transformWidget_(sceneMutations),
-        rendererWidget_(assetManager, sceneMutations, debugViz),
+        rendererWidget_(assetRepository, sceneMutations, debugViz),
         boxColliderWidget_(sceneMutations),
         cameraWidget_(sceneMutations),
         lightWidget_(sceneMutations) {}
@@ -45,7 +45,7 @@ public:
 private:
     ObjectSelection& objectSelection_;
     EntityManager& entityManager_;
-    AssetManager& assetManager_;
+    EditorAssetRepository& assetRepository_;
     SceneMutations& sceneMutations_;
     EditorGizmos& debugViz_;
     TransformWidget transformWidget_;

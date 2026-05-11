@@ -3,15 +3,15 @@
 #include <volk.h>
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/structs.hpp"
-#include "modules/assets/AssetManager.hpp"
-#include "modules/assets/BuiltinAssetNames.hpp"
-#include "structs/components/Camera.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/BuiltinAssetNames.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 class VulkanGridPass {
 public:
-    VulkanGridPass(AssetManager& assetManager, VulkanResourcesManager& resourcesManager) :
-        assetManager_(assetManager),
+    VulkanGridPass(AssetLoader& assetLoader, VulkanResourcesManager& resourcesManager) :
+        assetLoader_(assetLoader),
         resourcesManager_(resourcesManager) {
         initPipeline();
     }
@@ -79,12 +79,12 @@ public:
 
 private:
     void initPipeline() {
-        const Shader* shader = assetManager_.get<Shader>(GRID_SHADER);
+        const ShaderResource* shader = assetLoader_.get<ShaderResource>(GRID_SHADER);
         if (!shader) return;
         pipeline_ = &resourcesManager_.getPipeline(*shader);
     }
 
-    AssetManager& assetManager_;
+    AssetLoader& assetLoader_;
     VulkanResourcesManager& resourcesManager_;
     VulkanPipeline* pipeline_ = nullptr;
 };

@@ -6,10 +6,10 @@
 #include <vulkan/vulkan.h>
 #include "../../../../engine/modules/rendering/vulkan/core/RenderGraph.hpp"
 #include "../../../../engine/modules/rendering/vulkan/core/utils/structs.hpp"
+#include "../../../../engine/structs/RendererSettings.hpp"
 #include "EditorRenderData.hpp"
-#include "structs/components/Camera.hpp"
-#include "structs/components/Transform.hpp"
-#include "structs/settings/RendererSettings.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 class GameWindow;
 class VulkanGeometryPass;

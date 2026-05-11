@@ -1,9 +1,10 @@
 #pragma once
+#include <log4cxx/logger.h>
 #include "GameRenderData.hpp"
 #include "modules/scene/EntityManager.hpp"
-#include "structs/components/Camera.hpp"
-#include "structs/components/Renderer.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/Transform.hpp"
 #include "vulkan/VulkanGameRenderer.hpp"
 
 class GameRenderSystem {

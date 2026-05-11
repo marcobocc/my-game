@@ -1,20 +1,18 @@
 #include "GizmosBuilder.hpp"
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "../../../../engine/modules/assets/AssetManager.hpp"
+#include "../../../../engine/modules/asset_management/AssetLoader.hpp"
+#include "../../../../engine/modules/asset_management/resources/MeshResource.hpp"
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "../../../../engine/modules/scene/EntityManager.hpp"
-#include "../../../../engine/structs/assets/Mesh.hpp"
-#include "../../../../engine/structs/components/Renderer.hpp"
+#include "../../../../engine/modules/scene/components/Renderer.hpp"
 #include "../../../../engine/utils/math/AABB.hpp"
 #include "../../../../engine/utils/math/BVH.hpp"
 #include "../../../../engine/utils/math/BoundingSphere.hpp"
 #include "../../business/EditorSettings.hpp"
 
-GizmosRenderer::GizmosRenderer(AssetManager& assetManager,
-                               EntityManager& entityManager,
-                               EditorSettings& editorSettings) :
-    assetManager_(assetManager),
+GizmosRenderer::GizmosRenderer(AssetLoader& assetLoader, EntityManager& entityManager, EditorSettings& editorSettings) :
+    assetLoader_(assetLoader),
     entityManager_(entityManager),
     editorSettings_(editorSettings) {}
 
@@ -102,7 +100,7 @@ GizmoObject GizmosRenderer::buildGizmoObjectAABB(EntityHandle objectId, const gl
     auto* transform = entityManager_.getComponent<Transform>(objectId);
     auto* renderer = entityManager_.getComponent<Renderer>(objectId);
     if (transform && renderer) {
-        auto mesh = assetManager_.get<Mesh>(renderer->meshName);
+        auto mesh = assetLoader_.get<MeshResource>(renderer->meshName);
         auto aabb = mesh->getAABB().applyTransform(transform->getModelMatrix());
         return buildGizmoAABB(aabb, color);
     }
@@ -136,7 +134,7 @@ GizmoObject GizmosRenderer::buildGizmoObjectBoundingSphere(EntityHandle objectId
     auto* transform = entityManager_.getComponent<Transform>(objectId);
     auto* renderer = entityManager_.getComponent<Renderer>(objectId);
     if (transform && renderer) {
-        auto mesh = assetManager_.get<Mesh>(renderer->meshName);
+        auto mesh = assetLoader_.get<MeshResource>(renderer->meshName);
         auto sphere = mesh->getBoundingSphere().applyTransform(transform->getModelMatrix());
         return buildGizmoBoundingSphere(sphere, color);
     }
@@ -148,7 +146,7 @@ GizmoObject GizmosRenderer::buildGizmoBVH(const glm::vec3& color) {
     std::vector<Item> items;
     auto renderables = entityManager_.query<Transform, Renderer>();
     for (const auto& [entity, transform, renderer]: renderables) {
-        auto* mesh = assetManager_.get<Mesh>(renderer->meshName);
+        auto* mesh = assetLoader_.get<MeshResource>(renderer->meshName);
         if (!mesh) continue;
         auto aabb = mesh->getAABB().applyTransform(transform->getModelMatrix());
         items.emplace_back(aabb, std::to_string(entity));

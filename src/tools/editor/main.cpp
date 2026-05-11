@@ -21,10 +21,8 @@ int main(int argc, char* argv[]) {
     if (projectRoot.empty()) {
         throw std::runtime_error("Project root not provided. Use --project <path> to specify the project root.");
     }
-    std::filesystem::path assetsPath = projectRoot / "assets";
-
     GameWindow window("Editor");
-    EditorWiringContainer wiringContainer(window, assetsPath, projectRoot);
+    EditorWiringContainer wiringContainer(window, projectRoot);
     EditorApp& editorApp = wiringContainer.editorApp();
     editorApp.run();
 

@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <nlohmann/json.hpp>
-#include "../RenderTargetHandle.hpp"
+#include "../../../structs/RenderTargetHandle.hpp"
 
 struct Camera {
     float fov = 45.0f;

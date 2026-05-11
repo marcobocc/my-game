@@ -7,7 +7,7 @@
 class GameEngine;
 class Scene;
 class ObjectSelection;
-class MaterialMutations;
+class EditorAssetRepository;
 
 class SceneLoader {
 public:
@@ -17,11 +17,11 @@ public:
     SceneLoader(EntityManager& entityManager,
                 ObjectSelection& objectSelection,
                 GameEngine& engine,
-                MaterialMutations* materialMutations = nullptr) :
+                EditorAssetRepository& assetRepository) :
         entityManager_(entityManager),
         objectSelection_(objectSelection),
         engine_(engine),
-        materialMutations_(materialMutations) {}
+        assetRepository_(assetRepository) {}
 
     void newScene();
     void saveScene(const char* path);
@@ -36,7 +36,7 @@ private:
     EntityManager& entityManager_;
     ObjectSelection& objectSelection_;
     GameEngine& engine_;
-    MaterialMutations* materialMutations_;
+    EditorAssetRepository& assetRepository_;
     OnSceneNameChanged onSceneNameChanged_;
     OnScenePathChanged onScenePathChanged_;
 };

@@ -6,10 +6,10 @@
 #include "../../ImguiStyling.hpp"
 #include "../hierarchy/HierarchyDropdownMenu.hpp"
 #include "../hierarchy/SpherePopupModal.hpp"
-#include "structs/components/Renderer.hpp"
+#include "modules/scene/components/Renderer.hpp"
 
 class SceneMutations;
-class AssetManager;
+class EditorAssetRepository;
 class ObjectSelection;
 class GameWindow;
 class EditorCamera;
@@ -19,7 +19,7 @@ class EditorSceneViewport : public ImguiWidget {
 public:
     static constexpr float DRAG_THRESHOLD = 25.0f; // 5 pixels squared
 
-    EditorSceneViewport(AssetManager& assetManager,
+    EditorSceneViewport(EditorAssetRepository& assetRepository,
                         SceneMutations& sceneMutations,
                         ObjectSelection& objectSelection,
                         EntityManager& entityManager,
@@ -27,7 +27,7 @@ public:
                         GameWindow& window,
                         EditorCamera& editorCamera,
                         const std::function<void(uint32_t)>& onSphereCreated = nullptr) :
-        assetManager_(assetManager),
+        assetRepository_(assetRepository),
         sceneMutations_(sceneMutations),
         objectSelection_(objectSelection),
         entityManager_(entityManager),
@@ -35,7 +35,7 @@ public:
         window_(window),
         editorCamera_(editorCamera),
         spherePopupModal_(onSphereCreated),
-        dropdownMenu_(assetManager, sceneMutations, &spherePopupModal_) {}
+        dropdownMenu_(assetRepository, sceneMutations, &spherePopupModal_) {}
 
     void draw() override {
         spherePopupModal_.draw();
@@ -143,7 +143,7 @@ public:
     }
 
 private:
-    AssetManager& assetManager_;
+    EditorAssetRepository& assetRepository_;
     SceneMutations& sceneMutations_;
     ObjectSelection& objectSelection_;
     EntityManager& entityManager_;

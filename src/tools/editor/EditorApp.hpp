@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <string>
 #include "../../engine/GameEngine.hpp"
+#include "../../engine/modules/asset_management/AssetExplorer.hpp"
 #include "../../engine/modules/core/TimeManager.hpp"
 #include "../../engine/modules/input/InputSystem.hpp"
 #include "../../engine/modules/physics/PhysicsSystem.hpp"
@@ -31,6 +32,7 @@ public:
               TimeManager& time,
               InputSystem& inputSystem,
               PhysicsSystem& physicsSystem,
+              AssetExplorer& assetExplorer,
               const std::filesystem::path& projectPath = "") :
         window_(window),
         engine_(engine),
@@ -43,6 +45,7 @@ public:
         presentationLayer_(presentationLayer),
         sceneLoader_(sceneLoader),
         inputHandler_(inputHandler),
+        assetExplorer_(assetExplorer),
         projectPath_(projectPath) {
         initEditor();
         ImguiStyling::ApplyEditorStyle();
@@ -82,6 +85,7 @@ private:
     void initEditor() {
         setupViewport();
         rendererSettings_.enableGrid();
+        if (!projectPath_.empty()) assetExplorer_.discoverAssets(projectPath_ / "assets");
         SceneViewport sv = window_.getSceneViewport();
         if (sv.width > 0 && sv.height > 0)
             editorOrbitCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
@@ -114,5 +118,6 @@ private:
     PresentationLayer& presentationLayer_;
     SceneLoader& sceneLoader_;
     InputHandler& inputHandler_;
+    AssetExplorer& assetExplorer_;
     std::filesystem::path projectPath_;
 };

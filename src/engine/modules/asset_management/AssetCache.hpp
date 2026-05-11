@@ -1,17 +1,29 @@
 #pragma once
+#include <functional>
+#include <log4cxx/logger.h>
 #include <memory>
 #include <string>
 #include <typeindex>
 #include <unordered_map>
 #include <unordered_set>
 
-class AssetStorage {
+class MeshResource;
+class TextureResource;
+class ShaderResource;
+class Material;
+class Model;
+
+class AssetCache {
+    inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetCache");
+
 public:
+    AssetCache() {}
+
     template<typename T>
     T* get(const std::string& name) {
         auto& container = getContainer<T>();
         if (auto it = container.find(name); it != container.end()) return it->second.get();
-        return nullptr;
+        throw std::runtime_error("Asset not found: '" + name + "'");
     }
 
     template<typename T>
@@ -19,6 +31,10 @@ public:
         if (!asset) return nullptr;
         auto& container = getContainer<T>();
         auto [it, inserted] = container.emplace(name, std::move(asset));
+        if (!inserted) {
+            LOG4CXX_WARN(LOGGER, "Asset with name '" + name + "' already exists. Insertion skipped.");
+            return nullptr;
+        }
         names_.insert(name);
         return it->second.get();
     }

@@ -2,16 +2,16 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include <volk.h>
+#include "../../../../modules/asset_management/resources/ShaderResource.hpp"
 #include "../core/VulkanSwapchainManager.hpp"
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/buffers.hpp"
 #include "../core/utils/structs.hpp"
-#include "modules/assets/AssetManager.hpp"
-#include "modules/assets/BuiltinAssetNames.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/BuiltinAssetNames.hpp"
 #include "modules/core/GameWindow.hpp"
-#include "structs/assets/Shader.hpp"
-#include "structs/components/Camera.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 class VulkanGizmoPass {
 public:
@@ -23,11 +23,11 @@ public:
     };
 
     VulkanGizmoPass(const VulkanContext& context,
-                    AssetManager& assetManager,
+                    AssetLoader& assetLoader,
                     VulkanResourcesManager& resourcesManager,
                     VulkanSwapchainManager& swapchainManager) :
         context_(context),
-        assetManager_(assetManager),
+        assetLoader_(assetLoader),
         resourcesManager_(resourcesManager),
         swapchainManager_(swapchainManager) {
         initPipeline();
@@ -116,7 +116,7 @@ public:
 
 private:
     void initPipeline() {
-        const Shader* shader = assetManager_.get<Shader>(GIZMO_SHADER);
+        const ShaderResource* shader = assetLoader_.get<ShaderResource>(GIZMO_SHADER);
         if (!shader) return;
         const VkFormat colorFormat = swapchainManager_.swapchain().swapchainImageFormat;
         pipeline_ = &resourcesManager_.getPipeline(*shader, colorFormat, VK_FORMAT_D32_SFLOAT);
@@ -136,7 +136,7 @@ private:
     }
 
     const VulkanContext& context_;
-    AssetManager& assetManager_;
+    AssetLoader& assetLoader_;
     VulkanResourcesManager& resourcesManager_;
     VulkanSwapchainManager& swapchainManager_;
 

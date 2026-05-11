@@ -1,9 +1,9 @@
 #pragma once
 #include <filesystem>
 #include <string>
-#include "structs/assets/Mesh.hpp"
+#include "resources/MeshResource.hpp"
 
 namespace importing {
-    std::unique_ptr<Mesh>
+    std::unique_ptr<MeshResource>
     importObjFile(const std::filesystem::path& filepath, bool reverseWinding, const std::string& name);
 }

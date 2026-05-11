@@ -2,7 +2,7 @@
 #include <glm/vec4.hpp>
 #include <optional>
 #include <string>
-#include "../../utils/JsonUtils.hpp"
+#include "../../../utils/JsonUtils.hpp"
 
 struct Renderer {
     std::string meshName;

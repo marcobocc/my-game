@@ -3,11 +3,11 @@
 #include <vector>
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "../../../../engine/modules/scene/EntityMetadata.hpp"
-#include "../../../../engine/structs/components/Camera.hpp"
-#include "../../../../engine/structs/components/Transform.hpp"
+#include "../../../../engine/modules/scene/components/Camera.hpp"
+#include "../../../../engine/modules/scene/components/Transform.hpp"
 #include "../../input/PickingSystem.hpp"
 
-class AssetManager;
+class AssetLoader;
 class Scene;
 class EditorSettings;
 struct AABB;
@@ -22,7 +22,7 @@ struct GizmoTransformHandle {
 
 class GizmosRenderer {
 public:
-    GizmosRenderer(AssetManager& assetManager, EntityManager& entityManager, EditorSettings& editorSettings);
+    GizmosRenderer(AssetLoader& assetLoader, EntityManager& entityManager, EditorSettings& editorSettings);
 
     GizmoObject buildGizmoLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color);
     GizmoObject buildGizmoCube(const glm::vec3& center, float halfSize, const glm::vec3& color);
@@ -41,7 +41,7 @@ public:
 private:
     void addGizmoLine(GizmoObject& gizmoObject, const glm::vec3& from, const glm::vec3& to, const glm::vec3& color);
 
-    AssetManager& assetManager_;
+    AssetLoader& assetLoader_;
     EntityManager& entityManager_;
     EditorSettings& editorSettings_;
 };

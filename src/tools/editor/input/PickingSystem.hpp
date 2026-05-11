@@ -4,10 +4,10 @@
 #include <optional>
 #include <variant>
 #include <vector>
-#include "../../../engine/modules/assets/AssetManager.hpp"
+#include "../../../engine/modules/asset_management/AssetLoader.hpp"
 #include "../../../engine/modules/input/RaycastPickingSystem.hpp"
-#include "../../../engine/structs/components/Camera.hpp"
-#include "../../../engine/structs/components/Transform.hpp"
+#include "../../../engine/modules/scene/components/Camera.hpp"
+#include "../../../engine/modules/scene/components/Transform.hpp"
 #include "../../../engine/utils/math/Ray.hpp"
 #include "../gizmos.hpp"
 
@@ -26,7 +26,7 @@ using EditorPickResult = std::variant<GizmoHit, SceneObjectHit>;
 
 class PickingSystem {
 public:
-    explicit PickingSystem(AssetManager& assetManager) : assetManager_(assetManager) {}
+    explicit PickingSystem(AssetLoader& assetLoader) : assetLoader_(assetLoader) {}
 
     void registerHandle(const GizmoHandle& handle) { handles_.push_back(handle); }
     void clearHandles() { handles_.clear(); }
@@ -63,14 +63,14 @@ public:
         if (bestHandle) return EditorPickResult{*bestHandle};
 
         // Layer 2: scene objects via AABB raycast
-        auto hit = RaycastPickingSystem::pick(ndc, camera, cameraTransform, entityManager, assetManager_);
+        auto hit = RaycastPickingSystem::pick(ndc, camera, cameraTransform, entityManager, assetLoader_);
         if (hit) return EditorPickResult{SceneObjectHit{hit.value()}};
 
         return std::nullopt;
     }
 
 private:
-    AssetManager& assetManager_;
+    AssetLoader& assetLoader_;
     std::vector<GizmoHandle> handles_;
 
     // outDist2 is the squared perpendicular distance (used for tiebreaking between overlapping handles)

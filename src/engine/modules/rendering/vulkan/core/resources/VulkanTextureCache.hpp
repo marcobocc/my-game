@@ -1,26 +1,24 @@
 #pragma once
 #include <unordered_map>
 #include <vulkan/vulkan.h>
+#include "../../../../../modules/asset_management/resources/TextureResource.hpp"
 #include "../utils/error_handling.hpp"
 #include "../utils/structs.hpp"
-#include "structs/assets/Texture.hpp"
 
 class VulkanTextureCache {
 public:
     explicit VulkanTextureCache(VulkanContext& context) : context_(context) {}
 
-    VulkanTexture& get(const Texture& textureAsset) {
-        auto it = cache_.find(textureAsset.getName());
+    VulkanTexture& get(const TextureResource& textureAsset) {
+        auto it = cache_.find(textureAsset.name);
         if (it != cache_.end()) return it->second;
 
         VulkanTexture vulkanTexture = createVulkanTexture(
-                static_cast<uint32_t>(textureAsset.getWidth()),
-                static_cast<uint32_t>(textureAsset.getHeight()),
-                std::vector<unsigned char>(textureAsset.getImageData(),
-                                           textureAsset.getImageData() +
-                                                   textureAsset.getWidth() * textureAsset.getHeight() * 4));
+                static_cast<uint32_t>(textureAsset.width),
+                static_cast<uint32_t>(textureAsset.height),
+                std::vector<unsigned char>(textureAsset.imageData.begin(), textureAsset.imageData.end()));
 
-        auto [insertedIt, _] = cache_.emplace(textureAsset.getName(), std::move(vulkanTexture));
+        auto [insertedIt, _] = cache_.emplace(textureAsset.name, std::move(vulkanTexture));
         return insertedIt->second;
     }
 

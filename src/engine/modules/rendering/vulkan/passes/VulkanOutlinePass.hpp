@@ -2,21 +2,21 @@
 #include <string>
 #include <vector>
 #include <volk.h>
+#include "../../../../modules/asset_management/resources/ShaderResource.hpp"
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/structs.hpp"
-#include "modules/assets/AssetManager.hpp"
-#include "modules/assets/BuiltinAssetNames.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/BuiltinAssetNames.hpp"
 #include "modules/core/GameWindow.hpp"
-#include "structs/assets/Shader.hpp"
 
 class VulkanOutlinePass {
 public:
     VulkanOutlinePass(const VulkanContext& context,
-                      AssetManager& assetManager,
+                      AssetLoader& assetLoader,
                       VulkanResourcesManager& resourcesManager,
                       VkFormat swapchainImageFormat) :
         context_(context),
-        assetManager_(assetManager),
+        assetLoader_(assetLoader),
         resourcesManager_(resourcesManager) {
         initPipeline(swapchainImageFormat);
     }
@@ -148,13 +148,13 @@ private:
     }
 
     void initPipeline(VkFormat swapchainImageFormat) {
-        const Shader* shader = assetManager_.get<Shader>(OUTLINE_SHADER);
+        const ShaderResource* shader = assetLoader_.get<ShaderResource>(OUTLINE_SHADER);
         if (!shader) return;
         pipeline_ = &resourcesManager_.getPipeline(*shader, swapchainImageFormat, VK_FORMAT_UNDEFINED);
     }
 
     const VulkanContext& context_;
-    AssetManager& assetManager_;
+    AssetLoader& assetLoader_;
     VulkanResourcesManager& resourcesManager_;
 
     VulkanPipeline* pipeline_ = nullptr;

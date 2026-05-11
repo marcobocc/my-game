@@ -2,8 +2,8 @@
 #include <glm/glm.hpp>
 #include <optional>
 #include "modules/scene/EntityMetadata.hpp"
-#include "structs/components/BoxCollider.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/scene/components/BoxCollider.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 namespace Physics {
     struct RaycastHit {

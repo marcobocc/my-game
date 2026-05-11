@@ -5,23 +5,23 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
+#include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/scene_editing/ObjectPrefabs.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "SpherePopupModal.hpp"
-#include "modules/assets/AssetManager.hpp"
-#include "structs/assets/Model.hpp"
-#include "structs/components/Light.hpp"
-#include "structs/components/Renderer.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/asset_management/assets/Model.hpp"
+#include "modules/scene/components/Light.hpp"
+#include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 class SceneMutations;
 
 class HierarchyDropdownMenu {
 public:
-    HierarchyDropdownMenu(AssetManager& assetManager,
+    HierarchyDropdownMenu(EditorAssetRepository& repository,
                           SceneMutations& sceneMutations,
                           SpherePopupModal* spherePopupModal = nullptr) :
-        assetManager_(assetManager),
+        repository_(repository),
         sceneMutations_(sceneMutations),
         spherePopupModal_(spherePopupModal) {}
 
@@ -57,13 +57,13 @@ public:
     }
 
 private:
-    AssetManager& assetManager_;
+    EditorAssetRepository& repository_;
     SceneMutations& sceneMutations_;
     SpherePopupModal* spherePopupModal_;
 
     void drawModelsSubmenu() {
         if (ImGui::BeginMenu("Models")) {
-            auto models = assetManager_.getAvailableAssets(".model");
+            auto models = repository_.list(".model");
             if (models.empty()) {
                 ImGui::MenuItem("No models found", nullptr, false, false);
             } else {
@@ -78,10 +78,10 @@ private:
     }
 
     void loadModel(const std::string& modelName) {
-        auto* model = assetManager_.get<Model>(modelName);
+        auto* model = repository_.get<Model>(modelName);
         if (!model) return;
         Transform t{glm::vec3(0.0f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), glm::vec3(1.0f)};
-        Renderer r{model->getMeshName(), model->getMaterialName(), std::nullopt, true};
+        Renderer r{model->meshName, model->materialName, std::nullopt, true};
         sceneMutations_.createObject({
                 {"metadata", {{"name", modelName}}},
                 {"transform", t.serialize()},

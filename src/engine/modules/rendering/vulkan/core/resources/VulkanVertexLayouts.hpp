@@ -2,7 +2,7 @@
 #include <array>
 #include <glm/glm.hpp>
 #include <vector>
-#include "structs/assets/Mesh.hpp"
+#include "../../../../../modules/asset_management/resources/MeshResource.hpp"
 
 struct VertexAttribute {
     uint32_t offset;
@@ -48,7 +48,7 @@ struct VertexLayout_PositionNormalUv {
             {{POSITION_OFFSET, POSITION_COMPONENTS}, {NORMAL_OFFSET, NORMAL_COMPONENTS}, {UV_OFFSET, UV_COMPONENTS}}};
 };
 
-inline std::vector<float> packMeshData(const Mesh& mesh) {
+inline std::vector<float> packMeshData(const MeshResource& mesh) {
     std::vector<float> data;
     const auto& positions = mesh.getPositions();
     const auto& normals = mesh.getNormals();

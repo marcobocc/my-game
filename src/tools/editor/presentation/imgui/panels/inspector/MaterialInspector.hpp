@@ -2,24 +2,24 @@
 #include <glm/glm.hpp>
 #include <imgui.h>
 #include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/asset_editing/MaterialMutations.hpp"
 #include "ComponentContainer.hpp"
-#include "modules/assets/AssetManager.hpp"
-#include "structs/assets/Material.hpp"
+#include "modules/asset_management/assets/Material.hpp"
 
 class MaterialInspector : public ComponentContainer {
 public:
-    MaterialInspector(AssetManager& assetManager,
+    MaterialInspector(EditorAssetRepository& assetRepository,
                       ObjectSelection& objectSelection,
                       MaterialMutations& materialMutations) :
         ComponentContainer("Material", 18),
-        assetManager_(assetManager),
+        assetRepository_(assetRepository),
         objectSelection_(objectSelection),
         materialMutations_(materialMutations),
         colorPickerValue_{1.0f, 1.0f, 1.0f, 1.0f} {}
 
 private:
-    AssetManager& assetManager_;
+    EditorAssetRepository& assetRepository_;
     ObjectSelection& objectSelection_;
     MaterialMutations& materialMutations_;
     float colorPickerValue_[4];
@@ -28,20 +28,19 @@ private:
         auto selectedAsset = objectSelection_.getSelectedAssetId();
         if (!selectedAsset) return;
 
-        if (const Material* mat = assetManager_.get<Material>(*selectedAsset)) {
-            bool isBuiltin = materialMutations_.isBuiltin(*selectedAsset);
+        if (const Material* mat = assetRepository_.get<Material>(*selectedAsset)) {
+            bool isMutable = !materialMutations_.isMutable(*selectedAsset);
 
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 6));
 
-            if (isBuiltin) {
+            if (isMutable) {
                 ImGui::BeginDisabled();
             }
 
             row("Name", [&] { ImGui::TextUnformatted(selectedAsset->c_str()); });
             row("Albedo", [&] {
                 ImGui::SetNextItemWidth(-1);
-                const std::string displayText =
-                        (mat->getAlbedoTexture() == EMPTY_TEXTURE) ? "" : mat->getAlbedoTexture();
+                const std::string displayText = (mat->albedoTexture == EMPTY_TEXTURE) ? "" : mat->albedoTexture;
                 ImGui::InputText("##albedoTexture",
                                  const_cast<char*>(displayText.c_str()),
                                  displayText.size() + 1,
@@ -55,7 +54,7 @@ private:
                 }
             });
 
-            glm::vec4 color = mat->getTint();
+            glm::vec4 color = mat->tint;
             colorPickerValue_[0] = color.r;
             colorPickerValue_[1] = color.g;
             colorPickerValue_[2] = color.b;
@@ -74,7 +73,7 @@ private:
 
             row("Normal Texture", [&] {
                 ImGui::SetNextItemWidth(-1);
-                const std::string displayText = (mat->getNormalTexture().empty()) ? "" : mat->getNormalTexture();
+                const std::string displayText = (mat->normalTexture.empty()) ? "" : mat->normalTexture;
                 ImGui::InputText("##normalTexture",
                                  const_cast<char*>(displayText.c_str()),
                                  displayText.size() + 1,
@@ -90,7 +89,7 @@ private:
 
             row("Roughness Texture", [&] {
                 ImGui::SetNextItemWidth(-1);
-                const std::string displayText = (mat->getRoughnessTexture().empty()) ? "" : mat->getRoughnessTexture();
+                const std::string displayText = (mat->roughnessTexture.empty()) ? "" : mat->roughnessTexture;
                 ImGui::InputText("##roughnessTexture",
                                  const_cast<char*>(displayText.c_str()),
                                  displayText.size() + 1,
@@ -106,7 +105,7 @@ private:
 
             row("Metallic Texture", [&] {
                 ImGui::SetNextItemWidth(-1);
-                const std::string displayText = (mat->getMetallicTexture().empty()) ? "" : mat->getMetallicTexture();
+                const std::string displayText = (mat->metallicTexture.empty()) ? "" : mat->metallicTexture;
                 ImGui::InputText("##metallicTexture",
                                  const_cast<char*>(displayText.c_str()),
                                  displayText.size() + 1,
@@ -122,7 +121,7 @@ private:
 
             row("AO Texture", [&] {
                 ImGui::SetNextItemWidth(-1);
-                const std::string displayText = (mat->getAoTexture().empty()) ? "" : mat->getAoTexture();
+                const std::string displayText = (mat->aoTexture.empty()) ? "" : mat->aoTexture;
                 ImGui::InputText("##aoTexture",
                                  const_cast<char*>(displayText.c_str()),
                                  displayText.size() + 1,
@@ -137,35 +136,35 @@ private:
             });
 
             row("Metallic", [&] {
-                float metallic = mat->getMetallic();
+                float metallic = mat->metallic;
                 if (ImGui::SliderFloat("##metallic", &metallic, 0.0f, 1.0f)) {
                     materialMutations_.setMetallic(*selectedAsset, metallic);
                 }
             });
 
             row("Roughness", [&] {
-                float roughness = mat->getRoughness();
+                float roughness = mat->roughness;
                 if (ImGui::SliderFloat("##roughness", &roughness, 0.0f, 1.0f)) {
                     materialMutations_.setRoughness(*selectedAsset, roughness);
                 }
             });
 
             row("Ambient Occlusion", [&] {
-                float ao = mat->getAo();
+                float ao = mat->ao;
                 if (ImGui::SliderFloat("##ao", &ao, 0.0f, 1.0f)) {
                     materialMutations_.setAo(*selectedAsset, ao);
                 }
             });
 
             row("Scale Invariant UV", [&] {
-                bool scaleInvariantUV = mat->getScaleInvariantUV() != 0;
+                bool scaleInvariantUV = mat->scaleInvariantUV;
                 if (ImGui::Checkbox("##scaleInvariantUV", &scaleInvariantUV)) {
                     materialMutations_.setScaleInvariantUV(*selectedAsset, scaleInvariantUV ? 1 : 0);
                 }
             });
 
             row("Tiling", [&] {
-                glm::vec2 tiling = mat->getTiling();
+                glm::vec2 tiling = mat->tiling;
                 ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f - 4.0f);
                 bool changed = false;
                 changed |= ImGui::InputFloat("##tilingX", &tiling.x, 0.0f, 0.0f, "%.3f");
@@ -177,7 +176,7 @@ private:
                 }
             });
             row("Offset", [&] {
-                glm::vec2 offset = mat->getOffset();
+                glm::vec2 offset = mat->offset;
                 ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f - 4.0f);
                 bool changed = false;
                 changed |= ImGui::InputFloat("##offsetX", &offset.x, 0.0f, 0.0f, "%.3f");
@@ -189,7 +188,7 @@ private:
                 }
             });
 
-            if (isBuiltin) {
+            if (isMutable) {
                 ImGui::EndDisabled();
                 ImGui::Spacing();
                 ImGui::TextDisabled("(Builtin materials cannot be edited)");

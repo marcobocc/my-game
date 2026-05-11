@@ -1,24 +1,24 @@
 #pragma once
 #include <imgui.h>
 #include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/asset_editing/MaterialMutations.hpp"
 #include "../EditorPanel.hpp"
 #include "GameObjectInspector.hpp"
 #include "MaterialInspector.hpp"
-#include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityManager.hpp"
 
 class InspectorPanel : public EditorPanel {
 public:
     InspectorPanel(ObjectSelection& objectSelection,
                    EntityManager& entityManager,
-                   AssetManager& assetManager,
+                   EditorAssetRepository& assetRepository,
                    SceneMutations& sceneMutations,
                    MaterialMutations& materialMutations,
                    EditorGizmos& debugViz) :
         objectSelection_(objectSelection),
-        gameObjectInspector_(objectSelection, entityManager, assetManager, sceneMutations, debugViz),
-        materialInspector(assetManager, objectSelection, materialMutations) {}
+        gameObjectInspector_(objectSelection, entityManager, assetRepository, sceneMutations, debugViz),
+        materialInspector(assetRepository, objectSelection, materialMutations) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();

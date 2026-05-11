@@ -2,7 +2,7 @@
 #include <string>
 #include "../../../engine/GameEngine.hpp"
 #include "../../../engine/modules/input/RaycastPickingSystem.hpp"
-#include "../../../engine/structs/components/Transform.hpp"
+#include "../../../engine/modules/scene/components/Transform.hpp"
 #include "EditorCamera.hpp"
 #include "EditorSettings.hpp"
 #include "ObjectSelection.hpp"

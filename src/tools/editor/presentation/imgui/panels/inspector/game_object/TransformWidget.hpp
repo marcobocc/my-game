@@ -2,7 +2,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include "../ComponentContainer.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 class SceneMutations;
 

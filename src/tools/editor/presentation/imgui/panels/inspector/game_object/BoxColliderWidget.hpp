@@ -1,7 +1,7 @@
 #pragma once
 #include <imgui.h>
 #include "../ComponentContainer.hpp"
-#include "structs/components/BoxCollider.hpp"
+#include "modules/scene/components/BoxCollider.hpp"
 
 class SceneMutations;
 

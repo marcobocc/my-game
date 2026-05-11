@@ -2,9 +2,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <nlohmann/json.hpp>
-#include "modules/assets/BuiltinAssetNames.hpp"
-#include "structs/components/Renderer.hpp"
-#include "structs/components/Transform.hpp"
+#include "modules/asset_management/BuiltinAssetNames.hpp"
+#include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 namespace primitives {
     namespace details {

@@ -68,7 +68,7 @@ ParsedData parseObjData(const std::filesystem::path& path) {
     return data;
 }
 
-std::unique_ptr<Mesh> buildMesh(const ParsedData& data, bool reverseWinding, const std::string& name) {
+std::unique_ptr<MeshResource> buildMesh(const ParsedData& data, bool reverseWinding, const std::string& name) {
     std::vector<glm::vec3> positions;
     std::vector<glm::vec3> colors;
     std::vector<glm::vec2> uvs;
@@ -117,12 +117,12 @@ std::unique_ptr<Mesh> buildMesh(const ParsedData& data, bool reverseWinding, con
         }
     }
 
-    return std::make_unique<Mesh>(
+    return std::make_unique<MeshResource>(
             name, std::move(positions), std::move(uvs), std::move(colors), std::move(indices), std::move(normals));
 }
 
 namespace importing {
-    std::unique_ptr<Mesh>
+    std::unique_ptr<MeshResource>
     importObjFile(const std::filesystem::path& filepath, bool reverseWinding, const std::string& name) {
         ParsedData data = parseObjData(filepath);
         return buildMesh(data, reverseWinding, name);

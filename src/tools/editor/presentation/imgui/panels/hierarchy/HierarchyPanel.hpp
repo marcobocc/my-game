@@ -2,12 +2,12 @@
 #include <imgui.h>
 #include <string>
 #include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/scene_editing/ObjectPrefabs.hpp"
 #include "../../ImguiStyling.hpp"
 #include "../EditorPanel.hpp"
 #include "HierarchyDropdownMenu.hpp"
 #include "SpherePopupModal.hpp"
-#include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityManager.hpp"
 #include "modules/scene/EntityMetadata.hpp"
 
@@ -18,18 +18,18 @@ public:
     static constexpr float PANEL_WIDTH_RATIO = 0.15f;
     static constexpr float ASSETS_HEIGHT_RATIO = 0.3f;
 
-    HierarchyPanel(ObjectSelection& objectSelection,
+    HierarchyPanel(EditorAssetRepository& repository,
+                   ObjectSelection& objectSelection,
                    EntityManager& entityManager,
-                   AssetManager& assetManager,
                    SceneMutations& sceneMutations,
                    GameEngine& engine) :
+        repository_(repository),
         objectSelection_(objectSelection),
         entityManager_(entityManager),
-        assetManager_(assetManager),
         sceneMutations_(sceneMutations),
         engine_(engine),
         spherePopupModal_([this](uint32_t lod) { sceneMutations_.createObject(primitives::sphere(lod)); }),
-        dropdownMenu_(assetManager, sceneMutations, &spherePopupModal_) {}
+        dropdownMenu_(repository, sceneMutations, &spherePopupModal_) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -92,9 +92,9 @@ public:
     }
 
 private:
+    EditorAssetRepository& repository_;
     ObjectSelection& objectSelection_;
     EntityManager& entityManager_;
-    AssetManager& assetManager_;
     SceneMutations& sceneMutations_;
     GameEngine& engine_;
     SpherePopupModal spherePopupModal_;

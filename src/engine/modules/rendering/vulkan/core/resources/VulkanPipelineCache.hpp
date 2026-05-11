@@ -5,26 +5,27 @@
 #include <tuple>
 #include <vector>
 #include <volk.h>
+#include "../../../../../modules/asset_management/resources/ShaderResource.hpp"
 #include "../utils/error_handling.hpp"
 #include "../utils/shaders.hpp"
 #include "../utils/structs.hpp"
 #include "VulkanVertexLayouts.hpp"
-#include "structs/assets/Shader.hpp"
 
 class VulkanPipelineCache {
 public:
     explicit VulkanPipelineCache(const VulkanContext& context) : context_(context) {}
 
     // Single color attachment convenience overload.
-    VulkanPipeline& get(const Shader& shader,
+    VulkanPipeline& get(const ShaderResource& shader,
                         VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
                         VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) {
         return get(shader, std::span<const VkFormat>{&colorFormat, 1}, depthFormat);
     }
 
-    VulkanPipeline&
-    get(const Shader& shader, std::span<const VkFormat> colorFormats, VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) {
-        CacheKey key{shader.getName(), {colorFormats.begin(), colorFormats.end()}, depthFormat};
+    VulkanPipeline& get(const ShaderResource& shader,
+                        std::span<const VkFormat> colorFormats,
+                        VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) {
+        CacheKey key{shader.name, {colorFormats.begin(), colorFormats.end()}, depthFormat};
         auto it = cache_.find(key);
         if (it != cache_.end()) return it->second;
 
@@ -34,12 +35,11 @@ public:
         VkPipelineVertexInputStateCreateInfo vertexInputState{};
         vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-        if (!shader.hasNoVertexInput()) {
-            const uint32_t stride = shader.hasPositionColorVertexLayout()
-                                            ? VertexLayout_PositionColor::VERTEX_STRIDE
-                                            : VertexLayout_PositionNormalUv::VERTEX_STRIDE;
+        if (!shader.noVertexInput) {
+            const uint32_t stride = shader.positionColorVertexLayout ? VertexLayout_PositionColor::VERTEX_STRIDE
+                                                                     : VertexLayout_PositionNormalUv::VERTEX_STRIDE;
             const auto& attribs =
-                    shader.hasPositionColorVertexLayout()
+                    shader.positionColorVertexLayout
                             ? std::span<const VertexAttribute>(VertexLayout_PositionColor::VERTEX_ATTRIBS)
                             : std::span<const VertexAttribute>(VertexLayout_PositionNormalUv::VERTEX_ATTRIBS);
             vertexBinding.binding = 0;
@@ -67,19 +67,18 @@ public:
         }
 
         // --- Shader modules ---
-        auto [vertModule, vertStage] =
-                createShader(context_.device, shader.getVertexBytecode(), VK_SHADER_STAGE_VERTEX_BIT);
+        auto [vertModule, vertStage] = createShader(context_.device, shader.vertexBytecode, VK_SHADER_STAGE_VERTEX_BIT);
         auto [fragModule, fragStage] =
-                createShader(context_.device, shader.getFragmentBytecode(), VK_SHADER_STAGE_FRAGMENT_BIT);
+                createShader(context_.device, shader.fragmentBytecode, VK_SHADER_STAGE_FRAGMENT_BIT);
         std::vector<VkPipelineShaderStageCreateInfo> shaderStages{vertStage, fragStage};
 
         // --- Pipeline object ---
         VulkanPipeline pipeline{};
         pipeline.descriptorSetLayouts =
-                reflectDescriptorSetLayouts(context_.device, shader.getVertexBytecode(), shader.getFragmentBytecode());
+                reflectDescriptorSetLayouts(context_.device, shader.vertexBytecode, shader.fragmentBytecode);
         pipeline.depthFormat = depthFormat;
-        pipeline.pushConstantSize = std::max(getPushConstantSize(shader.getVertexBytecode()),
-                                             getPushConstantSize(shader.getFragmentBytecode()));
+        pipeline.pushConstantSize =
+                std::max(getPushConstantSize(shader.vertexBytecode), getPushConstantSize(shader.fragmentBytecode));
 
         VkPushConstantRange push{};
         VkPushConstantRange* pushPtr = nullptr;
@@ -102,7 +101,7 @@ public:
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         inputAssembly.topology =
-                shader.hasLineTopology() ? VK_PRIMITIVE_TOPOLOGY_LINE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+                shader.lineTopology ? VK_PRIMITIVE_TOPOLOGY_LINE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
         VkPipelineViewportStateCreateInfo viewportState{};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -118,7 +117,7 @@ public:
         VkPipelineRasterizationStateCreateInfo raster{};
         raster.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         raster.polygonMode = VK_POLYGON_MODE_FILL;
-        raster.cullMode = shader.cullDisabled() ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
+        raster.cullMode = shader.disableCull ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
         raster.frontFace = VK_FRONT_FACE_CLOCKWISE;
         raster.lineWidth = 1.0f;
 
@@ -128,14 +127,14 @@ public:
 
         VkPipelineDepthStencilStateCreateInfo depth{};
         depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depth.depthTestEnable = shader.depthTestDisabled() ? VK_FALSE : VK_TRUE;
-        depth.depthWriteEnable = shader.depthWriteDisabled() ? VK_FALSE : VK_TRUE;
+        depth.depthTestEnable = shader.disableDepthTest ? VK_FALSE : VK_TRUE;
+        depth.depthWriteEnable = shader.disableDepthWrite ? VK_FALSE : VK_TRUE;
         depth.depthCompareOp = VK_COMPARE_OP_LESS;
 
         VkPipelineColorBlendAttachmentState blendAttachment{};
         blendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
                                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        if (shader.alphaBlendEnabled()) {
+        if (shader.enableAlphaBlend) {
             blendAttachment.blendEnable = VK_TRUE;
             blendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
             blendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;

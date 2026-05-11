@@ -6,26 +6,26 @@
 #include "../utils/structs.hpp"
 #include "VulkanPipelineCache.hpp"
 #include "VulkanTextureCache.hpp"
-#include "modules/assets/AssetManager.hpp"
-#include "structs/assets/Material.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/assets/Material.hpp"
 
 class VulkanMaterialCache {
 public:
     VulkanMaterialCache(const VulkanContext& context,
                         VulkanPipelineCache& pipelineCache,
                         VulkanTextureCache& textureCache,
-                        AssetManager& assetManager) :
+                        AssetLoader& assetLoader) :
         context_(context),
         pipelineCache_(pipelineCache),
         textureCache_(textureCache),
-        assetManager_(assetManager) {}
+        assetLoader_(assetLoader) {}
 
     VulkanMaterial& get(const Material& material) {
         return get(material, std::span<const VkFormat>{}, VK_FORMAT_D32_SFLOAT);
     }
 
     VulkanMaterial& get(const Material& material, std::span<const VkFormat> colorFormats, VkFormat depthFormat) {
-        std::string key = material.getShaderName() + "|" + material.getAlbedoTexture();
+        std::string key = material.shaderName + "|" + material.albedoTexture;
         for (VkFormat f: colorFormats)
             key += "|" + std::to_string(static_cast<int>(f));
         key += "|" + std::to_string(static_cast<int>(depthFormat));
@@ -33,7 +33,7 @@ public:
         auto it = cache_.find(key);
         if (it != cache_.end()) return it->second;
 
-        const Shader* shader = assetManager_.get<Shader>(material.getShaderName());
+        const ShaderResource* shader = assetLoader_.get<ShaderResource>(material.shaderName);
         VulkanPipeline& pipeline = colorFormats.empty() ? pipelineCache_.get(*shader)
                                                         : pipelineCache_.get(*shader, colorFormats, depthFormat);
         VkDescriptorSet descriptorSet = createTexturesDescriptorSet(pipeline, material);
@@ -50,7 +50,8 @@ private:
         auto descriptorSetLayout = pipeline.descriptorSetLayouts[1]; // TODO: Get the layout from reflection
         VkDescriptorSet set = createEmptyDescriptorSet(context_.device, context_.descriptorPool, descriptorSetLayout);
 
-        const Texture* texture = assetManager_.get<Texture>(material.getAlbedoTexture());
+        const TextureResource* texture = assetLoader_.get<TextureResource>(material.albedoTexture);
+        if (!texture) throw std::runtime_error("Texture not found: " + material.albedoTexture);
         const VulkanTexture& tex = textureCache_.get(*texture);
 
         VkDescriptorImageInfo imageInfo{};
@@ -73,6 +74,6 @@ private:
     VulkanContext context_;
     VulkanPipelineCache& pipelineCache_;
     VulkanTextureCache& textureCache_;
-    AssetManager& assetManager_;
+    AssetLoader& assetLoader_;
     std::unordered_map<std::string, VulkanMaterial> cache_;
 };

@@ -4,7 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "modules/assets/AssetManager.hpp"
+#include "modules/asset_management/AssetCache.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/scene/EntityManager.hpp"
 
@@ -43,7 +43,7 @@ class GameEngine {
 public:
     explicit GameEngine(GameWindow& window,
                         TimeManager& time,
-                        AssetManager& assetManager,
+                        AssetCache& loadedAssets,
                         InputSystem& inputSystem,
                         PhysicsSystem& physicsSystem,
                         EntityManager& entityManager,
@@ -76,10 +76,9 @@ public:
     // --------------------------------------------------------
     // Assets API
     // --------------------------------------------------------
-    std::vector<std::string> getAvailableAssets(const std::string& extension) const;
     template<typename T>
     T* getAsset(const std::string& name) const {
-        return assetManager_.get<T>(name);
+        return loadedAssets_.get<T>(name);
     }
 
     // --------------------------------------------------------
@@ -92,7 +91,7 @@ private:
 
     GameWindow& window_;
     TimeManager& time_;
-    AssetManager& assetManager_;
+    AssetCache& loadedAssets_;
     InputSystem& inputSystem_;
     PhysicsSystem& physicsSystem_;
     EntityManager& entityManager_;

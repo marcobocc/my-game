@@ -2,12 +2,12 @@
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "../../../structs/RendererSettings.hpp"
 #include "../GameRenderData.hpp"
 #include "core/RenderGraph.hpp"
 #include "core/utils/structs.hpp"
-#include "structs/components/Camera.hpp"
-#include "structs/components/Transform.hpp"
-#include "structs/settings/RendererSettings.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 class VulkanGeometryPass;
 class VulkanLightingPass;
