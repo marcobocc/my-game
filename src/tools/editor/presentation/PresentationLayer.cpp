@@ -16,7 +16,7 @@
 #include "imgui/panels/assets/AssetsPanel.hpp"
 #include "imgui/panels/hierarchy/HierarchyPanel.hpp"
 #include "imgui/panels/inspector/InspectorPanel.hpp"
-#include "imgui/panels/viewport/ViewportContextMenu.hpp"
+#include "imgui/panels/viewport/EditorSceneViewport.hpp"
 #include "vulkan/EditorRenderData.hpp"
 #include "vulkan/VulkanEditorBackend.hpp"
 
@@ -59,7 +59,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     userInterface_.emplace<AssetsPanel>(assetManager_, objectSelection_, materialMutations);
     userInterface_.emplace<InspectorPanel>(
             objectSelection_, entityManager_, assetManager_, sceneMutations, materialMutations, editorGizmos_);
-    userInterface_.emplace<ViewportContextMenu>(
+    userInterface_.emplace<EditorSceneViewport>(
             assetManager_,
             sceneMutations,
             objectSelection_,

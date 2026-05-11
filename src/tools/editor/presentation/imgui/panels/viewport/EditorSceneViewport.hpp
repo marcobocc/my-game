@@ -6,6 +6,7 @@
 #include "../../ImguiStyling.hpp"
 #include "../hierarchy/HierarchyDropdownMenu.hpp"
 #include "../hierarchy/SpherePopupModal.hpp"
+#include "data/components/Renderer.hpp"
 
 class SceneMutations;
 class AssetManager;
@@ -14,23 +15,18 @@ class GameWindow;
 class EditorCamera;
 class PickingSystem;
 
-struct SceneObjectHit;
-struct GizmoHit;
-
-using EntityHandle = uint64_t;
-
-class ViewportContextMenu : public ImguiWidget {
+class EditorSceneViewport : public ImguiWidget {
 public:
     static constexpr float DRAG_THRESHOLD = 25.0f; // 5 pixels squared
 
-    ViewportContextMenu(AssetManager& assetManager,
+    EditorSceneViewport(AssetManager& assetManager,
                         SceneMutations& sceneMutations,
                         ObjectSelection& objectSelection,
                         EntityManager& entityManager,
                         PickingSystem& pickingSystem,
                         GameWindow& window,
                         EditorCamera& editorCamera,
-                        std::function<void(uint32_t)> onSphereCreated = nullptr) :
+                        const std::function<void(uint32_t)>& onSphereCreated = nullptr) :
         assetManager_(assetManager),
         sceneMutations_(sceneMutations),
         objectSelection_(objectSelection),
@@ -44,12 +40,51 @@ public:
     void draw() override {
         spherePopupModal_.draw();
 
-        // Track right-click without drag
         auto sv = window_.getSceneViewport();
         ImVec2 mousePos = ImGui::GetMousePos();
         bool isInViewport = mousePos.x >= sv.x && mousePos.x < sv.x + sv.width && mousePos.y >= sv.y &&
                             mousePos.y < sv.y + sv.height;
 
+        // Handle drag-drop material attachment
+        if (isInViewport && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+            if (const ImGuiPayload* payload = ImGui::GetDragDropPayload()) {
+                if (strcmp(payload->DataType, "MATERIAL_ASSET") == 0) {
+                    auto materialName = static_cast<const char*>(payload->Data);
+                    auto result = pickingSystem_.pick(static_cast<uint32_t>(mousePos.x),
+                                                      static_cast<uint32_t>(mousePos.y),
+                                                      static_cast<uint32_t>(sv.x),
+                                                      static_cast<uint32_t>(sv.y),
+                                                      static_cast<uint32_t>(sv.width),
+                                                      static_cast<uint32_t>(sv.height),
+                                                      editorCamera_.getCamera(),
+                                                      editorCamera_.getCameraTransform(),
+                                                      entityManager_);
+
+                    if (result) {
+                        EntityHandle hitId = {};
+                        bool hasHit = false;
+
+                        if (auto* sceneHit = std::get_if<SceneObjectHit>(&*result)) {
+                            hitId = sceneHit->objectId;
+                            hasHit = true;
+                        } else if (auto* gizmoHit = std::get_if<GizmoHit>(&*result)) {
+                            hitId = gizmoHit->objectId;
+                            hasHit = true;
+                        }
+
+                        if (hasHit) {
+                            if (auto* renderer = entityManager_.getComponent<Renderer>(hitId)) {
+                                sceneMutations_.beginEdit(hitId);
+                                renderer->materialName = materialName;
+                                sceneMutations_.commitEdit(hitId);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Track right-click without drag
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             rightClickStartX_ = mousePos.x;
             rightClickStartY_ = mousePos.y;
@@ -69,7 +104,6 @@ public:
         // Open popup only if right-click released without significant movement
         if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && !hasMovedSinceRightClick_ && isInViewport) {
             // Use picking system to see what was clicked
-            auto sv = window_.getSceneViewport();
             auto result = pickingSystem_.pick(static_cast<uint32_t>(rightClickStartX_),
                                               static_cast<uint32_t>(rightClickStartY_),
                                               static_cast<uint32_t>(sv.x),
