@@ -1,6 +1,7 @@
 #pragma once
 #include <imgui.h>
 #include <string>
+#include "../../../../business/ObjectSelection.hpp"
 #include "../../ImguiStyling.hpp"
 #include "../EditorPanel.hpp"
 #include "modules/assets/AssetManager.hpp"
@@ -11,7 +12,11 @@ public:
     static constexpr float INSPECTOR_WIDTH_RATIO = 0.25f;
     static constexpr int SEARCH_BUFFER_SIZE = 256;
 
-    explicit AssetsPanel(AssetManager& assetManager) : assetManager_(assetManager) { searchBuffer_[0] = '\0'; }
+    AssetsPanel(AssetManager& assetManager, ObjectSelection& objectSelection) :
+        assetManager_(assetManager),
+        objectSelection_(objectSelection) {
+        searchBuffer_[0] = '\0';
+    }
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -32,6 +37,7 @@ public:
 
 private:
     AssetManager& assetManager_;
+    ObjectSelection& objectSelection_;
     char searchBuffer_[SEARCH_BUFFER_SIZE];
 
     bool filterMesh_ = false;
@@ -154,7 +160,7 @@ private:
         return false;
     }
 
-    void drawAssetsList() const {
+    void drawAssetsList() {
         std::vector<std::string> allAssets;
 
         auto meshes = assetManager_.getAvailableAssets(".mesh");
@@ -171,9 +177,13 @@ private:
 
         std::ranges::sort(allAssets);
 
+        auto selectedAsset = objectSelection_.getSelectedAssetId();
         for (const auto& asset: allAssets) {
             if (matchesSearch(asset) && matchesFilter(asset)) {
-                ImGui::Selectable(asset.c_str());
+                bool selected = selectedAsset && *selectedAsset == asset;
+                if (ImGui::Selectable(asset.c_str(), selected)) {
+                    objectSelection_.selectAsset(asset);
+                }
             }
         }
     }

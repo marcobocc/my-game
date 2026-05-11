@@ -44,16 +44,7 @@ public:
 
     void drawBody() override {
         auto selectedId = objectSelection_.getSelectedEntityId();
-        if (!selectedId.has_value()) {
-            ImguiStyling::withBodyStyling([&] {
-                ImGui::BeginChild("##NoSelection",
-                                  ImVec2(0, 0),
-                                  ImGuiChildFlags_AlwaysUseWindowPadding,
-                                  ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-                ImGui::TextDisabled("No object selected");
-                ImGui::EndChild();
-            });
-        } else {
+        if (selectedId.has_value()) {
             EntityHandle entity = *selectedId;
             transformWidget_.setCurrentObjectId(entity);
             cameraWidget_.setCurrentObjectId(entity);

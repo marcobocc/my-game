@@ -54,7 +54,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     userInterface_.emplace<ApplicationMenuBar>(sceneMutations, editorWorkspace);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
     userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations, engine_);
-    userInterface_.emplace<AssetsPanel>(assetManager_);
+    userInterface_.emplace<AssetsPanel>(assetManager_, objectSelection_);
     userInterface_.emplace<InspectorPanel>(
             objectSelection_, entityManager_, assetManager_, sceneMutations, editorGizmos_);
     userInterface_.emplace<ViewportContextMenu>(
