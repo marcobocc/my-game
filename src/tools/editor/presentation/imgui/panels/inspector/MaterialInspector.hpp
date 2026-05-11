@@ -36,9 +36,9 @@ private:
             }
 
             row("Name", [&] { ImGui::TextUnformatted(selectedAsset->c_str()); });
-            row("Texture", [&] {
-                if (!mat->getTextureName().empty())
-                    ImGui::TextUnformatted(mat->getTextureName().c_str());
+            row("Albedo", [&] {
+                if (!mat->getAlbedoTexture().empty())
+                    ImGui::TextUnformatted(mat->getAlbedoTexture().c_str());
                 else
                     ImGui::TextDisabled("none");
             });

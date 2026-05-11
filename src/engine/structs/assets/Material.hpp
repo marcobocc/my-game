@@ -8,18 +8,18 @@ public:
     Material(const std::string& name,
              const std::string& shaderName,
              const glm::vec4& baseColor,
-             const std::string& textureName) :
+             const std::string& albedoTexture) :
         Asset(name),
         shaderName_(shaderName),
         baseColor_(baseColor),
-        textureName_(textureName) {}
+        albedoTexture_(albedoTexture) {}
 
     const std::string& getShaderName() const { return shaderName_; }
     const glm::vec4& getBaseColor() const { return baseColor_; }
-    const std::string& getTextureName() const { return textureName_; }
+    const std::string& getAlbedoTexture() const { return albedoTexture_; }
 
 private:
     std::string shaderName_;
     glm::vec4 baseColor_;
-    std::string textureName_;
+    std::string albedoTexture_;
 };

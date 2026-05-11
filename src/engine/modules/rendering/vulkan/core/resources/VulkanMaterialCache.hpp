@@ -25,7 +25,7 @@ public:
     }
 
     VulkanMaterial& get(const Material& material, std::span<const VkFormat> colorFormats, VkFormat depthFormat) {
-        std::string key = material.getShaderName() + "|" + material.getTextureName();
+        std::string key = material.getShaderName() + "|" + material.getAlbedoTexture();
         for (VkFormat f: colorFormats)
             key += "|" + std::to_string(static_cast<int>(f));
         key += "|" + std::to_string(static_cast<int>(depthFormat));
@@ -50,7 +50,7 @@ private:
         auto descriptorSetLayout = pipeline.descriptorSetLayouts[1]; // TODO: Get the layout from reflection
         VkDescriptorSet set = createEmptyDescriptorSet(context_.device, context_.descriptorPool, descriptorSetLayout);
 
-        const Texture* texture = assetManager_.get<Texture>(material.getTextureName());
+        const Texture* texture = assetManager_.get<Texture>(material.getAlbedoTexture());
         const VulkanTexture& tex = textureCache_.get(*texture);
 
         VkDescriptorImageInfo imageInfo{};

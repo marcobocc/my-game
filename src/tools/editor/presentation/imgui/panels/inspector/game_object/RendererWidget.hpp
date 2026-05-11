@@ -51,13 +51,6 @@ private:
         });
 
         if (const Material* mat = assetManager_.get<Material>(component_->materialName)) {
-            row("Texture", [&] {
-                if (!mat->getTextureName().empty())
-                    ImGui::TextUnformatted(mat->getTextureName().c_str());
-                else
-                    ImGui::TextDisabled("none");
-            });
-
             glm::vec4 color = component_->baseColorOverride.value_or(mat->getBaseColor());
             float col[4] = {color.r, color.g, color.b, color.a};
             if (ImGui::ColorEdit4("Base color", col)) {

@@ -56,12 +56,12 @@ public:
         }
     }
 
-    void setTexture(const std::string& materialName, const std::string& textureName) const {
+    void setAlbedoTexture(const std::string& materialName, const std::string& albedoTexture) const {
         if (isBuiltin(materialName)) return;
         if (const Material* mat = assetManager_.get<Material>(materialName)) {
             nlohmann::json oldSnapshot = serializeMaterial(*mat);
             nlohmann::json newSnapshot = oldSnapshot;
-            newSnapshot["textureName"] = textureName;
+            newSnapshot["albedoTexture"] = albedoTexture;
             updateMaterial(materialName, oldSnapshot, newSnapshot);
         }
     }
@@ -98,7 +98,7 @@ private:
         nlohmann::json j;
         j["shaderName"] = material.getShaderName();
         j["baseColor"] = JsonUtils::serializeVec4(material.getBaseColor());
-        j["textureName"] = material.getTextureName();
+        j["albedoTexture"] = material.getAlbedoTexture();
         return j;
     }
 

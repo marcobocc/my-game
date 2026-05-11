@@ -141,14 +141,14 @@ bool AssetImporter::importTexture(const std::filesystem::path& relativePath) con
 bool AssetImporter::importMaterial(const std::filesystem::path& relativePath) const {
     const std::string name = relativePath.string();
     MaterialDescriptor def = MaterialDescriptor::fromFile(toAbsolutePath(relativePath), name);
-    bool textureImported = importTexture(def.textureName);
+    bool textureImported = importTexture(def.albedoTexture);
     if (!textureImported) {
         LOG4CXX_ERROR(LOGGER,
-                      "Failed to import texture: " << std::filesystem::path(def.textureName)
+                      "Failed to import texture: " << std::filesystem::path(def.albedoTexture)
                                                    << " required by material: " << name);
         return false;
     }
-    storage_.insert<Material>(name, std::make_unique<Material>(name, def.shaderName, def.baseColor, def.textureName));
+    storage_.insert<Material>(name, std::make_unique<Material>(name, def.shaderName, def.baseColor, def.albedoTexture));
     return true;
 }
 
