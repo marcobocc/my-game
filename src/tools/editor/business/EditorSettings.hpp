@@ -34,9 +34,9 @@ private:
 
     float gridScale_ = 1.0f;
     bool gridEnabled_ = true;
-    bool gridSnappingEnabled_ = true;
+    bool gridSnappingEnabled_ = false;
     bool lightingEnabled_ = true;
-    bool localTransform_ = false;
+    bool localTransform_ = true;
 
     static constexpr float GRID_RESCALE_FACTOR = 1.5f;
     static constexpr float GRID_SCALE_UPPER_BOUND = 3.375f;
