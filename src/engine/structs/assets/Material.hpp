@@ -46,7 +46,7 @@ public:
     float getRoughness() const { return roughness_; }
     float getAo() const { return ao_; }
 
-private:
+public:
     std::string shaderName_;
     glm::vec4 tint_;
     std::string albedoTexture_;

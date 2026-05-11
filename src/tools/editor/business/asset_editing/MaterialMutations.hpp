@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 #include <string>
+#include <unordered_map>
 #include "../ObjectSelection.hpp"
 #include "../UndoHistory.hpp"
 #include "modules/assets/AssetManager.hpp"
@@ -175,12 +176,20 @@ public:
         }
     }
 
+    void flushDirtyMaterials() {
+        for (const auto& [name, snapshot]: dirtyMaterials_) {
+            saveMaterial(name, snapshot);
+        }
+        dirtyMaterials_.clear();
+    }
+
     bool isBuiltin(const std::string& materialName) const { return assetManager_.isBuiltin(materialName); }
 
 private:
     AssetManager& assetManager_;
     ObjectSelection& objectSelection_;
     UndoHistory& undoHistory_;
+    mutable std::unordered_map<std::string, nlohmann::json> dirtyMaterials_;
 
     std::string generateName() const {
         auto availableMaterials = assetManager_.getAvailableAssets(".mat");
@@ -219,8 +228,25 @@ private:
     }
 
     void applyMaterialSnapshot(const std::string& materialName, const nlohmann::json& snapshot) const {
-        saveMaterial(materialName, snapshot);
-        assetManager_.reload<Material>(materialName);
+        if (Material* mat = assetManager_.get<Material>(materialName)) {
+            if (snapshot.contains("shaderName")) mat->shaderName_ = snapshot["shaderName"].get<std::string>();
+            if (snapshot.contains("tint")) mat->tint_ = JsonUtils::getOptional<glm::vec4>(snapshot, "tint", mat->tint_);
+            if (snapshot.contains("albedoTexture")) mat->albedoTexture_ = snapshot["albedoTexture"].get<std::string>();
+            if (snapshot.contains("normalTexture")) mat->normalTexture_ = snapshot["normalTexture"].get<std::string>();
+            if (snapshot.contains("roughnessTexture"))
+                mat->roughnessTexture_ = snapshot["roughnessTexture"].get<std::string>();
+            if (snapshot.contains("metallicTexture"))
+                mat->metallicTexture_ = snapshot["metallicTexture"].get<std::string>();
+            if (snapshot.contains("aoTexture")) mat->aoTexture_ = snapshot["aoTexture"].get<std::string>();
+            if (snapshot.contains("metallic")) mat->metallic_ = snapshot["metallic"].get<float>();
+            if (snapshot.contains("roughness")) mat->roughness_ = snapshot["roughness"].get<float>();
+            if (snapshot.contains("ao")) mat->ao_ = snapshot["ao"].get<float>();
+            if (snapshot.contains("tiling"))
+                mat->tiling_ = JsonUtils::getOptional<glm::vec2>(snapshot, "tiling", mat->tiling_);
+            if (snapshot.contains("offset"))
+                mat->offset_ = JsonUtils::getOptional<glm::vec2>(snapshot, "offset", mat->offset_);
+        }
+        dirtyMaterials_[materialName] = snapshot;
     }
 
     void saveMaterial(const std::string& materialName, const nlohmann::json& snapshot) const {
