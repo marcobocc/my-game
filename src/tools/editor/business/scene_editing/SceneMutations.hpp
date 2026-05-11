@@ -7,10 +7,14 @@
 
 class SceneMutations {
 public:
-    SceneMutations(EntityManager& entityManager, GameEngine& engine, ObjectSelection& objectSelection) :
+    SceneMutations(EntityManager& entityManager,
+                   GameEngine& engine,
+                   ObjectSelection& objectSelection,
+                   UndoHistory& undoHistory) :
         entityManager_(entityManager),
         engine_(engine),
-        objectSelection_(objectSelection) {}
+        objectSelection_(objectSelection),
+        undoHistory_(undoHistory) {}
 
     void beginEdit(EntityHandle entity) {
         if (!pendingSnapshot_.has_value()) pendingSnapshot_.emplace(entity, entityManager_.serializeToJson(entity));
@@ -60,9 +64,14 @@ private:
     EntityManager& entityManager_;
     GameEngine& engine_;
     ObjectSelection& objectSelection_;
+    UndoHistory& undoHistory_;
 
-    UndoHistory undoHistory_;
     std::optional<std::pair<EntityHandle, nlohmann::json>> pendingSnapshot_;
 
-    void clearSelectionIfSelected(EntityHandle deletedId);
+    void clearSelectionIfSelected(EntityHandle deletedId) {
+        auto selected = objectSelection_.getSelectedEntityId();
+        if (selected && *selected == deletedId) {
+            objectSelection_.clearSelection();
+        }
+    }
 };

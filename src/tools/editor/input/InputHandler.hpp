@@ -1,8 +1,8 @@
 #pragma once
 #include "../../../engine/GameEngine.hpp"
 #include "../../../engine/modules/core/GameWindow.hpp"
+#include "../business/scene_editing/UndoHistory.hpp"
 #include "PickingSystem.hpp"
-
 
 class EditorGizmos;
 class EditorCamera;
@@ -38,7 +38,8 @@ public:
                  EntityManager& entityManager,
                  SceneMutations& sceneMutations,
                  EditorGizmos& editorGizmos,
-                 EditorSettings& rendererSettings) :
+                 EditorSettings& rendererSettings,
+                 UndoHistory& undoHistory) :
         window_(window),
         engine_(engine),
         pickingSystem_(pickingSystem),
@@ -49,6 +50,7 @@ public:
         sceneMutations_(sceneMutations),
         editorGizmos_(editorGizmos),
         rendererSettings_(rendererSettings),
+        undoHistory_(undoHistory),
         wasLeftDown_(false) {}
 
     void update(double mouseX, double mouseY, double deltaTime);
@@ -64,6 +66,7 @@ private:
     SceneMutations& sceneMutations_;
     EditorGizmos& editorGizmos_;
     EditorSettings& rendererSettings_;
+    UndoHistory& undoHistory_;
     bool wasLeftDown_;
 
     double lastMouseX_ = 0.0;

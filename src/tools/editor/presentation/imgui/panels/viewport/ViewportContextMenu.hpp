@@ -45,8 +45,12 @@ public:
         spherePopupModal_.draw();
 
         // Track right-click without drag
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImGui::IsAnyItemHovered()) {
-            ImVec2 mousePos = ImGui::GetMousePos();
+        auto sv = window_.getSceneViewport();
+        ImVec2 mousePos = ImGui::GetMousePos();
+        bool isInViewport = mousePos.x >= sv.x && mousePos.x < sv.x + sv.width && mousePos.y >= sv.y &&
+                            mousePos.y < sv.y + sv.height;
+
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             rightClickStartX_ = mousePos.x;
             rightClickStartY_ = mousePos.y;
             hasMovedSinceRightClick_ = false;
@@ -63,7 +67,7 @@ public:
         }
 
         // Open popup only if right-click released without significant movement
-        if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && !hasMovedSinceRightClick_) {
+        if (ImGui::IsMouseReleased(ImGuiMouseButton_Right) && !hasMovedSinceRightClick_ && isInViewport) {
             // Use picking system to see what was clicked
             auto sv = window_.getSceneViewport();
             auto result = pickingSystem_.pick(static_cast<uint32_t>(rightClickStartX_),

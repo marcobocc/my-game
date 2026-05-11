@@ -6,6 +6,7 @@
 #include "../business/EditorGizmos.hpp"
 #include "../business/ObjectSelection.hpp"
 #include "../business/ObjectTransformHandle.hpp"
+#include "../business/asset_editing/MaterialMutations.hpp"
 #include "../business/scene_editing/ObjectPrefabs.hpp"
 #include "../business/scene_editing/SceneMutations.hpp"
 #include "../input/PickingSystem.hpp"
@@ -31,6 +32,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      UserInterface& userInterface,
                                      PickingSystem& pickingService,
                                      SceneMutations& sceneMutations,
+                                     MaterialMutations& materialMutations,
                                      SceneLoader& editorWorkspace,
                                      AssetManager& assetManager,
                                      GameWindow& window,
@@ -54,9 +56,9 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     userInterface_.emplace<ApplicationMenuBar>(sceneMutations, editorWorkspace);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
     userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations, engine_);
-    userInterface_.emplace<AssetsPanel>(assetManager_, objectSelection_);
+    userInterface_.emplace<AssetsPanel>(assetManager_, objectSelection_, materialMutations);
     userInterface_.emplace<InspectorPanel>(
-            objectSelection_, entityManager_, assetManager_, sceneMutations, editorGizmos_);
+            objectSelection_, entityManager_, assetManager_, sceneMutations, materialMutations, editorGizmos_);
     userInterface_.emplace<ViewportContextMenu>(
             assetManager_,
             sceneMutations,

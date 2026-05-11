@@ -9,6 +9,7 @@ class SceneLoader;
 class PickingSystem;
 class AssetManager;
 class SceneMutations;
+class MaterialMutations;
 class VulkanEditorBackend;
 class EditorCamera;
 class GizmosRenderer;
@@ -51,6 +52,7 @@ public:
                       UserInterface& userInterface,
                       PickingSystem& pickingService,
                       SceneMutations& sceneMutations,
+                      MaterialMutations& materialMutations,
                       SceneLoader& editorWorkspace,
                       AssetManager& assetManager,
                       GameWindow& window,

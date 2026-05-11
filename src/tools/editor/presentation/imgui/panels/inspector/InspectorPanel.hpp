@@ -1,6 +1,7 @@
 #pragma once
 #include <imgui.h>
 #include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/asset_editing/MaterialMutations.hpp"
 #include "../EditorPanel.hpp"
 #include "GameObjectInspector.hpp"
 #include "MaterialInspector.hpp"
@@ -13,10 +14,11 @@ public:
                    EntityManager& entityManager,
                    AssetManager& assetManager,
                    SceneMutations& sceneMutations,
+                   MaterialMutations& materialMutations,
                    EditorGizmos& debugViz) :
         objectSelection_(objectSelection),
         gameObjectInspector_(objectSelection, entityManager, assetManager, sceneMutations, debugViz),
-        materialInspector(assetManager, objectSelection) {}
+        materialInspector(assetManager, objectSelection, materialMutations) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();

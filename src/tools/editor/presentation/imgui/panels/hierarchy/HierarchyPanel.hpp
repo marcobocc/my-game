@@ -35,7 +35,8 @@ public:
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         float menuBarHeight = ImGui::GetFrameHeight();
         float width = viewport->Size.x * PANEL_WIDTH_RATIO;
-        float height = viewport->Size.y - menuBarHeight - (viewport->Size.y * ASSETS_HEIGHT_RATIO);
+        float assetsHeight = viewport->Size.y * ASSETS_HEIGHT_RATIO;
+        float height = viewport->Size.y - menuBarHeight - assetsHeight;
 
         ImVec2 position = {viewport->Pos.x, viewport->Pos.y + menuBarHeight};
         ImVec2 size = {width, height};
@@ -46,6 +47,10 @@ public:
         spherePopupModal_.draw();
         auto selectedId = objectSelection_.getSelectedEntityId();
         ImGui::Separator();
+
+        bool rightClickedThisFrame = false;
+        std::optional<EntityHandle> rightClickedEntity;
+
         for (EntityHandle e: entityManager_.getEntities()) {
             std::string label;
             if (const auto* meta = entityManager_.getMetadata(e)) {
@@ -55,31 +60,35 @@ public:
             }
 
             bool selected = selectedId && *selectedId == e;
+            bool isContextTarget = contextTargetId && *contextTargetId == e;
             if (ImGui::Selectable(("##entity" + std::to_string(e)).c_str(),
                                   selected,
                                   ImGuiSelectableFlags_AllowOverlap,
                                   {0, 0})) {
                 objectSelection_.selectObject(e);
             }
-            if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-                contextTargetId.emplace(e);
-                openContextMenu = true;
-            }
+            bool itemHovered = ImGui::IsItemHovered() || isContextTarget;
             ImGui::SameLine();
             ImGui::Text("%s", label.c_str());
+            itemHovered = itemHovered || ImGui::IsItemHovered();
+
+            if (itemHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                rightClickedThisFrame = true;
+                rightClickedEntity.emplace(e);
+            }
         }
 
-        if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImGui::IsAnyItemHovered()) {
-            contextTargetId.reset();
-            openContextMenu = true;
+        if (!rightClickedThisFrame && ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            rightClickedThisFrame = true;
+            rightClickedEntity.reset();
         }
 
-        if (openContextMenu) {
+        if (rightClickedThisFrame) {
+            contextTargetId = rightClickedEntity;
             ImGui::OpenPopup("HierarchyContextMenu");
-            openContextMenu = false;
         }
 
-        ImguiStyling::withPopup("HierarchyContextMenu", [&] { dropdownMenu_.draw(contextTargetId); });
+        ImguiStyling::withPopup("HierarchyContextMenu", [&] { dropdownMenu_.draw(contextTargetId); }, true);
     }
 
 private:
@@ -92,5 +101,4 @@ private:
     HierarchyDropdownMenu dropdownMenu_;
 
     std::optional<EntityHandle> contextTargetId;
-    bool openContextMenu = false;
 };

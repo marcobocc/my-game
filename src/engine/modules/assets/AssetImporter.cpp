@@ -158,3 +158,22 @@ bool AssetImporter::importModel(const std::filesystem::path& relativePath) const
     storage_.insert<Model>(name, std::make_unique<Model>(name, def.meshName, def.materialName));
     return true;
 }
+
+void AssetImporter::registerAsset(const std::filesystem::path& relativePath) {
+    auto [it, inserted] = availableAssetFiles_.emplace(relativePath);
+    if (inserted) {
+        LOG4CXX_INFO(LOGGER, "Registered asset: " << *it);
+    }
+}
+
+void AssetImporter::deregisterAsset(const std::filesystem::path& relativePath) {
+    auto it = availableAssetFiles_.find(relativePath);
+    if (it != availableAssetFiles_.end()) {
+        LOG4CXX_INFO(LOGGER, "Deregistered asset: " << *it);
+        availableAssetFiles_.erase(it);
+    }
+}
+
+std::filesystem::path AssetImporter::getAbsolutePath(const std::filesystem::path& relativePath) const {
+    return toAbsolutePath(relativePath);
+}

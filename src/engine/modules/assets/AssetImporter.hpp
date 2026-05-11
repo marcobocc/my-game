@@ -13,11 +13,14 @@ public:
     explicit AssetImporter(const std::filesystem::path& root, AssetStorage& cache);
     bool import(const std::filesystem::path& relativePath);
     std::vector<std::string> getAvailableAssets(const std::string& extension) const;
+    void registerAsset(const std::filesystem::path& relativePath);
+    void deregisterAsset(const std::filesystem::path& relativePath);
+    std::filesystem::path getAbsolutePath(const std::filesystem::path& relativePath) const;
+    const std::filesystem::path& getRoot() const { return root_; }
 
 private:
     void searchAssets();
-    std::filesystem::path
-    toAbsolutePath(const std::filesystem::path& relativePath) const; // Relative to assets root folder
+    std::filesystem::path toAbsolutePath(const std::filesystem::path& relativePath) const;
 
     bool importMesh(const std::filesystem::path& relativePath) const;
     bool importShader(const std::filesystem::path& relativePath) const;

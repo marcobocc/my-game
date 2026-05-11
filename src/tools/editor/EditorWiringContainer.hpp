@@ -13,7 +13,9 @@
 #include "business/ObjectSelection.hpp"
 #include "business/ObjectTransformHandle.hpp"
 #include "business/SceneLoader.hpp"
+#include "business/asset_editing/MaterialMutations.hpp"
 #include "business/scene_editing/SceneMutations.hpp"
+#include "business/scene_editing/UndoHistory.hpp"
 #include "input/InputHandler.hpp"
 #include "input/PickingSystem.hpp"
 #include "presentation/PresentationLayer.hpp"
@@ -59,7 +61,9 @@ public:
         gizmosBuilder_(assetManager_, entityManager_, editorSettings_),
         pickingSystem_(assetManager_),
         sceneLoader_(entityManager_, objectSelection_, engine_),
-        sceneMutations_(entityManager_, engine_, objectSelection_),
+        undoHistory_(),
+        sceneMutations_(entityManager_, engine_, objectSelection_, undoHistory_),
+        materialMutations_(assetManager_, objectSelection_, undoHistory_),
         objectTransformHandle_(
                 window, engine_, sceneMutations_, editorCamera_, objectSelection_, editorSettings_, entityManager_),
         // -------------------------------------------------------------------------------------------------------------
@@ -77,6 +81,7 @@ public:
                            userInterface_,
                            pickingSystem_,
                            sceneMutations_,
+                           materialMutations_,
                            sceneLoader_,
                            assetManager_,
                            window,
@@ -90,7 +95,8 @@ public:
                       entityManager_,
                       sceneMutations_,
                       editorGizmos_,
-                      editorSettings_),
+                      editorSettings_,
+                      undoHistory_),
         // -------------------------------------------------------------------------------------------------------------
         // Editor application entry point (root)
         // -------------------------------------------------------------------------------------------------------------
@@ -125,7 +131,9 @@ private:
     GizmosRenderer gizmosBuilder_;
     PickingSystem pickingSystem_;
     SceneLoader sceneLoader_;
+    UndoHistory undoHistory_;
     SceneMutations sceneMutations_;
+    MaterialMutations materialMutations_;
     ObjectTransformHandle objectTransformHandle_;
 
     // Presentation and input handling

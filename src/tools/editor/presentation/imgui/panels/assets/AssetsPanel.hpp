@@ -4,7 +4,10 @@
 #include "../../../../business/ObjectSelection.hpp"
 #include "../../ImguiStyling.hpp"
 #include "../EditorPanel.hpp"
+#include "AssetsDropdownMenu.hpp"
 #include "modules/assets/AssetManager.hpp"
+
+class MaterialMutations;
 
 class AssetsPanel : public EditorPanel {
 public:
@@ -12,9 +15,10 @@ public:
     static constexpr float INSPECTOR_WIDTH_RATIO = 0.25f;
     static constexpr int SEARCH_BUFFER_SIZE = 256;
 
-    AssetsPanel(AssetManager& assetManager, ObjectSelection& objectSelection) :
+    AssetsPanel(AssetManager& assetManager, ObjectSelection& objectSelection, MaterialMutations& materialMutations) :
         assetManager_(assetManager),
-        objectSelection_(objectSelection) {
+        objectSelection_(objectSelection),
+        dropdownMenu_(assetManager, objectSelection, materialMutations) {
         searchBuffer_[0] = '\0';
     }
 
@@ -38,6 +42,7 @@ public:
 private:
     AssetManager& assetManager_;
     ObjectSelection& objectSelection_;
+    AssetsDropdownMenu dropdownMenu_;
     char searchBuffer_[SEARCH_BUFFER_SIZE];
 
     bool filterMesh_ = false;
@@ -45,6 +50,7 @@ private:
     bool filterShad_ = false;
     bool filterTex_ = false;
     bool filterModel_ = false;
+    std::optional<std::string> contextTargetAsset_;
 
     void drawSearchBar() {
         constexpr float height = 24.0f;
@@ -184,7 +190,19 @@ private:
                 if (ImGui::Selectable(asset.c_str(), selected)) {
                     objectSelection_.selectAsset(asset);
                 }
+
+                if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+                    contextTargetAsset_.emplace(asset);
+                    ImGui::OpenPopup("AssetsContextMenu");
+                }
             }
         }
+
+        if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !ImGui::IsAnyItemHovered()) {
+            contextTargetAsset_.reset();
+            ImGui::OpenPopup("AssetsContextMenu");
+        }
+
+        ImguiStyling::withPopup("AssetsContextMenu", [&] { dropdownMenu_.draw(contextTargetAsset_); });
     }
 };

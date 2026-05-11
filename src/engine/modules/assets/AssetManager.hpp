@@ -32,6 +32,24 @@ public:
         return assetImporter_.getAvailableAssets(extension);
     }
 
+    void registerAsset(const std::string& relativePath) const { assetImporter_.registerAsset(relativePath); }
+
+    std::filesystem::path getAbsolutePath(const std::string& relativePath) const {
+        return assetImporter_.getAbsolutePath(relativePath);
+    }
+
+    template<typename T>
+    void unload(const std::string& name) const {
+        assetImporter_.deregisterAsset(name);
+        storage_.remove<T>(name);
+    }
+
+    template<typename T>
+    T* reload(const std::string& name) {
+        storage_.remove<T>(name);
+        return get<T>(name);
+    }
+
 private:
     AssetImporter& assetImporter_;
     AssetStorage& storage_;

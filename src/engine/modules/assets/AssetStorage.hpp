@@ -25,6 +25,13 @@ public:
 
     bool contains(const std::string& name) const { return names_.contains(name); }
 
+    template<typename T>
+    void remove(const std::string& name) {
+        auto& container = getContainer<T>();
+        container.erase(name);
+        names_.erase(name);
+    }
+
 private:
     template<typename T>
     using Container = std::unordered_map<std::string, std::unique_ptr<T>>;
