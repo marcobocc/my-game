@@ -3,6 +3,7 @@
 #include <nfd.hpp>
 #include <string>
 #include "../../../business/SceneLoader.hpp"
+#include "../../../business/UndoHistory.hpp"
 #include "../../../business/scene_editing/SceneMutations.hpp"
 #include "../ImguiStyling.hpp"
 #include "modules/ui/ImguiWidget.hpp"
@@ -11,9 +12,12 @@
 class SceneLoader;
 class ApplicationMenuBar : public ImguiWidget {
 public:
-    explicit ApplicationMenuBar(SceneMutations& sceneMutations, SceneLoader& editorWorkspace) :
+    explicit ApplicationMenuBar(SceneMutations& sceneMutations,
+                                SceneLoader& editorWorkspace,
+                                UndoHistory& undoHistory) :
         sceneMutations_(sceneMutations),
-        editorWorkspace_(editorWorkspace) {}
+        editorWorkspace_(editorWorkspace),
+        undoHistory_(undoHistory) {}
 
     void draw() override {
         ImguiStyling::withMenuBar(ImVec4(0.08f, 0.08f, 0.08f, 1.00f), [this] {
@@ -25,8 +29,8 @@ public:
             }
 
             if (ImGui::BeginMenu("Edit")) {
-                if (ImGui::MenuItem("Undo", "Ctrl+Z")) sceneMutations_.undo();
-                if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) sceneMutations_.redo();
+                if (ImGui::MenuItem("Undo", "Ctrl+Z")) undoHistory_.undo();
+                if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) undoHistory_.redo();
                 ImGui::EndMenu();
             }
 
@@ -37,6 +41,7 @@ public:
 private:
     SceneMutations& sceneMutations_;
     SceneLoader& editorWorkspace_;
+    UndoHistory& undoHistory_;
     std::optional<std::string> sceneName_{};
     std::optional<std::filesystem::path> scenePath_{};
 

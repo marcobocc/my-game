@@ -10,6 +10,7 @@ class PickingSystem;
 class AssetManager;
 class SceneMutations;
 class MaterialMutations;
+class UndoHistory;
 class VulkanEditorBackend;
 class EditorCamera;
 class GizmosRenderer;
@@ -56,7 +57,8 @@ public:
                       SceneLoader& editorWorkspace,
                       AssetManager& assetManager,
                       GameWindow& window,
-                      GameEngine& engine);
+                      GameEngine& engine,
+                      UndoHistory& undoHistory);
 
     // --------------------------------------------------------
     // Rendering

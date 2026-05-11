@@ -2,7 +2,7 @@
 #include <optional>
 #include "../../../../engine/GameEngine.hpp"
 #include "../ObjectSelection.hpp"
-#include "UndoHistory.hpp"
+#include "../UndoHistory.hpp"
 #include "modules/scene/EntityManager.hpp"
 
 class SceneMutations {
@@ -46,9 +46,6 @@ public:
                           [this, entity] { entityManager_.destroyEntity(entity); });
         clearSelectionIfSelected(entity);
     }
-
-    void undo() { undoHistory_.undo(); }
-    void redo() { undoHistory_.redo(); }
 
     template<typename Component>
     void addComponent(EntityHandle entity) {

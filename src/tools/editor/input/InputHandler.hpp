@@ -1,7 +1,7 @@
 #pragma once
 #include "../../../engine/GameEngine.hpp"
 #include "../../../engine/modules/core/GameWindow.hpp"
-#include "../business/scene_editing/UndoHistory.hpp"
+#include "../business/UndoHistory.hpp"
 #include "PickingSystem.hpp"
 
 class EditorGizmos;

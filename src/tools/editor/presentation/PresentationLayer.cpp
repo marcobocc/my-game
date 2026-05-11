@@ -36,7 +36,8 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      SceneLoader& editorWorkspace,
                                      AssetManager& assetManager,
                                      GameWindow& window,
-                                     GameEngine& engine) :
+                                     GameEngine& engine,
+                                     UndoHistory& undoHistory) :
     renderer_(renderer),
     editorOrbitCamera_(editorOrbitCamera),
     objectSelection_(objectSelection),
@@ -53,7 +54,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     assetManager_(assetManager),
     engine_(engine),
     window_(window) {
-    userInterface_.emplace<ApplicationMenuBar>(sceneMutations, editorWorkspace);
+    userInterface_.emplace<ApplicationMenuBar>(sceneMutations, editorWorkspace, undoHistory);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
     userInterface_.emplace<HierarchyPanel>(objectSelection_, entityManager_, assetManager_, sceneMutations, engine_);
     userInterface_.emplace<AssetsPanel>(assetManager_, objectSelection_, materialMutations);

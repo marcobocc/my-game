@@ -13,9 +13,9 @@
 #include "business/ObjectSelection.hpp"
 #include "business/ObjectTransformHandle.hpp"
 #include "business/SceneLoader.hpp"
+#include "business/UndoHistory.hpp"
 #include "business/asset_editing/MaterialMutations.hpp"
 #include "business/scene_editing/SceneMutations.hpp"
-#include "business/scene_editing/UndoHistory.hpp"
 #include "input/InputHandler.hpp"
 #include "input/PickingSystem.hpp"
 #include "presentation/PresentationLayer.hpp"
@@ -88,7 +88,8 @@ public:
                            sceneLoader_,
                            assetManager_,
                            window,
-                           engine_),
+                           engine_,
+                           undoHistory_),
         inputHandler_(window,
                       engine_,
                       pickingSystem_,

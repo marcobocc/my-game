@@ -5,7 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include "../ObjectSelection.hpp"
-#include "../scene_editing/UndoHistory.hpp"
+#include "../UndoHistory.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/assets/BuiltinAssetNames.hpp"
 #include "structs/assets/Material.hpp"
@@ -105,15 +105,14 @@ private:
     void updateMaterial(const std::string& materialName,
                         const nlohmann::json& oldSnapshot,
                         const nlohmann::json& newSnapshot) const {
-        saveMaterial(materialName, newSnapshot);
+        applyMaterialSnapshot(materialName, newSnapshot);
+        undoHistory_.push([this, materialName, oldSnapshot] { applyMaterialSnapshot(materialName, oldSnapshot); },
+                          [this, materialName, newSnapshot] { applyMaterialSnapshot(materialName, newSnapshot); });
+    }
+
+    void applyMaterialSnapshot(const std::string& materialName, const nlohmann::json& snapshot) const {
+        saveMaterial(materialName, snapshot);
         assetManager_.reload<Material>(materialName);
-        undoHistory_.push(
-                [this, materialName, oldSnapshot, newSnapshot] {
-                    updateMaterial(materialName, newSnapshot, oldSnapshot);
-                },
-                [this, materialName, oldSnapshot, newSnapshot] {
-                    updateMaterial(materialName, oldSnapshot, newSnapshot);
-                });
     }
 
     void saveMaterial(const std::string& materialName, const nlohmann::json& snapshot) const {
