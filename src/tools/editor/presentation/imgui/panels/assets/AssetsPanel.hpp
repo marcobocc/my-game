@@ -191,6 +191,12 @@ private:
                     objectSelection_.selectAsset(asset);
                 }
 
+                if (asset.ends_with(".mat") && ImGui::BeginDragDropSource()) {
+                    ImGui::SetDragDropPayload("MATERIAL_ASSET", asset.c_str(), asset.size() + 1);
+                    ImGui::TextUnformatted(asset.c_str());
+                    ImGui::EndDragDropSource();
+                }
+
                 if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                     contextTargetAsset_.emplace(asset);
                     ImGui::OpenPopup("AssetsContextMenu");

@@ -37,7 +37,18 @@ private:
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 6));
 
         row("Mesh", [&] { ImGui::TextUnformatted(component_->meshName.c_str()); });
-        row("Material", [&] { ImGui::TextUnformatted(component_->materialName.c_str()); });
+        row("Material", [&] {
+            ImGui::TextUnformatted(component_->materialName.c_str());
+
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MATERIAL_ASSET")) {
+                    const char* materialName = static_cast<const char*>(payload->Data);
+                    component_->materialName = materialName;
+                    sceneMutations_.commitEdit(objectId_);
+                }
+                ImGui::EndDragDropTarget();
+            }
+        });
 
         if (const Material* mat = assetManager_.get<Material>(component_->materialName)) {
             row("Texture", [&] {
