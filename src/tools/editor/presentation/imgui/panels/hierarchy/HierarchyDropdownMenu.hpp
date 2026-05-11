@@ -10,6 +10,7 @@
 #include "SpherePopupModal.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "structs/assets/Model.hpp"
+#include "structs/components/Light.hpp"
 #include "structs/components/Renderer.hpp"
 #include "structs/components/Transform.hpp"
 
@@ -33,6 +34,9 @@ public:
         }
         if (ImGui::MenuItem("Empty Object")) {
             sceneMutations_.createObject({{"metadata", {{"name", "Object"}}}});
+        }
+        if (ImGui::MenuItem("Light")) {
+            createLight();
         }
         if (ImGui::BeginMenu("3D Object")) {
             if (ImGui::MenuItem("Cube")) {
@@ -82,6 +86,16 @@ private:
                 {"metadata", {{"name", modelName}}},
                 {"transform", t.serialize()},
                 {"renderer", r.serialize()},
+        });
+    }
+
+    void createLight() {
+        Transform t{glm::vec3(0.0f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), glm::vec3(1.0f)};
+        Light l{LightType::Directional, 1.0f};
+        sceneMutations_.createObject({
+                {"metadata", {{"name", "Light"}}},
+                {"transform", t.serialize()},
+                {"light", l.serialize()},
         });
     }
 };

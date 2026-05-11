@@ -265,6 +265,8 @@ void VulkanEditorBackend::recordCommands(VkCommandBuffer cmd, uint32_t imageInde
                                                         renderData.drawQueue,
                                                         renderData.outlineQueue,
                                                         renderData.gizmoLines,
+                                                        renderData.lightsWithTransforms,
+                                                        renderData.gridScale,
                                                         /*isOffscreen=*/true});
                     transitionColorImageFinal(cmd,
                                               target->image,
@@ -421,6 +423,8 @@ void VulkanEditorBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFla
         n.execute = [this](VkCommandBuffer cmd,
                            const VulkanRenderGraph<EditorRenderData>& graph,
                            const EditorRenderData& ctx) -> bool {
+            lightingPass_.updateLights(ctx.lightsWithTransforms);
+
             const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
             const float gbW = static_cast<float>(graph.getWidth(gbufferAlbedoHandle_));
             const float gbH = static_cast<float>(graph.getHeight(gbufferAlbedoHandle_));

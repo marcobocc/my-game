@@ -150,11 +150,17 @@ void PresentationLayer::render(const EntityManager& entityManager,
         drawQueue.push_back(DrawCall{*renderer, *transform, std::to_string(entity)});
     }
 
+    auto lightsQuery = entityManager.query<Light, Transform>();
+    std::vector<std::pair<Light, Transform>> activeLights;
+    for (const auto& [entity, light, transform]: lightsQuery) {
+        activeLights.push_back({*light, *transform});
+    }
+
     auto cameras = entityManager.query<Camera, Transform>();
     for (auto& [entity, camera, transform]: cameras) {
         if (camera->renderTarget.isValid())
-            renderer_.renderFrame(
-                    EditorRenderData(*camera, *transform, drawQueue, outlineQueue_, builtGizmoLines_, gridScale, true));
+            renderer_.renderFrame(EditorRenderData(
+                    *camera, *transform, drawQueue, outlineQueue_, builtGizmoLines_, activeLights, gridScale, true));
     }
 
     renderer_.renderFrame(EditorRenderData(editorOrbitCamera_.getCamera(),
@@ -162,6 +168,7 @@ void PresentationLayer::render(const EntityManager& entityManager,
                                            drawQueue,
                                            outlineQueue_,
                                            builtGizmoLines_,
+                                           activeLights,
                                            gridScale,
                                            false));
 }
