@@ -51,10 +51,10 @@ private:
         });
 
         if (const Material* mat = assetManager_.get<Material>(component_->materialName)) {
-            glm::vec4 color = component_->baseColorOverride.value_or(mat->getBaseColor());
+            glm::vec4 color = component_->tintOverride.value_or(mat->getTint());
             float col[4] = {color.r, color.g, color.b, color.a};
-            if (ImGui::ColorEdit4("Base color", col)) {
-                component_->baseColorOverride = glm::vec4(col[0], col[1], col[2], col[3]);
+            if (ImGui::ColorEdit4("Tint", col)) {
+                component_->tintOverride = glm::vec4(col[0], col[1], col[2], col[3]);
             }
             if (ImGui::IsItemActivated()) sceneMutations_.beginEdit(objectId_);
             if (ImGui::IsItemDeactivatedAfterEdit()) sceneMutations_.commitEdit(objectId_);

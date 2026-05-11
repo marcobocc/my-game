@@ -48,14 +48,14 @@ struct ShaderDescriptor {
 struct MaterialDescriptor {
     std::string name;
     std::string shaderName;
-    glm::vec4 baseColor;
+    glm::vec4 tint;
     std::string albedoTexture;
 
     static MaterialDescriptor fromFile(const std::filesystem::path& absolutePath, const std::string& name) {
         auto j = JsonUtils::loadJson(absolutePath);
         return {.name = name,
                 .shaderName = JsonUtils::getOptional<std::string>(j, "shaderName", GBUFFER_SHADER),
-                .baseColor = JsonUtils::getOptional<glm::vec4>(j, "baseColor", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f}),
+                .tint = JsonUtils::getOptional<glm::vec4>(j, "tint", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f}),
                 .albedoTexture = JsonUtils::getOptional<std::string>(j, "albedoTexture", EMPTY_TEXTURE)};
     }
 };

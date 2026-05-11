@@ -46,12 +46,12 @@ public:
         }
     }
 
-    void setBaseColor(const std::string& materialName, const glm::vec4& color) const {
+    void setTint(const std::string& materialName, const glm::vec4& color) const {
         if (isBuiltin(materialName)) return;
         if (const Material* mat = assetManager_.get<Material>(materialName)) {
             nlohmann::json oldSnapshot = serializeMaterial(*mat);
             nlohmann::json newSnapshot = oldSnapshot;
-            newSnapshot["baseColor"] = JsonUtils::serializeVec4(color);
+            newSnapshot["tint"] = JsonUtils::serializeVec4(color);
             updateMaterial(materialName, oldSnapshot, newSnapshot);
         }
     }
@@ -97,7 +97,7 @@ private:
     static nlohmann::json serializeMaterial(const Material& material) {
         nlohmann::json j;
         j["shaderName"] = material.getShaderName();
-        j["baseColor"] = JsonUtils::serializeVec4(material.getBaseColor());
+        j["tint"] = JsonUtils::serializeVec4(material.getTint());
         j["albedoTexture"] = material.getAlbedoTexture();
         return j;
     }

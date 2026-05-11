@@ -7,7 +7,7 @@ layout(location = 1) out vec2 fragUV;
 
 layout(push_constant) uniform PushConstants {
     mat4 model;
-    vec4 baseColor;
+    vec4 tint;
 } pc;
 
 layout(set = 0, binding = 0) uniform CameraUBO {
@@ -17,7 +17,7 @@ layout(set = 0, binding = 0) uniform CameraUBO {
 
 void main() {
     gl_Position = camera.proj * camera.view * pc.model * vec4(inPos, 1.0);
-    color = pc.baseColor.rgb;
+    color = pc.tint.rgb;
     fragUV = inUV;
 }
 

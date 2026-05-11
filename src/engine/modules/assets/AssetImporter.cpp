@@ -150,7 +150,7 @@ bool AssetImporter::importMaterial(const std::filesystem::path& relativePath) co
                                                    << " required by material: " << name);
         return false;
     }
-    storage_.insert<Material>(name, std::make_unique<Material>(name, def.shaderName, def.baseColor, def.albedoTexture));
+    storage_.insert<Material>(name, std::make_unique<Material>(name, def.shaderName, def.tint, def.albedoTexture));
     return true;
 }
 

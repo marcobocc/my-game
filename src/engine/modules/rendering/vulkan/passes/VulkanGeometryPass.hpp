@@ -91,10 +91,10 @@ private:
 
         struct PushConstants {
             glm::mat4 modelMatrix;
-            glm::vec4 baseColor;
+            glm::vec4 tint;
         } pc{};
         pc.modelMatrix = drawCall.transform.getModelMatrix();
-        pc.baseColor = drawCall.renderer.baseColorOverride.value_or(material->getBaseColor());
+        pc.tint = drawCall.renderer.tintOverride.value_or(material->getTint());
         vkCmdPushConstants(cmd,
                            pipeline->layout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
