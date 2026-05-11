@@ -6,9 +6,9 @@
 #include "data/assets/Material.hpp"
 #include "modules/assets/AssetManager.hpp"
 
-class MaterialWidget : public ComponentContainer {
+class MaterialInspector : public ComponentContainer {
 public:
-    MaterialWidget(AssetManager& assetManager, ObjectSelection& objectSelection) :
+    MaterialInspector(AssetManager& assetManager, ObjectSelection& objectSelection) :
         ComponentContainer("Material", 6),
         assetManager_(assetManager),
         objectSelection_(objectSelection) {}

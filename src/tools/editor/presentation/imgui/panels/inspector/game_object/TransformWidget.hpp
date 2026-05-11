@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
-#include "ComponentContainer.hpp"
+#include "../ComponentContainer.hpp"
 #include "data/components/Transform.hpp"
 
 class SceneMutations;

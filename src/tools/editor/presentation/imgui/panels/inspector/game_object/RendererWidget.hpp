@@ -4,9 +4,9 @@
 #include <optional>
 #include <string>
 #include <unordered_set>
-#include "../../../../business/EditorGizmos.hpp"
-#include "../../../../business/scene_editing/SceneMutations.hpp"
-#include "ComponentContainer.hpp"
+#include "../../../../../business/EditorGizmos.hpp"
+#include "../../../../../business/scene_editing/SceneMutations.hpp"
+#include "../ComponentContainer.hpp"
 #include "data/assets/Material.hpp"
 #include "data/components/Renderer.hpp"
 #include "modules/assets/AssetManager.hpp"

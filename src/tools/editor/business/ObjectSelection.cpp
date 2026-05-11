@@ -26,6 +26,10 @@ bool ObjectSelection::isElementAsset() const {
     return selectedElement_ && std::holds_alternative<AssetHandle>(*selectedElement_);
 }
 
+bool ObjectSelection::isElementMaterial() const {
+    return isElementAsset() && std::get<AssetHandle>(*selectedElement_).ends_with(".mat");
+}
+
 std::optional<EntityHandle> ObjectSelection::getSelectedEntityId() const {
     if (isElementGameObject()) {
         return std::get<EntityHandle>(*selectedElement_);

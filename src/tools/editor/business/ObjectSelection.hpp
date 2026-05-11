@@ -17,6 +17,7 @@ public:
     const std::optional<SelectedElement>& getSelectedElement() const { return selectedElement_; }
     bool isElementGameObject() const;
     bool isElementAsset() const;
+    bool isElementMaterial() const;
 
     std::optional<EntityHandle> getSelectedEntityId() const;
     std::optional<AssetHandle> getSelectedAssetId() const;
