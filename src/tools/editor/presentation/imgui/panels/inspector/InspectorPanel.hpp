@@ -7,6 +7,7 @@
 #include "../EditorPanel.hpp"
 #include "BoxColliderWidget.hpp"
 #include "CameraWidget.hpp"
+#include "MaterialWidget.hpp"
 #include "RendererWidget.hpp"
 #include "TransformWidget.hpp"
 #include "data/components/BoxCollider.hpp"
@@ -31,7 +32,8 @@ public:
         transformWidget_(sceneMutations),
         rendererWidget_(assetManager, sceneMutations, debugViz),
         boxColliderWidget_(sceneMutations),
-        cameraWidget_(sceneMutations) {}
+        cameraWidget_(sceneMutations),
+        materialWidget_(assetManager, objectSelection) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -50,6 +52,11 @@ public:
             cameraWidget_.setCurrentObjectId(entity);
             boxColliderWidget_.setCurrentObjectId(entity);
             drawObject(entity);
+        } else {
+            auto selectedAsset = objectSelection_.getSelectedAssetId();
+            if (selectedAsset && selectedAsset->ends_with(".mat")) {
+                static_cast<ComponentContainer&>(materialWidget_).draw();
+            }
         }
     }
 
@@ -118,4 +125,5 @@ private:
     RendererWidget rendererWidget_;
     BoxColliderWidget boxColliderWidget_;
     CameraWidget cameraWidget_;
+    MaterialWidget materialWidget_;
 };

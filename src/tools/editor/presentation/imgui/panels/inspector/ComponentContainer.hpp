@@ -42,15 +42,15 @@ private:
                           ImGuiChildFlags_AlwaysUseWindowPadding,
                           ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-        if (contextId) {
-            ImGui::PushStyleColor(ImGuiCol_Button, {0.12f, 0.12f, 0.12f, 1.0f});
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.14f, 0.14f, 0.14f, 1.0f});
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.0f, 0.5f});
-            ImGui::Button(title_, {ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y});
-            ImGui::PopStyleVar(2);
-            ImGui::PopStyleColor(2);
+        ImGui::PushStyleColor(ImGuiCol_Button, {0.12f, 0.12f, 0.12f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.14f, 0.14f, 0.14f, 1.0f});
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.0f, 0.5f});
+        ImGui::Button(title_, {ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y});
+        ImGui::PopStyleVar(2);
+        ImGui::PopStyleColor(2);
 
+        if (contextId) {
             ImguiStyling::withPopup(
                     contextId,
                     [onRemove] {
@@ -59,8 +59,6 @@ private:
                         }
                     },
                     true);
-        } else {
-            ImGui::TextColored(ImVec4(0.8f, 0.7f, 0.2f, 1.0f), "%s", title_);
         }
         ImGui::EndChild();
     }
