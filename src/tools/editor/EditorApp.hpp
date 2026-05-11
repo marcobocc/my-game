@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <string>
 #include "../../engine/GameEngine.hpp"
 #include "../../engine/modules/core/TimeManager.hpp"
@@ -29,7 +30,8 @@ public:
               SceneLoader& sceneLoader,
               TimeManager& time,
               InputSystem& inputSystem,
-              PhysicsSystem& physicsSystem) :
+              PhysicsSystem& physicsSystem,
+              const std::filesystem::path& projectPath = "") :
         window_(window),
         engine_(engine),
         entityManager_(entityManager),
@@ -40,7 +42,8 @@ public:
         rendererSettings_(rendererSettings),
         presentationLayer_(presentationLayer),
         sceneLoader_(sceneLoader),
-        inputHandler_(inputHandler) {
+        inputHandler_(inputHandler),
+        projectPath_(projectPath) {
         initEditor();
         ImguiStyling::ApplyEditorStyle();
     }
@@ -106,4 +109,5 @@ private:
     PresentationLayer& presentationLayer_;
     SceneLoader& sceneLoader_;
     InputHandler& inputHandler_;
+    std::filesystem::path projectPath_;
 };

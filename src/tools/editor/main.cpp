@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     std::filesystem::path assetsPath = projectRoot / "assets";
 
     GameWindow window("Editor");
-    EditorWiringContainer wiringContainer(window, assetsPath);
+    EditorWiringContainer wiringContainer(window, assetsPath, projectRoot);
     EditorApp editorApp = wiringContainer.editorApp();
     editorApp.run();
 

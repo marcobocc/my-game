@@ -29,8 +29,11 @@
 */
 class EditorWiringContainer : public GameEngineWiringContainer {
 public:
-    EditorWiringContainer(GameWindow& window, const std::filesystem::path& assetsPath) :
+    EditorWiringContainer(GameWindow& window,
+                          const std::filesystem::path& assetsPath,
+                          const std::filesystem::path& projectPath = "") :
         GameEngineWiringContainer(window, assetsPath),
+        projectPath_(projectPath),
         // -------------------------------------------------------------------------------------------------------------
         // Vulkan backend for the editor
         // -------------------------------------------------------------------------------------------------------------
@@ -110,7 +113,8 @@ public:
                    sceneLoader_,
                    time_,
                    inputSystem_,
-                   physicsSystem_) {}
+                   physicsSystem_,
+                   projectPath_) {}
 
     EditorApp& editorApp() { return editorApp_; }
 
@@ -142,4 +146,7 @@ private:
 
     // Root application
     EditorApp editorApp_;
+
+    // Project metadata
+    std::filesystem::path projectPath_;
 };
