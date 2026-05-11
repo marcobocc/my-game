@@ -71,7 +71,8 @@ ENV/
 htmlcov/
 .tox/
 .cache/
-devtests
+projects
+imgui.ini
 
 # Assets
 *.spv

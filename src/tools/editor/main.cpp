@@ -11,16 +11,17 @@ int main(int argc, char* argv[]) {
     log4cxx::LoggerPtr logger(log4cxx::Logger::getRootLogger());
     log4cxx::Logger::getRootLogger()->addAppender(console);
 
-    std::filesystem::path assetsPath;
+    std::filesystem::path projectRoot;
     for (int i = 1; i < argc; ++i) {
-        if (std::string(argv[i]) == "--assets_path" && i + 1 < argc) {
-            assetsPath = argv[i + 1];
+        if (std::string(argv[i]) == "--project" && i + 1 < argc) {
+            projectRoot = std::filesystem::absolute(argv[i + 1]);
             i++;
         }
     }
-    if (assetsPath.empty()) {
-        throw std::runtime_error("Assets path not provided. Use --assets_path <path> to specify the path to assets.");
+    if (projectRoot.empty()) {
+        throw std::runtime_error("Project root not provided. Use --project <path> to specify the project root.");
     }
+    std::filesystem::path assetsPath = projectRoot / "assets";
 
     GameWindow window("Editor");
     EditorWiringContainer wiringContainer(window, assetsPath);

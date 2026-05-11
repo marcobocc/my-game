@@ -53,8 +53,11 @@ Vertices: A → C → B (clockwise)
 ### Build and Run
 
 ```bash
-# Build and run a specific target (optionally: run linting with clang-tidy)
-python3 build.py <target> [--tidy]
+# Build and run a specific target (optionally: run linting with clang-tidy and pass extra args to executable)
+python3 build.py <target> [--tidy] [-- <executable-args>...]
+
+# Example opening editor on a specific project
+python3 build.py editor -- --project myProject
 
 # Clean build artifacts
 python3 build.py clean

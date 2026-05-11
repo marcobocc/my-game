@@ -239,10 +239,13 @@ def find_executable(target: str) -> Path:
     sys.exit(1)
 
 
-def run_target(target: str) -> None:
+def run_target(target: str, extra_args: list[str] | None = None) -> None:
     exe = find_executable(target)
     run_log(f"Running executable: {exe}")
-    run_cmd([str(exe), "--assets_path", str(ASSETS_DIR)], cwd=exe.parent)
+    cmd = [str(exe), "--project", str(PROJECT_ROOT)]
+    if extra_args:
+        cmd.extend(extra_args)
+    run_cmd(cmd, cwd=exe.parent)
 
 
 # -----------------------------------------------------------------------------
@@ -252,7 +255,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build script for CrossPlatformVulkanEngine")
     parser.add_argument("target", type=str, help="Name of the executable target to build and run", nargs="?")
     parser.add_argument("--tidy", action="store_true", help="Run clang-tidy after building")
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
+
+    # Extract extra args after '--'
+    extra_args = []
+    if '--' in sys.argv:
+        dash_idx = sys.argv.index('--')
+        extra_args = sys.argv[dash_idx + 1:]
 
     if args.target == "clean":
         clean_build_dir()
@@ -287,7 +296,7 @@ def main() -> None:
         success(f"Successfully built target {args.target} in {end_time - start_time:.2f}s")
 
     if args.target:
-        run_target(args.target)
+        run_target(args.target, extra_args)
 
 
 if __name__ == "__main__":
