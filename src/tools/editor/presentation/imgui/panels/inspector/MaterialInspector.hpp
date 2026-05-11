@@ -37,10 +37,20 @@ private:
 
             row("Name", [&] { ImGui::TextUnformatted(selectedAsset->c_str()); });
             row("Albedo", [&] {
-                if (!mat->getAlbedoTexture().empty())
-                    ImGui::TextUnformatted(mat->getAlbedoTexture().c_str());
-                else
-                    ImGui::TextDisabled("none");
+                ImGui::SetNextItemWidth(-1);
+                const std::string displayText =
+                        (mat->getAlbedoTexture() == EMPTY_TEXTURE) ? "" : mat->getAlbedoTexture();
+                ImGui::InputText("##albedoTexture",
+                                 const_cast<char*>(displayText.c_str()),
+                                 displayText.size() + 1,
+                                 ImGuiInputTextFlags_ReadOnly);
+                if (ImGui::BeginDragDropTarget()) {
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
+                        const char* textureName = static_cast<const char*>(payload->Data);
+                        materialMutations_.setAlbedoTexture(*selectedAsset, textureName);
+                    }
+                    ImGui::EndDragDropTarget();
+                }
             });
 
             glm::vec4 color = mat->getBaseColor();

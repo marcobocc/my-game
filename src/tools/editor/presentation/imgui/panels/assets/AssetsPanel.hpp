@@ -160,7 +160,7 @@ private:
         if (asset.ends_with(".mesh")) return filterMesh_;
         if (asset.ends_with(".mat")) return filterMat_;
         if (asset.ends_with(".shad")) return filterShad_;
-        if (asset.ends_with(".tex")) return filterTex_;
+        if (asset.ends_with(".png") || asset.ends_with(".jpg")) return filterTex_;
         if (asset.ends_with(".model")) return filterModel_;
 
         return false;
@@ -172,13 +172,15 @@ private:
         auto meshes = assetManager_.getAvailableAssets(".mesh");
         auto mats = assetManager_.getAvailableAssets(".mat");
         auto shaders = assetManager_.getAvailableAssets(".shad");
-        auto textures = assetManager_.getAvailableAssets(".tex");
+        auto texturesPng = assetManager_.getAvailableAssets(".png");
+        auto texturesJpg = assetManager_.getAvailableAssets(".jpg");
         auto models = assetManager_.getAvailableAssets(".model");
 
         allAssets.insert(allAssets.end(), meshes.begin(), meshes.end());
         allAssets.insert(allAssets.end(), mats.begin(), mats.end());
         allAssets.insert(allAssets.end(), shaders.begin(), shaders.end());
-        allAssets.insert(allAssets.end(), textures.begin(), textures.end());
+        allAssets.insert(allAssets.end(), texturesPng.begin(), texturesPng.end());
+        allAssets.insert(allAssets.end(), texturesJpg.begin(), texturesJpg.end());
         allAssets.insert(allAssets.end(), models.begin(), models.end());
 
         std::ranges::sort(allAssets);
@@ -193,6 +195,12 @@ private:
 
                 if (asset.ends_with(".mat") && ImGui::BeginDragDropSource()) {
                     ImGui::SetDragDropPayload("MATERIAL_ASSET", asset.c_str(), asset.size() + 1);
+                    ImGui::TextUnformatted(asset.c_str());
+                    ImGui::EndDragDropSource();
+                }
+
+                if ((asset.ends_with(".png") || asset.ends_with(".jpg")) && ImGui::BeginDragDropSource()) {
+                    ImGui::SetDragDropPayload("texture_asset", asset.c_str(), asset.size() + 1);
                     ImGui::TextUnformatted(asset.c_str());
                     ImGui::EndDragDropSource();
                 }

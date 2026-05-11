@@ -31,7 +31,7 @@ std::filesystem::path AssetImporter::toAbsolutePath(const std::filesystem::path&
 }
 
 void AssetImporter::searchAssets() {
-    static constexpr std::array knownExtensions = {".shad", ".mesh", ".tex", ".mat", ".model"};
+    static constexpr std::array knownExtensions = {".shad", ".mesh", ".mat", ".model", ".jpg", ".png"};
     LOG4CXX_INFO(LOGGER, "Searching for assets in: " << root_);
     for (const auto& file: std::filesystem::recursive_directory_iterator(root_)) {
         auto extension = file.path().extension().string();
@@ -52,7 +52,9 @@ std::vector<std::string> AssetImporter::getAvailableAssets(const std::string& ex
 
 bool AssetImporter::import(const std::filesystem::path& relativePath) {
     auto it = availableAssetFiles_.find(relativePath);
-    if (it == availableAssetFiles_.end()) LOG4CXX_WARN(LOGGER, "Asset not found: '" << relativePath << "'");
+    if (it == availableAssetFiles_.end() && !isBuiltinAsset(relativePath)) {
+        LOG4CXX_WARN(LOGGER, "Asset not found: " << relativePath);
+    }
     auto ext = relativePath.extension().string();
 
     bool importSuccessful = false;
