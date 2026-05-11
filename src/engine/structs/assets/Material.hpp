@@ -17,8 +17,9 @@ public:
              float metallic,
              float roughness,
              float ao,
-             const glm::vec2& tiling = glm::vec2(1.0f, 1.0f),
-             const glm::vec2& offset = glm::vec2(0.0f, 0.0f)) :
+             const glm::vec2& tiling,
+             const glm::vec2& offset,
+             bool scaleInvariantUV) :
         Asset(name),
         shaderName_(shaderName),
         tint_(tint),
@@ -31,9 +32,12 @@ public:
         roughness_(roughness),
         ao_(ao),
         tiling_(tiling),
-        offset_(offset) {}
+        offset_(offset),
+        scaleInvariantUV_(scaleInvariantUV) {}
+
     const glm::vec2& getTiling() const { return tiling_; }
     const glm::vec2& getOffset() const { return offset_; }
+    int getScaleInvariantUV() const { return scaleInvariantUV_; }
 
     const std::string& getShaderName() const { return shaderName_; }
     const glm::vec4& getTint() const { return tint_; }
@@ -59,4 +63,5 @@ public:
     float ao_;
     glm::vec2 tiling_;
     glm::vec2 offset_;
+    bool scaleInvariantUV_;
 };

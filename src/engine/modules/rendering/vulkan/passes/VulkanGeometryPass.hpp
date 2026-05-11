@@ -94,11 +94,13 @@ private:
             glm::vec4 tint;
             glm::vec2 tiling;
             glm::vec2 offset;
+            int scaleInvariantUV;
         } pc{};
         pc.modelMatrix = drawCall.transform.getModelMatrix();
         pc.tint = drawCall.renderer.tintOverride.value_or(material->getTint());
         pc.tiling = material->getTiling();
         pc.offset = material->getOffset();
+        pc.scaleInvariantUV = material->getScaleInvariantUV();
         vkCmdPushConstants(cmd,
                            pipeline->layout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,

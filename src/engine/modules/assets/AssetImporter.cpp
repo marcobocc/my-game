@@ -188,7 +188,8 @@ bool AssetImporter::importMaterial(const std::filesystem::path& relativePath) co
                                                          def.roughness,
                                                          def.ao,
                                                          def.tiling,
-                                                         def.offset));
+                                                         def.offset,
+                                                         def.scaleInvariantUV));
     return true;
 }
 

@@ -61,6 +61,7 @@ struct MaterialDescriptor {
     float ao;
     glm::vec2 tiling;
     glm::vec2 offset;
+    bool scaleInvariantUV;
 
     static MaterialDescriptor fromFile(const std::filesystem::path& absolutePath, const std::string& name) {
         auto j = JsonUtils::loadJson(absolutePath);
@@ -76,7 +77,8 @@ struct MaterialDescriptor {
                 .roughness = JsonUtils::getOptional<float>(j, "roughness", 1.0f),
                 .ao = JsonUtils::getOptional<float>(j, "ao", 1.0f),
                 .tiling = JsonUtils::getOptional<glm::vec2>(j, "tiling", glm::vec2{1.0f, 1.0f}),
-                .offset = JsonUtils::getOptional<glm::vec2>(j, "offset", glm::vec2{0.0f, 0.0f})};
+                .offset = JsonUtils::getOptional<glm::vec2>(j, "offset", glm::vec2{0.0f, 0.0f}),
+                .scaleInvariantUV = JsonUtils::getOptional<bool>(j, "scaleInvariantUV", false)};
     }
 };
 

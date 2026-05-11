@@ -36,7 +36,10 @@ public:
                                  EMPTY_TEXTURE,
                                  0.0f,
                                  1.0f,
-                                 1.0f);
+                                 1.0f,
+                                 glm::vec2(1.0f),
+                                 glm::vec2(0.0f),
+                                 false);
         nlohmann::json snapshot = serializeMaterial(defaultMaterial);
         upsertMaterial(materialName, snapshot);
         undoHistory_.push([this, materialName] { deleteMaterial_Command(materialName); },
@@ -157,6 +160,16 @@ public:
         }
     }
 
+    void setScaleInvariantUV(const std::string& materialName, int scaleInvariantUV) const {
+        if (isBuiltin(materialName)) return;
+        if (const Material* mat = assetManager_.get<Material>(materialName)) {
+            nlohmann::json oldSnapshot = serializeMaterial(*mat);
+            nlohmann::json newSnapshot = oldSnapshot;
+            newSnapshot["scaleInvariantUV"] = scaleInvariantUV;
+            updateMaterial(materialName, oldSnapshot, newSnapshot);
+        }
+    }
+
     void setTiling(const std::string& materialName, const glm::vec2& tiling) const {
         if (isBuiltin(materialName)) return;
         if (const Material* mat = assetManager_.get<Material>(materialName)) {
@@ -216,6 +229,7 @@ private:
         j["ao"] = material.getAo();
         j["tiling"] = JsonUtils::serializeVec2(material.getTiling());
         j["offset"] = JsonUtils::serializeVec2(material.getOffset());
+        j["scaleInvariantUV"] = material.getScaleInvariantUV();
         return j;
     }
 
@@ -245,6 +259,7 @@ private:
                 mat->tiling_ = JsonUtils::getOptional<glm::vec2>(snapshot, "tiling", mat->tiling_);
             if (snapshot.contains("offset"))
                 mat->offset_ = JsonUtils::getOptional<glm::vec2>(snapshot, "offset", mat->offset_);
+            if (snapshot.contains("scaleInvariantUV")) mat->scaleInvariantUV_ = snapshot["scaleInvariantUV"].get<int>();
         }
         dirtyMaterials_[materialName] = snapshot;
     }

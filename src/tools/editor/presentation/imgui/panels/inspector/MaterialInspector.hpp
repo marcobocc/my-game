@@ -157,15 +157,34 @@ private:
                 }
             });
 
+            row("Scale Invariant UV", [&] {
+                bool scaleInvariantUV = mat->getScaleInvariantUV() != 0;
+                if (ImGui::Checkbox("##scaleInvariantUV", &scaleInvariantUV)) {
+                    materialMutations_.setScaleInvariantUV(*selectedAsset, scaleInvariantUV ? 1 : 0);
+                }
+            });
+
             row("Tiling", [&] {
                 glm::vec2 tiling = mat->getTiling();
-                if (ImGui::DragFloat2("##tiling", &tiling.x, 0.1f, 0.0f, 100.0f, "%.3f")) {
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f - 4.0f);
+                bool changed = false;
+                changed |= ImGui::InputFloat("##tilingX", &tiling.x, 0.0f, 0.0f, "%.3f");
+                ImGui::SameLine(0, 4.0f);
+                changed |= ImGui::InputFloat("##tilingY", &tiling.y, 0.0f, 0.0f, "%.3f");
+                ImGui::PopItemWidth();
+                if (changed) {
                     materialMutations_.setTiling(*selectedAsset, tiling);
                 }
             });
             row("Offset", [&] {
                 glm::vec2 offset = mat->getOffset();
-                if (ImGui::DragFloat2("##offset", &offset.x, 0.01f, -100.0f, 100.0f, "%.3f")) {
+                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f - 4.0f);
+                bool changed = false;
+                changed |= ImGui::InputFloat("##offsetX", &offset.x, 0.0f, 0.0f, "%.3f");
+                ImGui::SameLine(0, 4.0f);
+                changed |= ImGui::InputFloat("##offsetY", &offset.y, 0.0f, 0.0f, "%.3f");
+                ImGui::PopItemWidth();
+                if (changed) {
                     materialMutations_.setOffset(*selectedAsset, offset);
                 }
             });
@@ -183,7 +202,7 @@ private:
     template<typename Fn>
     static void row(const char* label, Fn&& fn) {
         ImGui::Columns(2, nullptr, false);
-        ImGui::SetColumnWidth(0, 90.0f);
+        ImGui::SetColumnWidth(0, 160.0f); // Increased width for fields column
         ImGui::Text("%s:", label);
         ImGui::NextColumn();
         fn();
