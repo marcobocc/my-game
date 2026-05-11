@@ -141,13 +141,13 @@ private:
     MaterialMutations materialMutations_;
     ObjectTransformHandle objectTransformHandle_;
 
+    // Project metadata
+    std::filesystem::path projectPath_;
+
     // Presentation and input handling
     PresentationLayer presentationLayer_;
     InputHandler inputHandler_;
 
     // Root application
     EditorApp editorApp_;
-
-    // Project metadata
-    std::filesystem::path projectPath_;
 };

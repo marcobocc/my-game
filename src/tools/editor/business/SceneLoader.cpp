@@ -56,3 +56,33 @@ void SceneLoader::loadScene(const char* path) {
         // Scene loading failed
     }
 }
+
+bool SceneLoader::loadLatestScene(const std::filesystem::path& projectPath) {
+
+    if (projectPath.empty() || !std::filesystem::exists(projectPath)) {
+        return false;
+    }
+
+    std::filesystem::path latestScenePath;
+    std::filesystem::file_time_type latestTime;
+
+    try {
+        for (const auto& entry: std::filesystem::directory_iterator(projectPath)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".scene") {
+                auto lastWriteTime = std::filesystem::last_write_time(entry);
+                if (latestScenePath.empty() || lastWriteTime > latestTime) {
+                    latestScenePath = entry.path();
+                    latestTime = lastWriteTime;
+                }
+            }
+        }
+    } catch (const std::exception& e) {
+        return false;
+    }
+
+    if (!latestScenePath.empty()) {
+        loadScene(latestScenePath.c_str());
+        return true;
+    }
+    return false;
+}

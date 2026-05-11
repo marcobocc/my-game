@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <functional>
 #include <string>
 #include "../../../engine/modules/scene/EntityManager.hpp"
@@ -19,6 +20,7 @@ public:
     void newScene();
     void saveScene(const char* path);
     void loadScene(const char* path);
+    bool loadLatestScene(const std::filesystem::path& projectPath);
 
 private:
     EntityManager& entityManager_;

@@ -52,7 +52,7 @@ private:
     void openSaveDialog() {
         NFD::Guard nfdGuard;
         nfdnchar_t* outPath = nullptr;
-        nfdfilteritem_t filters[] = {{"Scene", "json"}};
+        nfdfilteritem_t filters[] = {{"Scene", "scene"}};
         if (NFD::SaveDialog(outPath, filters, 1) == NFD_OKAY) {
             scenePath_ = outPath;
             handleSave();
@@ -63,7 +63,7 @@ private:
     void openLoadDialog() {
         NFD::Guard nfdGuard;
         nfdnchar_t* outPath = nullptr;
-        nfdfilteritem_t filters[] = {{"Scene", "json"}};
+        nfdfilteritem_t filters[] = {{"Scene", "scene"}};
         if (NFD::OpenDialog(outPath, filters, 1) == NFD_OKAY) {
             scenePath_ = outPath;
             handleLoad();

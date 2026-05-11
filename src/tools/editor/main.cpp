@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 
     GameWindow window("Editor");
     EditorWiringContainer wiringContainer(window, assetsPath, projectRoot);
-    EditorApp editorApp = wiringContainer.editorApp();
+    EditorApp& editorApp = wiringContainer.editorApp();
     editorApp.run();
 
     return 0;
