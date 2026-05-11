@@ -1,4 +1,0 @@
-{
-  "vertexShader": "builtins/shaders/_object_id/_object_id.vert.spv",
-  "fragmentShader": "builtins/shaders/_object_id/_object_id.frag.spv"
-}

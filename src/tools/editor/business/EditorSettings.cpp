@@ -1,6 +1,6 @@
 #include "EditorSettings.hpp"
 #include <algorithm>
-#include "../../../engine/data/settings/RendererSettings.hpp"
+#include "../../../engine/structs/settings/RendererSettings.hpp"
 
 EditorSettings::EditorSettings(RendererSettings& rendererSettings) : rendererSettings_(rendererSettings) {}
 

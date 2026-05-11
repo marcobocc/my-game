@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <memory>
-#include "data/assets/Mesh.hpp"
+#include "structs/assets/Mesh.hpp"
 
 class ProceduralMeshGenerator {
 public:

@@ -1,10 +1,10 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <vector>
-#include "../../../../engine/data/components/Camera.hpp"
-#include "../../../../engine/data/components/Transform.hpp"
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "../../../../engine/modules/scene/EntityMetadata.hpp"
+#include "../../../../engine/structs/components/Camera.hpp"
+#include "../../../../engine/structs/components/Transform.hpp"
 #include "../../input/PickingSystem.hpp"
 
 class AssetManager;

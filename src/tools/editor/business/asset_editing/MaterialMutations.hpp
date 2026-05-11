@@ -6,9 +6,9 @@
 #include <string>
 #include "../ObjectSelection.hpp"
 #include "../scene_editing/UndoHistory.hpp"
-#include "data/assets/Material.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/assets/BuiltinAssetNames.hpp"
+#include "structs/assets/Material.hpp"
 #include "utils/JsonUtils.hpp"
 
 class MaterialMutations {
@@ -76,7 +76,7 @@ public:
         }
     }
 
-    bool isBuiltin(const std::string& materialName) const { return materialName.find("builtins/") == 0; }
+    bool isBuiltin(const std::string& materialName) const { return assetManager_.isBuiltin(materialName); }
 
 private:
     AssetManager& assetManager_;

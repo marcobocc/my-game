@@ -1,7 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <string>
-#include "data/assets/Mesh.hpp"
+#include "structs/assets/Mesh.hpp"
 
 namespace importing {
     std::unique_ptr<Mesh>

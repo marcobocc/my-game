@@ -4,9 +4,9 @@
 #include "VulkanMeshBuffersCache.hpp"
 #include "VulkanPipelineCache.hpp"
 #include "VulkanTextureCache.hpp"
-#include "data/assets/Material.hpp"
-#include "data/assets/Shader.hpp"
-#include "data/assets/Texture.hpp"
+#include "structs/assets/Material.hpp"
+#include "structs/assets/Shader.hpp"
+#include "structs/assets/Texture.hpp"
 
 class VulkanResourcesManager {
 public:

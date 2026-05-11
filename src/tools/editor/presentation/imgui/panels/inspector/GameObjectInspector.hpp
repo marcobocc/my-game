@@ -3,16 +3,16 @@
 #include "../../../../business/ObjectSelection.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "../../ImguiStyling.hpp"
-#include "data/components/BoxCollider.hpp"
-#include "data/components/Camera.hpp"
-#include "data/components/Renderer.hpp"
-#include "data/components/Transform.hpp"
 #include "game_object/BoxColliderWidget.hpp"
 #include "game_object/CameraWidget.hpp"
 #include "game_object/RendererWidget.hpp"
 #include "game_object/TransformWidget.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityManager.hpp"
+#include "structs/components/BoxCollider.hpp"
+#include "structs/components/Camera.hpp"
+#include "structs/components/Renderer.hpp"
+#include "structs/components/Transform.hpp"
 
 class GameObjectInspector {
 public:

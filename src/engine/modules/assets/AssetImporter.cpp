@@ -6,19 +6,27 @@
 #include "AssetDescriptors.hpp"
 #include "AssetStorage.hpp"
 #include "MeshImporter.hpp"
-#include "data/assets/Material.hpp"
-#include "data/assets/Mesh.hpp"
-#include "data/assets/Model.hpp"
-#include "data/assets/Shader.hpp"
-#include "data/assets/Texture.hpp"
 #include "stb_image.h"
+#include "structs/assets/Material.hpp"
+#include "structs/assets/Mesh.hpp"
+#include "structs/assets/Model.hpp"
+#include "structs/assets/Shader.hpp"
+#include "structs/assets/Texture.hpp"
 
 AssetImporter::AssetImporter(const std::filesystem::path& root, AssetStorage& cache) : storage_(cache), root_(root) {
     searchAssets();
 }
 
+bool AssetImporter::isBuiltinAsset(const std::filesystem::path& relativePath) {
+    auto filename = relativePath.filename().string();
+    return !filename.empty() && filename[0] == '_';
+}
+
 std::filesystem::path AssetImporter::toAbsolutePath(const std::filesystem::path& relativePath) const {
     if (relativePath.is_absolute()) return relativePath;
+    if (isBuiltinAsset(relativePath)) {
+        return std::filesystem::path(BUILTIN_ASSETS_DIR) / relativePath;
+    }
     return root_ / relativePath;
 }
 
@@ -177,3 +185,5 @@ void AssetImporter::deregisterAsset(const std::filesystem::path& relativePath) {
 std::filesystem::path AssetImporter::getAbsolutePath(const std::filesystem::path& relativePath) const {
     return toAbsolutePath(relativePath);
 }
+
+bool AssetImporter::isBuiltin(const std::filesystem::path& relativePath) const { return isBuiltinAsset(relativePath); }

@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "../../../engine/data/components/Camera.hpp"
-#include "../../../engine/data/components/Transform.hpp"
+#include "../../../engine/structs/components/Camera.hpp"
+#include "../../../engine/structs/components/Transform.hpp"
 
 class EditorCamera {
 public:

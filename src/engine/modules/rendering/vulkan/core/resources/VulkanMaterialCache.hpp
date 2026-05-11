@@ -6,8 +6,8 @@
 #include "../utils/structs.hpp"
 #include "VulkanPipelineCache.hpp"
 #include "VulkanTextureCache.hpp"
-#include "data/assets/Material.hpp"
 #include "modules/assets/AssetManager.hpp"
+#include "structs/assets/Material.hpp"
 
 class VulkanMaterialCache {
 public:

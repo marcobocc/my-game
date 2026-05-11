@@ -3,10 +3,10 @@
 #include <volk.h>
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/structs.hpp"
-#include "data/components/Camera.hpp"
-#include "data/components/Transform.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/assets/BuiltinAssetNames.hpp"
+#include "structs/components/Camera.hpp"
+#include "structs/components/Transform.hpp"
 
 class VulkanGridPass {
 public:

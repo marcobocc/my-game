@@ -1,8 +1,8 @@
 #include "ObjectTransformHandle.hpp"
 #include <string>
 #include "../../../engine/GameEngine.hpp"
-#include "../../../engine/data/components/Transform.hpp"
 #include "../../../engine/modules/input/RaycastPickingSystem.hpp"
+#include "../../../engine/structs/components/Transform.hpp"
 #include "EditorCamera.hpp"
 #include "EditorSettings.hpp"
 #include "ObjectSelection.hpp"

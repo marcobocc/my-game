@@ -5,13 +5,13 @@
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/buffers.hpp"
 #include "../core/utils/structs.hpp"
-#include "data/assets/Mesh.hpp"
-#include "data/assets/Shader.hpp"
-#include "data/components/Camera.hpp"
-#include "data/components/Transform.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/assets/BuiltinAssetNames.hpp"
 #include "modules/core/GameWindow.hpp"
+#include "structs/assets/Mesh.hpp"
+#include "structs/assets/Shader.hpp"
+#include "structs/components/Camera.hpp"
+#include "structs/components/Transform.hpp"
 
 class VulkanObjectIdPass {
 public:

@@ -3,9 +3,9 @@
 #include <volk.h>
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/structs.hpp"
-#include "data/assets/Shader.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/assets/BuiltinAssetNames.hpp"
+#include "structs/assets/Shader.hpp"
 
 class VulkanLightingPass {
 public:

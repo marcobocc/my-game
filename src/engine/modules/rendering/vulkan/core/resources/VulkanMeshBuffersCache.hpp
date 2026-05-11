@@ -3,7 +3,7 @@
 #include "../utils/buffers.hpp"
 #include "../utils/structs.hpp"
 #include "VulkanVertexLayouts.hpp"
-#include "data/assets/Mesh.hpp"
+#include "structs/assets/Mesh.hpp"
 
 struct VulkanMeshBuffers {
     VulkanBuffer vertexBuffer;

@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
-#include "data/components/Camera.hpp"
-#include "data/components/Transform.hpp"
 #include "modules/rendering/vulkan/core/utils/structs.hpp"
+#include "structs/components/Camera.hpp"
+#include "structs/components/Transform.hpp"
 
 struct GameRenderData {
     const Camera& camera;

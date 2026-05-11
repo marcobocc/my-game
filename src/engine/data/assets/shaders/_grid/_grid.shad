@@ -1,0 +1,7 @@
+{
+  "vertexShader": "shaders/_grid/_grid.vert.spv",
+  "fragmentShader": "shaders/_grid/_grid.frag.spv",
+  "disableCull": true,
+  "enableAlphaBlend": true,
+  "noVertexInput": true
+}

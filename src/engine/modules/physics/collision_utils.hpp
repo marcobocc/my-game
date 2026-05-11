@@ -1,9 +1,9 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <optional>
-#include "data/components/BoxCollider.hpp"
-#include "data/components/Transform.hpp"
 #include "modules/scene/EntityMetadata.hpp"
+#include "structs/components/BoxCollider.hpp"
+#include "structs/components/Transform.hpp"
 
 namespace Physics {
     struct RaycastHit {

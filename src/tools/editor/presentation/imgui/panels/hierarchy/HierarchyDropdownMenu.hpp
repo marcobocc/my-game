@@ -8,10 +8,10 @@
 #include "../../../../business/scene_editing/ObjectPrefabs.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "SpherePopupModal.hpp"
-#include "data/assets/Model.hpp"
-#include "data/components/Renderer.hpp"
-#include "data/components/Transform.hpp"
 #include "modules/assets/AssetManager.hpp"
+#include "structs/assets/Model.hpp"
+#include "structs/components/Renderer.hpp"
+#include "structs/components/Transform.hpp"
 
 class SceneMutations;
 

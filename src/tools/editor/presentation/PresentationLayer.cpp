@@ -1,7 +1,7 @@
 #include "PresentationLayer.hpp"
-#include "../../../engine/data/components/Renderer.hpp"
 #include "../../../engine/modules/assets/AssetManager.hpp"
 #include "../../../engine/modules/scene/EntityManager.hpp"
+#include "../../../engine/structs/components/Renderer.hpp"
 #include "../business/EditorCamera.hpp"
 #include "../business/EditorGizmos.hpp"
 #include "../business/ObjectSelection.hpp"

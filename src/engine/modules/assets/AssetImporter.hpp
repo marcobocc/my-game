@@ -16,11 +16,13 @@ public:
     void registerAsset(const std::filesystem::path& relativePath);
     void deregisterAsset(const std::filesystem::path& relativePath);
     std::filesystem::path getAbsolutePath(const std::filesystem::path& relativePath) const;
+    bool isBuiltin(const std::filesystem::path& relativePath) const;
     const std::filesystem::path& getRoot() const { return root_; }
 
 private:
     void searchAssets();
     std::filesystem::path toAbsolutePath(const std::filesystem::path& relativePath) const;
+    static bool isBuiltinAsset(const std::filesystem::path& relativePath);
 
     bool importMesh(const std::filesystem::path& relativePath) const;
     bool importShader(const std::filesystem::path& relativePath) const;

@@ -4,8 +4,8 @@
 #include "../../../../business/ObjectSelection.hpp"
 #include "../../../../business/asset_editing/MaterialMutations.hpp"
 #include "ComponentContainer.hpp"
-#include "data/assets/Material.hpp"
 #include "modules/assets/AssetManager.hpp"
+#include "structs/assets/Material.hpp"
 
 class MaterialInspector : public ComponentContainer {
 public:

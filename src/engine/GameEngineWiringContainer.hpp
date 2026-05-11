@@ -1,7 +1,6 @@
 #pragma once
 #include <filesystem>
 #include "GameEngine.hpp"
-#include "data/settings/RendererSettings.hpp"
 #include "modules/assets/AssetImporter.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/core/GameWindow.hpp"
@@ -24,6 +23,7 @@
 #include "modules/rendering/vulkan/passes/VulkanLightingPass.hpp"
 #include "modules/scene/EntityManager.hpp"
 #include "modules/ui/UserInterface.hpp"
+#include "structs/settings/RendererSettings.hpp"
 
 /*
     GameEngineWiringContainer

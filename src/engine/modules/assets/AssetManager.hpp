@@ -5,7 +5,7 @@
 #include "AssetImporter.hpp"
 #include "AssetStorage.hpp"
 #include "ProceduralMeshGenerator.hpp"
-#include "data/assets/Mesh.hpp"
+#include "structs/assets/Mesh.hpp"
 
 class AssetManager {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetManager");
@@ -37,6 +37,8 @@ public:
     std::filesystem::path getAbsolutePath(const std::string& relativePath) const {
         return assetImporter_.getAbsolutePath(relativePath);
     }
+
+    bool isBuiltin(const std::string& relativePath) const { return assetImporter_.isBuiltin(relativePath); }
 
     template<typename T>
     void unload(const std::string& name) const {

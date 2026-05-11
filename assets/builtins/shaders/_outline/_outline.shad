@@ -1,8 +1,0 @@
-{
-  "vertexShader": "builtins/shaders/_outline/_outline.vert.spv",
-  "fragmentShader": "builtins/shaders/_outline/_outline.frag.spv",
-  "disableCull": true,
-  "noVertexInput": true,
-  "disableDepthTest": true,
-  "disableDepthWrite": true
-}

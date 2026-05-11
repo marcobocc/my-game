@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 #include "../utils/error_handling.hpp"
 #include "../utils/structs.hpp"
-#include "data/assets/Texture.hpp"
+#include "structs/assets/Texture.hpp"
 
 class VulkanTextureCache {
 public:

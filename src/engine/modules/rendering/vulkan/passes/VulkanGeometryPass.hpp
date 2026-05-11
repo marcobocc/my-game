@@ -5,11 +5,11 @@
 #include "../core/utils/buffers.hpp"
 #include "../core/utils/descriptors.hpp"
 #include "../core/utils/structs.hpp"
-#include "data/assets/Material.hpp"
-#include "data/assets/Mesh.hpp"
-#include "data/components/Camera.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/core/GameWindow.hpp"
+#include "structs/assets/Material.hpp"
+#include "structs/assets/Mesh.hpp"
+#include "structs/components/Camera.hpp"
 
 class VulkanGeometryPass {
 public:

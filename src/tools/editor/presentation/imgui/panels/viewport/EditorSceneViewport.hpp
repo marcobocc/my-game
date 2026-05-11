@@ -6,7 +6,7 @@
 #include "../../ImguiStyling.hpp"
 #include "../hierarchy/HierarchyDropdownMenu.hpp"
 #include "../hierarchy/SpherePopupModal.hpp"
-#include "data/components/Renderer.hpp"
+#include "structs/components/Renderer.hpp"
 
 class SceneMutations;
 class AssetManager;

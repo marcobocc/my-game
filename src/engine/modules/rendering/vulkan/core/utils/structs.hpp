@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "data/components/Renderer.hpp"
-#include "data/components/Transform.hpp"
+#include "structs/components/Renderer.hpp"
+#include "structs/components/Transform.hpp"
 
 // ------------------------------------------------------------------------
 // Device/instance structs

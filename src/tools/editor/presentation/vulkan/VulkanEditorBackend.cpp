@@ -1,7 +1,6 @@
 #include "VulkanEditorBackend.hpp"
 #include <imgui_impl_vulkan.h>
 #include <volk.h>
-#include "../../../../engine/data/RenderTargetHandle.hpp"
 #include "../../../../engine/modules/core/GameWindow.hpp"
 #include "../../../../engine/modules/rendering/vulkan/core/VulkanFrameManager.hpp"
 #include "../../../../engine/modules/rendering/vulkan/core/VulkanSwapchainManager.hpp"
@@ -13,6 +12,7 @@
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanObjectIdPass.hpp"
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanOutlinePass.hpp"
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanUIPass.hpp"
+#include "../../../../engine/structs/RenderTargetHandle.hpp"
 
 VulkanEditorBackend::VulkanEditorBackend(GameWindow& window,
                                          VulkanContext& context,

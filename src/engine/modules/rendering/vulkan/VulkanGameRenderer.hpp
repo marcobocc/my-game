@@ -5,9 +5,9 @@
 #include "../GameRenderData.hpp"
 #include "core/RenderGraph.hpp"
 #include "core/utils/structs.hpp"
-#include "data/components/Camera.hpp"
-#include "data/components/Transform.hpp"
-#include "data/settings/RendererSettings.hpp"
+#include "structs/components/Camera.hpp"
+#include "structs/components/Transform.hpp"
+#include "structs/settings/RendererSettings.hpp"
 
 class VulkanGeometryPass;
 class VulkanLightingPass;

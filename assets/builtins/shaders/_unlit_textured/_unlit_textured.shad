@@ -1,4 +1,0 @@
-{
-  "vertexShader": "builtins/shaders/_unlit_textured/_unlit_textured.vert.spv",
-  "fragmentShader": "builtins/shaders/_unlit_textured/_unlit_textured.frag.spv"
-}

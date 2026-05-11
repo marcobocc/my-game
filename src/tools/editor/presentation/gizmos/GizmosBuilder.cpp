@@ -1,11 +1,11 @@
 #include "GizmosBuilder.hpp"
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "../../../../engine/data/assets/Mesh.hpp"
-#include "../../../../engine/data/components/Renderer.hpp"
 #include "../../../../engine/modules/assets/AssetManager.hpp"
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "../../../../engine/modules/scene/EntityManager.hpp"
+#include "../../../../engine/structs/assets/Mesh.hpp"
+#include "../../../../engine/structs/components/Renderer.hpp"
 #include "../../../../engine/utils/math/AABB.hpp"
 #include "../../../../engine/utils/math/BVH.hpp"
 #include "../../../../engine/utils/math/BoundingSphere.hpp"

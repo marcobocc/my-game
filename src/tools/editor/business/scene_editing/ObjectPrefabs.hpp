@@ -2,15 +2,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <nlohmann/json.hpp>
-#include "data/components/Renderer.hpp"
-#include "data/components/Transform.hpp"
 #include "modules/assets/BuiltinAssetNames.hpp"
+#include "structs/components/Renderer.hpp"
+#include "structs/components/Transform.hpp"
 
 namespace primitives {
     namespace details {
         inline nlohmann::json makePrimitive(const std::string& meshName, const std::string& objectName) {
             Transform t{glm::vec3(0.0f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), glm::vec3(1.0f)};
-            Renderer r{meshName, "builtins/materials/_solid_color.mat", std::nullopt, true};
+            Renderer r{meshName, "materials/_solid_color.mat", std::nullopt, true};
             return {
                     {"metadata", {{"name", objectName}}},
                     {"transform", t.serialize()},

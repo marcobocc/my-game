@@ -9,7 +9,7 @@
 #include "../utils/shaders.hpp"
 #include "../utils/structs.hpp"
 #include "VulkanVertexLayouts.hpp"
-#include "data/assets/Shader.hpp"
+#include "structs/assets/Shader.hpp"
 
 class VulkanPipelineCache {
 public:

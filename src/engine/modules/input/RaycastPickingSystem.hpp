@@ -2,12 +2,12 @@
 #include <glm/glm.hpp>
 #include <limits>
 #include <optional>
-#include "../../data/assets/Mesh.hpp"
-#include "../../data/components/Camera.hpp"
-#include "../../data/components/Renderer.hpp"
-#include "../../data/components/Transform.hpp"
 #include "../../modules/assets/AssetManager.hpp"
 #include "../../modules/scene/EntityManager.hpp"
+#include "../../structs/assets/Mesh.hpp"
+#include "../../structs/components/Camera.hpp"
+#include "../../structs/components/Renderer.hpp"
+#include "../../structs/components/Transform.hpp"
 #include "../../utils/math/Ray.hpp"
 
 /*

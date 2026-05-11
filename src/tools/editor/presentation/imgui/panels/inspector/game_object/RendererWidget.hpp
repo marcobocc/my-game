@@ -7,10 +7,10 @@
 #include "../../../../../business/EditorGizmos.hpp"
 #include "../../../../../business/scene_editing/SceneMutations.hpp"
 #include "../ComponentContainer.hpp"
-#include "data/assets/Material.hpp"
-#include "data/components/Renderer.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/scene/EntityManager.hpp"
+#include "structs/assets/Material.hpp"
+#include "structs/components/Renderer.hpp"
 
 class RendererWidget : public ComponentContainer {
 public:
