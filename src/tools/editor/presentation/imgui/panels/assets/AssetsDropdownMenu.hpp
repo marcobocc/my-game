@@ -45,8 +45,7 @@ private:
 
     void deleteMaterial(const std::string& assetName) {
         if (assetName.ends_with(".mat")) {
-            std::filesystem::path assetPath = std::filesystem::path("assets") / assetName;
-            materialMutations_.deleteMaterial(assetPath);
+            materialMutations_.deleteMaterial(assetName);
         }
     }
 };

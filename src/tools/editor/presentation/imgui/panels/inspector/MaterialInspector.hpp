@@ -15,12 +15,14 @@ public:
         ComponentContainer("Material", 6),
         assetManager_(assetManager),
         objectSelection_(objectSelection),
-        materialMutations_(materialMutations) {}
+        materialMutations_(materialMutations),
+        colorPickerValue_{1.0f, 1.0f, 1.0f, 1.0f} {}
 
 private:
     AssetManager& assetManager_;
     ObjectSelection& objectSelection_;
     MaterialMutations& materialMutations_;
+    float colorPickerValue_[4];
 
     void drawBody() override {
         auto selectedAsset = objectSelection_.getSelectedAssetId();
@@ -54,9 +56,16 @@ private:
             });
 
             glm::vec4 color = mat->getBaseColor();
-            float col[4] = {color.r, color.g, color.b, color.a};
-            if (ImGui::ColorEdit4("Base color", col)) {
-                materialMutations_.setBaseColor(*selectedAsset, glm::vec4(col[0], col[1], col[2], col[3]));
+            colorPickerValue_[0] = color.r;
+            colorPickerValue_[1] = color.g;
+            colorPickerValue_[2] = color.b;
+            colorPickerValue_[3] = color.a;
+            if (ImGui::ColorEdit4("Base color", colorPickerValue_)) {
+                materialMutations_.setBaseColor(*selectedAsset,
+                                                glm::vec4(colorPickerValue_[0],
+                                                          colorPickerValue_[1],
+                                                          colorPickerValue_[2],
+                                                          colorPickerValue_[3]));
             }
 
             if (isBuiltin) {

@@ -4,7 +4,9 @@
 #include <vector>
 #include "AssetImporter.hpp"
 #include "AssetStorage.hpp"
+#include "BuiltinAssetNames.hpp"
 #include "ProceduralMeshGenerator.hpp"
+#include "structs/assets/Material.hpp"
 #include "structs/assets/Mesh.hpp"
 
 class AssetManager {
@@ -23,8 +25,27 @@ public:
             }
         }
 
-        bool importSuccessful = assetImporter_.import(name);
-        if (!importSuccessful) LOG4CXX_WARN(LOGGER, "Failed to import asset: " << name);
+        bool importSuccessful = false;
+        try {
+            importSuccessful = assetImporter_.import(name);
+        } catch (const std::exception& e) {
+            LOG4CXX_WARN(LOGGER, "Failed to import asset: " << name << " (" << e.what() << ")");
+            if constexpr (std::is_same_v<T, Material>) {
+                if (name != SOLID_COLOR_MATERIAL) {
+                    return get<Material>(SOLID_COLOR_MATERIAL);
+                }
+            }
+            return nullptr;
+        }
+
+        if (!importSuccessful) {
+            LOG4CXX_WARN(LOGGER, "Failed to import asset: " << name);
+            if constexpr (std::is_same_v<T, Material>) {
+                if (name != SOLID_COLOR_MATERIAL) {
+                    return get<Material>(SOLID_COLOR_MATERIAL);
+                }
+            }
+        }
         return storage_.get<T>(name);
     }
 

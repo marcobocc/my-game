@@ -119,6 +119,7 @@ private:
         std::filesystem::path fullPath = assetManager_.getAbsolutePath(materialName);
         std::ofstream file(fullPath);
         file << snapshot.dump(4);
+        file.flush();
         file.close();
     }
 
@@ -126,6 +127,7 @@ private:
         std::filesystem::path fullPath = assetManager_.getAbsolutePath(relativePath.string());
         std::ofstream file(fullPath);
         file << snapshot.dump(4);
+        file.flush();
         file.close();
         assetManager_.registerAsset(relativePath.string());
     }
