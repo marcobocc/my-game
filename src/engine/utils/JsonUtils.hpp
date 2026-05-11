@@ -79,4 +79,22 @@ namespace JsonUtils {
         auto a = j.get<std::array<float, 4>>();
         return glm::quat(a[3], a[0], a[1], a[2]); // glm::quat(w, x, y, z)
     }
+
+    // ---------------------------------------------------------------------------
+    // LightType helpers
+    // ---------------------------------------------------------------------------
+
+    inline std::string serializeLightType(int type) {
+        switch (type) {
+            case 0:
+                return "Directional";
+            default:
+                return "Directional";
+        }
+    }
+
+    inline int deserializeLightType(const std::string& typeStr) {
+        if (typeStr == "Directional") return 0;
+        return 0; // default to Directional
+    }
 } // namespace JsonUtils

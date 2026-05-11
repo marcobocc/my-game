@@ -1,11 +1,16 @@
 #pragma once
+#include <glm/glm.hpp>
 #include <vector>
 #include <volk.h>
 #include "../core/resources/VulkanResourcesManager.hpp"
+#include "../core/utils/buffers.hpp"
+#include "../core/utils/descriptors.hpp"
 #include "../core/utils/structs.hpp"
 #include "modules/assets/AssetManager.hpp"
 #include "modules/assets/BuiltinAssetNames.hpp"
 #include "structs/assets/Shader.hpp"
+#include "structs/components/Light.hpp"
+#include "structs/components/Transform.hpp"
 
 class VulkanLightingPass {
 public:
@@ -29,7 +34,35 @@ public:
         dsAlloc.descriptorSetCount = 1;
         dsAlloc.pSetLayouts = &layout;
         vkAllocateDescriptorSets(context_.device, &dsAlloc, &ds);
+        updateLightsDescriptor(ds);
         return ds;
+    }
+
+    void updateLights(const std::vector<std::pair<Light, Transform>>& lightsWithTransforms) const {
+        if (lightsWithTransforms.empty()) {
+            lightsCount_ = 0;
+            return;
+        }
+
+        std::vector<glm::vec4> lightData;
+        for (const auto& [light, transform]: lightsWithTransforms) {
+            glm::vec3 direction = -transform.getForward();
+            lightData.push_back(glm::vec4(direction, light.intensity));
+        }
+
+        const size_t dataSize = lightData.size() * sizeof(glm::vec4);
+        if (!lightsBuffer_.buffer || lightsBuffer_.allocSize < dataSize) {
+            if (lightsBuffer_.buffer) destroyBuffer(context_.device, lightsBuffer_);
+            lightsBuffer_ = createBuffer(context_.device,
+                                         context_.physicalDevice,
+                                         dataSize,
+                                         VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                                         lightData.data());
+        } else {
+            updateBuffer(context_.device, lightsBuffer_, lightData.data(), dataSize);
+        }
+        lightsCount_ = lightsWithTransforms.size();
     }
 
     void record(VkCommandBuffer cmd,
@@ -82,10 +115,12 @@ public:
             glm::vec2 uvOffset;
             glm::vec2 uvScale;
             uint32_t enableLighting;
+            uint32_t lightCount;
         } push{};
         push.uvOffset = {static_cast<float>(fbX) / scW, static_cast<float>(fbY) / scH};
         push.uvScale = {static_cast<float>(fbW) / scW, static_cast<float>(fbH) / scH};
         push.enableLighting = enableLighting ? 1 : 0;
+        push.lightCount = static_cast<uint32_t>(lightsCount_);
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
         vkCmdBindDescriptorSets(
@@ -131,6 +166,33 @@ private:
         vkUpdateDescriptorSets(context_.device, 2, writes, 0, nullptr);
     }
 
+    void updateLightsDescriptor(VkDescriptorSet ds) const {
+        if (!lightsBuffer_.buffer) {
+            if (lightsBuffer_.allocSize == 0) {
+                lightsBuffer_ =
+                        createBuffer(context_.device,
+                                     context_.physicalDevice,
+                                     sizeof(glm::vec4),
+                                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            }
+        }
+
+        VkDescriptorBufferInfo bufInfo{};
+        bufInfo.buffer = lightsBuffer_.buffer;
+        bufInfo.offset = 0;
+        bufInfo.range = lightsBuffer_.allocSize;
+
+        VkWriteDescriptorSet write{};
+        write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        write.dstSet = ds;
+        write.dstBinding = 2;
+        write.descriptorCount = 1;
+        write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        write.pBufferInfo = &bufInfo;
+        vkUpdateDescriptorSets(context_.device, 1, &write, 0, nullptr);
+    }
+
     void initPipeline(VkFormat swapchainImageFormat) {
         const Shader* shader = assetManager_.get<Shader>(LIGHTING_SHADER);
         if (!shader) return;
@@ -142,4 +204,6 @@ private:
     VulkanResourcesManager& resourcesManager_;
 
     VulkanPipeline* pipeline_ = nullptr;
+    mutable VulkanBuffer lightsBuffer_{};
+    mutable size_t lightsCount_ = 0;
 };

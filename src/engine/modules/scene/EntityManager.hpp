@@ -8,6 +8,7 @@
 #include "EntityMetadata.hpp"
 #include "structs/components/BoxCollider.hpp"
 #include "structs/components/Camera.hpp"
+#include "structs/components/Light.hpp"
 #include "structs/components/Renderer.hpp"
 #include "structs/components/Transform.hpp"
 
@@ -181,6 +182,7 @@ namespace detail {
             if (auto* c = getComponent<Camera>(entity)) j["camera"] = c->serialize();
             if (auto* r = getComponent<Renderer>(entity)) j["renderer"] = r->serialize();
             if (auto* b = getComponent<BoxCollider>(entity)) j["boxCollider"] = b->serialize();
+            if (auto* l = getComponent<Light>(entity)) j["light"] = l->serialize();
             return j;
         }
 
@@ -196,6 +198,7 @@ namespace detail {
             if (j.contains("renderer")) upsertComponent<Renderer>(entity, Renderer::deserialize(j["renderer"]));
             if (j.contains("boxCollider"))
                 upsertComponent<BoxCollider>(entity, BoxCollider::deserialize(j["boxCollider"]));
+            if (j.contains("light")) upsertComponent<Light>(entity, Light::deserialize(j["light"]));
             return entity;
         }
 
@@ -236,4 +239,4 @@ namespace detail {
 
 } // namespace detail
 
-using EntityManager = detail::EntityManager<Transform, Camera, Renderer, BoxCollider>;
+using EntityManager = detail::EntityManager<Transform, Camera, Renderer, BoxCollider, Light>;
