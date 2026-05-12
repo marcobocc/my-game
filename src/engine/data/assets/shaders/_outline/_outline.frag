@@ -17,25 +17,24 @@ void main() {
 
     uint centerID = texture(idBuffer, mappedUV).r;
 
-    if (centerID != pc.targetId) {
+    if (centerID == pc.targetId) {
         discard;
     }
 
     const float radius = 5.0;
-    bool isEdge = false;
+    bool nearTarget = false;
     for (float x = -radius; x <= radius; x++) {
         for (float y = -radius; y <= radius; y++) {
-            if (x == 0.0 && y == 0.0) continue;
             vec2 offset = vec2(x, y) * pc.texelSize;
-            if (texture(idBuffer, mappedUV + offset).r != centerID) {
-                isEdge = true;
+            if (texture(idBuffer, mappedUV + offset).r == pc.targetId) {
+                nearTarget = true;
                 break;
             }
         }
-        if (isEdge) break;
+        if (nearTarget) break;
     }
 
-    if (!isEdge) {
+    if (!nearTarget) {
         discard;
     }
 

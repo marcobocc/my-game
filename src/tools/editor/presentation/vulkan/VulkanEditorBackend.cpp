@@ -306,11 +306,7 @@ void VulkanEditorBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFla
     colorTargetHandle_ = renderGraph_->importImage("swapchain_color", colorFormat, colorUsage);
 
     objectIdColorHandle_ = renderGraph_->createTransientImage(
-            "objectid_color",
-            VK_FORMAT_R32_UINT,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-    objectIdDepthHandle_ = renderGraph_->createTransientImage(
-            "objectid_depth", VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+            "objectid_color", VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
     // --- ObjectId pass ---
     {
@@ -322,24 +318,17 @@ void VulkanEditorBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFla
                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                  VK_IMAGE_ASPECT_COLOR_BIT},
-                {objectIdDepthHandle_,
-                 VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                 VK_IMAGE_ASPECT_DEPTH_BIT},
         };
         n.execute = [this](VkCommandBuffer cmd,
                            const VulkanRenderGraph<EditorRenderData>& graph,
                            const EditorRenderData& ctx) -> bool {
             if (ctx.isOffscreen) return false;
             objectIdMap_ = objectIdPass_.record(cmd,
-                                                ctx.drawQueue,
+                                                ctx.outlineQueue,
                                                 ctx.camera,
                                                 ctx.cameraTransform,
                                                 window_,
-                                                graph.getImage(objectIdColorHandle_),
                                                 graph.getImageView(objectIdColorHandle_),
-                                                graph.getImageView(objectIdDepthHandle_),
                                                 graph.getWidth(objectIdColorHandle_),
                                                 graph.getHeight(objectIdColorHandle_));
             return true;

@@ -96,7 +96,6 @@ private:
     ResourceHandle gbufferNormalHandle_;
     ResourceHandle gbufferDepthHandle_;
     ResourceHandle objectIdColorHandle_;
-    ResourceHandle objectIdDepthHandle_;
 
     std::vector<std::string> objectIdMap_;
 
