@@ -27,7 +27,7 @@ public:
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
 
-        float assetsHeight = viewport->Size.y * ASSETS_HEIGHT_RATIO;
+        float assetsHeight = ceil(viewport->Size.y * ASSETS_HEIGHT_RATIO);
         float startY = viewport->Size.y - assetsHeight;
         float width = viewport->Size.x * (1.0f - INSPECTOR_WIDTH_RATIO);
 
