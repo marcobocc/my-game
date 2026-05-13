@@ -30,7 +30,7 @@ public:
                           glm::vec2(0.0f),
                           false);
 
-        repository_.create<Material>(materialName, material);
+        repository_.insert<Material>(materialName, material);
         objectSelection_.selectAsset(materialName);
         return materialName;
     }

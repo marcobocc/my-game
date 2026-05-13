@@ -10,7 +10,10 @@
 #include "../../../../engine/modules/asset_management/AssetCache.hpp"
 #include "../../../../engine/modules/asset_management/AssetExplorer.hpp"
 #include "../../../../engine/modules/asset_management/AssetLoader.hpp"
+#include "../../../../engine/modules/asset_management/asset_resources/MeshResource.hpp"
+#include "../../../../engine/modules/asset_management/asset_types/Material.hpp"
 #include "../UndoHistory.hpp"
+#include "AssetBaker.hpp"
 
 class EditorAssetRepository {
 private:
@@ -44,15 +47,15 @@ public:
     }
 
     template<typename T>
-    void create(const std::string& assetName, const T& asset) {
+    void insert(const std::string& assetName, const T& asset) {
         std::filesystem::path fullPath = explorer_.getAbsolutePath(assetName);
         if (fullPath.empty()) fullPath = projectFolder_ / assetName;
-        saveAsset(fullPath, asset);
+        saveAsset(asset, assetName, fullPath);
         explorer_.registerAsset(assetName, fullPath);
         cache_.insert<T>(assetName, std::make_unique<T>(asset));
         snapshots<T>()[assetName] = Snapshot<T>{.before = std::nullopt, .after = asset, .dirty = false};
         undoHistory_.push([this, assetName] { remove<T>(assetName); },
-                          [this, assetName, asset] { create<T>(assetName, asset); });
+                          [this, assetName, asset] { insert<T>(assetName, asset); });
     }
 
     template<typename T>
@@ -103,7 +106,7 @@ public:
                 [this, assetName] {
                     auto& s = snapshots<T>()[assetName];
                     if (s.before) {
-                        create<T>(assetName, *s.before);
+                        insert<T>(assetName, *s.before);
                     }
                 },
                 [this, assetName] { remove<T>(assetName); });
@@ -116,7 +119,7 @@ public:
             if (!snapshot.dirty) continue;
             if (!snapshot.after) continue;
             std::filesystem::path fullPath = explorer_.getAbsolutePath(assetName);
-            saveAsset(fullPath, *snapshot.after);
+            saveAsset(*snapshot.after, assetName, fullPath);
             snapshot.dirty = false;
         }
     }
@@ -124,6 +127,8 @@ public:
     std::vector<std::string> list(const std::string& extensionFilter) const { return explorer_.list(extensionFilter); }
 
     bool isMutable(const std::string& assetName) const { return !explorer_.isBuiltin(assetName); }
+
+    bool exists(const std::string& assetName) const { return explorer_.exists(assetName); }
 
 private:
     AssetLoader& loader_;
@@ -139,9 +144,7 @@ private:
     }
 
     template<typename T>
-    static void saveAsset(const std::filesystem::path& fullPath, const T& asset) {
-        std::ofstream file(fullPath);
-        if (!file.is_open()) throw std::runtime_error("Failed to open asset file for writing: " + fullPath.string());
-        file << asset.serialize().dump(4);
+    static void saveAsset(const T& asset, const std::string& assetName, const std::filesystem::path& outputPath) {
+        AssetBaker::bake<T>(asset, assetName, outputPath);
     }
 };

@@ -14,10 +14,11 @@ class ObjectSelection;
 class GameWindow;
 class EditorCamera;
 class PickingSystem;
+class ObjectBuilder;
 
 class EditorSceneViewport : public ImguiWidget {
 public:
-    static constexpr float DRAG_THRESHOLD = 25.0f; // 5 pixels squared
+    static constexpr float DRAG_THRESHOLD = 25.0f;
 
     EditorSceneViewport(EditorAssetRepository& assetRepository,
                         SceneMutations& sceneMutations,
@@ -26,9 +27,9 @@ public:
                         PickingSystem& pickingSystem,
                         GameWindow& window,
                         EditorCamera& editorCamera,
+                        ObjectBuilder& objectBuilder,
                         ActionDispatcher& actionDispatcher,
-                        ShortcutBindingService& shortcutBindingService,
-                        const std::function<void(uint32_t)>& onSphereCreated = nullptr) :
+                        ShortcutBindingService& shortcutBindingService) :
         assetRepository_(assetRepository),
         sceneMutations_(sceneMutations),
         objectSelection_(objectSelection),
@@ -36,8 +37,14 @@ public:
         pickingSystem_(pickingSystem),
         window_(window),
         editorCamera_(editorCamera),
-        spherePopupModal_(onSphereCreated),
-        dropdownMenu_(assetRepository, sceneMutations, actionDispatcher, shortcutBindingService, &spherePopupModal_) {}
+        objectBuilder_(objectBuilder),
+        spherePopupModal_(sceneMutations_, objectBuilder_),
+        dropdownMenu_(assetRepository,
+                      sceneMutations,
+                      objectBuilder,
+                      actionDispatcher,
+                      shortcutBindingService,
+                      &spherePopupModal_) {}
 
     void draw() override {
         spherePopupModal_.draw();
@@ -152,6 +159,7 @@ private:
     PickingSystem& pickingSystem_;
     GameWindow& window_;
     EditorCamera& editorCamera_;
+    ObjectBuilder& objectBuilder_;
     SpherePopupModal spherePopupModal_;
     HierarchyDropdownMenu dropdownMenu_;
     float rightClickStartX_ = 0.0f;

@@ -4,7 +4,7 @@
 #include "../../../../business/ActionDispatcher.hpp"
 #include "../../../../business/ObjectSelection.hpp"
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
-#include "../../../../business/scene_editing/ObjectPrefabs.hpp"
+#include "../../../../business/scene_editing/ObjectBuilder.hpp"
 #include "../../../../input/ShortcutBindingService.hpp"
 #include "../../ImguiStyling.hpp"
 #include "../EditorPanel.hpp"
@@ -24,6 +24,7 @@ public:
                    ObjectSelection& objectSelection,
                    EntityManager& entityManager,
                    SceneMutations& sceneMutations,
+                   ObjectBuilder& objectBuilder,
                    GameEngine& engine,
                    ActionDispatcher& actionDispatcher,
                    ShortcutBindingService& shortcutBindingService) :
@@ -31,9 +32,15 @@ public:
         objectSelection_(objectSelection),
         entityManager_(entityManager),
         sceneMutations_(sceneMutations),
+        objectBuilder_(objectBuilder),
         engine_(engine),
-        spherePopupModal_([this](uint32_t lod) { sceneMutations_.createObject(primitives::sphere(lod)); }),
-        dropdownMenu_(repository, sceneMutations, actionDispatcher, shortcutBindingService, &spherePopupModal_) {}
+        spherePopupModal_(sceneMutations_, objectBuilder_),
+        dropdownMenu_(repository,
+                      sceneMutations,
+                      objectBuilder,
+                      actionDispatcher,
+                      shortcutBindingService,
+                      &spherePopupModal_) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -101,6 +108,7 @@ private:
     ObjectSelection& objectSelection_;
     EntityManager& entityManager_;
     SceneMutations& sceneMutations_;
+    ObjectBuilder& objectBuilder_;
     GameEngine& engine_;
     SpherePopupModal spherePopupModal_;
     HierarchyDropdownMenu dropdownMenu_;

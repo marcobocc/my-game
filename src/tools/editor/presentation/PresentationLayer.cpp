@@ -33,6 +33,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      SceneMutations& sceneMutations,
                                      EditorAssetRepository& assetRepository,
                                      MaterialMutations& materialMutations,
+                                     ObjectBuilder& objectBuilder,
                                      SceneLoader& editorWorkspace,
                                      GameWindow& window,
                                      GameEngine& engine,
@@ -52,6 +53,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     pickingSystem_(pickingService),
     sceneMutations_(sceneMutations),
     assetRepository_(assetRepository),
+    objectBuilder_(objectBuilder),
     editorWorkspace_(editorWorkspace),
     engine_(engine),
     window_(window),
@@ -64,23 +66,23 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                            objectSelection_,
                                            entityManager_,
                                            sceneMutations,
+                                           objectBuilder_,
                                            engine_,
                                            actionDispatcher_,
                                            shortcutBindingService_);
     userInterface_.emplace<AssetsPanel>(assetRepository_, objectSelection_, materialMutations);
     userInterface_.emplace<InspectorPanel>(
             objectSelection_, entityManager_, assetRepository_, sceneMutations, materialMutations, editorGizmos_);
-    userInterface_.emplace<EditorSceneViewport>(
-            assetRepository_,
-            sceneMutations,
-            objectSelection_,
-            entityManager_,
-            pickingService,
-            window_,
-            editorOrbitCamera,
-            actionDispatcher_,
-            shortcutBindingService_,
-            [&sceneMutations](uint32_t lod) { sceneMutations.createObject(primitives::sphere(lod)); });
+    userInterface_.emplace<EditorSceneViewport>(assetRepository_,
+                                                sceneMutations,
+                                                objectSelection_,
+                                                entityManager_,
+                                                pickingService,
+                                                window_,
+                                                editorOrbitCamera,
+                                                objectBuilder_,
+                                                actionDispatcher_,
+                                                shortcutBindingService_);
 }
 
 void PresentationLayer::buildOutlines() {

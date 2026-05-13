@@ -10,7 +10,6 @@
 #include "asset_resources/MeshResource.hpp"
 #include "asset_resources/ShaderResource.hpp"
 #include "asset_resources/TextureResource.hpp"
-#include "modules/asset_management/ProceduralMeshGenerator.hpp"
 #include "modules/asset_management/asset_types/Material.hpp"
 #include "modules/asset_management/asset_types/Model.hpp"
 #include "stb_image.h"
@@ -39,18 +38,24 @@ private:
 
 template<>
 inline void AssetLoader::import<MeshResource>(const std::string& name) const {
-    if (name.starts_with("_PRIMITIVE")) {
+    auto absolutePath = explorer_.getAbsolutePath(name);
+    if (absolutePath.empty()) return;
+    std::string objFilePath = absolutePath.string();
+    bool reverseWinding = false;
+    if (absolutePath.extension() == ".mesh") {
         try {
-            auto mesh = ProceduralMeshGenerator::dispatch(name);
-            if (mesh) cache_.insert<MeshResource>(name, std::move(mesh));
+            auto j = JsonUtils::loadJson(absolutePath);
+            std::string meshFile = JsonUtils::getRequired<std::string>(j, "meshFile");
+            bool ccw = JsonUtils::getOptional<bool>(j, "ccw", true);
+            objFilePath = absolutePath.parent_path() / meshFile;
+            reverseWinding = !ccw;
         } catch (const std::exception& e) {
-            LOG4CXX_ERROR(LOGGER, "Failed to generate procedural mesh: " << name << " - " << e.what());
+            LOG4CXX_ERROR(LOGGER, "Failed to read mesh metadata: " << name << " - " << e.what());
+            return;
         }
-    } else {
-        auto absolutePath = explorer_.getAbsolutePath(name);
-        auto mesh = importing::importObjFile(absolutePath, false, std::filesystem::path(name).stem().string());
-        if (mesh) cache_.insert<MeshResource>(name, std::move(mesh));
     }
+    auto mesh = importing::importObjFile(objFilePath, reverseWinding, std::filesystem::path(name).stem().string());
+    if (mesh) cache_.insert<MeshResource>(name, std::move(mesh));
 }
 
 template<>

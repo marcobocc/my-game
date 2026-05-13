@@ -1,21 +1,31 @@
-#include "ProceduralMeshGenerator.hpp"
+#include "MeshMutations.hpp"
+#include <algorithm>
 
-std::unique_ptr<MeshResource> ProceduralMeshGenerator::dispatch(const std::string& name) {
-    if (name.find("SPHERE") != std::string::npos) {
-        size_t lastUnderscore = name.rfind('_');
-        if (lastUnderscore != std::string::npos) {
-            uint32_t resolution = std::stoul(name.substr(lastUnderscore + 1));
-            return generateSphere(resolution, name);
-        }
-    } else if (name.find("CUBE") != std::string::npos) {
-        return generateCube(name);
-    } else if (name.find("PLANE") != std::string::npos) {
-        return generatePlane(name);
-    }
-    throw std::runtime_error("Unknown procedural mesh type: " + name);
+std::string MeshMutations::generateSphere(uint32_t resolution) {
+    std::string meshName = "Sphere_" + std::to_string(resolution) + ".mesh";
+    if (repository_.exists(meshName)) return meshName;
+    auto mesh = buildSphere(resolution, meshName);
+    repository_.insert<MeshResource>(meshName, *mesh);
+    return meshName;
 }
 
-std::unique_ptr<MeshResource> ProceduralMeshGenerator::generateSphere(uint32_t resolution, const std::string& name) {
+std::string MeshMutations::generateCube() {
+    std::string meshName = "Cube.mesh";
+    if (repository_.exists(meshName)) return meshName;
+    auto mesh = buildCube(meshName);
+    repository_.insert<MeshResource>(meshName, *mesh);
+    return meshName;
+}
+
+std::string MeshMutations::generatePlane() {
+    std::string meshName = "Plane.mesh";
+    if (repository_.exists(meshName)) return meshName;
+    auto mesh = buildPlane(meshName);
+    repository_.insert<MeshResource>(meshName, *mesh);
+    return meshName;
+}
+
+std::unique_ptr<MeshResource> MeshMutations::buildSphere(uint32_t resolution, const std::string& name) {
     std::vector<glm::vec3> positions;
     std::vector<glm::vec2> uvs;
     std::vector<glm::vec3> normals;
@@ -29,18 +39,15 @@ std::unique_ptr<MeshResource> ProceduralMeshGenerator::generateSphere(uint32_t r
             float phi = 2.0f * glm::pi<float>() * static_cast<float>(lon) / static_cast<float>(resolution);
             float sinPhi = glm::sin(phi);
             float cosPhi = glm::cos(phi);
-            // Position on unit sphere
             glm::vec3 normal(sinTheta * cosPhi, cosTheta, sinTheta * sinPhi);
             glm::vec3 position = normal * radius;
             positions.push_back(position);
             normals.push_back(normal);
-            // UV coordinates
             float u = static_cast<float>(lon) / static_cast<float>(resolution);
             float v = static_cast<float>(lat) / static_cast<float>(resolution);
             uvs.push_back({u, v});
         }
     }
-    // Generate indices
     for (uint32_t lat = 0; lat < resolution; ++lat) {
         for (uint32_t lon = 0; lon < resolution; ++lon) {
             uint32_t a = lat * (resolution + 1) + lon;
@@ -58,7 +65,7 @@ std::unique_ptr<MeshResource> ProceduralMeshGenerator::generateSphere(uint32_t r
     return std::make_unique<MeshResource>(name, positions, uvs, colors, indices, normals);
 }
 
-std::unique_ptr<MeshResource> ProceduralMeshGenerator::generateCube(const std::string& name) {
+std::unique_ptr<MeshResource> MeshMutations::buildCube(const std::string& name) {
     std::vector<glm::vec3> positions = {// Front (+Z)
                                         {-0.5f, -0.5f, 0.5f},
                                         {0.5f, -0.5f, 0.5f},
@@ -135,7 +142,7 @@ std::unique_ptr<MeshResource> ProceduralMeshGenerator::generateCube(const std::s
     return std::make_unique<MeshResource>(name, positions, uvs, colors, indices, normals);
 }
 
-std::unique_ptr<MeshResource> ProceduralMeshGenerator::generatePlane(const std::string& name) {
+std::unique_ptr<MeshResource> MeshMutations::buildPlane(const std::string& name) {
     std::vector<glm::vec3> positions = {
             {-0.5f, 0.0f, -0.5f}, {0.5f, 0.0f, -0.5f}, {0.5f, 0.0f, 0.5f}, {-0.5f, 0.0f, 0.5f}};
     std::vector<glm::vec2> uvs = {{0, 0}, {1, 0}, {1, 1}, {0, 1}};

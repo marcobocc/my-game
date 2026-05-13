@@ -15,6 +15,7 @@ class VulkanEditorBackend;
 class EditorCamera;
 class GizmosRenderer;
 class ObjectSelection;
+class ObjectBuilder;
 class EditorGizmos;
 class EditorSettings;
 class ObjectTransformHandle;
@@ -57,6 +58,7 @@ public:
                       SceneMutations& sceneMutations,
                       EditorAssetRepository& assetRepository,
                       MaterialMutations& materialMutations,
+                      ObjectBuilder& objectBuilder,
                       SceneLoader& editorWorkspace,
                       GameWindow& window,
                       GameEngine& engine,
@@ -86,6 +88,7 @@ private:
     PickingSystem& pickingSystem_;
     SceneMutations& sceneMutations_;
     EditorAssetRepository& assetRepository_;
+    ObjectBuilder& objectBuilder_;
     SceneLoader& editorWorkspace_;
     GameEngine& engine_;
     GameWindow& window_;

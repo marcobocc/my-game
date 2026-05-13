@@ -7,7 +7,7 @@
 #include <string>
 #include "../../../../business/ActionDispatcher.hpp"
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
-#include "../../../../business/scene_editing/ObjectPrefabs.hpp"
+#include "../../../../business/scene_editing/ObjectBuilder.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "../../../../input/ShortcutBindingService.hpp"
 #include "SpherePopupModal.hpp"
@@ -22,11 +22,13 @@ class HierarchyDropdownMenu {
 public:
     HierarchyDropdownMenu(EditorAssetRepository& repository,
                           SceneMutations& sceneMutations,
+                          ObjectBuilder& objectBuilder,
                           ActionDispatcher& actionDispatcher,
                           ShortcutBindingService& shortcutBindingService,
                           SpherePopupModal* spherePopupModal = nullptr) :
         repository_(repository),
         sceneMutations_(sceneMutations),
+        objectBuilder_(objectBuilder),
         actionDispatcher_(actionDispatcher),
         shortcutBindingService_(shortcutBindingService),
         spherePopupModal_(spherePopupModal) {}
@@ -53,10 +55,10 @@ public:
         }
         if (ImGui::BeginMenu("3D Object")) {
             if (ImGui::MenuItem("Cube")) {
-                sceneMutations_.createObject(primitives::cube());
+                sceneMutations_.createObject(objectBuilder_.cube());
             }
             if (ImGui::MenuItem("Plane")) {
-                sceneMutations_.createObject(primitives::plane());
+                sceneMutations_.createObject(objectBuilder_.plane());
             }
             if (ImGui::MenuItem("Sphere")) {
                 if (spherePopupModal_) {
@@ -72,6 +74,7 @@ public:
 private:
     EditorAssetRepository& repository_;
     SceneMutations& sceneMutations_;
+    ObjectBuilder& objectBuilder_;
     ActionDispatcher& actionDispatcher_;
     ShortcutBindingService& shortcutBindingService_;
     SpherePopupModal* spherePopupModal_;

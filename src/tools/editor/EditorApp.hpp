@@ -10,7 +10,7 @@
 #include "business/EditorCamera.hpp"
 #include "business/EditorSettings.hpp"
 #include "business/SceneLoader.hpp"
-#include "business/scene_editing/ObjectPrefabs.hpp"
+#include "business/scene_editing/ObjectBuilder.hpp"
 #include "input/InputHandler.hpp"
 #include "presentation/PresentationLayer.hpp"
 #include "presentation/imgui/ImguiStyling.hpp"
@@ -29,6 +29,7 @@ public:
               PresentationLayer& presentationLayer,
               EditorSettings& rendererSettings,
               SceneLoader& sceneLoader,
+              ObjectBuilder& objectBuilder,
               TimeManager& time,
               InputSystem& inputSystem,
               PhysicsSystem& physicsSystem,
@@ -44,6 +45,7 @@ public:
         rendererSettings_(rendererSettings),
         presentationLayer_(presentationLayer),
         sceneLoader_(sceneLoader),
+        objectBuilder_(objectBuilder),
         inputHandler_(inputHandler),
         assetExplorer_(assetExplorer),
         projectPath_(projectPath) {
@@ -92,7 +94,7 @@ private:
 
         if (!sceneLoader_.loadLatestScene(projectPath_)) {
             sceneLoader_.newScene();
-            entityManager_.upsertFromJson(primitives::cube());
+            entityManager_.upsertFromJson(objectBuilder_.cube());
         }
     }
 
@@ -117,6 +119,7 @@ private:
     EditorSettings& rendererSettings_;
     PresentationLayer& presentationLayer_;
     SceneLoader& sceneLoader_;
+    ObjectBuilder& objectBuilder_;
     InputHandler& inputHandler_;
     AssetExplorer& assetExplorer_;
     std::filesystem::path projectPath_;

@@ -1,15 +1,16 @@
 #pragma once
-#include <functional>
 #include <imgui.h>
 #include "../../ImguiStyling.hpp"
 
+class SceneMutations;
+class ObjectBuilder;
+
 class SpherePopupModal {
 public:
-    using OnSphereCreatedCallback = std::function<void(uint32_t)>;
-
-    explicit SpherePopupModal(const OnSphereCreatedCallback& onSphereCreated = nullptr) :
+    SpherePopupModal(SceneMutations& sceneMutations, ObjectBuilder& objectBuilder) :
         sphereResolution_(6),
-        onSphereCreated_(onSphereCreated),
+        sceneMutations_(sceneMutations),
+        objectBuilder_(objectBuilder),
         showModal_(false) {}
 
     void requestCreation() { showModal_ = true; }
@@ -27,9 +28,7 @@ public:
             ImGui::SliderInt("##SphereResolution", reinterpret_cast<int*>(&sphereResolution_), 6, 24);
 
             if (ImGui::Button("Create", ImVec2(120, 0))) {
-                if (onSphereCreated_) {
-                    onSphereCreated_(sphereResolution_);
-                }
+                sceneMutations_.createObject(objectBuilder_.sphere(sphereResolution_));
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
@@ -41,6 +40,7 @@ public:
 
 private:
     uint32_t sphereResolution_;
-    OnSphereCreatedCallback onSphereCreated_;
+    SceneMutations& sceneMutations_;
+    ObjectBuilder& objectBuilder_;
     bool showModal_;
 };

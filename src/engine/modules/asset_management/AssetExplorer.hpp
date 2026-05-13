@@ -53,6 +53,8 @@ public:
         return std::ranges::starts_with(filename, "_");
     }
 
+    bool exists(const std::string& assetName) const { return assets_.contains(assetName); }
+
 private:
     std::unordered_map<std::string, std::filesystem::path> assets_;
 };

@@ -41,6 +41,8 @@
 #include "business/UndoHistory.hpp"
 #include "business/asset_editing/EditorAssetRepository.hpp"
 #include "business/asset_editing/MaterialMutations.hpp"
+#include "business/asset_editing/MeshMutations.hpp"
+#include "business/scene_editing/ObjectBuilder.hpp"
 #include "business/scene_editing/SceneMutations.hpp"
 #include "input/InputHandler.hpp"
 #include "input/PickingSystem.hpp"
@@ -127,6 +129,8 @@ public:
         pickingSystem_(assetLoader_),
         sceneMutations_(entityManager_, engine_, objectSelection_, undoHistory_, clipboardService_),
         materialMutations_(assetRepository_, objectSelection_),
+        meshMutations_(assetRepository_),
+        objectBuilder_(meshMutations_),
         sceneLoader_(entityManager_, objectSelection_, engine_, assetRepository_),
         objectTransformHandle_(
                 window, engine_, sceneMutations_, editorCamera_, objectSelection_, editorSettings_, entityManager_),
@@ -166,6 +170,7 @@ public:
                            sceneMutations_,
                            assetRepository_,
                            materialMutations_,
+                           objectBuilder_,
                            sceneLoader_,
                            window,
                            engine_,
@@ -180,6 +185,7 @@ public:
                    presentationLayer_,
                    editorSettings_,
                    sceneLoader_,
+                   objectBuilder_,
                    time_,
                    inputSystem_,
                    physicsSystem_,
@@ -249,6 +255,8 @@ private:
     ClipboardService clipboardService_;
     SceneMutations sceneMutations_;
     MaterialMutations materialMutations_;
+    MeshMutations meshMutations_;
+    ObjectBuilder objectBuilder_;
     SceneLoader sceneLoader_;
     ObjectTransformHandle objectTransformHandle_;
 
