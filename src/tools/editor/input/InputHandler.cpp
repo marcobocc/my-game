@@ -26,11 +26,15 @@ void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
 }
 
 void InputHandler::handleKeyboardInput() {
-    bool ctrl = engine_.isKeyDown(GLFW_KEY_LEFT_CONTROL) || engine_.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
+#ifdef __APPLE__
+    bool cmd = engine_.isKeyDown(GLFW_KEY_LEFT_SUPER) || engine_.isKeyDown(GLFW_KEY_RIGHT_SUPER);
+#else
+    bool cmd = engine_.isKeyDown(GLFW_KEY_LEFT_CONTROL) || engine_.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
+#endif
     bool shift = engine_.isKeyDown(GLFW_KEY_LEFT_SHIFT) || engine_.isKeyDown(GLFW_KEY_RIGHT_SHIFT);
 
     // Undo / Redo
-    if (ctrl && engine_.isKeyPressed(GLFW_KEY_Z)) {
+    if (cmd && engine_.isKeyPressed(GLFW_KEY_Z)) {
         if (shift)
             undoHistory_.redo();
         else
@@ -88,21 +92,21 @@ void InputHandler::handleKeyboardInput() {
         if (selectedId.has_value()) sceneMutations_.destroyObject(*selectedId);
     }
 
-    if (ctrl && engine_.isKeyPressed(GLFW_KEY_C)) {
+    if (cmd && engine_.isKeyPressed(GLFW_KEY_C)) {
         auto selectedId = objectSelection_.getSelectedEntityId();
         if (selectedId.has_value()) sceneMutations_.copyObject(*selectedId);
     }
 
-    if (ctrl && engine_.isKeyPressed(GLFW_KEY_X)) {
+    if (cmd && engine_.isKeyPressed(GLFW_KEY_X)) {
         auto selectedId = objectSelection_.getSelectedEntityId();
         if (selectedId.has_value()) sceneMutations_.cutObject(*selectedId);
     }
 
-    if (ctrl && engine_.isKeyPressed(GLFW_KEY_V)) {
+    if (cmd && engine_.isKeyPressed(GLFW_KEY_V)) {
         sceneMutations_.pasteObject();
     }
 
-    if (ctrl && engine_.isKeyPressed(GLFW_KEY_D)) {
+    if (cmd && engine_.isKeyPressed(GLFW_KEY_D)) {
         auto selectedId = objectSelection_.getSelectedEntityId();
         if (selectedId.has_value()) sceneMutations_.duplicateObject(*selectedId);
     }
