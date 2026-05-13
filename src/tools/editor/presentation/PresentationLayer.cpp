@@ -36,7 +36,9 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      SceneLoader& editorWorkspace,
                                      GameWindow& window,
                                      GameEngine& engine,
-                                     UndoHistory& undoHistory) :
+                                     UndoHistory& undoHistory,
+                                     ActionDispatcher& actionDispatcher,
+                                     ShortcutBindingService& shortcutBindingService) :
     renderer_(renderer),
     editorOrbitCamera_(editorOrbitCamera),
     objectSelection_(objectSelection),
@@ -52,10 +54,19 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     assetRepository_(assetRepository),
     editorWorkspace_(editorWorkspace),
     engine_(engine),
-    window_(window) {
-    userInterface_.emplace<ApplicationMenuBar>(sceneMutations, editorWorkspace, undoHistory, objectSelection_);
+    window_(window),
+    actionDispatcher_(actionDispatcher),
+    shortcutBindingService_(shortcutBindingService) {
+    userInterface_.emplace<ApplicationMenuBar>(
+            sceneMutations, editorWorkspace, undoHistory, objectSelection_, actionDispatcher_, shortcutBindingService_);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
-    userInterface_.emplace<HierarchyPanel>(assetRepository_, objectSelection_, entityManager_, sceneMutations, engine_);
+    userInterface_.emplace<HierarchyPanel>(assetRepository_,
+                                           objectSelection_,
+                                           entityManager_,
+                                           sceneMutations,
+                                           engine_,
+                                           actionDispatcher_,
+                                           shortcutBindingService_);
     userInterface_.emplace<AssetsPanel>(assetRepository_, objectSelection_, materialMutations);
     userInterface_.emplace<InspectorPanel>(
             objectSelection_, entityManager_, assetRepository_, sceneMutations, materialMutations, editorGizmos_);
@@ -67,6 +78,8 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
             pickingService,
             window_,
             editorOrbitCamera,
+            actionDispatcher_,
+            shortcutBindingService_,
             [&sceneMutations](uint32_t lod) { sceneMutations.createObject(primitives::sphere(lod)); });
 }
 

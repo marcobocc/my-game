@@ -1,9 +1,11 @@
 #pragma once
 #include <imgui.h>
 #include <string>
+#include "../../../../business/ActionDispatcher.hpp"
 #include "../../../../business/ObjectSelection.hpp"
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/scene_editing/ObjectPrefabs.hpp"
+#include "../../../../input/ShortcutBindingService.hpp"
 #include "../../ImguiStyling.hpp"
 #include "../EditorPanel.hpp"
 #include "HierarchyDropdownMenu.hpp"
@@ -22,14 +24,16 @@ public:
                    ObjectSelection& objectSelection,
                    EntityManager& entityManager,
                    SceneMutations& sceneMutations,
-                   GameEngine& engine) :
+                   GameEngine& engine,
+                   ActionDispatcher& actionDispatcher,
+                   ShortcutBindingService& shortcutBindingService) :
         repository_(repository),
         objectSelection_(objectSelection),
         entityManager_(entityManager),
         sceneMutations_(sceneMutations),
         engine_(engine),
         spherePopupModal_([this](uint32_t lod) { sceneMutations_.createObject(primitives::sphere(lod)); }),
-        dropdownMenu_(repository, sceneMutations, &spherePopupModal_) {}
+        dropdownMenu_(repository, sceneMutations, actionDispatcher, shortcutBindingService, &spherePopupModal_) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();

@@ -5,9 +5,11 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
+#include "../../../../business/ActionDispatcher.hpp"
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/scene_editing/ObjectPrefabs.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
+#include "../../../../input/ShortcutBindingService.hpp"
 #include "SpherePopupModal.hpp"
 #include "modules/asset_management/assets/Model.hpp"
 #include "modules/scene/components/Light.hpp"
@@ -20,23 +22,26 @@ class HierarchyDropdownMenu {
 public:
     HierarchyDropdownMenu(EditorAssetRepository& repository,
                           SceneMutations& sceneMutations,
+                          ActionDispatcher& actionDispatcher,
+                          ShortcutBindingService& shortcutBindingService,
                           SpherePopupModal* spherePopupModal = nullptr) :
         repository_(repository),
         sceneMutations_(sceneMutations),
+        actionDispatcher_(actionDispatcher),
+        shortcutBindingService_(shortcutBindingService),
         spherePopupModal_(spherePopupModal) {}
 
     void draw(std::optional<EntityHandle> selectedItem) {
-        if (selectedItem) {
-            auto actions = sceneMutations_.getObjectEditActions(*selectedItem);
-            for (auto& [actionName, actionFunc]: actions) {
-                if (ImGui::MenuItem(actionName.c_str())) {
-                    actionFunc();
-                }
-            }
-        } else {
-            const char* actionNames[] = {"Copy", "Cut", "Duplicate", "Paste", "Delete"};
-            for (int i = 0; i < 5; ++i) {
-                ImGui::MenuItem(actionNames[i], nullptr, false, false);
+        bool hasSelection = selectedItem.has_value();
+
+        constexpr ActionID editActions[] = {
+                ActionID::COPY, ActionID::CUT, ActionID::DUPLICATE, ActionID::PASTE, ActionID::DELETE};
+        constexpr const char* actionNames[] = {"Copy", "Cut", "Duplicate", "Paste", "Delete"};
+
+        for (int i = 0; i < 5; ++i) {
+            std::string shortcutStr = shortcutBindingService_.getShortcut(editActions[i]);
+            if (ImGui::MenuItem(actionNames[i], shortcutStr.c_str(), false, hasSelection)) {
+                actionDispatcher_.execute(editActions[i]);
             }
         }
         ImGui::Separator();
@@ -67,6 +72,8 @@ public:
 private:
     EditorAssetRepository& repository_;
     SceneMutations& sceneMutations_;
+    ActionDispatcher& actionDispatcher_;
+    ShortcutBindingService& shortcutBindingService_;
     SpherePopupModal* spherePopupModal_;
 
     void drawModelsSubmenu() {

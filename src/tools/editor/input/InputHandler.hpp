@@ -1,9 +1,11 @@
 #pragma once
 #include "../../../engine/GameEngine.hpp"
 #include "../../../engine/modules/core/GameWindow.hpp"
+#include "../business/ActionDispatcher.hpp"
 #include "../business/ClipboardService.hpp"
 #include "../business/UndoHistory.hpp"
 #include "PickingSystem.hpp"
+#include "ShortcutBindingService.hpp"
 
 class EditorGizmos;
 class EditorCamera;
@@ -41,7 +43,9 @@ public:
                  EditorGizmos& editorGizmos,
                  EditorSettings& rendererSettings,
                  UndoHistory& undoHistory,
-                 ClipboardService& clipboardService) :
+                 ClipboardService& clipboardService,
+                 ShortcutBindingService& shortcutBindingService,
+                 ActionDispatcher& actionDispatcher) :
         window_(window),
         engine_(engine),
         pickingSystem_(pickingSystem),
@@ -54,7 +58,9 @@ public:
         rendererSettings_(rendererSettings),
         undoHistory_(undoHistory),
         clipboardService_(clipboardService),
-        wasLeftDown_(false) {}
+        shortcutBindingService_(shortcutBindingService),
+        actionDispatcher_(actionDispatcher) {}
+
 
     void update(double mouseX, double mouseY, double deltaTime);
 
@@ -71,7 +77,10 @@ private:
     EditorSettings& rendererSettings_;
     UndoHistory& undoHistory_;
     ClipboardService& clipboardService_;
-    bool wasLeftDown_;
+    ShortcutBindingService& shortcutBindingService_;
+    ActionDispatcher& actionDispatcher_;
+
+    bool wasLeftDown_ = false;
 
     double lastMouseX_ = 0.0;
     double lastMouseY_ = 0.0;
@@ -82,4 +91,7 @@ private:
     void processGizmoDrag(double mouseX, double mouseY, bool leftDown);
     void processMouseInteraction(double mouseX, double mouseY, bool leftDown);
     void processCameraInput(double mouseX, double mouseY, double deltaTime);
+
+    bool matchesShortcut(const Shortcut& s, bool ctrl, bool shift, bool alt, int key) const;
+    bool getModifierState(bool& ctrl, bool& shift, bool& alt) const;
 };

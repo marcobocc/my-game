@@ -26,6 +26,8 @@ public:
                         PickingSystem& pickingSystem,
                         GameWindow& window,
                         EditorCamera& editorCamera,
+                        ActionDispatcher& actionDispatcher,
+                        ShortcutBindingService& shortcutBindingService,
                         const std::function<void(uint32_t)>& onSphereCreated = nullptr) :
         assetRepository_(assetRepository),
         sceneMutations_(sceneMutations),
@@ -35,7 +37,7 @@ public:
         window_(window),
         editorCamera_(editorCamera),
         spherePopupModal_(onSphereCreated),
-        dropdownMenu_(assetRepository, sceneMutations, &spherePopupModal_) {}
+        dropdownMenu_(assetRepository, sceneMutations, actionDispatcher, shortcutBindingService, &spherePopupModal_) {}
 
     void draw() override {
         spherePopupModal_.draw();

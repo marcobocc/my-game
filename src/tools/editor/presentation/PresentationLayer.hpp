@@ -18,6 +18,8 @@ class ObjectSelection;
 class EditorGizmos;
 class EditorSettings;
 class ObjectTransformHandle;
+class ActionDispatcher;
+class ShortcutBindingService;
 class EventBus;
 class GameEngine;
 struct RendererSettings;
@@ -58,7 +60,9 @@ public:
                       SceneLoader& editorWorkspace,
                       GameWindow& window,
                       GameEngine& engine,
-                      UndoHistory& undoHistory);
+                      UndoHistory& undoHistory,
+                      ActionDispatcher& actionDispatcher,
+                      ShortcutBindingService& shortcutBindingService);
 
     // --------------------------------------------------------
     // Rendering
@@ -85,6 +89,8 @@ private:
     SceneLoader& editorWorkspace_;
     GameEngine& engine_;
     GameWindow& window_;
+    ActionDispatcher& actionDispatcher_;
+    ShortcutBindingService& shortcutBindingService_;
     std::vector<DrawCall> outlineQueue_;
     std::vector<VulkanGizmoPass::GizmoVertex> builtGizmoLines_;
 };

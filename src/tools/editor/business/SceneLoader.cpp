@@ -36,11 +36,25 @@ void SceneLoader::saveScene(const char* path) {
         entities.push_back(entityManager_.serializeToJson(entity));
     root["entities"] = entities;
     f << root.dump(4);
+
+    currentScenePath_ = path;
+
     if (onSceneNameChanged_) {
         std::string pathStr(path);
         size_t lastSlash = pathStr.find_last_of("/\\");
         std::string filename = (lastSlash != std::string::npos) ? pathStr.substr(lastSlash + 1) : pathStr;
+        sceneName_ = filename;
         onSceneNameChanged_(filename);
+    }
+    if (onScenePathChanged_) {
+        scenePath_ = std::filesystem::path(path);
+        onScenePathChanged_(std::filesystem::path(path));
+    }
+}
+
+void SceneLoader::saveCurrentScene() {
+    if (!currentScenePath_.empty()) {
+        saveScene(currentScenePath_.c_str());
     }
 }
 
@@ -51,13 +65,18 @@ void SceneLoader::loadScene(const char* path) {
         for (const auto& entityJson: json.at("entities"))
             entityManager_.upsertFromJson(entityJson);
         objectSelection_.clearSelection();
+
+        currentScenePath_ = path;
+
         if (onSceneNameChanged_) {
             std::string pathStr(path);
             size_t lastSlash = pathStr.find_last_of("/\\");
             std::string filename = (lastSlash != std::string::npos) ? pathStr.substr(lastSlash + 1) : pathStr;
+            sceneName_ = filename;
             onSceneNameChanged_(filename);
         }
         if (onScenePathChanged_) {
+            scenePath_ = std::filesystem::path(path);
             onScenePathChanged_(std::filesystem::path(path));
         }
     } catch (const std::exception&) {

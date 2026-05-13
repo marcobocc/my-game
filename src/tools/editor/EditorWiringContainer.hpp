@@ -30,6 +30,7 @@
 #include "../../engine/modules/ui/UserInterface.hpp"
 #include "../../engine/structs/RendererSettings.hpp"
 #include "EditorApp.hpp"
+#include "business/ActionDispatcher.hpp"
 #include "business/ClipboardService.hpp"
 #include "business/EditorCamera.hpp"
 #include "business/EditorGizmos.hpp"
@@ -43,6 +44,7 @@
 #include "business/scene_editing/SceneMutations.hpp"
 #include "input/InputHandler.hpp"
 #include "input/PickingSystem.hpp"
+#include "input/ShortcutBindingService.hpp"
 #include "presentation/PresentationLayer.hpp"
 #include "presentation/gizmos/GizmosBuilder.hpp"
 #include "presentation/vulkan/VulkanEditorBackend.hpp"
@@ -128,6 +130,28 @@ public:
         sceneLoader_(entityManager_, objectSelection_, engine_, assetRepository_),
         objectTransformHandle_(
                 window, engine_, sceneMutations_, editorCamera_, objectSelection_, editorSettings_, entityManager_),
+        shortcutBindingService_(),
+        actionDispatcher_(undoHistory_,
+                          editorCamera_,
+                          editorGizmos_,
+                          editorSettings_,
+                          objectTransformHandle_,
+                          sceneMutations_,
+                          sceneLoader_),
+        inputHandler_(window,
+                      engine_,
+                      pickingSystem_,
+                      editorCamera_,
+                      objectSelection_,
+                      objectTransformHandle_,
+                      entityManager_,
+                      sceneMutations_,
+                      editorGizmos_,
+                      editorSettings_,
+                      undoHistory_,
+                      clipboardService_,
+                      shortcutBindingService_,
+                      actionDispatcher_),
         presentationLayer_(vulkanEditorRenderer_,
                            editorCamera_,
                            objectSelection_,
@@ -145,19 +169,9 @@ public:
                            sceneLoader_,
                            window,
                            engine_,
-                           undoHistory_),
-        inputHandler_(window,
-                      engine_,
-                      pickingSystem_,
-                      editorCamera_,
-                      objectSelection_,
-                      objectTransformHandle_,
-                      entityManager_,
-                      sceneMutations_,
-                      editorGizmos_,
-                      editorSettings_,
-                      undoHistory_,
-                      clipboardService_),
+                           undoHistory_,
+                           actionDispatcher_,
+                           shortcutBindingService_),
         editorApp_(window,
                    engine_,
                    entityManager_,
@@ -239,8 +253,10 @@ private:
     ObjectTransformHandle objectTransformHandle_;
 
     // Presentation and input handling
-    PresentationLayer presentationLayer_;
+    ShortcutBindingService shortcutBindingService_;
+    ActionDispatcher actionDispatcher_;
     InputHandler inputHandler_;
+    PresentationLayer presentationLayer_;
 
     // Root application
     EditorApp editorApp_;

@@ -83,6 +83,27 @@ public:
         createObject(*clipboard);
     }
 
+    // Selection-aware convenience methods for actions
+    void copySelectedObject() {
+        auto selectedId = objectSelection_.getSelectedEntityId();
+        if (selectedId.has_value()) copyObject(*selectedId);
+    }
+
+    void cutSelectedObject() {
+        auto selectedId = objectSelection_.getSelectedEntityId();
+        if (selectedId.has_value()) cutObject(*selectedId);
+    }
+
+    void duplicateSelectedObject() {
+        auto selectedId = objectSelection_.getSelectedEntityId();
+        if (selectedId.has_value()) duplicateObject(*selectedId);
+    }
+
+    void deleteSelectedObject() {
+        auto selectedId = objectSelection_.getSelectedEntityId();
+        if (selectedId.has_value()) destroyObject(*selectedId);
+    }
+
     std::map<std::string, std::function<void()>> getObjectEditActions(EntityHandle entity) {
         return {{"Copy", [this, entity] { copyObject(entity); }},
                 {"Cut", [this, entity] { cutObject(entity); }},

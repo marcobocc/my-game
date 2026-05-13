@@ -26,90 +26,53 @@ void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
 }
 
 void InputHandler::handleKeyboardInput() {
+
+    bool ctrl = false;
+    bool shift = false;
+    bool alt = false;
+    getModifierState(ctrl, shift, alt);
+
+    // Check for all possible keys that might have shortcut bindings
+    const int keysToCheck[] = {GLFW_KEY_Z,
+                               GLFW_KEY_C,
+                               GLFW_KEY_X,
+                               GLFW_KEY_V,
+                               GLFW_KEY_D,
+                               GLFW_KEY_G,
+                               GLFW_KEY_L,
+                               GLFW_KEY_B,
+                               GLFW_KEY_T,
+                               GLFW_KEY_R,
+                               GLFW_KEY_Y,
+                               GLFW_KEY_F,
+                               GLFW_KEY_KP_ADD,
+                               GLFW_KEY_KP_SUBTRACT,
+                               GLFW_KEY_U};
+
+    for (int key: keysToCheck) {
+        if (engine_.isKeyPressed(key)) {
+            Shortcut shortcut{ctrl, shift, alt, key};
+            auto action = shortcutBindingService_.getAction(shortcut);
+            if (action) {
+                actionDispatcher_.execute(*action);
+            }
+        }
+    }
+}
+
+bool InputHandler::matchesShortcut(const Shortcut& s, bool ctrl, bool shift, bool alt, int key) const {
+    return s.ctrl == ctrl && s.shift == shift && s.alt == alt && s.key == key;
+}
+
+bool InputHandler::getModifierState(bool& ctrl, bool& shift, bool& alt) const {
 #ifdef __APPLE__
-    bool cmd = engine_.isKeyDown(GLFW_KEY_LEFT_SUPER) || engine_.isKeyDown(GLFW_KEY_RIGHT_SUPER);
+    ctrl = engine_.isKeyDown(GLFW_KEY_LEFT_SUPER) || engine_.isKeyDown(GLFW_KEY_RIGHT_SUPER);
 #else
-    bool cmd = engine_.isKeyDown(GLFW_KEY_LEFT_CONTROL) || engine_.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
+    ctrl = engine_.isKeyDown(GLFW_KEY_LEFT_CONTROL) || engine_.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
 #endif
-    bool shift = engine_.isKeyDown(GLFW_KEY_LEFT_SHIFT) || engine_.isKeyDown(GLFW_KEY_RIGHT_SHIFT);
-
-    // Undo / Redo
-    if (cmd && engine_.isKeyPressed(GLFW_KEY_Z)) {
-        if (shift)
-            undoHistory_.redo();
-        else
-            undoHistory_.undo();
-    }
-
-    // Toggles
-    if (engine_.isKeyPressed(GLFW_KEY_G)) {
-        rendererSettings_.toggleGrid();
-    }
-
-    if (engine_.isKeyPressed(GLFW_KEY_L)) {
-        rendererSettings_.toggleLighting();
-    }
-
-    if (engine_.isKeyPressed(GLFW_KEY_B)) {
-        editorGizmos_.toggleBVH();
-    }
-
-    // Gizmo modes
-    if (engine_.isKeyPressed(GLFW_KEY_T)) {
-        objectTransformHandle_.getDragState().gizmoMode = GizmoType::Translation;
-    }
-
-    if (engine_.isKeyPressed(GLFW_KEY_R)) {
-        objectTransformHandle_.getDragState().gizmoMode = GizmoType::Rotation;
-    }
-
-    if (engine_.isKeyPressed(GLFW_KEY_Y)) {
-        objectTransformHandle_.getDragState().gizmoMode = GizmoType::Scale;
-    }
-
-    // Grid scale
-    if (engine_.isKeyPressed(GLFW_KEY_KP_ADD)) {
-        rendererSettings_.increaseScale();
-    }
-
-    if (engine_.isKeyPressed(GLFW_KEY_KP_SUBTRACT)) {
-        rendererSettings_.decreaseScale();
-    }
-
-    // Grid snapping
-    if (engine_.isKeyPressed(GLFW_KEY_U)) {
-        rendererSettings_.toggleSnapping();
-    }
-
-    // Camera reset
-    if (engine_.isKeyPressed(GLFW_KEY_F)) {
-        editorCamera_.resetToDefault();
-    }
-
-    // Object operations
-    if (shift && engine_.isKeyPressed(GLFW_KEY_X)) {
-        auto selectedId = objectSelection_.getSelectedEntityId();
-        if (selectedId.has_value()) sceneMutations_.destroyObject(*selectedId);
-    }
-
-    if (cmd && engine_.isKeyPressed(GLFW_KEY_C)) {
-        auto selectedId = objectSelection_.getSelectedEntityId();
-        if (selectedId.has_value()) sceneMutations_.copyObject(*selectedId);
-    }
-
-    if (cmd && engine_.isKeyPressed(GLFW_KEY_X)) {
-        auto selectedId = objectSelection_.getSelectedEntityId();
-        if (selectedId.has_value()) sceneMutations_.cutObject(*selectedId);
-    }
-
-    if (cmd && engine_.isKeyPressed(GLFW_KEY_V)) {
-        sceneMutations_.pasteObject();
-    }
-
-    if (cmd && engine_.isKeyPressed(GLFW_KEY_D)) {
-        auto selectedId = objectSelection_.getSelectedEntityId();
-        if (selectedId.has_value()) sceneMutations_.duplicateObject(*selectedId);
-    }
+    shift = engine_.isKeyDown(GLFW_KEY_LEFT_SHIFT) || engine_.isKeyDown(GLFW_KEY_RIGHT_SHIFT);
+    alt = engine_.isKeyDown(GLFW_KEY_LEFT_ALT) || engine_.isKeyDown(GLFW_KEY_RIGHT_ALT);
+    return true;
 }
 
 void InputHandler::processGizmoDrag(double mouseX, double mouseY, bool leftDown) {
