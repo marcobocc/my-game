@@ -12,9 +12,8 @@
 void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
     bool imguiCapturingInput = ImGui::GetIO().WantTextInput || ImGui::GetIO().WantCaptureMouse;
 
-    handleKeyboardInput();
-
     if (!imguiCapturingInput) {
+        handleKeyboardInput();
         bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
         processGizmoDrag(mouseX, mouseY, leftDown);
         processMouseInteraction(mouseX, mouseY, leftDown);
