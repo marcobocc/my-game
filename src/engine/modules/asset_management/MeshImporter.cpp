@@ -51,6 +51,7 @@ ParsedData parseObjData(const std::filesystem::path& path) {
         } else if (tag == "vt") {
             glm::vec2 uv;
             ss >> uv.x >> uv.y;
+            uv.y = 1.0f - uv.y;
             data.uvs.push_back(uv);
         } else if (tag == "vn") {
             glm::vec3 n;
