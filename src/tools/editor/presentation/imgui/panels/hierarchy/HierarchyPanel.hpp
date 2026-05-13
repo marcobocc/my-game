@@ -44,6 +44,7 @@ public:
     }
 
     void drawBody() override {
+        contextTargetId.reset();
         spherePopupModal_.draw();
         auto selectedId = objectSelection_.getSelectedEntityId();
         ImGui::Separator();
