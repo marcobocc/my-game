@@ -27,11 +27,19 @@ public:
 
     void draw(std::optional<EntityHandle> selectedItem) {
         if (selectedItem) {
-            if (ImGui::MenuItem("Delete")) {
-                sceneMutations_.destroyObject(*selectedItem);
+            auto actions = sceneMutations_.getObjectEditActions(*selectedItem);
+            for (auto& [actionName, actionFunc]: actions) {
+                if (ImGui::MenuItem(actionName.c_str())) {
+                    actionFunc();
+                }
             }
-            ImGui::Separator();
+        } else {
+            const char* actionNames[] = {"Copy", "Cut", "Duplicate", "Paste", "Delete"};
+            for (int i = 0; i < 5; ++i) {
+                ImGui::MenuItem(actionNames[i], nullptr, false, false);
+            }
         }
+        ImGui::Separator();
         if (ImGui::MenuItem("Empty Object")) {
             sceneMutations_.createObject({{"metadata", {{"name", "Object"}}}});
         }

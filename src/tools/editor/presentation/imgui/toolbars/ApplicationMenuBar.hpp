@@ -2,6 +2,7 @@
 #include <imgui.h>
 #include <nfd.hpp>
 #include <string>
+#include "../../../business/ObjectSelection.hpp"
 #include "../../../business/SceneLoader.hpp"
 #include "../../../business/UndoHistory.hpp"
 #include "../../../business/scene_editing/SceneMutations.hpp"
@@ -14,10 +15,12 @@ class ApplicationMenuBar : public ImguiWidget {
 public:
     explicit ApplicationMenuBar(SceneMutations& sceneMutations,
                                 SceneLoader& editorWorkspace,
-                                UndoHistory& undoHistory) :
+                                UndoHistory& undoHistory,
+                                ObjectSelection& objectSelection) :
         sceneMutations_(sceneMutations),
         editorWorkspace_(editorWorkspace),
-        undoHistory_(undoHistory) {
+        undoHistory_(undoHistory),
+        objectSelection_(objectSelection) {
         editorWorkspace_.setOnSceneNameChanged([this](const std::string& name) { sceneName_ = name; });
         editorWorkspace_.setOnScenePathChanged([this](const std::filesystem::path& path) { scenePath_ = path; });
     }
@@ -34,6 +37,8 @@ public:
             if (ImGui::BeginMenu("Edit")) {
                 if (ImGui::MenuItem("Undo", "Ctrl+Z")) undoHistory_.undo();
                 if (ImGui::MenuItem("Redo", "Ctrl+Shift+Z")) undoHistory_.redo();
+                ImGui::Separator();
+                drawObjectEditMenu();
                 ImGui::EndMenu();
             }
 
@@ -45,10 +50,34 @@ private:
     SceneMutations& sceneMutations_;
     SceneLoader& editorWorkspace_;
     UndoHistory& undoHistory_;
+    ObjectSelection& objectSelection_;
     std::optional<std::string> sceneName_{};
     std::optional<std::filesystem::path> scenePath_{};
 
     void handleSave() { editorWorkspace_.saveScene(scenePath_->string().c_str()); }
+
+    void drawObjectEditMenu() {
+        auto selectedId = objectSelection_.getSelectedEntityId();
+        bool hasSelection = selectedId.has_value();
+
+        const char* actionNames[] = {"Copy", "Cut", "Duplicate", "Paste", "Delete"};
+        const char* shortcuts[] = {"Ctrl+C", "Ctrl+X", "Ctrl+D", "Ctrl+V", "Shift+X"};
+
+        if (hasSelection) {
+            auto actions = sceneMutations_.getObjectEditActions(*selectedId);
+            int idx = 0;
+            for (auto& [actionName, actionFunc]: actions) {
+                if (ImGui::MenuItem(actionName.c_str(), shortcuts[idx])) {
+                    actionFunc();
+                }
+                idx++;
+            }
+        } else {
+            for (int i = 0; i < 5; ++i) {
+                ImGui::MenuItem(actionNames[i], shortcuts[i], false, false);
+            }
+        }
+    }
 
     void handleLoad() { editorWorkspace_.loadScene(scenePath_->string().c_str()); }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "../../../engine/GameEngine.hpp"
 #include "../../../engine/modules/core/GameWindow.hpp"
+#include "../business/ClipboardService.hpp"
 #include "../business/UndoHistory.hpp"
 #include "PickingSystem.hpp"
 
@@ -39,7 +40,8 @@ public:
                  SceneMutations& sceneMutations,
                  EditorGizmos& editorGizmos,
                  EditorSettings& rendererSettings,
-                 UndoHistory& undoHistory) :
+                 UndoHistory& undoHistory,
+                 ClipboardService& clipboardService) :
         window_(window),
         engine_(engine),
         pickingSystem_(pickingSystem),
@@ -51,6 +53,7 @@ public:
         editorGizmos_(editorGizmos),
         rendererSettings_(rendererSettings),
         undoHistory_(undoHistory),
+        clipboardService_(clipboardService),
         wasLeftDown_(false) {}
 
     void update(double mouseX, double mouseY, double deltaTime);
@@ -67,6 +70,7 @@ private:
     EditorGizmos& editorGizmos_;
     EditorSettings& rendererSettings_;
     UndoHistory& undoHistory_;
+    ClipboardService& clipboardService_;
     bool wasLeftDown_;
 
     double lastMouseX_ = 0.0;

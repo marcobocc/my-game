@@ -30,6 +30,7 @@
 #include "../../engine/modules/ui/UserInterface.hpp"
 #include "../../engine/structs/RendererSettings.hpp"
 #include "EditorApp.hpp"
+#include "business/ClipboardService.hpp"
 #include "business/EditorCamera.hpp"
 #include "business/EditorGizmos.hpp"
 #include "business/EditorSettings.hpp"
@@ -63,6 +64,7 @@ public:
         entityManager_(),
         physicsSystem_(entityManager_),
         undoHistory_(),
+        clipboardService_(),
         assetRepository_(assetLoader_, assetExplorer_, loadedAssets_, undoHistory_, projectPath / "assets"),
         vulkanContext_(initVulkanContext()),
         debugMessenger_(vulkanContext_),
@@ -121,7 +123,7 @@ public:
         editorCamera_(),
         gizmosBuilder_(assetLoader_, entityManager_, editorSettings_),
         pickingSystem_(assetLoader_),
-        sceneMutations_(entityManager_, engine_, objectSelection_, undoHistory_),
+        sceneMutations_(entityManager_, engine_, objectSelection_, undoHistory_, clipboardService_),
         materialMutations_(assetRepository_, objectSelection_),
         sceneLoader_(entityManager_, objectSelection_, engine_, assetRepository_),
         objectTransformHandle_(
@@ -154,7 +156,8 @@ public:
                       sceneMutations_,
                       editorGizmos_,
                       editorSettings_,
-                      undoHistory_),
+                      undoHistory_,
+                      clipboardService_),
         editorApp_(window,
                    engine_,
                    entityManager_,
@@ -229,6 +232,7 @@ private:
     EditorCamera editorCamera_;
     GizmosRenderer gizmosBuilder_;
     PickingSystem pickingSystem_;
+    ClipboardService clipboardService_;
     SceneMutations sceneMutations_;
     MaterialMutations materialMutations_;
     SceneLoader sceneLoader_;

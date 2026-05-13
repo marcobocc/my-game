@@ -82,10 +82,29 @@ void InputHandler::handleKeyboardInput() {
         editorCamera_.resetToDefault();
     }
 
-    // Object sceneMutations
+    // Object operations
     if (shift && engine_.isKeyPressed(GLFW_KEY_X)) {
         auto selectedId = objectSelection_.getSelectedEntityId();
         if (selectedId.has_value()) sceneMutations_.destroyObject(*selectedId);
+    }
+
+    if (ctrl && engine_.isKeyPressed(GLFW_KEY_C)) {
+        auto selectedId = objectSelection_.getSelectedEntityId();
+        if (selectedId.has_value()) sceneMutations_.copyObject(*selectedId);
+    }
+
+    if (ctrl && engine_.isKeyPressed(GLFW_KEY_X)) {
+        auto selectedId = objectSelection_.getSelectedEntityId();
+        if (selectedId.has_value()) sceneMutations_.cutObject(*selectedId);
+    }
+
+    if (ctrl && engine_.isKeyPressed(GLFW_KEY_V)) {
+        sceneMutations_.pasteObject();
+    }
+
+    if (ctrl && engine_.isKeyPressed(GLFW_KEY_D)) {
+        auto selectedId = objectSelection_.getSelectedEntityId();
+        if (selectedId.has_value()) sceneMutations_.duplicateObject(*selectedId);
     }
 }
 
