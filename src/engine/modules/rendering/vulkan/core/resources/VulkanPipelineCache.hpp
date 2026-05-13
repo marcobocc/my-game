@@ -5,7 +5,7 @@
 #include <tuple>
 #include <vector>
 #include <volk.h>
-#include "../../../../../modules/asset_management/resources/ShaderResource.hpp"
+#include "../../../../../modules/asset_management/asset_resources/ShaderResource.hpp"
 #include "../utils/error_handling.hpp"
 #include "../utils/shaders.hpp"
 #include "../utils/structs.hpp"

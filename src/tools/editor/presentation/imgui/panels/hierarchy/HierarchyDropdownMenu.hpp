@@ -11,7 +11,7 @@
 #include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "../../../../input/ShortcutBindingService.hpp"
 #include "SpherePopupModal.hpp"
-#include "modules/asset_management/assets/Model.hpp"
+#include "modules/asset_management/asset_types/Model.hpp"
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/Renderer.hpp"
 #include "modules/scene/components/Transform.hpp"

@@ -5,7 +5,7 @@
 #include "../ObjectSelection.hpp"
 #include "EditorAssetRepository.hpp"
 #include "modules/asset_management/BuiltinAssetNames.hpp"
-#include "modules/asset_management/assets/Material.hpp"
+#include "modules/asset_management/asset_types/Material.hpp"
 
 class MaterialMutations {
 public:

@@ -1,12 +1,12 @@
 #pragma once
 #include <span>
-#include "../../../../../modules/asset_management/resources/ShaderResource.hpp"
-#include "../../../../../modules/asset_management/resources/TextureResource.hpp"
+#include "../../../../../modules/asset_management/asset_resources/ShaderResource.hpp"
+#include "../../../../../modules/asset_management/asset_resources/TextureResource.hpp"
 #include "VulkanMaterialCache.hpp"
 #include "VulkanMeshBuffersCache.hpp"
 #include "VulkanPipelineCache.hpp"
 #include "VulkanTextureCache.hpp"
-#include "modules/asset_management/assets/Material.hpp"
+#include "modules/asset_management/asset_types/Material.hpp"
 
 class VulkanResourcesManager {
 public:

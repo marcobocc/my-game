@@ -7,7 +7,7 @@
 #include "../../../engine/utils/JsonUtils.hpp"
 #include "ObjectSelection.hpp"
 #include "asset_editing/EditorAssetRepository.hpp"
-#include "modules/asset_management/assets/Material.hpp"
+#include "modules/asset_management/asset_types/Material.hpp"
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/Transform.hpp"
 

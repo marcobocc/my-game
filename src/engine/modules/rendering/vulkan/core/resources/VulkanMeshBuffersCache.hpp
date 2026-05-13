@@ -1,6 +1,6 @@
 #pragma once
 #include <unordered_map>
-#include "../../../../../modules/asset_management/resources/MeshResource.hpp"
+#include "../../../../../modules/asset_management/asset_resources/MeshResource.hpp"
 #include "../utils/buffers.hpp"
 #include "../utils/structs.hpp"
 #include "VulkanVertexLayouts.hpp"

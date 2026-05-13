@@ -2,7 +2,7 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include "../../../../engine/modules/asset_management/AssetLoader.hpp"
-#include "../../../../engine/modules/asset_management/resources/MeshResource.hpp"
+#include "../../../../engine/modules/asset_management/asset_resources/MeshResource.hpp"
 #include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "../../../../engine/modules/scene/EntityManager.hpp"
 #include "../../../../engine/modules/scene/components/Renderer.hpp"

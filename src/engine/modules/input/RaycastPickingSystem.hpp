@@ -3,7 +3,7 @@
 #include <limits>
 #include <optional>
 #include "../../modules/asset_management/AssetLoader.hpp"
-#include "../../modules/asset_management/resources/MeshResource.hpp"
+#include "../../modules/asset_management/asset_resources/MeshResource.hpp"
 #include "../../modules/scene/EntityManager.hpp"
 #include "../../modules/scene/components/Camera.hpp"
 #include "../../modules/scene/components/Renderer.hpp"

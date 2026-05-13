@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 #include <volk.h>
-#include "../../../../modules/asset_management/resources/MeshResource.hpp"
-#include "../../../../modules/asset_management/resources/ShaderResource.hpp"
+#include "../../../../modules/asset_management/asset_resources/MeshResource.hpp"
+#include "../../../../modules/asset_management/asset_resources/ShaderResource.hpp"
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/buffers.hpp"
 #include "../core/utils/structs.hpp"

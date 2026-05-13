@@ -8,7 +8,7 @@
 #include "../../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../../business/scene_editing/SceneMutations.hpp"
 #include "../ComponentContainer.hpp"
-#include "modules/asset_management/assets/Material.hpp"
+#include "modules/asset_management/asset_types/Material.hpp"
 #include "modules/scene/EntityManager.hpp"
 #include "modules/scene/components/Renderer.hpp"
 

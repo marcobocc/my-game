@@ -5,7 +5,7 @@
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/asset_editing/MaterialMutations.hpp"
 #include "ComponentContainer.hpp"
-#include "modules/asset_management/assets/Material.hpp"
+#include "modules/asset_management/asset_types/Material.hpp"
 
 class MaterialInspector : public ComponentContainer {
 public:

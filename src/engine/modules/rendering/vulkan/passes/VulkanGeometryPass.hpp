@@ -1,13 +1,13 @@
 #pragma once
 #include <array>
 #include <vector>
-#include "../../../../modules/asset_management/resources/MeshResource.hpp"
+#include "../../../../modules/asset_management/asset_resources/MeshResource.hpp"
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/buffers.hpp"
 #include "../core/utils/descriptors.hpp"
 #include "../core/utils/structs.hpp"
 #include "modules/asset_management/AssetLoader.hpp"
-#include "modules/asset_management/assets/Material.hpp"
+#include "modules/asset_management/asset_types/Material.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/scene/components/Camera.hpp"
 

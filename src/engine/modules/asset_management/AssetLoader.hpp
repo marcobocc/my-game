@@ -7,12 +7,12 @@
 #include "AssetCache.hpp"
 #include "AssetExplorer.hpp"
 #include "MeshImporter.hpp"
+#include "asset_resources/MeshResource.hpp"
+#include "asset_resources/ShaderResource.hpp"
+#include "asset_resources/TextureResource.hpp"
 #include "modules/asset_management/ProceduralMeshGenerator.hpp"
-#include "modules/asset_management/assets/Material.hpp"
-#include "modules/asset_management/assets/Model.hpp"
-#include "resources/MeshResource.hpp"
-#include "resources/ShaderResource.hpp"
-#include "resources/TextureResource.hpp"
+#include "modules/asset_management/asset_types/Material.hpp"
+#include "modules/asset_management/asset_types/Model.hpp"
 #include "stb_image.h"
 #include "utils/JsonUtils.hpp"
 
@@ -41,7 +41,7 @@ template<>
 inline void AssetLoader::import<MeshResource>(const std::string& name) const {
     if (name.starts_with("_PRIMITIVE")) {
         try {
-            auto mesh = ProceduralMeshGenerator::generate(name);
+            auto mesh = ProceduralMeshGenerator::dispatch(name);
             if (mesh) cache_.insert<MeshResource>(name, std::move(mesh));
         } catch (const std::exception& e) {
             LOG4CXX_ERROR(LOGGER, "Failed to generate procedural mesh: " << name << " - " << e.what());
