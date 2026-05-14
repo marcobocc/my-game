@@ -34,6 +34,10 @@
     {
       "name": "nativefiledialog-extended",
       "default-features": true
+    },
+    {
+      "name": "physfs",
+      "default-features": true
     }
   ]
 }
