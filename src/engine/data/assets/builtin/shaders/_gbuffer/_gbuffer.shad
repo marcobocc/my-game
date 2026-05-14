@@ -1,0 +1,4 @@
+{
+  "vertexShader": "assets/builtin/shaders/_gbuffer/_gbuffer.vert.spv",
+  "fragmentShader": "assets/builtin/shaders/_gbuffer/_gbuffer.frag.spv"
+}

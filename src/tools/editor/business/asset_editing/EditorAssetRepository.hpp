@@ -1,19 +1,16 @@
 #pragma once
 
 #include <filesystem>
-#include <fstream>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include "../../../../engine/modules/asset_management/AssetCache.hpp"
-#include "../../../../engine/modules/asset_management/AssetExplorer.hpp"
-#include "../../../../engine/modules/asset_management/AssetLoader.hpp"
-#include "../../../../engine/modules/asset_management/asset_resources/MeshResource.hpp"
-#include "../../../../engine/modules/asset_management/asset_types/Material.hpp"
 #include "../UndoHistory.hpp"
 #include "AssetBaker.hpp"
+#include "modules/asset_management/AssetCache.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/VirtualFileSystem.hpp"
 
 class EditorAssetRepository {
 private:
@@ -25,16 +22,12 @@ private:
     };
 
 public:
-    EditorAssetRepository(AssetLoader& loader,
-                          AssetExplorer& explorer,
-                          AssetCache& cache,
-                          UndoHistory& undoHistory,
-                          std::filesystem::path projectFolder) :
+    EditorAssetRepository(AssetLoader& loader, VirtualFileSystem& vfs, AssetCache& cache, UndoHistory& undoHistory) :
         loader_(loader),
-        explorer_(explorer),
+        vfs_(vfs),
         cache_(cache),
         undoHistory_(undoHistory),
-        projectFolder_(std::move(projectFolder)) {}
+        baker_(vfs) {}
 
     template<typename T>
     const T* get(const std::string& assetName) const {
@@ -48,10 +41,8 @@ public:
 
     template<typename T>
     void insert(const std::string& assetName, const T& asset) {
-        std::filesystem::path fullPath = explorer_.getAbsolutePath(assetName);
-        if (fullPath.empty()) fullPath = projectFolder_ / assetName;
-        saveAsset(asset, assetName, fullPath);
-        explorer_.registerAsset(assetName, fullPath);
+        if (!isMutable(assetName)) return;
+        baker_.bake<T>(asset, assetName);
         cache_.insert<T>(assetName, std::make_unique<T>(asset));
         snapshots<T>()[assetName] = Snapshot<T>{.before = std::nullopt, .after = asset, .dirty = false};
         undoHistory_.push([this, assetName] { remove<T>(assetName); },
@@ -60,6 +51,7 @@ public:
 
     template<typename T>
     void update(const std::string& assetName, const T& updatedAsset) {
+        if (!isMutable(assetName)) return;
         T* asset = get<T>(assetName);
         if (!asset) return;
         auto& snapshot = snapshots<T>()[assetName];
@@ -91,15 +83,14 @@ public:
 
     template<typename T>
     void remove(const std::string& assetName) {
+        if (!isMutable(assetName)) return;
         T* asset = get<T>(assetName);
         if (!asset) return;
         auto& snapshot = snapshots<T>()[assetName];
         if (!snapshot.before) {
             snapshot.before = *asset;
         }
-        std::filesystem::path fullPath = explorer_.getAbsolutePath(assetName);
-        std::filesystem::remove(fullPath);
-        explorer_.deregisterAsset(assetName);
+        vfs_.remove(assetName);
         snapshot.after = std::nullopt;
         snapshot.dirty = false;
         undoHistory_.push(
@@ -118,33 +109,41 @@ public:
         for (auto& [assetName, snapshot]: typedSnapshots) {
             if (!snapshot.dirty) continue;
             if (!snapshot.after) continue;
-            std::filesystem::path fullPath = explorer_.getAbsolutePath(assetName);
-            saveAsset(*snapshot.after, assetName, fullPath);
+            baker_.bake<T>(*snapshot.after, assetName);
             snapshot.dirty = false;
         }
     }
 
-    std::vector<std::string> list(const std::string& extensionFilter) const { return explorer_.list(extensionFilter); }
+    std::vector<std::string> listAll() const { return vfs_.listFilesRecursive(); }
 
-    bool isMutable(const std::string& assetName) const { return !explorer_.isBuiltin(assetName); }
+    std::vector<std::string> list(const std::string& extensionFilter) const {
+        std::vector<std::string> result;
+        for (const auto& file: vfs_.listFilesRecursive()) {
+            if (std::filesystem::path(file).extension() == extensionFilter) {
+                result.emplace_back(file);
+            }
+        }
+        return result;
+    }
 
-    bool exists(const std::string& assetName) const { return explorer_.exists(assetName); }
+    static bool isBuiltin(const std::string& assetName) {
+        return std::string_view(assetName).starts_with("assets/builtin/");
+    }
+
+    static bool isMutable(const std::string& assetName) { return !isBuiltin(assetName); }
+
+    bool exists(const std::string& assetName) const { return vfs_.exists(assetName); }
 
 private:
     AssetLoader& loader_;
-    AssetExplorer& explorer_;
+    VirtualFileSystem& vfs_;
     AssetCache& cache_;
     UndoHistory& undoHistory_;
-    std::filesystem::path projectFolder_;
+    AssetBaker baker_;
 
     template<typename T>
     static auto& snapshots() {
         static std::unordered_map<std::string, Snapshot<T>> storage;
         return storage;
-    }
-
-    template<typename T>
-    static void saveAsset(const T& asset, const std::string& assetName, const std::filesystem::path& outputPath) {
-        AssetBaker::bake<T>(asset, assetName, outputPath);
     }
 };

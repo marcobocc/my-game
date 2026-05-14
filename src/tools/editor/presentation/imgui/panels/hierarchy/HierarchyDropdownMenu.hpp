@@ -96,7 +96,7 @@ private:
     }
 
     void loadModel(const std::string& modelName) {
-        auto* model = repository_.get<Model>(modelName);
+        const auto* model = repository_.get<Model>(modelName);
         if (!model) return;
         Transform t{glm::vec3(0.0f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), glm::vec3(1.0f)};
         Renderer r{model->meshName, model->materialName, std::nullopt, true};

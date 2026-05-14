@@ -37,7 +37,6 @@ public:
 
     void deleteMaterial(const std::filesystem::path& relativePath) {
         std::string materialName = relativePath.string();
-        if (!repository_.isMutable(materialName)) return;
         repository_.remove<Material>(materialName);
         clearSelectionIfSelected(materialName);
     }

@@ -1,0 +1,7 @@
+{
+  "vertexShader": "assets/builtin/shaders/_gizmo/_gizmo.vert.spv",
+  "fragmentShader": "assets/builtin/shaders/_gizmo/_gizmo.frag.spv",
+  "disableCull": true,
+  "lineTopology": true,
+  "positionColorVertexLayout": true
+}

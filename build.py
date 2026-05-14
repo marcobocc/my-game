@@ -15,7 +15,6 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 BUILD_DIR = PROJECT_ROOT / "build"
 BINARIES_DIR = BUILD_DIR / "bin"
-ASSETS_DIR = PROJECT_ROOT / "assets"
 
 
 # -----------------------------------------------------------------------------
@@ -195,7 +194,7 @@ def build_target(target: str | None) -> bool:
 # -----------------------------------------------------------------------------
 def compile_shaders() -> bool:
     """Compile shaders from the assets directory"""
-    shaders_dir = PROJECT_ROOT / "src" / "engine" / "data" / "assets" / "shaders"
+    shaders_dir = PROJECT_ROOT / "src" / "engine" / "data" / "assets" / "builtin" / "shaders"
 
     for pipeline_dir in shaders_dir.iterdir():
         if not pipeline_dir.is_dir():

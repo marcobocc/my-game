@@ -1,12 +1,11 @@
 #pragma once
 #include <filesystem>
-#include <fstream>
 #include <log4cxx/logger.h>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include "AssetCache.hpp"
-#include "AssetExplorer.hpp"
 #include "MeshImporter.hpp"
+#include "VirtualFileSystem.hpp"
 #include "asset_resources/MeshResource.hpp"
 #include "asset_resources/ShaderResource.hpp"
 #include "asset_resources/TextureResource.hpp"
@@ -19,50 +18,61 @@ class AssetLoader {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetLoader");
 
 public:
-    explicit AssetLoader(AssetExplorer& explorer, AssetCache& cache) : explorer_(explorer), cache_(cache) {}
+    explicit AssetLoader(VirtualFileSystem& vfs, AssetCache& cache) : vfs_(vfs), cache_(cache) {}
 
     template<typename T>
     T* get(const std::string& name) {
-        if (!cache_.contains(name)) import <T>(name);
-        if (!cache_.contains(name)) return nullptr;
+        if (!cache_.contains(name)) load<T>(name);
         return cache_.get<T>(name);
     }
 
 private:
     template<typename T>
-    void import(const std::string& name) const;
+    std::unique_ptr<T> load(const std::string& name) const;
 
-    AssetExplorer& explorer_;
+    VirtualFileSystem& vfs_;
     AssetCache& cache_;
 };
 
 template<>
-inline void AssetLoader::import<MeshResource>(const std::string& name) const {
-    auto absolutePath = explorer_.getAbsolutePath(name);
-    if (absolutePath.empty()) return;
-    std::string objFilePath = absolutePath.string();
+inline std::unique_ptr<MeshResource> AssetLoader::load<MeshResource>(const std::string& name) const {
+    if (!vfs_.exists(name)) {
+        LOG4CXX_ERROR(LOGGER, "Asset not found: " << name);
+        return nullptr;
+    }
+    std::string objFilePath = name;
     bool reverseWinding = false;
-    if (absolutePath.extension() == ".mesh") {
+    if (std::filesystem::path(name).extension() == ".mesh") {
         try {
-            auto j = JsonUtils::loadJson(absolutePath);
-            std::string meshFile = JsonUtils::getRequired<std::string>(j, "meshFile");
+            auto meshData = vfs_.read(name);
+            auto meshStr = std::string(meshData.begin(), meshData.end());
+            auto j = nlohmann::json::parse(meshStr);
+            objFilePath = JsonUtils::getRequired<std::string>(j, "meshFile");
             bool ccw = JsonUtils::getOptional<bool>(j, "ccw", true);
-            objFilePath = absolutePath.parent_path() / meshFile;
             reverseWinding = !ccw;
         } catch (const std::exception& e) {
             LOG4CXX_ERROR(LOGGER, "Failed to read mesh metadata: " << name << " - " << e.what());
-            return;
+            return nullptr;
         }
     }
-    auto mesh = importing::importObjFile(objFilePath, reverseWinding, std::filesystem::path(name).stem().string());
-    if (mesh) cache_.insert<MeshResource>(name, std::move(mesh));
+    auto mesh =
+            importing::importObjFile(objFilePath, reverseWinding, std::filesystem::path(name).stem().string(), vfs_);
+    if (mesh) {
+        auto meshPtr = mesh.get();
+        cache_.insert<MeshResource>(name, std::move(mesh));
+        LOG4CXX_INFO(LOGGER, "Successfully loaded mesh: " << name);
+        return std::make_unique<MeshResource>(*meshPtr);
+    }
+    return nullptr;
 }
 
 template<>
-inline void AssetLoader::import<ShaderResource>(const std::string& name) const {
+inline std::unique_ptr<ShaderResource> AssetLoader::load<ShaderResource>(const std::string& name) const {
     try {
-        auto absolutePath = explorer_.getAbsolutePath(name);
-        auto j = JsonUtils::loadJson(absolutePath);
+        auto shaderDataVec = vfs_.read(name);
+        auto shaderStr = std::string(shaderDataVec.begin(), shaderDataVec.end());
+        auto j = nlohmann::json::parse(shaderStr);
+
         std::string vertexShaderPath = JsonUtils::getRequired<std::string>(j, "vertexShader");
         std::string fragmentShaderPath = JsonUtils::getRequired<std::string>(j, "fragmentShader");
         bool disableCull = JsonUtils::getOptional<bool>(j, "disableCull", false);
@@ -75,15 +85,8 @@ inline void AssetLoader::import<ShaderResource>(const std::string& name) const {
         bool tangentVertexLayout = JsonUtils::getOptional<bool>(j, "tangentVertexLayout", false);
 
         auto readBytecode = [&](const std::string& path) -> std::vector<char> {
-            auto absoluteBytecodeP = absolutePath.parent_path() / std::filesystem::path(path).filename();
-            std::ifstream f(absoluteBytecodeP, std::ios::binary | std::ios::ate);
-            if (!f) throw std::runtime_error("Failed to open shader bytecode: " + absoluteBytecodeP.string());
-            std::streamsize size = f.tellg();
-            f.seekg(0, std::ios::beg);
-            std::vector<char> buf(size);
-            if (!f.read(buf.data(), size))
-                throw std::runtime_error("Failed to read shader bytecode: " + absoluteBytecodeP.string());
-            return buf;
+            auto data = vfs_.read(path);
+            return std::vector<char>(data.begin(), data.end());
         };
 
         auto vertexBytecode = readBytecode(vertexShaderPath);
@@ -99,53 +102,84 @@ inline void AssetLoader::import<ShaderResource>(const std::string& name) const {
                                                        lineTopology,
                                                        positionColorVertexLayout,
                                                        tangentVertexLayout);
-        if (shader) cache_.insert<ShaderResource>(name, std::move(shader));
+        if (shader) {
+            auto shaderPtr = shader.get();
+            cache_.insert<ShaderResource>(name, std::move(shader));
+            LOG4CXX_INFO(LOGGER, "Successfully loaded shader: " << name);
+            return std::make_unique<ShaderResource>(*shaderPtr);
+        }
     } catch (const std::exception& e) {
-        LOG4CXX_ERROR(LOGGER, "Failed to import shader: " << name << " - " << e.what());
+        LOG4CXX_ERROR(LOGGER, "Failed to load shader: " << name << " - " << e.what());
     }
+    return nullptr;
 }
 
 template<>
-inline void AssetLoader::import<TextureResource>(const std::string& name) const {
-    auto absolutePath = explorer_.getAbsolutePath(name);
-    if (absolutePath.empty() || !std::filesystem::exists(absolutePath)) {
-        LOG4CXX_ERROR(LOGGER, "Texture file not found: " << absolutePath);
-        return;
+inline std::unique_ptr<TextureResource> AssetLoader::load<TextureResource>(const std::string& name) const {
+    if (!vfs_.exists(name)) {
+        LOG4CXX_ERROR(LOGGER, "Texture file not found in VFS: " << name);
+        return nullptr;
+    }
+    auto imageData = vfs_.read(name);
+    if (imageData.empty()) {
+        LOG4CXX_ERROR(LOGGER, "Failed to read texture data: " << name);
+        return nullptr;
     }
     int width, height, channels;
-    unsigned char* data = stbi_load(absolutePath.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+    unsigned char* data =
+            stbi_load_from_memory(imageData.data(), imageData.size(), &width, &height, &channels, STBI_rgb_alpha);
     if (!data) {
-        LOG4CXX_ERROR(LOGGER, "Failed to decode texture: " << absolutePath << " - " << stbi_failure_reason());
-        return;
+        LOG4CXX_ERROR(LOGGER, "Failed to decode texture: " << name << " - " << stbi_failure_reason());
+        return nullptr;
     }
     constexpr int forcedChannels = 4;
-    std::vector<unsigned char> imageData(data, data + width * height * forcedChannels);
+    std::vector<unsigned char> decodedData(data, data + width * height * forcedChannels);
     stbi_image_free(data);
-    auto texture = std::make_unique<TextureResource>(name, width, height, forcedChannels, std::move(imageData));
-    if (texture) cache_.insert<TextureResource>(name, std::move(texture));
-}
-
-template<>
-inline void AssetLoader::import<Material>(const std::string& name) const {
-    try {
-        auto absolutePath = explorer_.getAbsolutePath(name);
-        auto j = JsonUtils::loadJson(absolutePath);
-        auto material = std::make_unique<Material>(Material::deserialize(j, absolutePath));
-        if (material) cache_.insert<Material>(name, std::move(material));
-    } catch (const std::exception& e) {
-        LOG4CXX_ERROR(LOGGER, "Failed to import material: " << name << " - " << e.what());
+    auto texture = std::make_unique<TextureResource>(name, width, height, forcedChannels, std::move(decodedData));
+    if (texture) {
+        auto texturePtr = texture.get();
+        cache_.insert<TextureResource>(name, std::move(texture));
+        LOG4CXX_INFO(LOGGER, "Successfully loaded texture: " << name);
+        return std::make_unique<TextureResource>(*texturePtr);
     }
+    return nullptr;
 }
 
 template<>
-inline void AssetLoader::import<Model>(const std::string& name) const {
+inline std::unique_ptr<Material> AssetLoader::load<Material>(const std::string& name) const {
     try {
-        auto absolutePath = explorer_.getAbsolutePath(name);
-        auto j = JsonUtils::loadJson(absolutePath);
-        Model def = Model::deserialize(j, absolutePath);
+        auto materialDataVec = vfs_.read(name);
+        auto materialStr = std::string(materialDataVec.begin(), materialDataVec.end());
+        auto j = nlohmann::json::parse(materialStr);
+        auto material = std::make_unique<Material>(Material::deserialize(j, name));
+        if (material) {
+            auto materialPtr = material.get();
+            cache_.insert<Material>(name, std::move(material));
+            LOG4CXX_INFO(LOGGER, "Successfully loaded material: " << name);
+            return std::make_unique<Material>(*materialPtr);
+        }
+    } catch (const std::exception& e) {
+        LOG4CXX_ERROR(LOGGER, "Failed to load material: " << name << " - " << e.what());
+    }
+    return nullptr;
+}
+
+template<>
+inline std::unique_ptr<Model> AssetLoader::load<Model>(const std::string& name) const {
+    try {
+        auto modelDataVec = vfs_.read(name);
+        auto modelStr = std::string(modelDataVec.begin(), modelDataVec.end());
+        auto j = nlohmann::json::parse(modelStr);
+        Model def = Model::deserialize(j, name);
         auto model = std::make_unique<Model>(std::move(def));
-        if (model) cache_.insert<Model>(name, std::move(model));
+        if (model) {
+            auto modelPtr = model.get();
+            cache_.insert<Model>(name, std::move(model));
+            LOG4CXX_INFO(LOGGER, "Successfully loaded model: " << name);
+            return std::make_unique<Model>(*modelPtr);
+        }
     } catch (const std::exception& e) {
-        LOG4CXX_ERROR(LOGGER, "Failed to import model: " << name << " - " << e.what());
+        LOG4CXX_ERROR(LOGGER, "Failed to load model: " << name << " - " << e.what());
     }
+    return nullptr;
 }

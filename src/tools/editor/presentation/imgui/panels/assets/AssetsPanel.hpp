@@ -1,4 +1,6 @@
 #pragma once
+#include <array>
+#include <filesystem>
 #include <imgui.h>
 #include <string>
 #include "../../../../business/ObjectSelection.hpp"
@@ -169,21 +171,27 @@ private:
     }
 
     void drawAssetsList() {
+        static const std::array knownExtensions = {
+                std::string_view(".mesh"),
+                std::string_view(".mat"),
+                std::string_view(".shad"),
+                std::string_view(".png"),
+                std::string_view(".jpg"),
+                std::string_view(".model"),
+        };
+
+        auto allFiles = repository_.listAll();
         std::vector<std::string> allAssets;
-
-        auto meshes = repository_.list(".mesh");
-        auto mats = repository_.list(".mat");
-        auto shaders = repository_.list(".shad");
-        auto texturesPng = repository_.list(".png");
-        auto texturesJpg = repository_.list(".jpg");
-        auto models = repository_.list(".model");
-
-        allAssets.insert(allAssets.end(), meshes.begin(), meshes.end());
-        allAssets.insert(allAssets.end(), mats.begin(), mats.end());
-        allAssets.insert(allAssets.end(), shaders.begin(), shaders.end());
-        allAssets.insert(allAssets.end(), texturesPng.begin(), texturesPng.end());
-        allAssets.insert(allAssets.end(), texturesJpg.begin(), texturesJpg.end());
-        allAssets.insert(allAssets.end(), models.begin(), models.end());
+        allAssets.reserve(allFiles.size());
+        for (auto& file: allFiles) {
+            auto ext = std::filesystem::path(file).extension().string();
+            for (auto& known: knownExtensions) {
+                if (ext == known) {
+                    allAssets.push_back(std::move(file));
+                    break;
+                }
+            }
+        }
 
         std::ranges::sort(allAssets);
 

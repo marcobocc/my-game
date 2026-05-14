@@ -1,5 +1,4 @@
 #pragma once
-#include <filesystem>
 #include <nlohmann/json.hpp>
 #include <string>
 #include "Asset.hpp"
@@ -12,8 +11,7 @@ public:
         meshName(meshName),
         materialName(materialName) {}
 
-    static Model deserialize(const nlohmann::json& j, const std::filesystem::path& assetsRootPath) {
-        auto name = assetsRootPath.filename().string();
+    static Model deserialize(const nlohmann::json& j, const std::string& name) {
         return {name,
                 JsonUtils::getRequired<std::string>(j, "meshName"),
                 JsonUtils::getRequired<std::string>(j, "materialName")};

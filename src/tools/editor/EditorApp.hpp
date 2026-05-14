@@ -1,8 +1,6 @@
 #pragma once
-#include <filesystem>
 #include <string>
 #include "../../engine/GameEngine.hpp"
-#include "../../engine/modules/asset_management/AssetExplorer.hpp"
 #include "../../engine/modules/core/TimeManager.hpp"
 #include "../../engine/modules/input/InputSystem.hpp"
 #include "../../engine/modules/physics/PhysicsSystem.hpp"
@@ -33,8 +31,7 @@ public:
               TimeManager& time,
               InputSystem& inputSystem,
               PhysicsSystem& physicsSystem,
-              AssetExplorer& assetExplorer,
-              const std::filesystem::path& projectPath = "") :
+              VirtualFileSystem& vfs) :
         window_(window),
         engine_(engine),
         entityManager_(entityManager),
@@ -47,8 +44,7 @@ public:
         sceneLoader_(sceneLoader),
         objectBuilder_(objectBuilder),
         inputHandler_(inputHandler),
-        assetExplorer_(assetExplorer),
-        projectPath_(projectPath) {
+        vfs_(vfs) {
         initEditor();
         ImguiStyling::ApplyEditorStyle();
     }
@@ -87,12 +83,11 @@ private:
     void initEditor() {
         setupViewport();
         rendererSettings_.enableGrid();
-        if (!projectPath_.empty()) assetExplorer_.discoverAssets(projectPath_ / "assets");
         SceneViewport sv = window_.getSceneViewport();
         if (sv.width > 0 && sv.height > 0)
             editorOrbitCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
 
-        if (!sceneLoader_.loadLatestScene(projectPath_)) {
+        if (!sceneLoader_.loadLatestScene()) {
             sceneLoader_.newScene();
             entityManager_.upsertFromJson(objectBuilder_.cube());
         }
@@ -121,6 +116,5 @@ private:
     SceneLoader& sceneLoader_;
     ObjectBuilder& objectBuilder_;
     InputHandler& inputHandler_;
-    AssetExplorer& assetExplorer_;
-    std::filesystem::path projectPath_;
+    VirtualFileSystem& vfs_;
 };

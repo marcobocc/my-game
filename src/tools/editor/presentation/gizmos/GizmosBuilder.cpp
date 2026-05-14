@@ -1,15 +1,15 @@
 #include "GizmosBuilder.hpp"
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include "../../../../engine/modules/asset_management/AssetLoader.hpp"
-#include "../../../../engine/modules/asset_management/asset_resources/MeshResource.hpp"
-#include "../../../../engine/modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "../../../../engine/modules/scene/EntityManager.hpp"
-#include "../../../../engine/modules/scene/components/Renderer.hpp"
-#include "../../../../engine/utils/math/AABB.hpp"
-#include "../../../../engine/utils/math/BVH.hpp"
-#include "../../../../engine/utils/math/BoundingSphere.hpp"
 #include "../../business/EditorSettings.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/asset_resources/MeshResource.hpp"
+#include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
+#include "modules/scene/EntityManager.hpp"
+#include "modules/scene/components/Renderer.hpp"
+#include "utils/math/AABB.hpp"
+#include "utils/math/BVH.hpp"
+#include "utils/math/BoundingSphere.hpp"
 
 GizmosRenderer::GizmosRenderer(AssetLoader& assetLoader, EntityManager& entityManager, EditorSettings& editorSettings) :
     assetLoader_(assetLoader),

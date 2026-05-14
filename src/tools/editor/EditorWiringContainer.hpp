@@ -3,6 +3,7 @@
 #include "../../engine/GameEngine.hpp"
 #include "../../engine/modules/asset_management/AssetCache.hpp"
 #include "../../engine/modules/asset_management/AssetLoader.hpp"
+#include "../../engine/modules/asset_management/VirtualFileSystem.hpp"
 #include "../../engine/modules/core/GameWindow.hpp"
 #include "../../engine/modules/core/TimeManager.hpp"
 #include "../../engine/modules/input/InputSystem.hpp"
@@ -58,18 +59,19 @@
 */
 class EditorWiringContainer {
 public:
-    explicit EditorWiringContainer(GameWindow& window, const std::filesystem::path& projectPath = "") :
+    explicit EditorWiringContainer(GameWindow& window,
+                                   const std::vector<std::filesystem::path>& mountPaths,
+                                   const std::filesystem::path& projectRoot) :
         window_(window),
-        assetExplorer_(),
+        vfs_(mountPaths, projectRoot),
         loadedAssets_(),
-        assetLoader_(assetExplorer_, loadedAssets_),
+        assetLoader_(vfs_, loadedAssets_),
         rendererSettings_(),
         userInterface_(),
         entityManager_(),
         physicsSystem_(entityManager_),
         undoHistory_(),
-        clipboardService_(),
-        assetRepository_(assetLoader_, assetExplorer_, loadedAssets_, undoHistory_, projectPath / "assets"),
+        assetRepository_(assetLoader_, vfs_, loadedAssets_, undoHistory_),
         vulkanContext_(initVulkanContext()),
         debugMessenger_(vulkanContext_),
         swapchainManager_(window_, vulkanContext_),
@@ -122,16 +124,16 @@ public:
                               uiPass_,
                               swapchainManager_,
                               rendererSettings_),
-        projectPath_(projectPath),
         editorSettings_(rendererSettings_),
         editorCamera_(),
         gizmosBuilder_(assetLoader_, entityManager_, editorSettings_),
         pickingSystem_(assetLoader_),
+        clipboardService_(),
         sceneMutations_(entityManager_, engine_, objectSelection_, undoHistory_, clipboardService_),
         materialMutations_(assetRepository_, objectSelection_),
         meshMutations_(assetRepository_),
         objectBuilder_(meshMutations_),
-        sceneLoader_(entityManager_, objectSelection_, engine_, assetRepository_),
+        sceneLoader_(entityManager_, objectSelection_, engine_, assetRepository_, vfs_),
         objectTransformHandle_(
                 window, engine_, sceneMutations_, editorCamera_, objectSelection_, editorSettings_, entityManager_),
         shortcutBindingService_(),
@@ -189,8 +191,7 @@ public:
                    time_,
                    inputSystem_,
                    physicsSystem_,
-                   assetExplorer_,
-                   projectPath_) {}
+                   vfs_) {}
 
     EditorApp& editorApp() { return editorApp_; }
 
@@ -198,7 +199,7 @@ private:
     // Window (external reference)
     GameWindow& window_;
 
-    AssetExplorer assetExplorer_;
+    VirtualFileSystem vfs_;
     AssetCache loadedAssets_;
     AssetLoader assetLoader_;
 
@@ -243,9 +244,6 @@ private:
     VulkanEditorBackend vulkanEditorRenderer_;
 
     // Project metadata
-    std::filesystem::path projectPath_;
-
-    // Business logic
     ObjectSelection objectSelection_;
     EditorGizmos editorGizmos_;
     EditorSettings editorSettings_;

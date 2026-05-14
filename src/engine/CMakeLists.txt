@@ -35,8 +35,8 @@ endif ()
 # Ensure VK_NO_PROTOTYPES is defined globally for all translation units
 target_compile_definitions(GameEngineLib PUBLIC VK_NO_PROTOTYPES)
 
-# Define builtin assets path
-target_compile_definitions(GameEngineLib PUBLIC BUILTIN_ASSETS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/assets")
+# Define engine data directory
+target_compile_definitions(GameEngineLib PUBLIC ENGINE_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
 # Library Compiler options
 if (MSVC)

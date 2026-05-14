@@ -14,13 +14,13 @@ public:
     void draw(const std::optional<std::string>& selectedAsset) {
         if (selectedAsset) {
             bool isMutable = materialMutations_.isMutable(*selectedAsset);
-            if (isMutable) {
+            if (!isMutable) {
                 ImGui::BeginDisabled();
             }
             if (ImGui::MenuItem("Delete")) {
                 deleteMaterial(*selectedAsset);
             }
-            if (isMutable) {
+            if (!isMutable) {
                 ImGui::EndDisabled();
             }
             ImGui::Separator();

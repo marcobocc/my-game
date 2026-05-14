@@ -4,12 +4,12 @@
 #include <optional>
 #include <variant>
 #include <vector>
-#include "../../../engine/modules/asset_management/AssetLoader.hpp"
-#include "../../../engine/modules/input/RaycastPickingSystem.hpp"
-#include "../../../engine/modules/scene/components/Camera.hpp"
-#include "../../../engine/modules/scene/components/Transform.hpp"
-#include "../../../engine/utils/math/Ray.hpp"
 #include "../gizmos.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/input/RaycastPickingSystem.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Transform.hpp"
+#include "utils/math/Ray.hpp"
 
 /*
     PickingSystem

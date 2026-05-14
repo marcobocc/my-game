@@ -37,8 +37,7 @@ public:
         offset(offset),
         scaleInvariantUV(scaleInvariantUV) {}
 
-    static Material deserialize(const nlohmann::json& j, const std::filesystem::path& assetsRootPath) {
-        auto name = assetsRootPath.filename().string();
+    static Material deserialize(const nlohmann::json& j, const std::string& name) {
         return {name,
                 JsonUtils::getOptional<std::string>(j, "shaderName", GBUFFER_SHADER),
                 JsonUtils::getOptional<glm::vec4>(j, "tint", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f}),

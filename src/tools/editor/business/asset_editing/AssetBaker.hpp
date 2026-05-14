@@ -1,15 +1,16 @@
 #pragma once
-#include <filesystem>
 #include <log4cxx/logger.h>
-#include <memory>
+#include "modules/asset_management/VirtualFileSystem.hpp"
 
 class AssetBaker {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetBaker");
 
 public:
+    explicit AssetBaker(VirtualFileSystem& vfs) : vfs_(vfs) {}
+
     template<typename T>
-    static void bake(const T& asset, const std::string& assetName, const std::filesystem::path& outputPath);
+    void bake(const T& asset, const std::string& assetName);
 
 private:
-    static void ensureDirectory(const std::filesystem::path& path);
+    VirtualFileSystem& vfs_;
 };

@@ -84,32 +84,41 @@ void SceneLoader::loadScene(const char* path) {
     }
 }
 
-bool SceneLoader::loadLatestScene(const std::filesystem::path& projectPath) {
+bool SceneLoader::loadLatestScene() {
+    std::string latestScene;
+    int64_t latestTime = -1;
 
-    if (projectPath.empty() || !std::filesystem::exists(projectPath)) {
-        return false;
-    }
-
-    std::filesystem::path latestScenePath;
-    std::filesystem::file_time_type latestTime;
-
-    try {
-        for (const auto& entry: std::filesystem::directory_iterator(projectPath)) {
-            if (entry.is_regular_file() && entry.path().extension() == ".scene") {
-                auto lastWriteTime = std::filesystem::last_write_time(entry);
-                if (latestScenePath.empty() || lastWriteTime > latestTime) {
-                    latestScenePath = entry.path();
-                    latestTime = lastWriteTime;
-                }
+    for (const auto& file: vfs_.listFilesRecursive()) {
+        if (std::filesystem::path(file).extension() == ".scene") {
+            auto modTime = vfs_.getModifiedTime(file);
+            if (latestScene.empty() || modTime > latestTime) {
+                latestScene = file;
+                latestTime = modTime;
             }
         }
-    } catch (const std::exception& e) {
-        return false;
     }
 
-    if (!latestScenePath.empty()) {
-        loadScene(latestScenePath.c_str());
+    if (latestScene.empty()) return false;
+
+    try {
+        auto data = vfs_.read(latestScene);
+        auto json = nlohmann::json::parse(data.begin(), data.end());
+        entityManager_.clear();
+        for (const auto& entityJson: json.at("entities"))
+            entityManager_.upsertFromJson(entityJson);
+        objectSelection_.clearSelection();
+        currentScenePath_ = latestScene;
+        if (onSceneNameChanged_) {
+            std::string filename = std::filesystem::path(latestScene).filename().string();
+            sceneName_ = filename;
+            onSceneNameChanged_(filename);
+        }
+        if (onScenePathChanged_) {
+            scenePath_ = std::filesystem::path(latestScene);
+            onScenePathChanged_(scenePath_.value());
+        }
         return true;
+    } catch (const std::exception&) {
+        return false;
     }
-    return false;
 }

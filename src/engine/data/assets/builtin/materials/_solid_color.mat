@@ -1,0 +1,4 @@
+{
+  "shaderName": "assets/builtin/shaders/_gbuffer/_gbuffer.shad",
+  "albedoTexture": "assets/builtin/textures/_white1x1.jpg"
+}

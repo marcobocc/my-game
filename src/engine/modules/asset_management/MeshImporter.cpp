@@ -1,10 +1,10 @@
 #include "MeshImporter.hpp"
 #include <filesystem>
-#include <fstream>
 #include <glm/glm.hpp>
 #include <sstream>
 #include <string>
 #include <vector>
+#include "VirtualFileSystem.hpp"
 
 struct ParsedData {
     struct Index {
@@ -34,12 +34,14 @@ ParsedData::Index parseFaceVertex(const std::string& s) {
     return out;
 }
 
-ParsedData parseObjData(const std::filesystem::path& path) {
-    std::ifstream file(path);
-    if (!file) throw std::runtime_error("Failed to open OBJ file: " + path.string());
+ParsedData parseObjData(const std::filesystem::path& path, const VirtualFileSystem& vfs) {
+    auto data_vec = vfs.read(path.string());
+    if (data_vec.empty()) throw std::runtime_error("Failed to open OBJ file: " + path.string());
+    std::string fileContent(data_vec.begin(), data_vec.end());
+    std::istringstream fileStream(fileContent);
     ParsedData data;
     std::string line;
-    while (std::getline(file, line)) {
+    while (std::getline(fileStream, line)) {
         if (line.empty() || line[0] == '#') continue;
         std::istringstream ss(line);
         std::string tag;
@@ -123,9 +125,11 @@ std::unique_ptr<MeshResource> buildMesh(const ParsedData& data, bool reverseWind
 }
 
 namespace importing {
-    std::unique_ptr<MeshResource>
-    importObjFile(const std::filesystem::path& filepath, bool reverseWinding, const std::string& name) {
-        ParsedData data = parseObjData(filepath);
+    std::unique_ptr<MeshResource> importObjFile(const std::filesystem::path& filepath,
+                                                bool reverseWinding,
+                                                const std::string& name,
+                                                const VirtualFileSystem& vfs) {
+        ParsedData data = parseObjData(filepath, vfs);
         return buildMesh(data, reverseWinding, name);
     }
 } // namespace importing
