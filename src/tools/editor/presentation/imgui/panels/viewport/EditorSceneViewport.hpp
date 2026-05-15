@@ -44,6 +44,7 @@ public:
                       objectBuilder,
                       actionDispatcher,
                       shortcutBindingService,
+                      editorSelection,
                       &spherePopupModal_) {}
 
     void draw() override {
@@ -145,7 +146,7 @@ public:
             ImGui::OpenPopup("ViewportContextMenu");
         }
 
-        ImguiStyling::withPopup("ViewportContextMenu", [&] { dropdownMenu_.draw(contextTargetId_); });
+        dropdownMenu_.draw("ViewportContextMenu");
     }
 
 private:

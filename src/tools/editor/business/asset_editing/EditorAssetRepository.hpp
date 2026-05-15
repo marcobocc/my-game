@@ -104,6 +104,32 @@ public:
     }
 
     template<typename T>
+    void removeMany(const std::vector<std::string>& assetNames) {
+        struct Entry {
+            std::string name;
+            T asset;
+        };
+        std::vector<Entry> removed;
+        for (const auto& assetName: assetNames) {
+            if (!isMutable(assetName)) continue;
+            T* asset = get<T>(assetName);
+            if (!asset) continue;
+            removed.push_back({assetName, *asset});
+            removeRaw<T>(assetName);
+        }
+        if (removed.empty()) return;
+        undoHistory_.push(
+                [this, removed] {
+                    for (const auto& e: removed)
+                        insertRaw<T>(e.name, e.asset);
+                },
+                [this, removed] {
+                    for (const auto& e: removed)
+                        removeRaw<T>(e.name);
+                });
+    }
+
+    template<typename T>
     void commit() {
         auto& typedSnapshots = snapshots<T>();
         for (auto& [assetName, snapshot]: typedSnapshots) {
@@ -127,7 +153,8 @@ public:
     }
 
     static bool isBuiltin(const std::string& assetName) {
-        return std::string_view(assetName).starts_with("assets/builtin/");
+        return std::string_view(assetName).starts_with("assets/builtin/") ||
+               std::string_view(assetName).starts_with("assets/editor/");
     }
 
     static bool isMutable(const std::string& assetName) { return !isBuiltin(assetName); }
@@ -145,5 +172,24 @@ private:
     static auto& snapshots() {
         static std::unordered_map<std::string, Snapshot<T>> storage;
         return storage;
+    }
+
+    template<typename T>
+    void insertRaw(const std::string& assetName, const T& asset) {
+        baker_.bake<T>(asset, assetName);
+        cache_.insert<T>(assetName, std::make_unique<T>(asset));
+        snapshots<T>()[assetName] = Snapshot<T>{.before = std::nullopt, .after = asset, .dirty = false};
+    }
+
+    template<typename T>
+    void removeRaw(const std::string& assetName) {
+        auto& snapshot = snapshots<T>()[assetName];
+        if (!snapshot.before) {
+            T* asset = get<T>(assetName);
+            if (asset) snapshot.before = *asset;
+        }
+        vfs_.remove(assetName);
+        snapshot.after = std::nullopt;
+        snapshot.dirty = false;
     }
 };

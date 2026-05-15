@@ -1,15 +1,16 @@
 #pragma once
-#include <functional>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <imgui.h>
 #include <optional>
 #include <string>
 #include "../../../../business/ActionDispatcher.hpp"
+#include "../../../../business/EditorSelection.hpp"
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/scene_editing/ObjectBuilder.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "../../../../input/ShortcutBindingService.hpp"
+#include "../../../components/DropdownMenuComponent.hpp"
 #include "SpherePopupModal.hpp"
 #include "modules/asset_management/asset_types/Model.hpp"
 #include "modules/scene/components/Light.hpp"
@@ -18,35 +19,43 @@
 
 class SceneMutations;
 
-class HierarchyDropdownMenu {
+class HierarchyDropdownMenu : public DropdownMenuComponent {
 public:
     HierarchyDropdownMenu(EditorAssetRepository& repository,
                           SceneMutations& sceneMutations,
                           ObjectBuilder& objectBuilder,
                           ActionDispatcher& actionDispatcher,
                           ShortcutBindingService& shortcutBindingService,
+                          EditorSelection& editorSelection,
                           SpherePopupModal* spherePopupModal = nullptr) :
         repository_(repository),
         sceneMutations_(sceneMutations),
         objectBuilder_(objectBuilder),
         actionDispatcher_(actionDispatcher),
         shortcutBindingService_(shortcutBindingService),
+        editorSelection_(editorSelection),
         spherePopupModal_(spherePopupModal) {}
 
-    void draw(std::optional<EntityHandle> selectedItem) {
-        bool hasSelection = selectedItem.has_value();
-
+    void draw(const char* popupId) {
+        bool hasSelection = !editorSelection_.getSelectedEntityIds().empty();
         constexpr ActionID editActions[] = {
                 ActionID::COPY, ActionID::CUT, ActionID::DUPLICATE, ActionID::PASTE, ActionID::DELETE};
         constexpr const char* actionNames[] = {"Copy", "Cut", "Duplicate", "Paste", "Delete"};
 
+        std::vector<MenuItem> items;
         for (int i = 0; i < 5; ++i) {
-            std::string shortcutStr = shortcutBindingService_.getShortcut(editActions[i]);
-            if (ImGui::MenuItem(actionNames[i], shortcutStr.c_str(), false, hasSelection)) {
-                actionDispatcher_.execute(editActions[i]);
-            }
+            ActionID actionId = editActions[i];
+            items.push_back({.label = actionNames[i],
+                             .shortcut = shortcutBindingService_.getShortcut(actionId),
+                             .enabled = hasSelection,
+                             .onItemClick = [this, actionId] { actionDispatcher_.execute(actionId); }});
         }
-        ImGui::Separator();
+        setMenuItems(std::move(items));
+        DropdownMenuComponent::draw(popupId);
+    }
+
+protected:
+    void drawBody() override {
         if (ImGui::MenuItem("Empty Object")) {
             sceneMutations_.createObject({{"metadata", {{"name", "Object"}}}});
         }
@@ -61,9 +70,7 @@ public:
                 sceneMutations_.createObject(objectBuilder_.plane());
             }
             if (ImGui::MenuItem("Sphere")) {
-                if (spherePopupModal_) {
-                    spherePopupModal_->requestCreation();
-                }
+                if (spherePopupModal_) spherePopupModal_->requestCreation();
             }
             ImGui::Separator();
             drawModelsSubmenu();
@@ -77,6 +84,7 @@ private:
     ObjectBuilder& objectBuilder_;
     ActionDispatcher& actionDispatcher_;
     ShortcutBindingService& shortcutBindingService_;
+    EditorSelection& editorSelection_;
     SpherePopupModal* spherePopupModal_;
 
     void drawModelsSubmenu() {

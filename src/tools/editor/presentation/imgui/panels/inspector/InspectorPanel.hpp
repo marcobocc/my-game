@@ -31,10 +31,10 @@ public:
 
     void drawBody() override {
         const auto& entities = editorSelection_.getSelectedEntityIds();
-        const auto& assets = editorSelection_.getSelectedAssetIds();
+        const auto& inspected = editorSelection_.getInspectedAsset();
         if (entities.size() == 1) {
             gameObjectInspector_.draw(entities[0]);
-        } else if (assets.size() == 1 && assets[0].ends_with(".mat")) {
+        } else if (inspected.has_value() && inspected->ends_with(".mat")) {
             materialInspector.draw();
         }
     }

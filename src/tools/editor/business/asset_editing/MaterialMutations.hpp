@@ -13,8 +13,8 @@ public:
         repository_(repository),
         editorSelection_(editorSelection) {}
 
-    AssetHandle createNew(const std::filesystem::path& relativePath = "") {
-        std::string materialName = relativePath.empty() ? generateName() : relativePath.string();
+    AssetHandle createNew(const std::string& folder = "") {
+        std::string materialName = generateName(folder);
         Material material(materialName,
                           GBUFFER_SHADER,
                           glm::vec4(1.0f),
@@ -31,7 +31,6 @@ public:
                           false);
 
         repository_.insert<Material>(materialName, material);
-        editorSelection_.clearSelection();
         editorSelection_.addToSelection(materialName);
         return materialName;
     }
@@ -94,13 +93,14 @@ private:
     EditorAssetRepository& repository_;
     EditorSelection& editorSelection_;
 
-    std::string generateName() const {
+    std::string generateName(const std::string& folder) const {
         auto availableMaterials = repository_.list(".mat");
+        std::string prefix = folder.empty() ? "" : folder + "/";
         int counter = 1;
-        std::string materialName = "New Material (" + std::to_string(counter) + ").mat";
+        std::string materialName = prefix + "New Material (" + std::to_string(counter) + ").mat";
         while (std::ranges::find(availableMaterials, materialName) != availableMaterials.end()) {
             counter++;
-            materialName = "New Material (" + std::to_string(counter) + ").mat";
+            materialName = prefix + "New Material (" + std::to_string(counter) + ").mat";
         }
         return materialName;
     }

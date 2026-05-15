@@ -10,6 +10,7 @@ class PickingSystem;
 class EditorAssetRepository;
 class SceneMutations;
 class MaterialMutations;
+class AssetThumbnailGenerator;
 class UndoHistory;
 class VulkanEditorBackend;
 class EditorCamera;
@@ -58,6 +59,7 @@ public:
                       SceneMutations& sceneMutations,
                       EditorAssetRepository& assetRepository,
                       MaterialMutations& materialMutations,
+                      AssetThumbnailGenerator& assetThumbnailGenerator,
                       ObjectBuilder& objectBuilder,
                       SceneLoader& editorWorkspace,
                       GameWindow& window,

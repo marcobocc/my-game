@@ -12,10 +12,11 @@
 #include "../presentation/imgui/toolbars/ApplicationMenuBar.hpp"
 #include "../presentation/imgui/toolbars/SceneViewToolbar.hpp"
 #include "gizmos/GizmosBuilder.hpp"
-#include "imgui/panels/assets/AssetsPanel.hpp"
+#include "imgui/panels/assets/AssetExplorerPanel.hpp"
 #include "imgui/panels/hierarchy/HierarchyPanel.hpp"
 #include "imgui/panels/inspector/InspectorPanel.hpp"
 #include "imgui/panels/viewport/EditorSceneViewport.hpp"
+#include "modules/rendering/vulkan/core/resources/AssetThumbnailGenerator.hpp"
 #include "vulkan/EditorRenderData.hpp"
 #include "vulkan/VulkanEditorBackend.hpp"
 
@@ -33,6 +34,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      SceneMutations& sceneMutations,
                                      EditorAssetRepository& assetRepository,
                                      MaterialMutations& materialMutations,
+                                     AssetThumbnailGenerator& assetThumbnailGenerator,
                                      ObjectBuilder& objectBuilder,
                                      SceneLoader& editorWorkspace,
                                      GameWindow& window,
@@ -70,7 +72,8 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                            engine_,
                                            actionDispatcher_,
                                            shortcutBindingService_);
-    userInterface_.emplace<AssetsPanel>(assetRepository_, editorSelection_, materialMutations);
+    userInterface_.emplace<AssetExplorerPanel>(
+            assetRepository_, editorSelection_, materialMutations, assetThumbnailGenerator);
     userInterface_.emplace<InspectorPanel>(
             editorSelection_, entityManager_, assetRepository_, sceneMutations, materialMutations, editorGizmos_);
     userInterface_.emplace<EditorSceneViewport>(assetRepository_,

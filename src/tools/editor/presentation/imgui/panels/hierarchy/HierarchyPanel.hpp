@@ -41,6 +41,7 @@ public:
                       objectBuilder,
                       actionDispatcher,
                       shortcutBindingService,
+                      editorSelection,
                       &spherePopupModal_) {}
 
     void draw() override {
@@ -58,6 +59,9 @@ public:
     void drawBody() override {
         contextTargetId.reset();
         spherePopupModal_.draw();
+        if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+            sceneMutations_.deleteSelectedObjects();
+        }
         ImGui::Separator();
 
         bool cmdDown = ImGui::GetIO().KeySuper || ImGui::GetIO().KeyCtrl;
@@ -82,15 +86,10 @@ public:
             hovered = hovered || ImGui::IsItemHovered();
 
             if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-                if (cmdDown) {
-                    if (editorSelection_.isEntitySelected(e)) {
-                        editorSelection_.removeFromSelection(e);
-                    } else {
-                        editorSelection_.addToSelection(e);
-                    }
+                if (cmdDown && editorSelection_.isEntitySelected(e)) {
+                    editorSelection_.removeFromSelection(e);
                 } else {
-                    editorSelection_.clearSelection();
-                    editorSelection_.addToSelection(e);
+                    editorSelection_.addToSelection(e, cmdDown);
                 }
             }
             if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
@@ -109,7 +108,7 @@ public:
             ImGui::OpenPopup("HierarchyContextMenu");
         }
 
-        ImguiStyling::withPopup("HierarchyContextMenu", [&] { dropdownMenu_.draw(contextTargetId); }, true);
+        dropdownMenu_.draw("HierarchyContextMenu");
     }
 
 private:

@@ -12,7 +12,7 @@
 void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
     bool imguiCapturingInput = ImGui::GetIO().WantTextInput || ImGui::GetIO().WantCaptureMouse;
 
-    if (!imguiCapturingInput) {
+    if (!ImGui::GetIO().WantTextInput) {
         handleKeyboardInput();
         bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
         bool ctrl = false, shift = false, alt = false;
@@ -99,15 +99,10 @@ void InputHandler::processMouseInteraction(double mouseX, double mouseY, bool le
                                           entityManager_);
         if (result) {
             if (auto* sceneHit = std::get_if<SceneObjectHit>(&*result)) {
-                if (cmdDown) {
-                    if (editorSelection_.isEntitySelected(sceneHit->objectId)) {
-                        editorSelection_.removeFromSelection(sceneHit->objectId);
-                    } else {
-                        editorSelection_.addToSelection(sceneHit->objectId);
-                    }
+                if (cmdDown && editorSelection_.isEntitySelected(sceneHit->objectId)) {
+                    editorSelection_.removeFromSelection(sceneHit->objectId);
                 } else {
-                    editorSelection_.clearSelection();
-                    editorSelection_.addToSelection(sceneHit->objectId);
+                    editorSelection_.addToSelection(sceneHit->objectId, cmdDown);
                 }
             } else if (auto* gizmoHit = std::get_if<GizmoHit>(&*result)) {
                 objectTransformHandle_.beginDrag(gizmoHit->type, gizmoHit->axis, mouseX, mouseY);

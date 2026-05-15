@@ -25,9 +25,9 @@ private:
     float colorPickerValue_[4];
 
     void drawBody() override {
-        const auto& assets = editorSelection_.getSelectedAssetIds();
-        if (assets.size() != 1) return;
-        const AssetHandle& selectedAsset = assets[0];
+        const auto& inspected = editorSelection_.getInspectedAsset();
+        if (!inspected.has_value()) return;
+        const AssetHandle& selectedAsset = *inspected;
 
         if (const Material* mat = assetRepository_.get<Material>(selectedAsset)) {
             bool isMutable = !materialMutations_.isMutable(selectedAsset);

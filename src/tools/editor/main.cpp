@@ -13,6 +13,10 @@ std::vector<std::filesystem::path> createMountPaths(const std::filesystem::path&
     if (std::filesystem::exists(builtinAssets)) {
         paths.push_back(builtinAssets);
     }
+    std::filesystem::path editorData = TOOL_DATA_DIR;
+    if (std::filesystem::exists(editorData)) {
+        paths.push_back(editorData);
+    }
     if (!projectPath.empty()) {
         std::filesystem::path projectAssets = projectPath;
         if (std::filesystem::exists(projectAssets)) {

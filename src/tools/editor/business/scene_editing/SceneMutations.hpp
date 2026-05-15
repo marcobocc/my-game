@@ -40,7 +40,6 @@ public:
         nlohmann::json snapshot = entityManager_.serializeToJson(e);
         undoHistory_.push([this, e] { entityManager_.destroyEntity(e); },
                           [this, e, snapshot] { entityManager_.upsertFromJson(snapshot, e); });
-        editorSelection_.clearSelection();
         editorSelection_.addToSelection(e);
         return e;
     }
@@ -108,9 +107,8 @@ public:
             created.push_back(e);
             createdSnapshots.push_back(entityManager_.serializeToJson(e));
         }
-        editorSelection_.clearSelection();
-        for (EntityHandle e: created)
-            editorSelection_.addToSelection(e);
+        for (std::size_t i = 0; i < created.size(); ++i)
+            editorSelection_.addToSelection(created[i], i > 0);
         undoHistory_.push(
                 [this, created] {
                     for (EntityHandle e: created)
@@ -138,9 +136,8 @@ public:
                 created.push_back(e);
                 snapshots.push_back(entityManager_.serializeToJson(e));
             }
-            editorSelection_.clearSelection();
-            for (EntityHandle e: created)
-                editorSelection_.addToSelection(e);
+            for (std::size_t i = 0; i < created.size(); ++i)
+                editorSelection_.addToSelection(created[i], i > 0);
             undoHistory_.push(
                     [this, created] {
                         for (EntityHandle e: created)
