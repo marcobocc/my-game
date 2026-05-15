@@ -22,7 +22,7 @@ public:
                 MaterialMutations& materialMutations) :
         repository_(repository),
         editorSelection_(editorSelection),
-        dropdownMenu_(editorSelection, materialMutations) {
+        dropdownMenu_(editorSelection, repository, materialMutations) {
         searchBuffer_[0] = '\0';
     }
 

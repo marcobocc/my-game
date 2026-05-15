@@ -3,12 +3,17 @@
 #include <imgui.h>
 #include <optional>
 #include <string>
+#include "../../../../business/EditorSelection.hpp"
+#include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/asset_editing/MaterialMutations.hpp"
 
 class AssetsDropdownMenu {
 public:
-    AssetsDropdownMenu(EditorSelection& editorSelection, MaterialMutations& materialMutations) :
+    AssetsDropdownMenu(EditorSelection& editorSelection,
+                       EditorAssetRepository& repository,
+                       MaterialMutations& materialMutations) :
         editorSelection_(editorSelection),
+        repository_(repository),
         materialMutations_(materialMutations) {}
 
     void draw(const std::optional<std::string>& selectedAsset) {
@@ -35,11 +40,15 @@ public:
 
 private:
     EditorSelection& editorSelection_;
+    EditorAssetRepository& repository_;
     MaterialMutations& materialMutations_;
 
     void deleteMaterial(const std::string& assetName) {
         if (assetName.ends_with(".mat")) {
-            materialMutations_.deleteMaterial(assetName);
+            repository_.remove<Material>(assetName);
+            if (editorSelection_.isAssetSelected(assetName)) {
+                editorSelection_.clearSelection();
+            }
         }
     }
 };

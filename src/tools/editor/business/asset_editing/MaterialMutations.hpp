@@ -36,12 +36,6 @@ public:
         return materialName;
     }
 
-    void deleteMaterial(const std::filesystem::path& relativePath) {
-        std::string materialName = relativePath.string();
-        repository_.remove<Material>(materialName);
-        clearSelectionIfSelected(materialName);
-    }
-
     void setTint(const std::string& materialName, const glm::vec4& tint) {
         repository_.mutate<Material>(materialName, [&](Material& mat) { mat.tint = tint; });
     }
