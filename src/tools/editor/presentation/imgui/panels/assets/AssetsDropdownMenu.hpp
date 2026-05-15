@@ -7,8 +7,8 @@
 
 class AssetsDropdownMenu {
 public:
-    AssetsDropdownMenu(ObjectSelection& objectSelection, MaterialMutations& materialMutations) :
-        objectSelection_(objectSelection),
+    AssetsDropdownMenu(EditorSelection& editorSelection, MaterialMutations& materialMutations) :
+        editorSelection_(editorSelection),
         materialMutations_(materialMutations) {}
 
     void draw(const std::optional<std::string>& selectedAsset) {
@@ -34,7 +34,7 @@ public:
     }
 
 private:
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     MaterialMutations& materialMutations_;
 
     void deleteMaterial(const std::string& assetName) {

@@ -4,8 +4,8 @@
 #include "../../../engine/GameEngine.hpp"
 #include "../business/EditorCamera.hpp"
 #include "../business/EditorGizmos.hpp"
+#include "../business/EditorSelection.hpp"
 #include "../business/EditorSettings.hpp"
-#include "../business/ObjectSelection.hpp"
 #include "../business/ObjectTransformHandle.hpp"
 #include "../business/scene_editing/SceneMutations.hpp"
 
@@ -15,8 +15,10 @@ void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
     if (!imguiCapturingInput) {
         handleKeyboardInput();
         bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
+        bool ctrl = false, shift = false, alt = false;
+        getModifierState(ctrl, shift, alt);
         processGizmoDrag(mouseX, mouseY, leftDown);
-        processMouseInteraction(mouseX, mouseY, leftDown);
+        processMouseInteraction(mouseX, mouseY, leftDown, ctrl);
         processCameraInput(mouseX, mouseY, deltaTime);
         wasLeftDown_ = leftDown;
     } else {
@@ -83,7 +85,7 @@ void InputHandler::processGizmoDrag(double mouseX, double mouseY, bool leftDown)
     }
 }
 
-void InputHandler::processMouseInteraction(double mouseX, double mouseY, bool leftDown) {
+void InputHandler::processMouseInteraction(double mouseX, double mouseY, bool leftDown, bool cmdDown) {
     if (leftDown && !wasLeftDown_ && !ImGui::GetIO().WantCaptureMouse) {
         auto sv = window_.getSceneViewport();
         auto result = pickingSystem_.pick(static_cast<uint32_t>(mouseX),
@@ -97,12 +99,21 @@ void InputHandler::processMouseInteraction(double mouseX, double mouseY, bool le
                                           entityManager_);
         if (result) {
             if (auto* sceneHit = std::get_if<SceneObjectHit>(&*result)) {
-                objectSelection_.selectObject(sceneHit->objectId);
+                if (cmdDown) {
+                    if (editorSelection_.isEntitySelected(sceneHit->objectId)) {
+                        editorSelection_.removeFromSelection(sceneHit->objectId);
+                    } else {
+                        editorSelection_.addToSelection(sceneHit->objectId);
+                    }
+                } else {
+                    editorSelection_.clearSelection();
+                    editorSelection_.addToSelection(sceneHit->objectId);
+                }
             } else if (auto* gizmoHit = std::get_if<GizmoHit>(&*result)) {
                 objectTransformHandle_.beginDrag(gizmoHit->type, gizmoHit->axis, mouseX, mouseY);
             }
         } else {
-            objectSelection_.clearSelection();
+            editorSelection_.clearSelection();
         }
     }
 }

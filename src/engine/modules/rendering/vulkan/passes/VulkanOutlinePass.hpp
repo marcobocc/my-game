@@ -46,10 +46,15 @@ public:
                 uint32_t width,
                 uint32_t height) {
         if (outlineQueue.empty()) return;
-        uint32_t targetId = resolveTargetId(objectIdMap, outlineQueue);
-        if (targetId == 0) return;
+        std::vector<uint32_t> targetIds;
+        targetIds.reserve(outlineQueue.size());
+        for (const auto& dc: outlineQueue) {
+            uint32_t id = resolveObjectId(objectIdMap, dc.objectId);
+            if (id != 0) targetIds.push_back(id);
+        }
+        if (targetIds.empty()) return;
         updateDescriptor(descriptorSet, objectIdImageView, objectIdBufferSampler);
-        recordCompositePass(cmd, descriptorSet, swapchainColorView, swapchainExtent, window, targetId, width, height);
+        recordCompositePass(cmd, descriptorSet, swapchainColorView, swapchainExtent, window, targetIds, width, height);
     }
 
 private:
@@ -70,11 +75,9 @@ private:
         vkUpdateDescriptorSets(context_.device, 1, &write, 0, nullptr);
     }
 
-    uint32_t resolveTargetId(const std::vector<std::string>& objectIdMap,
-                             const std::vector<DrawCall>& outlineQueue) const {
-        const auto& targetObjectId = outlineQueue.front().objectId;
+    uint32_t resolveObjectId(const std::vector<std::string>& objectIdMap, const std::string& objectId) const {
         for (uint32_t i = 0; i < static_cast<uint32_t>(objectIdMap.size()); ++i) {
-            if (objectIdMap[i] == targetObjectId) return i + 1;
+            if (objectIdMap[i] == objectId) return i + 1;
         }
         return 0;
     }
@@ -84,7 +87,7 @@ private:
                              VkImageView swapchainColorView,
                              VkExtent2D swapchainExtent,
                              const GameWindow& window,
-                             uint32_t targetId,
+                             const std::vector<uint32_t>& targetIds,
                              uint32_t width,
                              uint32_t height) {
         const SceneViewport sv = window.getSceneViewport();
@@ -123,16 +126,20 @@ private:
 
         const float fw = static_cast<float>(width);
         const float fh = static_cast<float>(height);
+        static constexpr uint32_t MAX_OUTLINE_IDS = 16;
         struct OutlinePush {
             glm::vec2 texelSize;
             glm::vec2 uvOffset;
             glm::vec2 uvScale;
-            uint32_t targetId;
-        } push;
+            uint32_t targetCount;
+            uint32_t targetIds[MAX_OUTLINE_IDS];
+        } push{};
         push.texelSize = {1.0f / fw, 1.0f / fh};
         push.uvOffset = {static_cast<float>(fbX) / fw, static_cast<float>(fbY) / fh};
         push.uvScale = {static_cast<float>(fbW) / fw, static_cast<float>(fbH) / fh};
-        push.targetId = targetId;
+        push.targetCount = static_cast<uint32_t>(std::min(targetIds.size(), static_cast<size_t>(MAX_OUTLINE_IDS)));
+        for (uint32_t i = 0; i < push.targetCount; ++i)
+            push.targetIds[i] = targetIds[i];
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
         vkCmdBindDescriptorSets(

@@ -9,15 +9,23 @@ layout(push_constant) uniform Push {
     vec2 texelSize;
     vec2 uvOffset;
     vec2 uvScale;
-    uint targetId;
+    uint targetCount;
+    uint targetIds[16];
 } pc;
+
+bool isSelected(uint id) {
+    for (uint i = 0; i < pc.targetCount; i++) {
+        if (id == pc.targetIds[i]) return true;
+    }
+    return false;
+}
 
 void main() {
     vec2 mappedUV = pc.uvOffset + uv * pc.uvScale;
 
     uint centerID = texture(idBuffer, mappedUV).r;
 
-    if (centerID == pc.targetId) {
+    if (isSelected(centerID)) {
         discard;
     }
 
@@ -26,7 +34,7 @@ void main() {
     for (float x = -radius; x <= radius; x++) {
         for (float y = -radius; y <= radius; y++) {
             vec2 offset = vec2(x, y) * pc.texelSize;
-            if (texture(idBuffer, mappedUV + offset).r == pc.targetId) {
+            if (isSelected(texture(idBuffer, mappedUV + offset).r)) {
                 nearTarget = true;
                 break;
             }

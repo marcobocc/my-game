@@ -1,8 +1,9 @@
 #pragma once
+#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <string>
 #include "../../../../business/ActionDispatcher.hpp"
-#include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/EditorSelection.hpp"
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/scene_editing/ObjectBuilder.hpp"
 #include "../../../../input/ShortcutBindingService.hpp"
@@ -21,7 +22,7 @@ public:
     static constexpr float ASSETS_HEIGHT_RATIO = 0.3f;
 
     HierarchyPanel(EditorAssetRepository& repository,
-                   ObjectSelection& objectSelection,
+                   EditorSelection& editorSelection,
                    EntityManager& entityManager,
                    SceneMutations& sceneMutations,
                    ObjectBuilder& objectBuilder,
@@ -29,7 +30,7 @@ public:
                    ActionDispatcher& actionDispatcher,
                    ShortcutBindingService& shortcutBindingService) :
         repository_(repository),
-        objectSelection_(objectSelection),
+        editorSelection_(editorSelection),
         entityManager_(entityManager),
         sceneMutations_(sceneMutations),
         objectBuilder_(objectBuilder),
@@ -57,9 +58,9 @@ public:
     void drawBody() override {
         contextTargetId.reset();
         spherePopupModal_.draw();
-        auto selectedId = objectSelection_.getSelectedEntityId();
         ImGui::Separator();
 
+        bool cmdDown = ImGui::GetIO().KeySuper || ImGui::GetIO().KeyCtrl;
         bool rightClickedThisFrame = false;
         std::optional<EntityHandle> rightClickedEntity;
 
@@ -71,20 +72,28 @@ public:
                 label = "Entity " + std::to_string(e);
             }
 
-            bool selected = selectedId && *selectedId == e;
+            bool selected = editorSelection_.isEntitySelected(e);
             bool isContextTarget = contextTargetId && *contextTargetId == e;
-            if (ImGui::Selectable(("##entity" + std::to_string(e)).c_str(),
-                                  selected,
-                                  ImGuiSelectableFlags_AllowOverlap,
-                                  {0, 0})) {
-                objectSelection_.selectObject(e);
-            }
-            bool itemHovered = ImGui::IsItemHovered() || isContextTarget;
+            ImGui::Selectable(
+                    ("##entity" + std::to_string(e)).c_str(), selected, ImGuiSelectableFlags_AllowOverlap, {0, 0});
+            bool hovered = ImGui::IsItemHovered() || isContextTarget;
             ImGui::SameLine();
-            ImGui::Text("%s", label.c_str());
-            itemHovered = itemHovered || ImGui::IsItemHovered();
+            ImGui::TextUnformatted(label.c_str());
+            hovered = hovered || ImGui::IsItemHovered();
 
-            if (itemHovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+            if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                if (cmdDown) {
+                    if (editorSelection_.isEntitySelected(e)) {
+                        editorSelection_.removeFromSelection(e);
+                    } else {
+                        editorSelection_.addToSelection(e);
+                    }
+                } else {
+                    editorSelection_.clearSelection();
+                    editorSelection_.addToSelection(e);
+                }
+            }
+            if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                 rightClickedThisFrame = true;
                 rightClickedEntity.emplace(e);
             }
@@ -105,7 +114,7 @@ public:
 
 private:
     EditorAssetRepository& repository_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     EntityManager& entityManager_;
     SceneMutations& sceneMutations_;
     ObjectBuilder& objectBuilder_;

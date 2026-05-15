@@ -4,8 +4,8 @@
 #include "../../../engine/modules/input/RaycastPickingSystem.hpp"
 #include "../../../engine/modules/scene/components/Transform.hpp"
 #include "EditorCamera.hpp"
+#include "EditorSelection.hpp"
 #include "EditorSettings.hpp"
-#include "ObjectSelection.hpp"
 #include "scene_editing/SceneMutations.hpp"
 
 std::optional<glm::vec3>
@@ -55,10 +55,11 @@ glm::vec3 ObjectTransformHandle::transformAxisToLocalSpace(GizmoAxis axis, const
 }
 
 void ObjectTransformHandle::beginTranslationDrag(GizmoAxis axis, double mouseX, double mouseY) {
-    auto selectedId = objectSelection_.getSelectedEntityId();
-    if (!selectedId) return;
+    const auto& ids = editorSelection_.getSelectedEntityIds();
+    if (ids.size() != 1) return;
+    EntityHandle selectedId = ids[0];
 
-    auto* transformPtr = entityManager_.getComponent<Transform>(*selectedId);
+    auto* transformPtr = entityManager_.getComponent<Transform>(selectedId);
     if (!transformPtr) return;
 
     glm::vec3 axisDir = transformAxisToLocalSpace(axis, *transformPtr);
@@ -72,9 +73,9 @@ void ObjectTransformHandle::beginTranslationDrag(GizmoAxis axis, double mouseX, 
     auto hitPoint = rayPlaneIntersect(ray, origin, planeNormal);
     if (!hitPoint) return;
 
-    sceneMutations_.beginEdit(*selectedId);
+    sceneMutations_.beginEdit(selectedId);
 
-    dragState_.activeDrag.emplace(*selectedId, axis, axisDir, planeNormal, origin, *hitPoint);
+    dragState_.activeDrag.emplace(selectedId, axis, axisDir, planeNormal, origin, *hitPoint);
 }
 
 void ObjectTransformHandle::updateTranslationDrag(double mouseX, double mouseY) {
@@ -111,10 +112,11 @@ void ObjectTransformHandle::commitTranslationDrag() {
 }
 
 void ObjectTransformHandle::beginRotationDrag(GizmoAxis axis, double mouseX, double mouseY) {
-    auto selectedId = objectSelection_.getSelectedEntityId();
-    if (!selectedId) return;
+    const auto& ids = editorSelection_.getSelectedEntityIds();
+    if (ids.size() != 1) return;
+    EntityHandle selectedId = ids[0];
 
-    auto* transformPtr = entityManager_.getComponent<Transform>(*selectedId);
+    auto* transformPtr = entityManager_.getComponent<Transform>(selectedId);
     if (!transformPtr) return;
 
     glm::vec3 axisDir = transformAxisToLocalSpace(axis, *transformPtr);
@@ -129,8 +131,8 @@ void ObjectTransformHandle::beginRotationDrag(GizmoAxis axis, double mouseX, dou
 
     hitDir = glm::normalize(hitDir);
 
-    sceneMutations_.beginEdit(*selectedId);
-    dragState_.activeRotationDrag.emplace(*selectedId, axis, axisDir, origin, transformPtr->rotation, hitDir);
+    sceneMutations_.beginEdit(selectedId);
+    dragState_.activeRotationDrag.emplace(selectedId, axis, axisDir, origin, transformPtr->rotation, hitDir);
 }
 
 void ObjectTransformHandle::updateRotationDrag(double mouseX, double mouseY) {
@@ -165,9 +167,10 @@ void ObjectTransformHandle::commitRotationDrag() {
 }
 
 void ObjectTransformHandle::beginScaleDrag(GizmoAxis axis, double mouseX, double mouseY) {
-    auto selectedId = objectSelection_.getSelectedEntityId();
-    if (!selectedId) return;
-    auto* transformPtr = entityManager_.getComponent<Transform>(*selectedId);
+    const auto& ids = editorSelection_.getSelectedEntityIds();
+    if (ids.size() != 1) return;
+    EntityHandle selectedId = ids[0];
+    auto* transformPtr = entityManager_.getComponent<Transform>(selectedId);
     if (!transformPtr) return;
 
     glm::vec3 origin = transformPtr->position;
@@ -193,8 +196,8 @@ void ObjectTransformHandle::beginScaleDrag(GizmoAxis axis, double mouseX, double
     float initialT = glm::dot(*hitPoint - origin, axisDir);
     if (std::abs(initialT) < 1e-5f) return;
 
-    sceneMutations_.beginEdit(*selectedId);
-    dragState_.activeScaleDrag.emplace(*selectedId, axis, axisDir, origin, transformPtr->scale, planeNormal, initialT);
+    sceneMutations_.beginEdit(selectedId);
+    dragState_.activeScaleDrag.emplace(selectedId, axis, axisDir, origin, transformPtr->scale, planeNormal, initialT);
 }
 
 void ObjectTransformHandle::updateScaleDrag(double mouseX, double mouseY) {

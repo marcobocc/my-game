@@ -1,6 +1,6 @@
 #pragma once
 #include <imgui.h>
-#include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/EditorSelection.hpp"
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/asset_editing/MaterialMutations.hpp"
 #include "../EditorPanel.hpp"
@@ -10,15 +10,15 @@
 
 class InspectorPanel : public EditorPanel {
 public:
-    InspectorPanel(ObjectSelection& objectSelection,
+    InspectorPanel(EditorSelection& editorSelection,
                    EntityManager& entityManager,
                    EditorAssetRepository& assetRepository,
                    SceneMutations& sceneMutations,
                    MaterialMutations& materialMutations,
                    EditorGizmos& debugViz) :
-        objectSelection_(objectSelection),
-        gameObjectInspector_(objectSelection, entityManager, assetRepository, sceneMutations, debugViz),
-        materialInspector(assetRepository, objectSelection, materialMutations) {}
+        editorSelection_(editorSelection),
+        gameObjectInspector_(editorSelection, entityManager, assetRepository, sceneMutations, debugViz),
+        materialInspector(assetRepository, editorSelection, materialMutations) {}
 
     void draw() override {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -30,11 +30,11 @@ public:
     }
 
     void drawBody() override {
-        if (objectSelection_.isElementGameObject()) {
-            auto selectedId = objectSelection_.getSelectedEntityId();
-            gameObjectInspector_.draw(*selectedId);
-        } else if (objectSelection_.isElementMaterial()) {
-            auto selectedAsset = objectSelection_.getSelectedAssetId();
+        const auto& entities = editorSelection_.getSelectedEntityIds();
+        const auto& assets = editorSelection_.getSelectedAssetIds();
+        if (entities.size() == 1) {
+            gameObjectInspector_.draw(entities[0]);
+        } else if (assets.size() == 1 && assets[0].ends_with(".mat")) {
             materialInspector.draw();
         }
     }
@@ -42,7 +42,7 @@ public:
     static constexpr float PANEL_WIDTH_RATIO = 0.25f;
 
 private:
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     GameObjectInspector gameObjectInspector_;
     MaterialInspector materialInspector;
 };

@@ -9,7 +9,7 @@
 
 class EditorGizmos;
 class EditorCamera;
-class ObjectSelection;
+class EditorSelection;
 class ObjectTransformHandle;
 class Scene;
 class SceneMutations;
@@ -36,7 +36,7 @@ public:
                  GameEngine& engine,
                  PickingSystem& pickingSystem,
                  EditorCamera& editorCamera,
-                 ObjectSelection& objectSelection,
+                 EditorSelection& editorSelection,
                  ObjectTransformHandle& objectTransformHandle,
                  EntityManager& entityManager,
                  SceneMutations& sceneMutations,
@@ -50,7 +50,7 @@ public:
         engine_(engine),
         pickingSystem_(pickingSystem),
         editorCamera_(editorCamera),
-        objectSelection_(objectSelection),
+        editorSelection_(editorSelection),
         objectTransformHandle_(objectTransformHandle),
         entityManager_(entityManager),
         sceneMutations_(sceneMutations),
@@ -69,7 +69,7 @@ private:
     GameEngine& engine_;
     PickingSystem& pickingSystem_;
     EditorCamera& editorCamera_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     ObjectTransformHandle& objectTransformHandle_;
     EntityManager& entityManager_;
     SceneMutations& sceneMutations_;
@@ -89,7 +89,7 @@ private:
 
     void handleKeyboardInput();
     void processGizmoDrag(double mouseX, double mouseY, bool leftDown);
-    void processMouseInteraction(double mouseX, double mouseY, bool leftDown);
+    void processMouseInteraction(double mouseX, double mouseY, bool leftDown, bool cmdDown);
     void processCameraInput(double mouseX, double mouseY, double deltaTime);
 
     bool matchesShortcut(const Shortcut& s, bool ctrl, bool shift, bool alt, int key) const;

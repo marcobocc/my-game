@@ -35,8 +35,8 @@
 #include "business/ClipboardService.hpp"
 #include "business/EditorCamera.hpp"
 #include "business/EditorGizmos.hpp"
+#include "business/EditorSelection.hpp"
 #include "business/EditorSettings.hpp"
-#include "business/ObjectSelection.hpp"
 #include "business/ObjectTransformHandle.hpp"
 #include "business/SceneLoader.hpp"
 #include "business/UndoHistory.hpp"
@@ -129,13 +129,13 @@ public:
         gizmosBuilder_(assetLoader_, entityManager_, editorSettings_),
         pickingSystem_(assetLoader_),
         clipboardService_(),
-        sceneMutations_(entityManager_, engine_, objectSelection_, undoHistory_, clipboardService_),
-        materialMutations_(assetRepository_, objectSelection_),
+        sceneMutations_(entityManager_, engine_, editorSelection_, undoHistory_, clipboardService_),
+        materialMutations_(assetRepository_, editorSelection_),
         meshMutations_(assetRepository_),
         objectBuilder_(meshMutations_),
-        sceneLoader_(entityManager_, objectSelection_, engine_, assetRepository_, vfs_),
+        sceneLoader_(entityManager_, editorSelection_, engine_, assetRepository_, vfs_),
         objectTransformHandle_(
-                window, engine_, sceneMutations_, editorCamera_, objectSelection_, editorSettings_, entityManager_),
+                window, engine_, sceneMutations_, editorCamera_, editorSelection_, editorSettings_, entityManager_),
         shortcutBindingService_(),
         actionDispatcher_(undoHistory_,
                           editorCamera_,
@@ -148,7 +148,7 @@ public:
                       engine_,
                       pickingSystem_,
                       editorCamera_,
-                      objectSelection_,
+                      editorSelection_,
                       objectTransformHandle_,
                       entityManager_,
                       sceneMutations_,
@@ -160,7 +160,7 @@ public:
                       actionDispatcher_),
         presentationLayer_(vulkanEditorRenderer_,
                            editorCamera_,
-                           objectSelection_,
+                           editorSelection_,
                            editorGizmos_,
                            editorSettings_,
                            rendererSettings_,
@@ -244,7 +244,7 @@ private:
     VulkanEditorBackend vulkanEditorRenderer_;
 
     // Project metadata
-    ObjectSelection objectSelection_;
+    EditorSelection editorSelection_;
     EditorGizmos editorGizmos_;
     EditorSettings editorSettings_;
     EditorCamera editorCamera_;

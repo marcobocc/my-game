@@ -8,7 +8,7 @@
 
 class GameEngine;
 class Scene;
-class ObjectSelection;
+class EditorSelection;
 class EditorAssetRepository;
 
 class SceneLoader {
@@ -17,12 +17,12 @@ public:
     using OnScenePathChanged = std::function<void(const std::filesystem::path&)>;
 
     SceneLoader(EntityManager& entityManager,
-                ObjectSelection& objectSelection,
+                EditorSelection& editorSelection,
                 GameEngine& engine,
                 EditorAssetRepository& assetRepository,
                 VirtualFileSystem& vfs) :
         entityManager_(entityManager),
-        objectSelection_(objectSelection),
+        editorSelection_(editorSelection),
         engine_(engine),
         assetRepository_(assetRepository),
         vfs_(vfs),
@@ -46,7 +46,7 @@ public:
 
 private:
     EntityManager& entityManager_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     GameEngine& engine_;
     EditorAssetRepository& assetRepository_;
     VirtualFileSystem& vfs_;

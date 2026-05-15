@@ -4,7 +4,7 @@
 #include <optional>
 #include <string>
 #include "../ClipboardService.hpp"
-#include "../ObjectSelection.hpp"
+#include "../EditorSelection.hpp"
 #include "../UndoHistory.hpp"
 #include "modules/scene/EntityManager.hpp"
 
@@ -12,12 +12,12 @@ class SceneMutations {
 public:
     SceneMutations(EntityManager& entityManager,
                    GameEngine& engine,
-                   ObjectSelection& objectSelection,
+                   EditorSelection& editorSelection,
                    UndoHistory& undoHistory,
                    ClipboardService& clipboardService) :
         entityManager_(entityManager),
         engine_(engine),
-        objectSelection_(objectSelection),
+        editorSelection_(editorSelection),
         undoHistory_(undoHistory),
         clipboardService_(clipboardService) {}
 
@@ -40,7 +40,8 @@ public:
         nlohmann::json snapshot = entityManager_.serializeToJson(e);
         undoHistory_.push([this, e] { entityManager_.destroyEntity(e); },
                           [this, e, snapshot] { entityManager_.upsertFromJson(snapshot, e); });
-        objectSelection_.selectObject(e);
+        editorSelection_.clearSelection();
+        editorSelection_.addToSelection(e);
         return e;
     }
 
@@ -76,33 +77,107 @@ public:
         destroyObject(entity);
     }
 
-    void pasteObject() {
-        if (!clipboardService_.hasEntity()) return;
-        auto clipboard = clipboardService_.get();
-        if (!clipboard || !clipboard->is_object() || clipboard->empty()) return;
-        createObject(*clipboard);
-    }
-
     // Selection-aware convenience methods for actions
     void copySelectedObject() {
-        auto selectedId = objectSelection_.getSelectedEntityId();
-        if (selectedId.has_value()) copyObject(*selectedId);
+        const auto& ids = editorSelection_.getSelectedEntityIds();
+        if (ids.empty()) return;
+        nlohmann::json arr = nlohmann::json::array();
+        for (EntityHandle e: ids)
+            arr.push_back(entityManager_.serializeToJson(e));
+        clipboardService_.copy(arr, ClipboardPayloadType::Entity);
     }
 
     void cutSelectedObject() {
-        auto selectedId = objectSelection_.getSelectedEntityId();
-        if (selectedId.has_value()) cutObject(*selectedId);
+        copySelectedObject();
+        deleteSelectedObjects();
     }
 
-    void duplicateSelectedObject() {
-        auto selectedId = objectSelection_.getSelectedEntityId();
-        if (selectedId.has_value()) duplicateObject(*selectedId);
+    void duplicateSelectedObjects() {
+        const auto ids = editorSelection_.getSelectedEntityIds();
+        if (ids.empty()) return;
+        std::vector<nlohmann::json> snapshots;
+        snapshots.reserve(ids.size());
+        for (EntityHandle e: ids)
+            snapshots.push_back(entityManager_.serializeToJson(e));
+        std::vector<EntityHandle> created;
+        created.reserve(ids.size());
+        std::vector<nlohmann::json> createdSnapshots;
+        createdSnapshots.reserve(ids.size());
+        for (const auto& snapshot: snapshots) {
+            EntityHandle e = entityManager_.upsertFromJson(snapshot);
+            created.push_back(e);
+            createdSnapshots.push_back(entityManager_.serializeToJson(e));
+        }
+        editorSelection_.clearSelection();
+        for (EntityHandle e: created)
+            editorSelection_.addToSelection(e);
+        undoHistory_.push(
+                [this, created] {
+                    for (EntityHandle e: created)
+                        entityManager_.destroyEntity(e);
+                },
+                [this, created, createdSnapshots] {
+                    for (std::size_t i = 0; i < created.size(); ++i)
+                        entityManager_.upsertFromJson(createdSnapshots[i], created[i]);
+                });
     }
 
-    void deleteSelectedObject() {
-        auto selectedId = objectSelection_.getSelectedEntityId();
-        if (selectedId.has_value()) destroyObject(*selectedId);
+    void duplicateSelectedObject() { duplicateSelectedObjects(); }
+
+    void pasteObject() {
+        if (!clipboardService_.hasEntity()) return;
+        const auto& clipboard = clipboardService_.get();
+        if (!clipboard) return;
+        if (clipboard->is_array()) {
+            std::vector<EntityHandle> created;
+            std::vector<nlohmann::json> snapshots;
+            created.reserve(clipboard->size());
+            snapshots.reserve(clipboard->size());
+            for (const auto& item: *clipboard) {
+                EntityHandle e = entityManager_.upsertFromJson(item);
+                created.push_back(e);
+                snapshots.push_back(entityManager_.serializeToJson(e));
+            }
+            editorSelection_.clearSelection();
+            for (EntityHandle e: created)
+                editorSelection_.addToSelection(e);
+            undoHistory_.push(
+                    [this, created] {
+                        for (EntityHandle e: created)
+                            entityManager_.destroyEntity(e);
+                    },
+                    [this, created, snapshots] {
+                        for (std::size_t i = 0; i < created.size(); ++i)
+                            entityManager_.upsertFromJson(snapshots[i], created[i]);
+                    });
+        } else if (clipboard->is_object() && !clipboard->empty()) {
+            createObject(*clipboard);
+        }
     }
+
+    void deleteSelectedObjects() {
+        const auto ids = editorSelection_.getSelectedEntityIds();
+        if (ids.empty()) return;
+
+        std::vector<nlohmann::json> snapshots;
+        snapshots.reserve(ids.size());
+        for (EntityHandle e: ids)
+            snapshots.push_back(entityManager_.serializeToJson(e));
+        for (EntityHandle e: ids)
+            entityManager_.destroyEntity(e);
+        editorSelection_.clearSelection();
+        undoHistory_.push(
+                [this, ids, snapshots] {
+                    for (std::size_t i = 0; i < ids.size(); ++i)
+                        entityManager_.upsertFromJson(snapshots[i], ids[i]);
+                },
+                [this, ids] {
+                    for (EntityHandle e: ids)
+                        entityManager_.destroyEntity(e);
+                });
+    }
+
+    void deleteSelectedObject() { deleteSelectedObjects(); }
 
     std::map<std::string, std::function<void()>> getObjectEditActions(EntityHandle entity) {
         return {{"Copy", [this, entity] { copyObject(entity); }},
@@ -115,16 +190,15 @@ public:
 private:
     EntityManager& entityManager_;
     GameEngine& engine_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     UndoHistory& undoHistory_;
     ClipboardService& clipboardService_;
 
     std::optional<std::pair<EntityHandle, nlohmann::json>> pendingSnapshot_;
 
     void clearSelectionIfSelected(EntityHandle deletedId) {
-        auto selected = objectSelection_.getSelectedEntityId();
-        if (selected && *selected == deletedId) {
-            objectSelection_.clearSelection();
+        if (editorSelection_.isEntitySelected(deletedId)) {
+            editorSelection_.clearSelection();
         }
     }
 };

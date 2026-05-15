@@ -5,7 +5,7 @@
 #include "../../../engine/GameEngine.hpp"
 #include "../../../engine/modules/scene/EntityManager.hpp"
 #include "../../../engine/utils/JsonUtils.hpp"
-#include "ObjectSelection.hpp"
+#include "EditorSelection.hpp"
 #include "asset_editing/EditorAssetRepository.hpp"
 #include "modules/asset_management/asset_types/Material.hpp"
 #include "modules/scene/components/Light.hpp"
@@ -64,7 +64,7 @@ void SceneLoader::loadScene(const char* path) {
         entityManager_.clear();
         for (const auto& entityJson: json.at("entities"))
             entityManager_.upsertFromJson(entityJson);
-        objectSelection_.clearSelection();
+        editorSelection_.clearSelection();
 
         currentScenePath_ = path;
 
@@ -106,7 +106,7 @@ bool SceneLoader::loadLatestScene() {
         entityManager_.clear();
         for (const auto& entityJson: json.at("entities"))
             entityManager_.upsertFromJson(entityJson);
-        objectSelection_.clearSelection();
+        editorSelection_.clearSelection();
         currentScenePath_ = latestScene;
         if (onSceneNameChanged_) {
             std::string filename = std::filesystem::path(latestScene).filename().string();

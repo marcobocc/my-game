@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <imgui.h>
-#include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/EditorSelection.hpp"
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/asset_editing/MaterialMutations.hpp"
 #include "ComponentContainer.hpp"
@@ -10,26 +10,27 @@
 class MaterialInspector : public ComponentContainer {
 public:
     MaterialInspector(EditorAssetRepository& assetRepository,
-                      ObjectSelection& objectSelection,
+                      EditorSelection& editorSelection,
                       MaterialMutations& materialMutations) :
         ComponentContainer("Material", 18),
         assetRepository_(assetRepository),
-        objectSelection_(objectSelection),
+        editorSelection_(editorSelection),
         materialMutations_(materialMutations),
         colorPickerValue_{1.0f, 1.0f, 1.0f, 1.0f} {}
 
 private:
     EditorAssetRepository& assetRepository_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     MaterialMutations& materialMutations_;
     float colorPickerValue_[4];
 
     void drawBody() override {
-        auto selectedAsset = objectSelection_.getSelectedAssetId();
-        if (!selectedAsset) return;
+        const auto& assets = editorSelection_.getSelectedAssetIds();
+        if (assets.size() != 1) return;
+        const AssetHandle& selectedAsset = assets[0];
 
-        if (const Material* mat = assetRepository_.get<Material>(*selectedAsset)) {
-            bool isMutable = !materialMutations_.isMutable(*selectedAsset);
+        if (const Material* mat = assetRepository_.get<Material>(selectedAsset)) {
+            bool isMutable = !materialMutations_.isMutable(selectedAsset);
 
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 6));
 
@@ -37,7 +38,7 @@ private:
                 ImGui::BeginDisabled();
             }
 
-            row("Name", [&] { ImGui::TextUnformatted(selectedAsset->c_str()); });
+            row("Name", [&] { ImGui::TextUnformatted(selectedAsset.c_str()); });
             row("Albedo", [&] {
                 ImGui::SetNextItemWidth(-1);
                 const std::string displayText = (mat->albedoTexture == EMPTY_TEXTURE) ? "" : mat->albedoTexture;
@@ -48,7 +49,7 @@ private:
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
                         const char* textureName = static_cast<const char*>(payload->Data);
-                        materialMutations_.setAlbedoTexture(*selectedAsset, textureName);
+                        materialMutations_.setAlbedoTexture(selectedAsset, textureName);
                     }
                     ImGui::EndDragDropTarget();
                 }
@@ -60,7 +61,7 @@ private:
             colorPickerValue_[2] = color.b;
             colorPickerValue_[3] = color.a;
             if (ImGui::ColorEdit4("Tint", colorPickerValue_)) {
-                materialMutations_.setTint(*selectedAsset,
+                materialMutations_.setTint(selectedAsset,
                                            glm::vec4(colorPickerValue_[0],
                                                      colorPickerValue_[1],
                                                      colorPickerValue_[2],
@@ -81,7 +82,7 @@ private:
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
                         const char* textureName = static_cast<const char*>(payload->Data);
-                        materialMutations_.setNormalTexture(*selectedAsset, textureName);
+                        materialMutations_.setNormalTexture(selectedAsset, textureName);
                     }
                     ImGui::EndDragDropTarget();
                 }
@@ -97,7 +98,7 @@ private:
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
                         const char* textureName = static_cast<const char*>(payload->Data);
-                        materialMutations_.setRoughnessTexture(*selectedAsset, textureName);
+                        materialMutations_.setRoughnessTexture(selectedAsset, textureName);
                     }
                     ImGui::EndDragDropTarget();
                 }
@@ -113,7 +114,7 @@ private:
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
                         const char* textureName = static_cast<const char*>(payload->Data);
-                        materialMutations_.setMetallicTexture(*selectedAsset, textureName);
+                        materialMutations_.setMetallicTexture(selectedAsset, textureName);
                     }
                     ImGui::EndDragDropTarget();
                 }
@@ -129,7 +130,7 @@ private:
                 if (ImGui::BeginDragDropTarget()) {
                     if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
                         const char* textureName = static_cast<const char*>(payload->Data);
-                        materialMutations_.setAoTexture(*selectedAsset, textureName);
+                        materialMutations_.setAoTexture(selectedAsset, textureName);
                     }
                     ImGui::EndDragDropTarget();
                 }
@@ -138,28 +139,28 @@ private:
             row("Metallic", [&] {
                 float metallic = mat->metallic;
                 if (ImGui::SliderFloat("##metallic", &metallic, 0.0f, 1.0f)) {
-                    materialMutations_.setMetallic(*selectedAsset, metallic);
+                    materialMutations_.setMetallic(selectedAsset, metallic);
                 }
             });
 
             row("Roughness", [&] {
                 float roughness = mat->roughness;
                 if (ImGui::SliderFloat("##roughness", &roughness, 0.0f, 1.0f)) {
-                    materialMutations_.setRoughness(*selectedAsset, roughness);
+                    materialMutations_.setRoughness(selectedAsset, roughness);
                 }
             });
 
             row("Ambient Occlusion", [&] {
                 float ao = mat->ao;
                 if (ImGui::SliderFloat("##ao", &ao, 0.0f, 1.0f)) {
-                    materialMutations_.setAo(*selectedAsset, ao);
+                    materialMutations_.setAo(selectedAsset, ao);
                 }
             });
 
             row("Scale Invariant UV", [&] {
                 bool scaleInvariantUV = mat->scaleInvariantUV;
                 if (ImGui::Checkbox("##scaleInvariantUV", &scaleInvariantUV)) {
-                    materialMutations_.setScaleInvariantUV(*selectedAsset, scaleInvariantUV ? 1 : 0);
+                    materialMutations_.setScaleInvariantUV(selectedAsset, scaleInvariantUV ? 1 : 0);
                 }
             });
 
@@ -172,7 +173,7 @@ private:
                 changed |= ImGui::InputFloat("##tilingY", &tiling.y, 0.0f, 0.0f, "%.3f");
                 ImGui::PopItemWidth();
                 if (changed) {
-                    materialMutations_.setTiling(*selectedAsset, tiling);
+                    materialMutations_.setTiling(selectedAsset, tiling);
                 }
             });
             row("Offset", [&] {
@@ -184,7 +185,7 @@ private:
                 changed |= ImGui::InputFloat("##offsetY", &offset.y, 0.0f, 0.0f, "%.3f");
                 ImGui::PopItemWidth();
                 if (changed) {
-                    materialMutations_.setOffset(*selectedAsset, offset);
+                    materialMutations_.setOffset(selectedAsset, offset);
                 }
             });
 

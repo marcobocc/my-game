@@ -14,7 +14,7 @@ class UndoHistory;
 class VulkanEditorBackend;
 class EditorCamera;
 class GizmosRenderer;
-class ObjectSelection;
+class EditorSelection;
 class ObjectBuilder;
 class EditorGizmos;
 class EditorSettings;
@@ -46,7 +46,7 @@ class PresentationLayer {
 public:
     PresentationLayer(VulkanEditorBackend& renderer,
                       EditorCamera& editorOrbitCamera,
-                      ObjectSelection& objectSelection,
+                      EditorSelection& editorSelection,
                       EditorGizmos& editorGizmos,
                       EditorSettings& editorSettings,
                       RendererSettings& rendererSettings,
@@ -77,7 +77,7 @@ private:
 
     VulkanEditorBackend& renderer_;
     EditorCamera& editorOrbitCamera_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     EditorGizmos& editorGizmos_;
     EditorSettings& editorSettings_;
     RendererSettings& rendererSettings_;

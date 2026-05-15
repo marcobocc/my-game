@@ -1,6 +1,6 @@
 #pragma once
 #include <imgui.h>
-#include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/EditorSelection.hpp"
 #include "../../../../business/asset_editing/EditorAssetRepository.hpp"
 #include "../../../../business/scene_editing/SceneMutations.hpp"
 #include "../../ImguiStyling.hpp"
@@ -18,12 +18,12 @@
 
 class GameObjectInspector {
 public:
-    GameObjectInspector(ObjectSelection& objectSelection,
+    GameObjectInspector(EditorSelection& editorSelection,
                         EntityManager& entityManager,
                         EditorAssetRepository& assetRepository,
                         SceneMutations& sceneMutations,
                         EditorGizmos& debugViz) :
-        objectSelection_(objectSelection),
+        editorSelection_(editorSelection),
         entityManager_(entityManager),
         assetRepository_(assetRepository),
         sceneMutations_(sceneMutations),
@@ -43,7 +43,7 @@ public:
     }
 
 private:
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     EntityManager& entityManager_;
     EditorAssetRepository& assetRepository_;
     SceneMutations& sceneMutations_;

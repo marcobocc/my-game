@@ -10,7 +10,7 @@
 
 class SceneMutations;
 class EditorAssetRepository;
-class ObjectSelection;
+class EditorSelection;
 class GameWindow;
 class EditorCamera;
 class PickingSystem;
@@ -22,7 +22,7 @@ public:
 
     EditorSceneViewport(EditorAssetRepository& assetRepository,
                         SceneMutations& sceneMutations,
-                        ObjectSelection& objectSelection,
+                        EditorSelection& editorSelection,
                         EntityManager& entityManager,
                         PickingSystem& pickingSystem,
                         GameWindow& window,
@@ -32,7 +32,7 @@ public:
                         ShortcutBindingService& shortcutBindingService) :
         assetRepository_(assetRepository),
         sceneMutations_(sceneMutations),
-        objectSelection_(objectSelection),
+        editorSelection_(editorSelection),
         entityManager_(entityManager),
         pickingSystem_(pickingSystem),
         window_(window),
@@ -138,11 +138,8 @@ public:
                     hasHit = true;
                 }
 
-                if (hasHit) {
-                    auto selectedId = objectSelection_.getSelectedEntityId();
-                    if (selectedId && *selectedId == hitId) {
-                        contextTargetId_ = hitId;
-                    }
+                if (hasHit && editorSelection_.isEntitySelected(hitId)) {
+                    contextTargetId_ = hitId;
                 }
             }
             ImGui::OpenPopup("ViewportContextMenu");
@@ -154,7 +151,7 @@ public:
 private:
     EditorAssetRepository& assetRepository_;
     SceneMutations& sceneMutations_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     EntityManager& entityManager_;
     PickingSystem& pickingSystem_;
     GameWindow& window_;

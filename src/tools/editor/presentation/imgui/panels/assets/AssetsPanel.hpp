@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <imgui.h>
 #include <string>
-#include "../../../../business/ObjectSelection.hpp"
+#include "../../../../business/EditorSelection.hpp"
 #include "../../ImguiStyling.hpp"
 #include "../EditorPanel.hpp"
 #include "AssetsDropdownMenu.hpp"
@@ -18,11 +18,11 @@ public:
     static constexpr int SEARCH_BUFFER_SIZE = 256;
 
     AssetsPanel(EditorAssetRepository& repository,
-                ObjectSelection& objectSelection,
+                EditorSelection& editorSelection,
                 MaterialMutations& materialMutations) :
         repository_(repository),
-        objectSelection_(objectSelection),
-        dropdownMenu_(objectSelection, materialMutations) {
+        editorSelection_(editorSelection),
+        dropdownMenu_(editorSelection, materialMutations) {
         searchBuffer_[0] = '\0';
     }
 
@@ -45,7 +45,7 @@ public:
 
 private:
     EditorAssetRepository& repository_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     AssetsDropdownMenu dropdownMenu_;
     char searchBuffer_[SEARCH_BUFFER_SIZE];
 
@@ -195,12 +195,24 @@ private:
 
         std::ranges::sort(allAssets);
 
-        auto selectedAsset = objectSelection_.getSelectedAssetId();
+        bool cmdDown = ImGui::GetIO().KeySuper || ImGui::GetIO().KeyCtrl;
+
         for (const auto& asset: allAssets) {
             if (matchesSearch(asset) && matchesFilter(asset)) {
-                bool selected = selectedAsset && *selectedAsset == asset;
-                if (ImGui::Selectable(asset.c_str(), selected)) {
-                    objectSelection_.selectAsset(asset);
+                bool selected = editorSelection_.isAssetSelected(asset);
+                ImGui::Selectable(asset.c_str(), selected);
+                bool hovered = ImGui::IsItemHovered();
+                if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+                    if (cmdDown) {
+                        if (editorSelection_.isAssetSelected(asset)) {
+                            editorSelection_.removeFromSelection(asset);
+                        } else {
+                            editorSelection_.addToSelection(asset);
+                        }
+                    } else {
+                        editorSelection_.clearSelection();
+                        editorSelection_.addToSelection(asset);
+                    }
                 }
 
                 if (asset.ends_with(".mat") && ImGui::BeginDragDropSource()) {

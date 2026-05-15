@@ -13,7 +13,7 @@ class GameWindow;
 class GameEngine;
 class SceneMutations;
 class EditorCamera;
-class ObjectSelection;
+class EditorSelection;
 class EditorSettings;
 
 struct TransformDragState {
@@ -67,14 +67,14 @@ public:
                           GameEngine& engine,
                           SceneMutations& sceneMutations,
                           EditorCamera& editorOrbitCamera,
-                          ObjectSelection& objectSelection,
+                          EditorSelection& editorSelection,
                           EditorSettings& rendererSettings,
                           EntityManager& entityManager) :
         window_(window),
         engine_(engine),
         sceneMutations_(sceneMutations),
         editorOrbitCamera_(editorOrbitCamera),
-        objectSelection_(objectSelection),
+        editorSelection_(editorSelection),
         rendererSettings_(rendererSettings),
         entityManager_(entityManager) {}
 
@@ -102,7 +102,7 @@ private:
     GameEngine& engine_;
     SceneMutations& sceneMutations_;
     EditorCamera& editorOrbitCamera_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     EditorSettings& rendererSettings_;
     EntityManager& entityManager_;
     TransformDragState dragState_;

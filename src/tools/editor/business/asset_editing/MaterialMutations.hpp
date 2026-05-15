@@ -2,16 +2,16 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
-#include "../ObjectSelection.hpp"
+#include "../EditorSelection.hpp"
 #include "EditorAssetRepository.hpp"
 #include "modules/asset_management/BuiltinAssetNames.hpp"
 #include "modules/asset_management/asset_types/Material.hpp"
 
 class MaterialMutations {
 public:
-    MaterialMutations(EditorAssetRepository& repository, ObjectSelection& objectSelection) :
+    MaterialMutations(EditorAssetRepository& repository, EditorSelection& editorSelection) :
         repository_(repository),
-        objectSelection_(objectSelection) {}
+        editorSelection_(editorSelection) {}
 
     AssetHandle createNew(const std::filesystem::path& relativePath = "") {
         std::string materialName = relativePath.empty() ? generateName() : relativePath.string();
@@ -31,7 +31,8 @@ public:
                           false);
 
         repository_.insert<Material>(materialName, material);
-        objectSelection_.selectAsset(materialName);
+        editorSelection_.clearSelection();
+        editorSelection_.addToSelection(materialName);
         return materialName;
     }
 
@@ -97,7 +98,7 @@ public:
 
 private:
     EditorAssetRepository& repository_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
 
     std::string generateName() const {
         auto availableMaterials = repository_.list(".mat");
@@ -111,7 +112,6 @@ private:
     }
 
     void clearSelectionIfSelected(const std::string& materialName) const {
-        auto selected = objectSelection_.getSelectedAssetId();
-        if (selected && *selected == materialName) objectSelection_.clearSelection();
+        if (editorSelection_.isAssetSelected(materialName)) editorSelection_.clearSelection();
     }
 };

@@ -3,7 +3,7 @@
 #include "../../../engine/modules/scene/components/Renderer.hpp"
 #include "../business/EditorCamera.hpp"
 #include "../business/EditorGizmos.hpp"
-#include "../business/ObjectSelection.hpp"
+#include "../business/EditorSelection.hpp"
 #include "../business/ObjectTransformHandle.hpp"
 #include "../business/asset_editing/EditorAssetRepository.hpp"
 #include "../business/asset_editing/MaterialMutations.hpp"
@@ -21,7 +21,7 @@
 
 PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      EditorCamera& editorOrbitCamera,
-                                     ObjectSelection& objectSelection,
+                                     EditorSelection& editorSelection,
                                      EditorGizmos& editorGizmos,
                                      EditorSettings& editorSettings,
                                      RendererSettings& rendererSettings,
@@ -42,7 +42,7 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
                                      ShortcutBindingService& shortcutBindingService) :
     renderer_(renderer),
     editorOrbitCamera_(editorOrbitCamera),
-    objectSelection_(objectSelection),
+    editorSelection_(editorSelection),
     editorGizmos_(editorGizmos),
     editorSettings_(editorSettings),
     rendererSettings_(rendererSettings),
@@ -60,22 +60,22 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
     actionDispatcher_(actionDispatcher),
     shortcutBindingService_(shortcutBindingService) {
     userInterface_.emplace<ApplicationMenuBar>(
-            sceneMutations, editorWorkspace, undoHistory, objectSelection_, actionDispatcher_, shortcutBindingService_);
+            sceneMutations, editorWorkspace, undoHistory, editorSelection_, actionDispatcher_, shortcutBindingService_);
     userInterface_.emplace<SceneViewToolbar>(editorSettings_, editorGizmos_);
     userInterface_.emplace<HierarchyPanel>(assetRepository_,
-                                           objectSelection_,
+                                           editorSelection_,
                                            entityManager_,
                                            sceneMutations,
                                            objectBuilder_,
                                            engine_,
                                            actionDispatcher_,
                                            shortcutBindingService_);
-    userInterface_.emplace<AssetsPanel>(assetRepository_, objectSelection_, materialMutations);
+    userInterface_.emplace<AssetsPanel>(assetRepository_, editorSelection_, materialMutations);
     userInterface_.emplace<InspectorPanel>(
-            objectSelection_, entityManager_, assetRepository_, sceneMutations, materialMutations, editorGizmos_);
+            editorSelection_, entityManager_, assetRepository_, sceneMutations, materialMutations, editorGizmos_);
     userInterface_.emplace<EditorSceneViewport>(assetRepository_,
                                                 sceneMutations,
-                                                objectSelection_,
+                                                editorSelection_,
                                                 entityManager_,
                                                 pickingService,
                                                 window_,
@@ -87,12 +87,11 @@ PresentationLayer::PresentationLayer(VulkanEditorBackend& renderer,
 
 void PresentationLayer::buildOutlines() {
     outlineQueue_.clear();
-    auto selectedId = objectSelection_.getSelectedEntityId();
-    if (selectedId.has_value()) {
-        auto* renderer = entityManager_.getComponent<Renderer>(*selectedId);
-        auto* transform = entityManager_.getComponent<Transform>(*selectedId);
+    for (EntityHandle selectedId: editorSelection_.getSelectedEntityIds()) {
+        auto* renderer = entityManager_.getComponent<Renderer>(selectedId);
+        auto* transform = entityManager_.getComponent<Transform>(selectedId);
         if (renderer && transform) {
-            outlineQueue_.push_back(DrawCall{*renderer, *transform, std::to_string(*selectedId)});
+            outlineQueue_.push_back(DrawCall{*renderer, *transform, std::to_string(selectedId)});
         }
     }
 }
@@ -118,27 +117,28 @@ void PresentationLayer::buildGizmos() {
         builtGizmoLines_.insert(builtGizmoLines_.end(), bvhGizmo.begin(), bvhGizmo.end());
     }
 
-    auto selectedId = objectSelection_.getSelectedEntityId();
-    if (!selectedId.has_value()) return;
+    const auto& selectedIds = editorSelection_.getSelectedEntityIds();
+    if (selectedIds.size() != 1) return;
+    EntityHandle selectedId = selectedIds[0];
 
     const Camera& camera = editorOrbitCamera_.getCamera();
     const Transform& cameraTransform = editorOrbitCamera_.getCameraTransform();
     auto dragState = objectTransformHandle_.getDragState();
 
     if (dragState.gizmoMode == GizmoType::Translation) {
-        auto result = gizmosBuilder_.buildTranslationGizmo(*selectedId, camera, cameraTransform);
+        auto result = gizmosBuilder_.buildTranslationGizmo(selectedId, camera, cameraTransform);
         builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);
         }
     } else if (dragState.gizmoMode == GizmoType::Rotation) {
-        auto result = gizmosBuilder_.buildRotationGizmo(*selectedId, camera, cameraTransform);
+        auto result = gizmosBuilder_.buildRotationGizmo(selectedId, camera, cameraTransform);
         builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);
         }
     } else if (dragState.gizmoMode == GizmoType::Scale) {
-        auto result = gizmosBuilder_.buildScaleGizmo(*selectedId, camera, cameraTransform);
+        auto result = gizmosBuilder_.buildScaleGizmo(selectedId, camera, cameraTransform);
         builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);

@@ -3,7 +3,7 @@
 #include <nfd.hpp>
 #include <string>
 #include "../../../business/ActionDispatcher.hpp"
-#include "../../../business/ObjectSelection.hpp"
+#include "../../../business/EditorSelection.hpp"
 #include "../../../business/SceneLoader.hpp"
 #include "../../../business/UndoHistory.hpp"
 #include "../../../business/scene_editing/SceneMutations.hpp"
@@ -18,13 +18,13 @@ public:
     explicit ApplicationMenuBar(SceneMutations& sceneMutations,
                                 SceneLoader& editorWorkspace,
                                 UndoHistory& undoHistory,
-                                ObjectSelection& objectSelection,
+                                EditorSelection& editorSelection,
                                 ActionDispatcher& actionDispatcher,
                                 ShortcutBindingService& shortcutBindingService) :
         sceneMutations_(sceneMutations),
         editorWorkspace_(editorWorkspace),
         undoHistory_(undoHistory),
-        objectSelection_(objectSelection),
+        editorSelection_(editorSelection),
         actionDispatcher_(actionDispatcher),
         shortcutBindingService_(shortcutBindingService) {}
 
@@ -60,13 +60,12 @@ private:
     SceneMutations& sceneMutations_;
     SceneLoader& editorWorkspace_;
     UndoHistory& undoHistory_;
-    ObjectSelection& objectSelection_;
+    EditorSelection& editorSelection_;
     ActionDispatcher& actionDispatcher_;
     ShortcutBindingService& shortcutBindingService_;
 
     void drawObjectEditMenu() const {
-        auto selectedId = objectSelection_.getSelectedEntityId();
-        bool hasSelection = selectedId.has_value();
+        bool hasSelection = !editorSelection_.getSelectedEntityIds().empty();
 
         constexpr ActionID editActions[] = {
                 ActionID::COPY, ActionID::CUT, ActionID::DUPLICATE, ActionID::PASTE, ActionID::DELETE};
@@ -75,15 +74,7 @@ private:
         for (int i = 0; i < 5; ++i) {
             std::string shortcutStr = shortcutBindingService_.getShortcut(editActions[i]);
             if (ImGui::MenuItem(actionNames[i], shortcutStr.c_str(), false, hasSelection)) {
-                auto actions = sceneMutations_.getObjectEditActions(*selectedId);
-                int idx = 0;
-                for (auto& actionFunc: actions | std::views::values) {
-                    if (idx == i) {
-                        actionFunc();
-                        break;
-                    }
-                    idx++;
-                }
+                actionDispatcher_.execute(editActions[i]);
             }
         }
     }
