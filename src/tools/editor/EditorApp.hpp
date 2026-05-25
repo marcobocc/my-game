@@ -1,21 +1,22 @@
 #pragma once
-#include <string>
-#include "../../engine/GameEngine.hpp"
-#include "../../engine/modules/core/TimeManager.hpp"
-#include "../../engine/modules/input/InputSystem.hpp"
-#include "../../engine/modules/physics/PhysicsSystem.hpp"
-#include "../../engine/modules/scene/EntityManager.hpp"
-#include "business/EditorCamera.hpp"
-#include "business/EditorSettings.hpp"
-#include "business/SceneLoader.hpp"
-#include "business/scene_editing/ObjectBuilder.hpp"
-#include "input/InputHandler.hpp"
-#include "presentation/PresentationLayer.hpp"
-#include "presentation/imgui/ImguiStyling.hpp"
+#include "../../runtime/GameEngine.hpp"
+#include "../../runtime/modules/core/TimeManager.hpp"
+#include "../../runtime/modules/input/InputSystem.hpp"
+#include "../../runtime/modules/physics/PhysicsSystem.hpp"
+#include "../../runtime/modules/scene/EntityStore.hpp"
+#include "features/input_handling/InputHandler.hpp"
+#include "features/scene_viewport/editor_camera/EditorCamera.hpp"
+#include "rendering/EditorRenderer.hpp"
+#include "services/EditorContext.hpp"
+#include "services/EditorSettings.hpp"
+#include "styling/ImguiStyling.hpp"
 
-class HierarchyPanel;
-class InspectorPanel;
 class GameWindow;
+class VulkanBackend;
+class EditorGizmos;
+class GizmoBuilder;
+class ObjectTransformHandle;
+class PickingSystem;
 
 class EditorApp {
 public:
@@ -24,27 +25,23 @@ public:
               EntityManager& entityManager,
               EditorCamera& editorOrbitCamera,
               InputHandler& inputHandler,
-              PresentationLayer& presentationLayer,
               EditorSettings& rendererSettings,
-              SceneLoader& sceneLoader,
-              ObjectBuilder& objectBuilder,
+              EditorContext& project,
               TimeManager& time,
               InputSystem& inputSystem,
               PhysicsSystem& physicsSystem,
-              VirtualFileSystem& vfs) :
+              EditorRenderer& editorRenderer) :
         window_(window),
         engine_(engine),
         entityManager_(entityManager),
         time_(time),
         inputSystem_(inputSystem),
         physicsSystem_(physicsSystem),
-        editorOrbitCamera_(editorOrbitCamera),
-        rendererSettings_(rendererSettings),
-        presentationLayer_(presentationLayer),
-        sceneLoader_(sceneLoader),
-        objectBuilder_(objectBuilder),
+        editorCamera_(editorOrbitCamera),
+        editorSettings_(rendererSettings),
+        project_(project),
         inputHandler_(inputHandler),
-        vfs_(vfs) {
+        editorRenderer_(editorRenderer) {
         initEditor();
         ImguiStyling::ApplyEditorStyle();
     }
@@ -61,9 +58,8 @@ public:
             auto [mouseX, mouseY] = engine_.getMousePosition();
             inputHandler_.update(mouseX, mouseY, deltaTime);
 
-            float gridScale = rendererSettings_.getGridScale();
-            presentationLayer_.render(entityManager_, gridScale, {});
-
+            float gridScale = editorSettings_.getGridScale();
+            editorRenderer_.render(entityManager_, gridScale);
 
             time_.endFrame();
         }
@@ -82,15 +78,12 @@ private:
 
     void initEditor() {
         setupViewport();
-        rendererSettings_.enableGrid();
+        editorSettings_.enableGrid();
         SceneViewport sv = window_.getSceneViewport();
         if (sv.width > 0 && sv.height > 0)
-            editorOrbitCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
+            editorCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
 
-        if (!sceneLoader_.loadLatestScene()) {
-            sceneLoader_.newScene();
-            entityManager_.upsertFromJson(objectBuilder_.cube());
-        }
+        if (!project_.loadLatestScene()) project_.newScene();
     }
 
     void setupViewport() {
@@ -100,7 +93,7 @@ private:
             SceneViewport sv = computeSceneViewport(newW, newH);
             window_.setSceneViewport(sv);
             if (sv.width > 0 && sv.height > 0)
-                editorOrbitCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
+                editorCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
         });
     }
 
@@ -110,11 +103,9 @@ private:
     TimeManager& time_;
     InputSystem& inputSystem_;
     PhysicsSystem& physicsSystem_;
-    EditorCamera& editorOrbitCamera_;
-    EditorSettings& rendererSettings_;
-    PresentationLayer& presentationLayer_;
-    SceneLoader& sceneLoader_;
-    ObjectBuilder& objectBuilder_;
+    EditorCamera& editorCamera_;
+    EditorSettings& editorSettings_;
+    EditorContext& project_;
     InputHandler& inputHandler_;
-    VirtualFileSystem& vfs_;
+    EditorRenderer& editorRenderer_;
 };

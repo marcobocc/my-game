@@ -4,6 +4,7 @@ Checks: >
   clang-analyzer-*,
   cppcoreguidelines-*,
   readability-identifier-naming,
+  clang-diagnostic-unused-private-field,
   -readability-braces-around-statements,
   -modernize-use-nodiscard,
   -modernize-use-trailing-return-type

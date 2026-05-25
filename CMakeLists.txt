@@ -18,5 +18,5 @@ find_package(nfd CONFIG REQUIRED)
 find_package(PhysFS CONFIG REQUIRED)
 
 add_subdirectory(vendor)
-add_subdirectory(src/engine)
+add_subdirectory(src/runtime)
 add_subdirectory(src/tools)

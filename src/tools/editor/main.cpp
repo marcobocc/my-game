@@ -4,8 +4,8 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
 #include <vector>
-#include "../../engine/modules/core/GameWindow.hpp"
-#include "EditorWiringContainer.hpp"
+#include "../../runtime/modules/core/GameWindow.hpp"
+#include "wiring/EditorContainer.hpp"
 
 std::vector<std::filesystem::path> createMountPaths(const std::filesystem::path& projectPath) {
     std::vector<std::filesystem::path> paths;
@@ -44,8 +44,8 @@ int main(int argc, char* argv[]) {
     }
     GameWindow window("Editor");
     auto mountPaths = createMountPaths(projectRoot);
-    EditorWiringContainer wiringContainer(window, mountPaths, projectRoot);
-    EditorApp& editorApp = wiringContainer.editorApp();
+    EditorContainer editorContainer(window, mountPaths, projectRoot);
+    EditorApp& editorApp = editorContainer.editorApp();
     editorApp.run();
 
     return 0;

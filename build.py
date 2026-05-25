@@ -174,6 +174,8 @@ def configure_cmake(toolchain: Path, build_type: str = "Debug") -> bool:
 
 
 def build_target(target: str | None) -> bool:
+    if not BUILD_DIR.exists():
+        BUILD_DIR.mkdir(parents=True, exist_ok=True)
     toolchain = get_vcpkg_toolchain()
     compile_shaders()
     if not configure_cmake(toolchain):
@@ -194,7 +196,7 @@ def build_target(target: str | None) -> bool:
 # -----------------------------------------------------------------------------
 def compile_shaders() -> bool:
     """Compile shaders from the assets directory"""
-    shaders_dir = PROJECT_ROOT / "src" / "engine" / "data" / "assets" / "builtin" / "shaders"
+    shaders_dir = PROJECT_ROOT / "src" / "runtime" / "data" / "assets" / "builtin" / "shaders"
 
     for pipeline_dir in shaders_dir.iterdir():
         if not pipeline_dir.is_dir():

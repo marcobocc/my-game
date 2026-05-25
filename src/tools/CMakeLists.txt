@@ -10,7 +10,14 @@ foreach (TOOL_DIR ${TOOL_DIRS})
             add_executable(${TOOL_NAME} ${TOOL_SOURCES})
             set_target_properties(${TOOL_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
             target_link_libraries(${TOOL_NAME} PRIVATE GameEngineLib nfd::nfd)
-            target_compile_definitions(${TOOL_NAME} PRIVATE TOOL_DATA_DIR="${TOOL_DIR}/data")
+            target_include_directories(${TOOL_NAME} PRIVATE
+                ${CMAKE_SOURCE_DIR}/src/runtime
+                ${CMAKE_SOURCE_DIR}/src/tools
+            )
+            target_compile_definitions(${TOOL_NAME} PRIVATE
+                VK_NO_PROTOTYPES
+                TOOL_DATA_DIR="${TOOL_DIR}/data"
+            )
         endif ()
     endif ()
 endforeach ()
