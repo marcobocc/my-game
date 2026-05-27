@@ -99,7 +99,7 @@ def get_vcpkg_toolchain() -> Path:
 def get_source_files() -> list[Path]:
     exclude_paths = [BUILD_DIR]
     files = []
-    for folder in ["src", "include"]:
+    for folder in ["runtime/src", "tools/editor/src"]:
         for ext in ("*.cpp", "*.hpp"):
             for f in Path(folder).rglob(ext):
                 if any(excl in f.parents for excl in exclude_paths):
@@ -114,7 +114,7 @@ def run_clang_tidy() -> bool:
         "clang-tidy",
         "-p", str(BUILD_DIR),
         "-quiet",
-        "-header-filter=src/.*|include/.*",
+        "-header-filter=runtime/src/.*|tools/editor/src/.*",
         "--warnings-as-errors=*",
     ]
     if sys.platform == "darwin":
@@ -190,13 +190,22 @@ def build_target(target: str | None) -> bool:
     return return_code == 0
 
 
+def run_tests() -> bool:
+    if not BUILD_DIR.exists():
+        error("Build directory does not exist. Run build first.")
+        return False
+    build_log("Running tests")
+    return_code = run_cmd(["ctest", "--output-on-failure", "-V"], cwd=BUILD_DIR)
+    return return_code == 0
+
+
 
 # -----------------------------------------------------------------------------
 # Shader Compilation
 # -----------------------------------------------------------------------------
 def compile_shaders() -> bool:
     """Compile shaders from the assets directory"""
-    shaders_dir = PROJECT_ROOT / "src" / "runtime" / "data" / "assets" / "builtin" / "shaders"
+    shaders_dir = PROJECT_ROOT / "runtime" / "data" / "assets" / "builtin" / "shaders"
 
     for pipeline_dir in shaders_dir.iterdir():
         if not pipeline_dir.is_dir():
@@ -295,6 +304,10 @@ def main() -> None:
         success(f"Successfully built all targets in {end_time - start_time:.2f}s")
     else:
         success(f"Successfully built target {args.target} in {end_time - start_time:.2f}s")
+
+    if not run_tests():
+        error("Tests failed")
+        sys.exit(1)
 
     if args.target:
         run_target(args.target, extra_args)

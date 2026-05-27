@@ -38,6 +38,10 @@
     {
       "name": "physfs",
       "default-features": true
+    },
+    {
+      "name": "gtest",
+      "default-features": true
     }
   ]
 }

@@ -16,7 +16,10 @@ find_package(VulkanHeaders CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(nfd CONFIG REQUIRED)
 find_package(PhysFS CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
+
+enable_testing()
 
 add_subdirectory(vendor)
-add_subdirectory(src/runtime)
-add_subdirectory(src/tools)
+add_subdirectory(runtime)
+add_subdirectory(tools/editor)
