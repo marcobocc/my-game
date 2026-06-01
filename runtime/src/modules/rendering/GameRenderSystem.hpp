@@ -1,7 +1,7 @@
 #pragma once
 #include <log4cxx/logger.h>
 #include "GameRenderData.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Renderer.hpp"
 #include "modules/scene/components/Transform.hpp"
@@ -18,7 +18,7 @@ public:
         activeCameraTransform_ = &cameraTransform;
     }
 
-    void update(const EntityManager& entityManager) {
+    void update(const World& entityManager) {
         std::vector<DrawCall> drawQueue;
         auto drawables = entityManager.query<Renderer, Transform>();
         for (auto& [entity, rendererPtr, transformPtr]: drawables) {

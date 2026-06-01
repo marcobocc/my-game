@@ -8,14 +8,14 @@
 #include "../services/EditorSelection.hpp"
 #include "EditorRenderData.hpp"
 #include "VulkanBackend.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 #include "modules/scene/components/Renderer.hpp"
 
 EditorRenderer::EditorRenderer(VulkanBackend& renderer,
                                EditorCamera& editorOrbitCamera,
                                EditorSelection& editorSelection,
                                EditorGizmos& editorGizmos,
-                               EntityManager& entityManager,
+                               World& entityManager,
                                GizmoBuilder& gizmosBuilder,
                                ObjectTransformHandle& objectTransformHandle,
                                PickingSystem& pickingService,
@@ -34,8 +34,10 @@ EditorRenderer::EditorRenderer(VulkanBackend& renderer,
 void EditorRenderer::buildOutlines() {
     outlineQueue_.clear();
     for (EntityHandle selectedId: editorSelection_.getSelectedEntityIds()) {
-        auto* renderer = entityManager_.getComponent<Renderer>(selectedId);
-        auto* transform = entityManager_.getComponent<Transform>(selectedId);
+        auto* actor = entityManager_.getActor(selectedId);
+        if (!actor) continue;
+        auto* renderer = actor->getComponent<Renderer>();
+        auto* transform = actor->getComponent<Transform>();
         if (renderer && transform) {
             outlineQueue_.push_back(DrawCall{*renderer, *transform, std::to_string(selectedId)});
         }
@@ -92,7 +94,7 @@ void EditorRenderer::buildGizmos() {
     }
 }
 
-void EditorRenderer::render(const EntityManager& entityManager, float gridScale) {
+void EditorRenderer::render(const World& entityManager, float gridScale) {
     buildOutlines();
     buildGizmos();
 

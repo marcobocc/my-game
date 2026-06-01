@@ -31,7 +31,7 @@ public:
                    EditorSelection& editorSelection,
                    EditorGizmos& editorGizmos,
                    EditorSettings& editorSettings,
-                   EntityManager& entityManager,
+                   World& entityManager,
                    PickingSystem& pickingService,
                    RuntimeScene& scene,
                    AssetStore& assetStore,

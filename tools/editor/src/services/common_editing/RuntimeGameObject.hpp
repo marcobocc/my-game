@@ -1,28 +1,28 @@
 #pragma once
 #include "../UndoHistory.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 
 /*
 RuntimeGameObject
 
-A live facade over a single ECS entity inside the EntityStore.
+A live facade over a single Actor inside the World.
 
 It provides component-level mutation, undo/redo tracking, and
-serialization while directly operating on the active ECS state.
+serialization while directly operating on the active scene state.
 
 It does not store or cache data. All operations reflect immediately
-on the underlying EntityStore.
+on the underlying World.
 
 ------------------------------------------------------------
 Live Behavior
 ------------------------------------------------------------
 
-- Component operations immediately affect the ECS
+- Component operations immediately affect the Actor
 - No deferred or staged modifications
-- All reads/writes reflect current store state
+- All reads/writes reflect current World state
 - Snapshots capture live component state at call time
 
-The object is a thin handle-bound view into the EntityStore.
+The object is a thin handle-bound view into the World.
 
 ------------------------------------------------------------
 Undo/Redo Integration
@@ -35,14 +35,14 @@ Each operation stores:
 - redo action (reapply updated state)
 - optional group identifier for batching related edits
 
-Undo/redo directly mutates the live ECS state.
+Undo/redo directly mutates the live World state.
 
 ------------------------------------------------------------
 Component Operations
 ------------------------------------------------------------
 
 - addComponent
-  Inserts or replaces a component in the ECS
+  Inserts or replaces a component on the Actor
   Records undo/redo for removal/restoration
 
 - removeComponent
@@ -62,17 +62,11 @@ Serializes the entity into a GameObjectDTO
 Includes:
 - entity handle
 - all attached components
-- full component state captured from the live ECS
-
-The snapshot reflects the current state of the entity at the moment
-of invocation.
+- full component state captured from the live World
 */
 class RuntimeGameObject {
 public:
-    RuntimeGameObject(EntityManager& store, UndoHistory& undo, EntityHandle e) :
-        store_(store),
-        undo_(undo),
-        entity_(e) {}
+    RuntimeGameObject(World& world, UndoHistory& undo, EntityHandle e) : world_(world), undo_(undo), entity_(e) {}
 
     // --------------------------------------------------------------------------------
     // Read-only Operations
@@ -82,7 +76,9 @@ public:
 
     template<typename Component>
     const Component* getComponent() const {
-        return store_.getComponent<Component>(entity_);
+        const Actor* actor = world_.getActor(entity_);
+        if (!actor) return nullptr;
+        return actor->getComponent<Component>();
     }
 
     // --------------------------------------------------------------------------------
@@ -90,46 +86,81 @@ public:
     // --------------------------------------------------------------------------------
     template<typename Component>
     void addComponent(const Component& c, const std::string& mutationGroup = "") {
-        store_.upsertComponent<Component>(entity_, c);
-        EntityManager* store = &store_;
+        Actor* actor = world_.getActor(entity_);
+        if (!actor) return;
+        Component* existing = actor->template getComponent<Component>();
+        if (existing)
+            *existing = c;
+        else
+            actor->template addComponent<Component>(c);
+        World* world = &world_;
         EntityHandle entity = entity_;
-        undo_.push([store, entity] { store->removeComponent<Component>(entity); },
-                   [store, entity, c] { store->upsertComponent<Component>(entity, c); },
-                   "Add Component",
-                   mutationGroup);
+        undo_.push(
+                [world, entity] {
+                    if (Actor* a = world->getActor(entity)) a->removeComponent(a->template getComponent<Component>());
+                },
+                [world, entity, c] {
+                    if (Actor* a = world->getActor(entity)) {
+                        Component* ex = a->template getComponent<Component>();
+                        if (ex)
+                            *ex = c;
+                        else
+                            a->template addComponent<Component>(c);
+                    }
+                },
+                "Add Component",
+                mutationGroup);
     }
 
     template<typename Component>
     void removeComponent(const std::string& mutationGroup = "") {
-        auto* old = store_.getComponent<Component>(entity_);
+        Actor* actor = world_.getActor(entity_);
+        if (!actor) return;
+        Component* old = actor->template getComponent<Component>();
         if (!old) return;
         Component backup = *old;
-        store_.removeComponent<Component>(entity_);
-        EntityManager* store = &store_;
+        actor->removeComponent(old);
+        World* world = &world_;
         EntityHandle entity = entity_;
-        undo_.push([store, entity, backup] { store->upsertComponent<Component>(entity, backup); },
-                   [store, entity] { store->removeComponent<Component>(entity); },
-                   "Remove Component",
-                   mutationGroup);
+        undo_.push(
+                [world, entity, backup] {
+                    if (Actor* a = world->getActor(entity)) a->template addComponent<Component>(backup);
+                },
+                [world, entity] {
+                    if (Actor* a = world->getActor(entity)) a->removeComponent(a->template getComponent<Component>());
+                },
+                "Remove Component",
+                mutationGroup);
     }
 
     template<typename Component, typename Fn>
     void mutateComponent(Fn&& fn, const std::string& mutationGroup = "") {
-        auto* c = store_.getComponent<Component>(entity_);
+        Actor* actor = world_.getActor(entity_);
+        if (!actor) return;
+        Component* c = actor->template getComponent<Component>();
         if (!c) return;
         Component before = *c;
-        fn(*c);
+        std::forward<Fn>(fn)(*c);
         Component after = *c;
-        EntityManager* store = &store_;
+        World* world = &world_;
         EntityHandle entity = entity_;
-        undo_.push([store, entity, before] { store->upsertComponent<Component>(entity, before); },
-                   [store, entity, after] { store->upsertComponent<Component>(entity, after); },
-                   "Modify Component",
-                   mutationGroup);
+        undo_.push(
+                [world, entity, before] {
+                    if (Actor* a = world->getActor(entity)) {
+                        if (auto* comp = a->template getComponent<Component>()) *comp = before;
+                    }
+                },
+                [world, entity, after] {
+                    if (Actor* a = world->getActor(entity)) {
+                        if (auto* comp = a->template getComponent<Component>()) *comp = after;
+                    }
+                },
+                "Modify Component",
+                mutationGroup);
     }
 
 private:
-    EntityManager& store_;
+    World& world_;
     UndoHistory& undo_;
     EntityHandle entity_;
 };

@@ -2,7 +2,7 @@
 #include <functional>
 #include <unordered_set>
 #include "modules/physics/collision_utils.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 
 class PhysicsSystem {
 public:
@@ -10,7 +10,7 @@ public:
     enum class CollisionEventType { Enter, Stay, Exit };
     using CollisionCallback = std::function<void(const CollisionPair&)>;
 
-    explicit PhysicsSystem(EntityManager& entityManager) : entityManager_(entityManager) {}
+    explicit PhysicsSystem(World& entityManager) : entityManager_(entityManager) {}
 
     static bool checkCollision(const BoxCollider& a, const Transform& ta, const BoxCollider& b, const Transform& tb) {
         return Physics::checkCollision(a, ta, b, tb);
@@ -75,7 +75,7 @@ private:
         return a < b ? std::make_pair(a, b) : std::make_pair(b, a);
     }
 
-    EntityManager& entityManager_;
+    World& entityManager_;
     std::unordered_set<CollisionPair, PairHash> prevCollisions_;
     std::vector<CollisionCallback> enterCallbacks_;
     std::vector<CollisionCallback> stayCallbacks_;

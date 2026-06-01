@@ -3,11 +3,11 @@
 #include <nlohmann/json.hpp>
 #include "IComponent.hpp"
 
-enum class LightType { Directional = 0 };
+enum class LightType { DIRECTIONAL = 0 };
 
-class Light final : IComponent {
+class Light final : public IComponent {
 public:
-    explicit Light(LightType type = LightType::Directional, float intensity = 1.0f) :
+    explicit Light(LightType type = LightType::DIRECTIONAL, float intensity = 1.0f) :
         type(type),
         intensity(intensity) {}
 

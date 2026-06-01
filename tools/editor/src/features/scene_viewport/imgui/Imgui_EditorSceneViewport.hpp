@@ -18,7 +18,7 @@ public:
     Imgui_EditorSceneViewport(AssetStore& assetStore,
                               RuntimeScene& scene,
                               EditorSelection& editorSelection,
-                              EntityManager& entityManager,
+                              World& entityManager,
                               PickingSystem& pickingSystem,
                               GameWindow& window,
                               EditorCamera& editorCamera,
@@ -137,7 +137,7 @@ private:
     AssetStore& assetStore_;
     RuntimeScene& scene_;
     EditorSelection& editorSelection_;
-    EntityManager& entityManager_;
+    World& entityManager_;
     PickingSystem& pickingSystem_;
     GameWindow& window_;
     EditorCamera& editorCamera_;

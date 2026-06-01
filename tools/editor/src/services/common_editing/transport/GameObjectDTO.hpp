@@ -1,5 +1,11 @@
 #pragma once
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/EntityHandle.hpp"
+#include "modules/scene/components/BoxCollider.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Light.hpp"
+#include "modules/scene/components/Metadata.hpp"
+#include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 struct GameObjectDTO {
     using ComponentVariant = std::variant<Transform, Camera, Renderer, BoxCollider, Light, Metadata>;

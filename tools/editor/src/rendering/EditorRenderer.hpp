@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 
 class VulkanBackend;
 class EditorCamera;
@@ -21,13 +21,13 @@ public:
                    EditorCamera& editorOrbitCamera,
                    EditorSelection& editorSelection,
                    EditorGizmos& editorGizmos,
-                   EntityManager& entityManager,
+                   World& entityManager,
                    GizmoBuilder& gizmosBuilder,
                    ObjectTransformHandle& objectTransformHandle,
                    PickingSystem& pickingService,
                    ImguiRoot& imguiRoot);
 
-    void render(const EntityManager& entityManager, float gridScale);
+    void render(const World& entityManager, float gridScale);
 
 private:
     void buildGizmos();
@@ -37,7 +37,7 @@ private:
     EditorCamera& editorOrbitCamera_;
     EditorSelection& editorSelection_;
     EditorGizmos& editorGizmos_;
-    EntityManager& entityManager_;
+    World& entityManager_;
     GizmoBuilder& gizmosBuilder_;
     ObjectTransformHandle& objectTransformHandle_;
     PickingSystem& pickingSystem_;

@@ -5,7 +5,7 @@
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 #include "rendering/EditorRenderer.hpp"
 #include "services/EditorContext.hpp"
 #include "services/EditorSettings.hpp"
@@ -22,7 +22,7 @@ class EditorApp {
 public:
     EditorApp(GameWindow& window,
               GameEngine& engine,
-              EntityManager& entityManager,
+              World& entityManager,
               EditorCamera& editorOrbitCamera,
               InputHandler& inputHandler,
               EditorSettings& rendererSettings,
@@ -99,7 +99,7 @@ private:
 
     GameWindow& window_;
     GameEngine& engine_;
-    EntityManager& entityManager_;
+    World& entityManager_;
     TimeManager& time_;
     InputSystem& inputSystem_;
     PhysicsSystem& physicsSystem_;

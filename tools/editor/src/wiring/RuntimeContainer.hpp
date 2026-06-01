@@ -28,7 +28,7 @@
 #include "modules/rendering/vulkan/passes/VulkanObjectIdPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanOutlinePass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanUIPass.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 #include "structs/RendererSettings.hpp"
 
 class RuntimeContainer {
@@ -38,7 +38,7 @@ public:
                               const std::filesystem::path& projectRoot) :
         vfs_(mountPaths, projectRoot),
         assetLoader_(vfs_, loadedAssets_),
-        physicsSystem_(entityManager_),
+        physicsSystem_(world_),
         vulkanContext_(initVulkanContext()),
         debugMessenger_(vulkanContext_),
         swapchainManager_(window, vulkanContext_),
@@ -69,7 +69,7 @@ public:
                 loadedAssets_,
                 inputSystem_,
                 physicsSystem_,
-                entityManager_,
+                world_,
                 gameRenderSystem_,
                 rendererSettings_,
                 gameRenderer_),
@@ -81,7 +81,7 @@ public:
         uiPass_(vulkanContext_, swapchainManager_, window) {}
 
     GameEngine& engine() { return engine_; }
-    EntityManager& entityManager() { return entityManager_; }
+    World& entityManager() { return world_; }
     InputSystem& inputSystem() { return inputSystem_; }
     PhysicsSystem& physicsSystem() { return physicsSystem_; }
     TimeManager& time() { return time_; }
@@ -107,7 +107,7 @@ private:
     AssetLoader assetLoader_;
     AssetCache loadedAssets_;
     RendererSettings rendererSettings_;
-    EntityManager entityManager_;
+    World world_;
     PhysicsSystem physicsSystem_;
     VulkanContext vulkanContext_;
     VulkanDebugMessenger debugMessenger_;

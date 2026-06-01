@@ -1,29 +1,51 @@
 #include "RuntimeScene.hpp"
+#include "modules/scene/components/BoxCollider.hpp"
+#include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Light.hpp"
+#include "modules/scene/components/Metadata.hpp"
+#include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/Transform.hpp"
 
 RuntimeGameObject RuntimeScene::getObject(EntityHandle e) const {
-    if (store_.exists(e)) return RuntimeGameObject(store_, undo_, e);
+    if (world_.hasActor(e)) return RuntimeGameObject(world_, undo_, e);
     throw std::runtime_error("GameObject does not exist");
 }
 
 SceneDTO RuntimeScene::snapshotScene() const {
     SceneDTO scene;
-    for (EntityHandle e: store_.getEntities()) {
-        GameObjectDTO objDto = snapshotObject(e);
-        scene.objects.push_back(objDto);
+    for (const auto& actor: world_.getActors()) {
+        scene.objects.push_back(snapshotObject(actor->handle()));
     }
     return scene;
 }
 
 GameObjectDTO RuntimeScene::snapshotObject(EntityHandle e) const {
     GameObjectDTO dto(e);
-    store_.forEachComponent(e, [&](auto& comp) { dto.components.emplace_back(comp); });
+    const Actor* actor = world_.getActor(e);
+    if (!actor) return dto;
+    auto tryAdd = [&]<typename T>() {
+        if (const T* c = actor->getComponent<T>()) dto.components.emplace_back(*c);
+    };
+    tryAdd.operator()<Metadata>();
+    tryAdd.operator()<Transform>();
+    tryAdd.operator()<Camera>();
+    tryAdd.operator()<Renderer>();
+    tryAdd.operator()<BoxCollider>();
+    tryAdd.operator()<Light>();
     return dto;
 }
 
 void RuntimeScene::clearScene(const std::string& mutationGroup) {
     SceneDTO before = snapshotScene();
-    store_.clear();
-    undo_.push([this, before] { restore_Impl(before); }, [this] { store_.clear(); }, "Clear Scene", mutationGroup);
+    world_.clear();
+    nextHandle_ = 0;
+    undo_.push([this, before] { restore_Impl(before); },
+               [this] {
+                   world_.clear();
+                   nextHandle_ = 0;
+               },
+               "Clear Scene",
+               mutationGroup);
 }
 
 void RuntimeScene::restoreScene(const SceneDTO& dto, const std::string& mutationGroup) {
@@ -36,34 +58,35 @@ void RuntimeScene::restoreScene(const SceneDTO& dto, const std::string& mutation
 }
 
 EntityHandle RuntimeScene::createObject(const std::string& mutationGroup) {
-    EntityHandle handle = store_.createEntity();
-    undo_.push([this, handle] { store_.destroyEntity(handle); },
-               [this, handle] { store_.createEntity(handle); },
+    EntityHandle handle = nextHandle_++;
+    world_.addActor(handle);
+    undo_.push([this, handle] { world_.removeActor(handle); },
+               [this, handle] { world_.addActor(handle); },
                "Create GameObject",
                mutationGroup);
     return handle;
 }
 
 void RuntimeScene::destroyObject(EntityHandle e, const std::string& mutationGroup) {
-    if (!store_.exists(e)) return;
+    if (!world_.hasActor(e)) return;
     auto dto = snapshotObject(e);
-    store_.destroyEntity(e);
+    world_.removeActor(e);
     undo_.push([this, dto] { restore_Impl(dto); },
-               [this, e] { store_.destroyEntity(e); },
+               [this, e] { world_.removeActor(e); },
                "Destroy GameObject",
                mutationGroup);
 }
 
 void RuntimeScene::restoreObject(const GameObjectDTO& dto, const std::string& mutationGroup) {
     std::optional<GameObjectDTO> before;
-    if (store_.exists(dto.handle)) before = snapshotObject(dto.handle);
+    if (world_.hasActor(dto.handle)) before = snapshotObject(dto.handle);
     restore_Impl(dto);
     undo_.push(
             [this, before, handle = dto.handle] {
                 if (before)
                     restore_Impl(*before);
                 else
-                    store_.destroyEntity(handle);
+                    world_.removeActor(handle);
             },
             [this, dto] { restore_Impl(dto); },
             "Restore GameObject",
@@ -71,21 +94,24 @@ void RuntimeScene::restoreObject(const GameObjectDTO& dto, const std::string& mu
 }
 
 void RuntimeScene::restore_Impl(const SceneDTO& dto) {
-    store_.clear();
+    world_.clear();
+    nextHandle_ = 0;
     for (const auto& objDto: dto.objects) {
         restore_Impl(objDto);
+        if (objDto.handle >= nextHandle_) nextHandle_ = objDto.handle + 1;
     }
 }
 
 void RuntimeScene::restore_Impl(const GameObjectDTO& dto) {
-    if (store_.exists(dto.handle)) store_.destroyEntity(dto.handle);
-    store_.createEntity(dto.handle);
+    if (world_.hasActor(dto.handle)) world_.removeActor(dto.handle);
+    world_.addActor(dto.handle);
+    Actor* actor = world_.getActor(dto.handle);
     for (auto& c: dto.components) {
         std::visit(
                 [&]<typename T0>(T0&& comp) {
                     using T = std::decay_t<T0>;
-                    if (store_.getComponent<T>(dto.handle)) store_.removeComponent<T>(dto.handle);
-                    store_.upsertComponent<T>(dto.handle, comp);
+                    if (actor->getComponent<T>()) actor->removeComponent(actor->getComponent<T>());
+                    actor->addComponent<T>(comp);
                 },
                 c);
     }

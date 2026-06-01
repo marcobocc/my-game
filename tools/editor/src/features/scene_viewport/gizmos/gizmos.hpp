@@ -1,5 +1,5 @@
 #pragma once
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/EntityHandle.hpp"
 
 enum class GizmoType { Translation, Rotation, Scale };
 enum class GizmoAxis { X, Y, Z, All };

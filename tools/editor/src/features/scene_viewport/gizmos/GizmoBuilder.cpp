@@ -5,13 +5,13 @@
 #include "modules/asset_management/AssetLoader.hpp"
 #include "modules/asset_management/asset_types/Mesh.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 #include "modules/scene/components/Renderer.hpp"
 #include "utils/math/AABB.hpp"
 #include "utils/math/BVH.hpp"
 #include "utils/math/BoundingSphere.hpp"
 
-GizmoBuilder::GizmoBuilder(AssetLoader& assetLoader, EntityManager& entityManager, EditorSettings& editorSettings) :
+GizmoBuilder::GizmoBuilder(AssetLoader& assetLoader, World& entityManager, EditorSettings& editorSettings) :
     assetLoader_(assetLoader),
     entityManager_(entityManager),
     editorSettings_(editorSettings) {}
@@ -97,8 +97,10 @@ GizmoObject GizmoBuilder::buildGizmoAABB(const AABB& aabb, const glm::vec3& colo
 }
 
 GizmoObject GizmoBuilder::buildGizmoObjectAABB(EntityHandle objectId, const glm::vec3& color) {
-    auto* transform = entityManager_.getComponent<Transform>(objectId);
-    auto* renderer = entityManager_.getComponent<Renderer>(objectId);
+    auto* actor = entityManager_.getActor(objectId);
+    if (!actor) return {};
+    auto* transform = actor->getComponent<Transform>();
+    auto* renderer = actor->getComponent<Renderer>();
     if (transform && renderer) {
         auto mesh = assetLoader_.get<Mesh>(renderer->meshName);
         auto aabb = mesh->getAABB().applyTransform(transform->getModelMatrix());
@@ -131,8 +133,10 @@ GizmoObject GizmoBuilder::buildGizmoBoundingSphere(const BoundingSphere& sphere,
 }
 
 GizmoObject GizmoBuilder::buildGizmoObjectBoundingSphere(EntityHandle objectId, const glm::vec3& color) {
-    auto* transform = entityManager_.getComponent<Transform>(objectId);
-    auto* renderer = entityManager_.getComponent<Renderer>(objectId);
+    auto* actor = entityManager_.getActor(objectId);
+    if (!actor) return {};
+    auto* transform = actor->getComponent<Transform>();
+    auto* renderer = actor->getComponent<Renderer>();
     if (transform && renderer) {
         auto mesh = assetLoader_.get<Mesh>(renderer->meshName);
         auto sphere = mesh->getBoundingSphere().applyTransform(transform->getModelMatrix());

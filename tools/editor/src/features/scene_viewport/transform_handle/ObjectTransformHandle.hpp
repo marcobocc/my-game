@@ -7,7 +7,7 @@
 #include <vector>
 #include "../gizmos/gizmos.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/EntityHandle.hpp"
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Transform.hpp"
 #include "utils/math/Ray.hpp"

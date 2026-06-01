@@ -3,7 +3,7 @@
 #include <limits>
 #include <optional>
 #include "../../modules/asset_management/AssetLoader.hpp"
-#include "../../modules/scene/EntityStore.hpp"
+#include "../../modules/scene/World.hpp"
 #include "../../modules/scene/components/Camera.hpp"
 #include "../../modules/scene/components/Renderer.hpp"
 #include "../../modules/scene/components/Transform.hpp"
@@ -24,7 +24,7 @@ public:
     static std::optional<EntityHandle> pick(const glm::vec2& ndcPos,
                                             const Camera& camera,
                                             const Transform& cameraTransform,
-                                            EntityManager& entityManager,
+                                            World& entityManager,
                                             AssetLoader& assetLoader) {
         Ray ray = buildRay(ndcPos, camera, cameraTransform);
 
@@ -60,7 +60,7 @@ public:
                                                      uint32_t viewportHeight,
                                                      const Camera& camera,
                                                      const Transform& cameraTransform,
-                                                     EntityManager& entityManager,
+                                                     World& entityManager,
                                                      AssetLoader& assetLoader) {
         if (viewportWidth == 0 || viewportHeight == 0) return std::nullopt;
         float ndcX = (static_cast<float>(pixelX) - static_cast<float>(viewportX)) / static_cast<float>(viewportWidth);

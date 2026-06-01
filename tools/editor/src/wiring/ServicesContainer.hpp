@@ -18,7 +18,7 @@ public:
     explicit ServicesContainer(AssetLoader& assetLoader,
                                RendererSettings& rendererSettings,
                                VirtualFileSystem& vfs,
-                               EntityManager& entityManager) :
+                               World& entityManager) :
         editorSettings_(rendererSettings),
         assetStore_(assetLoader, vfs, undoHistory_),
         project_(entityManager, editorSelection_, assetStore_, vfs, sceneQuickActions_, undoHistory_),

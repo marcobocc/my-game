@@ -57,7 +57,7 @@ void SceneQuickActions::createLight() {
     Transform t{glm::vec3(0.0f),
                 glm::angleAxis(glm::radians(135.0f), glm::normalize(glm::vec3(1.0f, 1.0f, 0.0f))),
                 glm::vec3(1.0f)};
-    Light l{LightType::Directional, 1.0f};
+    Light l{LightType::DIRECTIONAL, 1.0f};
 
     EntityHandle handle = scene_.createObject(groupId);
     RuntimeGameObject obj = scene_.getObject(handle);

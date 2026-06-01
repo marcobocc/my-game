@@ -12,7 +12,7 @@ GameEngine::GameEngine(GameWindow& window,
                        AssetCache& loadedAssets,
                        InputSystem& inputSystem,
                        PhysicsSystem& physicsSystem,
-                       EntityManager& entityManager,
+                       World& entityManager,
                        GameRenderSystem& renderSystem,
                        RendererSettings& rendererSettings,
                        VulkanGameRenderer& renderer) :

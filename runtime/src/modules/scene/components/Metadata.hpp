@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "../../../utils/JsonUtils.hpp"
 #include "IComponent.hpp"
 
 struct Metadata final : IComponent {

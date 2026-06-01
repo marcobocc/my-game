@@ -38,7 +38,7 @@ public:
                  EditorCamera& editorCamera,
                  EditorSelection& editorSelection,
                  ObjectTransformHandle& objectTransformHandle,
-                 EntityManager& entityManager,
+                 World& entityManager,
                  RuntimeScene& scene,
                  EditorGizmos& editorGizmos,
                  EditorSettings& rendererSettings,
@@ -71,7 +71,7 @@ private:
     EditorCamera& editorCamera_;
     EditorSelection& editorSelection_;
     ObjectTransformHandle& objectTransformHandle_;
-    EntityManager& entityManager_;
+    World& entityManager_;
     RuntimeScene& scene_;
     EditorGizmos& editorGizmos_;
     EditorSettings& rendererSettings_;

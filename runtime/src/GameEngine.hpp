@@ -6,7 +6,7 @@
 #include <vector>
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/core/GameWindow.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 
 struct AABB;
 struct Camera;
@@ -46,7 +46,7 @@ public:
                         AssetCache& loadedAssets,
                         InputSystem& inputSystem,
                         PhysicsSystem& physicsSystem,
-                        EntityManager& entityManager,
+                        World& entityManager,
                         GameRenderSystem& renderSystem,
                         RendererSettings& rendererSettings,
                         VulkanGameRenderer& renderer);
@@ -84,7 +84,7 @@ public:
     // --------------------------------------------------------
     // Entity API
     // --------------------------------------------------------
-    EntityManager& entities() { return entityManager_; }
+    World& entities() { return entityManager_; }
 
 private:
     bool shouldClose() const;
@@ -94,7 +94,7 @@ private:
     AssetCache& loadedAssets_;
     InputSystem& inputSystem_;
     PhysicsSystem& physicsSystem_;
-    EntityManager& entityManager_;
+    World& entityManager_;
     GameRenderSystem& renderSystem_;
     RendererSettings& rendererSettings_;
     VulkanGameRenderer& renderer_;

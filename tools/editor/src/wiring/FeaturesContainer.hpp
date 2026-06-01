@@ -14,7 +14,7 @@ class FeaturesContainer {
 public:
     explicit FeaturesContainer(GameWindow& window,
                                AssetLoader& assetLoader,
-                               EntityManager& entityManager,
+                               World& entityManager,
                                GameEngine& engine,
                                AssetThumbnailGenerator& assetThumbnailGenerator,
                                RuntimeScene& scene,

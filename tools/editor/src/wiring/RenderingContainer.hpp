@@ -18,7 +18,7 @@ public:
                        EditorCamera& editorCamera,
                        EditorSelection& editorSelection,
                        EditorGizmos& editorGizmos,
-                       EntityManager& entityManager,
+                       World& entityManager,
                        PickingSystem& pickingService,
                        GizmoBuilder& gizmosBuilder,
                        ObjectTransformHandle& objectTransformHandle,

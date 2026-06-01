@@ -3,7 +3,7 @@
 #include <optional>
 #include "common_editing/RuntimeScene.hpp"
 #include "modules/asset_management/VirtualFileSystem.hpp"
-#include "modules/scene/EntityStore.hpp"
+#include "modules/scene/World.hpp"
 
 class EditorSelection;
 class AssetStore;
@@ -12,7 +12,7 @@ class SceneQuickActions;
 
 class EditorContext {
 public:
-    EditorContext(EntityManager& entityManager,
+    EditorContext(World& entityManager,
                   EditorSelection& editorSelection,
                   AssetStore& assetStore,
                   VirtualFileSystem& vfs,

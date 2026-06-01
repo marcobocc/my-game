@@ -40,7 +40,7 @@ public:
                                          uint32_t viewportHeight,
                                          const Camera& camera,
                                          const Transform& cameraTransform,
-                                         EntityManager& entityManager) const {
+                                         World& entityManager) const {
         if (viewportWidth == 0 || viewportHeight == 0) return std::nullopt;
 
         float ndcX = (static_cast<float>(pixelX) - static_cast<float>(viewportX)) / static_cast<float>(viewportWidth);
