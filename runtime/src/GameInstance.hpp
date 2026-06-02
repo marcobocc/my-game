@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <utility>
@@ -7,6 +8,7 @@
 #include "modules/core/GameWindow.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
 #include "modules/scene/World.hpp"
+#include "modules/scripting/NativeScriptManager.hpp"
 
 struct AABB;
 struct Camera;
@@ -40,11 +42,13 @@ public:
                  World world,
                  GameRenderSystem& renderSystem,
                  RendererSettings& rendererSettings,
-                 VulkanGameRenderer& renderer);
+                 VulkanGameRenderer& renderer,
+                 std::filesystem::path scriptsDir = {});
 
     // --------------------------------------------------------
     // Game Loop
     // --------------------------------------------------------
+    void tick(float deltaTime);
     void run(const std::function<void(double deltaTime)>& gameLoopFunc);
     void requestClose() const;
 
@@ -92,4 +96,5 @@ private:
     VulkanGameRenderer& renderer_;
 
     DeveloperConsole developerConsole_;
+    NativeScriptManager scriptManager_;
 };

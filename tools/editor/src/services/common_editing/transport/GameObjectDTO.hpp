@@ -1,5 +1,6 @@
 #pragma once
 #include "modules/scene/EntityHandle.hpp"
+#include "modules/scene/components/BehaviourScript.hpp"
 #include "modules/scene/components/BoxCollider.hpp"
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Light.hpp"
@@ -8,7 +9,7 @@
 #include "modules/scene/components/Transform.hpp"
 
 struct GameObjectDTO {
-    using ComponentVariant = std::variant<Transform, Camera, Renderer, BoxCollider, Light, Metadata>;
+    using ComponentVariant = std::variant<Transform, Camera, Renderer, BoxCollider, Light, Metadata, BehaviourScript>;
     EntityHandle handle;
     std::vector<ComponentVariant> components;
 
@@ -48,6 +49,8 @@ struct GameObjectDTO {
                 dto.components.emplace_back(Light::deserialize(c["data"]));
             else if (type == "Metadata")
                 dto.components.emplace_back(Metadata::deserialize(c["data"]));
+            else if (type == "BehaviourScript")
+                dto.components.emplace_back(BehaviourScript::deserialize(c["data"]));
             else
                 throw std::runtime_error("Invalid component: " + type);
         }

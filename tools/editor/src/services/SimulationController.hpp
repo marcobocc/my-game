@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <memory>
 #include <stdexcept>
 #include "../../../runtime/src/GameInstance.hpp"
@@ -6,6 +7,7 @@
 #include "../../../runtime/src/modules/physics/PhysicsSystem.hpp"
 #include "../../../runtime/src/modules/rendering/GameRenderSystem.hpp"
 #include "../../../runtime/src/modules/scene/World.hpp"
+#include "ScriptCompiler.hpp"
 
 class GameWindow;
 class TimeManager;
@@ -33,14 +35,25 @@ public:
         renderer_(renderer) {}
 
     void setEditorWorld(World* editorWorld) { editorWorld_ = editorWorld; }
+    void setProjectRoot(const std::filesystem::path& projectRoot) { projectRoot_ = projectRoot; }
 
-    // Called by the Play button — snapshots the editor world and starts simulation.
+    // Called by the Play button — compiles stale scripts, snapshots the editor world, starts simulation.
     void requestPlay() {
         if (state_ != State::Stopped || !editorWorld_) return;
-        start(editorWorld_->snapshot());
+
+        std::filesystem::path scriptsDir;
+        if (!projectRoot_.empty()) {
+            scriptsDir = projectRoot_ / "assets" / "scripts";
+            auto results = scriptCompiler_.compileStale(scriptsDir);
+            for (const auto& r: results) {
+                if (!r.success) return; // abort — caller sees simulation stayed stopped
+            }
+        }
+
+        start(editorWorld_->snapshot(), scriptsDir);
     }
 
-    void start(World snapshot) {
+    void start(World snapshot, std::filesystem::path scriptsDir = {}) {
         gameInstance_ = std::make_unique<GameInstance>(window_,
                                                        time_,
                                                        loadedAssets_,
@@ -48,7 +61,8 @@ public:
                                                        std::move(snapshot),
                                                        renderSystem_,
                                                        rendererSettings_,
-                                                       renderer_);
+                                                       renderer_,
+                                                       std::move(scriptsDir));
         gameInstance_->physicsSystem().resume();
         state_ = State::Running;
     }
@@ -82,8 +96,7 @@ public:
         if (state_ != State::Running || !gameInstance_) return;
 
         inputSystem_.update();
-        gameInstance_->physicsSystem().update();
-        gameInstance_->developerConsole().tick();
+        gameInstance_->tick(static_cast<float>(deltaTime));
     }
 
     bool isActive() const { return state_ != State::Stopped && !pendingStop_; }
@@ -106,6 +119,8 @@ private:
     VulkanGameRenderer& renderer_;
 
     World* editorWorld_ = nullptr;
+    std::filesystem::path projectRoot_;
+    ScriptCompiler scriptCompiler_;
     std::unique_ptr<GameInstance> gameInstance_;
     State state_ = State::Stopped;
     bool pendingStop_ = false;

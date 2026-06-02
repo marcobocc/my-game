@@ -69,6 +69,7 @@ public:
                    rendering_.editorRenderer(),
                    runtime_.simulationController()) {
         runtime_.simulationController().setEditorWorld(&runtime_.entityManager());
+        runtime_.simulationController().setProjectRoot(runtime_.projectRoot());
     }
 
     EditorApp& editorApp() { return editorApp_; }

@@ -100,6 +100,7 @@ private:
             ".png",
             ".jpg",
             ".model",
+            ".cpp",
     };
 
     static bool isKnownAsset(const std::string& path) {
@@ -302,6 +303,11 @@ private:
             if ((asset.ends_with(".png") || asset.ends_with(".jpg")) &&
                 ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 ImGui::SetDragDropPayload("texture_asset", asset.c_str(), asset.size() + 1);
+                ImGui::TextUnformatted(asset.c_str());
+                ImGui::EndDragDropSource();
+            }
+            if (asset.ends_with(".cpp") && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                ImGui::SetDragDropPayload("SCRIPT_ASSET", asset.c_str(), asset.size() + 1);
                 ImGui::TextUnformatted(asset.c_str());
                 ImGui::EndDragDropSource();
             }

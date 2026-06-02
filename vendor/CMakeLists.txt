@@ -42,3 +42,23 @@ target_include_directories(spirv_reflect PUBLIC ${SPIRV_REFLECT_DIR})
 set(ARGPARSE_DIR ${VENDOR_DIR}/argparse)
 add_library(argparse INTERFACE)
 target_include_directories(argparse INTERFACE ${VENDOR_DIR})
+
+# -------------------------------------------------------------------------
+# cr
+# -------------------------------------------------------------------------
+set(CR_DIR ${VENDOR_DIR}/cr)
+add_library(cr INTERFACE)
+target_include_directories(cr INTERFACE ${VENDOR_DIR})
+
+# -------------------------------------------------------------------------
+# subprocess
+# -------------------------------------------------------------------------
+add_library(subprocess INTERFACE)
+target_link_libraries(subprocess INTERFACE Threads::Threads)
+target_sources(subprocess PUBLIC
+        FILE_SET HEADERS
+        FILES
+        subprocess/subprocess.hpp
+        BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/
+)
+add_library(cpp-subprocess::subprocess ALIAS subprocess)

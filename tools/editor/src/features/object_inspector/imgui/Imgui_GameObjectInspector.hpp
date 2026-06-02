@@ -4,11 +4,13 @@
 #include "../../../services/common_editing/AssetStore.hpp"
 #include "../../../services/common_editing/RuntimeScene.hpp"
 #include "../../../styling/ImguiStyling.hpp"
+#include "components/Imgui_BehaviourScriptWidget.hpp"
 #include "components/Imgui_BoxColliderWidget.hpp"
 #include "components/Imgui_CameraWidget.hpp"
 #include "components/Imgui_LightWidget.hpp"
 #include "components/Imgui_RendererWidget.hpp"
 #include "components/Imgui_TransformWidget.hpp"
+#include "modules/scene/components/BehaviourScript.hpp"
 #include "modules/scene/components/BoxCollider.hpp"
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Light.hpp"
@@ -29,13 +31,15 @@ public:
         rendererWidget_(assetStore, scene, debugViz),
         boxColliderWidget_(scene),
         cameraWidget_(scene),
-        lightWidget_(scene) {}
+        lightWidget_(scene),
+        behaviourScriptWidget_(scene) {}
 
     void draw(EntityHandle entity) {
         transformWidget_.setCurrentObjectId(entity);
         cameraWidget_.setCurrentObjectId(entity);
         boxColliderWidget_.setCurrentObjectId(entity);
         lightWidget_.setCurrentObjectId(entity);
+        behaviourScriptWidget_.setCurrentObjectId(entity);
         drawObject(entity);
     }
 
@@ -49,6 +53,7 @@ private:
     Imgui_BoxColliderWidget boxColliderWidget_;
     Imgui_CameraWidget cameraWidget_;
     Imgui_LightWidget lightWidget_;
+    Imgui_BehaviourScriptWidget behaviourScriptWidget_;
 
     void drawObject(EntityHandle entity) {
         RuntimeGameObject obj = scene_.getObject(entity);
@@ -74,6 +79,12 @@ private:
         if (const auto* light = obj.getComponent<Light>()) {
             lightWidget_.setComponent(*light);
             lightWidget_.draw("LightContext", [this, entity] { scene_.getObject(entity).removeComponent<Light>(); });
+        }
+        if (const auto* script = obj.getComponent<BehaviourScript>()) {
+            behaviourScriptWidget_.setComponent(*script);
+            behaviourScriptWidget_.draw("BehaviourScriptContext", [this, entity] {
+                scene_.getObject(entity).removeComponent<BehaviourScript>();
+            });
         }
         drawAddComponent(entity);
     }
@@ -101,8 +112,12 @@ private:
             if (!obj.getComponent<Light>()) {
                 if (ImGui::MenuItem("Light")) scene_.getObject(entity).addComponent<Light>(Light{});
             }
+            if (!obj.getComponent<BehaviourScript>()) {
+                if (ImGui::MenuItem("Behaviour Script"))
+                    scene_.getObject(entity).addComponent<BehaviourScript>(BehaviourScript{});
+            }
             if (obj.getComponent<Transform>() && obj.getComponent<Camera>() && obj.getComponent<Renderer>() &&
-                obj.getComponent<BoxCollider>() && obj.getComponent<Light>()) {
+                obj.getComponent<BoxCollider>() && obj.getComponent<Light>() && obj.getComponent<BehaviourScript>()) {
                 ImGui::TextDisabled("All components added");
             }
         });

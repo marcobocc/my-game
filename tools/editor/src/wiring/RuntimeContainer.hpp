@@ -37,6 +37,7 @@ public:
     explicit RuntimeContainer(GameWindow& window,
                               const std::vector<std::filesystem::path>& mountPaths,
                               const std::filesystem::path& projectRoot) :
+        projectRoot_(projectRoot),
         vfs_(mountPaths, projectRoot),
         assetLoader_(vfs_, loadedAssets_),
         physicsSystem_(world_),
@@ -96,8 +97,10 @@ public:
     VulkanUIPass& uiPass() { return uiPass_; }
     VulkanSwapchainManager& swapchainManager() { return swapchainManager_; }
     SimulationController& simulationController() { return simulationController_; }
+    const std::filesystem::path& projectRoot() const { return projectRoot_; }
 
 private:
+    std::filesystem::path projectRoot_;
     VirtualFileSystem vfs_;
     AssetLoader assetLoader_;
     AssetCache loadedAssets_;

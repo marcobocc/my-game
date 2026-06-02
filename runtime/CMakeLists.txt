@@ -26,6 +26,8 @@ target_link_libraries(GameEngineLib PUBLIC
     spirv_reflect
     PhysFS::PhysFS-static
     argparse
+    cr
+    subprocess
 )
 
 # On macOS, link MoltenVK explicitly

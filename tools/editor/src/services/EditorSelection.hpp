@@ -6,8 +6,6 @@
 
 using AssetHandle = std::string;
 
-enum class SelectionType { NONE, OBJECTS, ASSETS };
-
 class EditorSelection {
 public:
     void addToSelection(EntityHandle entity, bool extend = false);
@@ -19,17 +17,20 @@ public:
     bool isEntitySelected(EntityHandle entity) const;
     bool isAssetSelected(const AssetHandle& asset) const;
 
-    SelectionType getSelectionType() const { return type_; }
     const std::vector<EntityHandle>& getSelectedEntityIds() const { return selectedEntities_; }
     const std::vector<AssetHandle>& getSelectedAssetIds() const { return selectedAssets_; }
+
+    void setInspectedEntity(EntityHandle entity) { inspectedEntity_ = entity; }
+    void clearInspectedEntity() { inspectedEntity_.reset(); }
+    const std::optional<EntityHandle>& getInspectedEntity() const { return inspectedEntity_; }
 
     void setInspectedAsset(const AssetHandle& asset) { inspectedAsset_ = asset; }
     void clearInspectedAsset() { inspectedAsset_.reset(); }
     const std::optional<AssetHandle>& getInspectedAsset() const { return inspectedAsset_; }
 
 private:
-    SelectionType type_ = SelectionType::NONE;
     std::vector<EntityHandle> selectedEntities_;
     std::vector<AssetHandle> selectedAssets_;
+    std::optional<EntityHandle> inspectedEntity_;
     std::optional<AssetHandle> inspectedAsset_;
 };

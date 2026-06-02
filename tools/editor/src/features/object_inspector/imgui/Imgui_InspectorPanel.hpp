@@ -26,12 +26,14 @@ public:
     }
 
     void drawBody() override {
-        const auto& entities = editorSelection_.getSelectedEntityIds();
-        const auto& inspected = editorSelection_.getInspectedAsset();
-        if (entities.size() == 1) {
-            gameObjectInspector_.draw(entities[0]);
-        } else if (inspected.has_value() && inspected->ends_with(".mat")) {
-            materialInspector.draw();
+        const auto& inspectedEntity = editorSelection_.getInspectedEntity();
+        const auto& inspectedAsset = editorSelection_.getInspectedAsset();
+        if (inspectedAsset.has_value()) {
+            if (inspectedAsset->ends_with(".mat")) {
+                materialInspector.draw();
+            }
+        } else if (inspectedEntity.has_value()) {
+            gameObjectInspector_.draw(*inspectedEntity);
         }
     }
 

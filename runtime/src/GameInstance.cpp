@@ -6,6 +6,8 @@
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/rendering/GameRenderSystem.hpp"
+#include "modules/scene/components/BehaviourScript.hpp"
+#include "modules/scripting/ScriptInstanceContext.hpp"
 
 GameInstance::GameInstance(GameWindow& window,
                            TimeManager& time,
@@ -14,7 +16,8 @@ GameInstance::GameInstance(GameWindow& window,
                            World world,
                            GameRenderSystem& renderSystem,
                            RendererSettings& rendererSettings,
-                           VulkanGameRenderer& renderer) :
+                           VulkanGameRenderer& renderer,
+                           std::filesystem::path scriptsDir) :
     window_(window),
     time_(time),
     loadedAssets_(loadedAssets),
@@ -23,14 +26,31 @@ GameInstance::GameInstance(GameWindow& window,
     physicsSystem_(world_),
     renderSystem_(renderSystem),
     rendererSettings_(rendererSettings),
-    renderer_(renderer) {
+    renderer_(renderer),
+    scriptManager_(ScriptInstanceContext{&world_}) {
     developerConsole_.registerCommand("list-actors", [this] { return std::make_unique<ListActorsCommand>(world_); });
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
+
+    if (!scriptsDir.empty()) {
+        for (auto& [handle, script]: world_.query<BehaviourScript>()) {
+            if (script->scriptName.empty()) continue;
+            std::string stem = std::filesystem::path(script->scriptName).stem().string();
+            auto dylibPath = scriptsDir / (stem + ".dylib");
+            scriptManager_.loadScript(stem, dylibPath);
+            scriptManager_.spawnInstance(stem, handle);
+        }
+    }
 }
 
 // --------------------------------------------------------
 // Game Loop
 // --------------------------------------------------------
+
+void GameInstance::tick(float deltaTime) {
+    physicsSystem_.update();
+    scriptManager_.tickAll(deltaTime);
+    developerConsole_.tick();
+}
 
 void GameInstance::run(const std::function<void(double deltaTime)>& gameLoopFunc) {
     while (!shouldClose()) {
@@ -39,10 +59,8 @@ void GameInstance::run(const std::function<void(double deltaTime)>& gameLoopFunc
 
         window_.pollEvents();
         inputSystem_.update();
-        physicsSystem_.update();
-
+        tick(deltaTime);
         gameLoopFunc(deltaTime);
-        developerConsole_.tick();
         renderSystem_.update(world_);
         time_.endFrame();
     }
