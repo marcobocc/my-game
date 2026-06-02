@@ -90,6 +90,7 @@ public:
         pendingStop_ = false;
         gameInstance_.reset();
         state_ = State::Stopped;
+        window_.unlockMouse();
     }
 
     void tick(double deltaTime) {
