@@ -25,6 +25,7 @@ target_link_libraries(GameEngineLib PUBLIC
     nlohmann_json::nlohmann_json
     spirv_reflect
     PhysFS::PhysFS-static
+    argparse
 )
 
 # On macOS, link MoltenVK explicitly

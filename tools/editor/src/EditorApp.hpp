@@ -1,4 +1,7 @@
 #pragma once
+#include <log4cxx/logger.h>
+#include <log4cxx/patternlayout.h>
+#include "../../../runtime/src/modules/console/ConsoleLogAppender.hpp"
 #include "GameEngine.hpp"
 #include "features/input_handling/InputHandler.hpp"
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
@@ -47,6 +50,7 @@ public:
     }
 
     void run() {
+        setupConsoleAppender();
         while (!window_.shouldClose()) {
             time_.beginFrame();
             float deltaTime = time_.getGameDeltaTime();
@@ -57,6 +61,8 @@ public:
 
             auto [mouseX, mouseY] = engine_.getMousePosition();
             inputHandler_.update(mouseX, mouseY, deltaTime);
+
+            engine_.developerConsole().tick();
 
             float gridScale = editorSettings_.getGridScale();
             editorRenderer_.render(entityManager_, gridScale);
@@ -82,7 +88,6 @@ private:
         SceneViewport sv = window_.getSceneViewport();
         if (sv.width > 0 && sv.height > 0)
             editorCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
-
         if (!project_.loadLatestScene()) project_.newScene();
     }
 
@@ -95,6 +100,12 @@ private:
             if (sv.width > 0 && sv.height > 0)
                 editorCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
         });
+    }
+
+    void setupConsoleAppender() {
+        auto appender = std::make_shared<ConsoleLogAppender>(&engine_.developerConsole());
+        appender->setLayout(std::make_shared<log4cxx::PatternLayout>("%d %-5p %c - %m%n"));
+        log4cxx::Logger::getRootLogger()->addAppender(appender);
     }
 
     GameWindow& window_;

@@ -1,4 +1,5 @@
 #pragma once
+#include "../../../../runtime/src/modules/console/Imgui_Console.hpp"
 #include "../features/input_handling/ShortcutBindingService.hpp"
 #include "../features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "../features/scene_viewport/gizmos/EditorGizmos.hpp"
@@ -26,6 +27,7 @@ public:
                                AssetQuickActions& assetQuickActions,
                                SceneQuickActions& sceneQuickActions,
                                ClipboardService& clipboardService) :
+        imguiConsole_(engine.developerConsole()),
         gizmosBuilder_(assetLoader, entityManager, editorSettings),
         pickingSystem_(assetLoader),
         objectTransformHandle_(window, engine, scene, editorCamera_, editorSelection, editorSettings),
@@ -35,7 +37,8 @@ public:
                           editorSettings,
                           objectTransformHandle_,
                           sceneQuickActions,
-                          project),
+                          project,
+                          imguiConsole_),
         imgui_(window,
                editorCamera_,
                editorSelection,
@@ -53,7 +56,8 @@ public:
                clipboardService,
                assetQuickActions,
                sceneQuickActions,
-               engine) {}
+               engine,
+               imguiConsole_) {}
 
     EditorGizmos& editorGizmos() { return editorGizmos_; }
     EditorCamera& editorCamera() { return editorCamera_; }
@@ -65,6 +69,7 @@ public:
     ImguiRoot& imguiRoot() { return imgui_.imguiRoot(); }
 
 private:
+    Imgui_Console imguiConsole_;
     EditorGizmos editorGizmos_;
     EditorCamera editorCamera_;
     GizmoBuilder gizmosBuilder_;

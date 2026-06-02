@@ -1,4 +1,5 @@
 #pragma once
+#include "../../../../runtime/src/modules/console/Imgui_Console.hpp"
 #include "../features/ImguiRoot.hpp"
 #include "../features/application_toolbar/Imgui_ApplicationMenuBar.hpp"
 #include "../features/asset_browser/imgui/Imgui_AssetExplorerPanel.hpp"
@@ -43,7 +44,8 @@ public:
                    ClipboardService& clipboardService,
                    AssetQuickActions& assetQuickActions,
                    SceneQuickActions& sceneQuickActions,
-                   GameEngine& engine) :
+                   GameEngine& engine,
+                   Imgui_Console& console) :
 
         applicationMenuBar_(project, undoHistory, editorSelection, actionDispatcher, shortcutBindingService),
 
@@ -79,7 +81,8 @@ public:
                    hierarchyPanel_,
                    assetExplorerPanel_,
                    inspectorPanel_,
-                   editorSceneViewport_) {}
+                   editorSceneViewport_,
+                   console) {}
 
     ImguiRoot& imguiRoot() { return imguiRoot_; }
 

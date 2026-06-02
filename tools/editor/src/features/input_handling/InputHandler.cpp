@@ -48,7 +48,8 @@ void InputHandler::handleKeyboardInput() {
                                GLFW_KEY_F,
                                GLFW_KEY_KP_ADD,
                                GLFW_KEY_KP_SUBTRACT,
-                               GLFW_KEY_U};
+                               GLFW_KEY_U,
+                               GLFW_KEY_SLASH};
 
     for (int key: keysToCheck) {
         if (engine_.isKeyPressed(key)) {

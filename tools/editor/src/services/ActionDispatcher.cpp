@@ -1,4 +1,5 @@
 #include "ActionDispatcher.hpp"
+#include "../../../../runtime/src/modules/console/Imgui_Console.hpp"
 #include "../features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "../features/scene_viewport/gizmos/EditorGizmos.hpp"
 #include "../features/scene_viewport/transform_handle/ObjectTransformHandle.hpp"
@@ -69,6 +70,9 @@ void ActionDispatcher::execute(ActionID id) {
             break;
         case ActionID::SAVE:
             project_.saveCurrentScene();
+            break;
+        case ActionID::TOGGLE_CONSOLE:
+            console_.toggleVisibility();
             break;
         default:
             break;

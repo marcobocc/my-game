@@ -7,6 +7,7 @@ class EditorSettings;
 class ObjectTransformHandle;
 class SceneQuickActions;
 class EditorContext;
+class Imgui_Console;
 
 enum class ActionID {
     UNKNOWN,
@@ -33,7 +34,9 @@ enum class ActionID {
     DECREASE_SCALE,
     TOGGLE_SNAPPING,
 
-    SAVE
+    SAVE,
+
+    TOGGLE_CONSOLE
 };
 
 class ActionDispatcher {
@@ -44,14 +47,16 @@ public:
                      EditorSettings& editorSettings,
                      ObjectTransformHandle& objectTransformHandle,
                      SceneQuickActions& sceneQuickActions,
-                     EditorContext& project) :
+                     EditorContext& project,
+                     Imgui_Console& console) :
         undoHistory_(undoHistory),
         editorCamera_(editorCamera),
         editorGizmos_(editorGizmos),
         editorSettings_(editorSettings),
         objectTransformHandle_(objectTransformHandle),
         sceneQuickActions_(sceneQuickActions),
-        project_(project) {}
+        project_(project),
+        console_(console) {}
 
     void execute(ActionID id);
 
@@ -63,4 +68,5 @@ private:
     ObjectTransformHandle& objectTransformHandle_;
     SceneQuickActions& sceneQuickActions_;
     EditorContext& project_;
+    Imgui_Console& console_;
 };

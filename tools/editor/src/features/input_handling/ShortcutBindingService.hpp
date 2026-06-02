@@ -49,7 +49,8 @@ private:
                 {ActionID::INCREASE_SCALE, {false, false, false, GLFW_KEY_KP_ADD}},
                 {ActionID::DECREASE_SCALE, {false, false, false, GLFW_KEY_KP_SUBTRACT}},
                 {ActionID::TOGGLE_SNAPPING, {false, false, false, GLFW_KEY_U}},
-                {ActionID::SAVE, {true, false, false, GLFW_KEY_S}}};
+                {ActionID::SAVE, {true, false, false, GLFW_KEY_S}},
+                {ActionID::TOGGLE_CONSOLE, {false, false, false, GLFW_KEY_SLASH}}};
 
         for (const auto& binding: DEFAULT_BINDINGS) {
             shortcutToActionMap_[binding.shortcut] = binding.action;

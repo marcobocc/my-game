@@ -1,10 +1,9 @@
 #pragma once
 #include <functional>
-#include <nlohmann/json.hpp>
 #include <string>
 #include <utility>
-#include <vector>
 #include "modules/asset_management/AssetCache.hpp"
+#include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/scene/World.hpp"
 
@@ -85,6 +84,7 @@ public:
     // Entity API
     // --------------------------------------------------------
     World& entities() { return entityManager_; }
+    DeveloperConsole& developerConsole() { return developerConsole_; }
 
 private:
     bool shouldClose() const;
@@ -98,4 +98,6 @@ private:
     GameRenderSystem& renderSystem_;
     RendererSettings& rendererSettings_;
     VulkanGameRenderer& renderer_;
+
+    DeveloperConsole developerConsole_;
 };

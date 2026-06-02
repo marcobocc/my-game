@@ -1,11 +1,12 @@
 #include "GameEngine.hpp"
 #include "modules/asset_management/AssetCache.hpp"
+#include "modules/console/DeveloperConsole.hpp"
+#include "modules/console/commands/EchoCommand.hpp"
+#include "modules/console/commands/ListActorsCommand.hpp"
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
 #include "modules/rendering/GameRenderSystem.hpp"
-#include "modules/scene/components/Camera.hpp"
-#include "modules/scene/components/Transform.hpp"
 
 GameEngine::GameEngine(GameWindow& window,
                        TimeManager& time,
@@ -24,7 +25,11 @@ GameEngine::GameEngine(GameWindow& window,
     entityManager_(entityManager),
     renderSystem_(renderSystem),
     rendererSettings_(rendererSettings),
-    renderer_(renderer) {}
+    renderer_(renderer) {
+    developerConsole_.registerCommand("list-actors",
+                                      [this] { return std::make_unique<ListActorsCommand>(entityManager_); });
+    developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
+}
 
 // --------------------------------------------------------
 // Game Loop
@@ -40,6 +45,7 @@ void GameEngine::run(const std::function<void(double deltaTime)>& gameLoopFunc) 
         physicsSystem_.update();
 
         gameLoopFunc(deltaTime);
+        developerConsole_.tick();
         renderSystem_.update(entityManager_);
         time_.endFrame();
     }

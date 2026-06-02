@@ -48,8 +48,7 @@ public:
     auto query() const {
         std::vector<std::tuple<EntityHandle, const QueryComponents*...>> result;
         for (const auto& actor: actors_) {
-            auto ptrs = std::make_tuple(
-                    static_cast<const QueryComponents*>(actor->getComponent<QueryComponents>())...);
+            auto ptrs = std::make_tuple(static_cast<const QueryComponents*>(actor->getComponent<QueryComponents>())...);
             if ((std::get<const QueryComponents*>(ptrs) && ...))
                 result.emplace_back(actor->handle(), std::get<const QueryComponents*>(ptrs)...);
         }
