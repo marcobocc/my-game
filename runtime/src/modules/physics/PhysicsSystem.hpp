@@ -12,6 +12,9 @@ public:
 
     explicit PhysicsSystem(World& entityManager) : entityManager_(entityManager) {}
 
+    void pause() { paused_ = true; }
+    void resume() { paused_ = false; }
+
     static bool checkCollision(const BoxCollider& a, const Transform& ta, const BoxCollider& b, const Transform& tb) {
         return Physics::checkCollision(a, ta, b, tb);
     }
@@ -32,6 +35,7 @@ public:
     void onCollisionExit(CollisionCallback cb) { exitCallbacks_.push_back(std::move(cb)); }
 
     void update() {
+        if (paused_) return;
         auto objects = entityManager_.query<BoxCollider, Transform>();
         std::unordered_set<CollisionPair, PairHash> currentCollisions;
         for (size_t i = 0; i < objects.size(); ++i) {
@@ -75,6 +79,7 @@ private:
         return a < b ? std::make_pair(a, b) : std::make_pair(b, a);
     }
 
+    bool paused_ = true;
     World& entityManager_;
     std::unordered_set<CollisionPair, PairHash> prevCollisions_;
     std::vector<CollisionCallback> enterCallbacks_;

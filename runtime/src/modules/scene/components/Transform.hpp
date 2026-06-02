@@ -35,6 +35,7 @@ struct Transform final : IComponent {
     }
 
     std::string typeName() const override { return "Transform"; }
+    std::unique_ptr<IComponent> clone() const override { return std::make_unique<Transform>(*this); }
 
     static Transform deserialize(const nlohmann::json& j) {
         Transform t{};

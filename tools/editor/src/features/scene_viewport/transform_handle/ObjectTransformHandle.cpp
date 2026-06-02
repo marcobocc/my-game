@@ -6,7 +6,6 @@
 #include "../../../services/EditorSettings.hpp"
 #include "../../../services/common_editing/RuntimeScene.hpp"
 #include "../editor_camera/EditorCamera.hpp"
-#include "GameEngine.hpp"
 #include "modules/input/RaycastPickingSystem.hpp"
 #include "modules/scene/components/Transform.hpp"
 

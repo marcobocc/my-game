@@ -24,6 +24,7 @@ struct Camera final : IComponent {
     }
 
     std::string typeName() const override { return "Camera"; }
+    std::unique_ptr<IComponent> clone() const override { return std::make_unique<Camera>(*this); }
 
     static Camera deserialize(const nlohmann::json& j) {
         Camera c{};

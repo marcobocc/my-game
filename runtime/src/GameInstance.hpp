@@ -5,6 +5,7 @@
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/GameWindow.hpp"
+#include "modules/physics/PhysicsSystem.hpp"
 #include "modules/scene/World.hpp"
 
 struct AABB;
@@ -13,42 +14,33 @@ struct Renderer;
 struct Transform;
 struct RendererSettings;
 class InputSystem;
-class PhysicsSystem;
 class GameRenderSystem;
 class TimeManager;
 class VulkanGameRenderer;
 
 /*
-    GameEngine (Facade)
+    GameInstance
 
     Purpose:
     --------------------------------------------------
-    High-level facade and API for the game engine
-
-    Responsibilities:
-    --------------------------------------------------
-    - Provide the API for all game engine operations
-    - Forward calls to underlying engine systems
-    - Hide internal engine complexity and modularity
-      from the application layer
+    Owns and runs an isolated game simulation from a World snapshot.
+    Created at simulation start, destroyed at simulation stop.
 
     This class is not responsible for:
     --------------------------------------------------
-    - Creating or owning engine subsystems
+    - The editor's World — it operates on its own copy
     - Subsystem wiring or composition
-    - Managing dependencies lifetime
 */
-class GameEngine {
+class GameInstance {
 public:
-    explicit GameEngine(GameWindow& window,
-                        TimeManager& time,
-                        AssetCache& loadedAssets,
-                        InputSystem& inputSystem,
-                        PhysicsSystem& physicsSystem,
-                        World& entityManager,
-                        GameRenderSystem& renderSystem,
-                        RendererSettings& rendererSettings,
-                        VulkanGameRenderer& renderer);
+    GameInstance(GameWindow& window,
+                 TimeManager& time,
+                 AssetCache& loadedAssets,
+                 InputSystem& inputSystem,
+                 World world,
+                 GameRenderSystem& renderSystem,
+                 RendererSettings& rendererSettings,
+                 VulkanGameRenderer& renderer);
 
     // --------------------------------------------------------
     // Game Loop
@@ -71,7 +63,6 @@ public:
     // --------------------------------------------------------
     void setActiveCamera(const Camera& camera, const Transform& transform);
 
-
     // --------------------------------------------------------
     // Assets API
     // --------------------------------------------------------
@@ -83,8 +74,9 @@ public:
     // --------------------------------------------------------
     // Entity API
     // --------------------------------------------------------
-    World& entities() { return entityManager_; }
+    World& entities() { return world_; }
     DeveloperConsole& developerConsole() { return developerConsole_; }
+    PhysicsSystem& physicsSystem() { return physicsSystem_; }
 
 private:
     bool shouldClose() const;
@@ -93,8 +85,8 @@ private:
     TimeManager& time_;
     AssetCache& loadedAssets_;
     InputSystem& inputSystem_;
-    PhysicsSystem& physicsSystem_;
-    World& entityManager_;
+    World world_;
+    PhysicsSystem physicsSystem_;
     GameRenderSystem& renderSystem_;
     RendererSettings& rendererSettings_;
     VulkanGameRenderer& renderer_;

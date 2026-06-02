@@ -19,7 +19,8 @@ EditorRenderer::EditorRenderer(VulkanBackend& renderer,
                                GizmoBuilder& gizmosBuilder,
                                ObjectTransformHandle& objectTransformHandle,
                                PickingSystem& pickingService,
-                               ImguiRoot& imguiRoot) :
+                               ImguiRoot& imguiRoot,
+                               SimHUDRoot& simHUDRoot) :
     renderer_(renderer),
     editorOrbitCamera_(editorOrbitCamera),
     editorSelection_(editorSelection),
@@ -27,8 +28,19 @@ EditorRenderer::EditorRenderer(VulkanBackend& renderer,
     entityManager_(entityManager),
     gizmosBuilder_(gizmosBuilder),
     objectTransformHandle_(objectTransformHandle),
-    pickingSystem_(pickingService) {
-    renderer_.setDrawCallback([&] { imguiRoot.draw(); });
+    pickingSystem_(pickingService),
+    imguiRoot_(imguiRoot),
+    simHUDRoot_(simHUDRoot) {
+    renderer_.setDrawCallback([this] { imguiRoot_.draw(); });
+}
+
+void EditorRenderer::setSimMode(bool enabled) {
+    simMode_ = enabled;
+    if (enabled) {
+        renderer_.setDrawCallback([this] { simHUDRoot_.draw(); });
+    } else {
+        renderer_.setDrawCallback([this] { imguiRoot_.draw(); });
+    }
 }
 
 void EditorRenderer::buildOutlines() {
@@ -95,9 +107,6 @@ void EditorRenderer::buildGizmos() {
 }
 
 void EditorRenderer::render(const World& entityManager, float gridScale) {
-    buildOutlines();
-    buildGizmos();
-
     std::vector<DrawCall> drawQueue;
     auto drawables = entityManager.query<Renderer, Transform>();
     for (auto& [entity, renderer, transform]: drawables) {
@@ -115,6 +124,29 @@ void EditorRenderer::render(const World& entityManager, float gridScale) {
     for (const auto& [entity, light, transform]: lightsQuery) {
         activeLights.push_back({*light, *transform});
     }
+
+    if (simMode_) {
+        static const std::vector<DrawCall> emptyOutlines;
+        static const std::vector<VulkanGizmoPass::GizmoVertex> emptyGizmos;
+        auto cameras = entityManager.query<Camera, Transform>();
+        for (auto& [entity, camera, transform]: cameras) {
+            if (!camera->renderTarget.isValid()) {
+                renderer_.renderFrame(EditorRenderData(
+                        *camera, *transform, drawQueue, emptyOutlines, emptyGizmos, activeLights, 0.0f, false));
+                return;
+            }
+        }
+        Camera defaultCamera;
+        Transform defaultTransform;
+        defaultTransform.position = glm::vec3(0.0f, 1.0f, 0.0f);
+        LOG4CXX_WARN(LOGGER, "No active Camera entity in simulation world — rendering with default camera at origin.");
+        renderer_.renderFrame(EditorRenderData(
+                defaultCamera, defaultTransform, drawQueue, emptyOutlines, emptyGizmos, activeLights, 0.0f, false));
+        return;
+    }
+
+    buildOutlines();
+    buildGizmos();
 
     auto cameras = entityManager.query<Camera, Transform>();
     for (auto& [entity, camera, transform]: cameras) {

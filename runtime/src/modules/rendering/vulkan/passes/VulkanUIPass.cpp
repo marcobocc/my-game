@@ -43,13 +43,16 @@ VulkanUIPass::~VulkanUIPass() {
 
 void VulkanUIPass::setDrawCallback(std::function<void()> callback) { drawCallback_ = std::move(callback); }
 
-void VulkanUIPass::record(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent) {
-    beginRendering(cmd, colorView, extent);
+void VulkanUIPass::prepareFrame() {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     if (drawCallback_) drawCallback_();
     ImGui::Render();
+}
+
+void VulkanUIPass::record(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent) {
+    beginRendering(cmd, colorView, extent);
     if (ImDrawData* drawData = ImGui::GetDrawData()) {
         ImGui_ImplVulkan_RenderDrawData(drawData, cmd);
     }

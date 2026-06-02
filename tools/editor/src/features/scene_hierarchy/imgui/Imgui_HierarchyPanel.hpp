@@ -15,8 +15,6 @@
 #include "Imgui_SpherePopupModal.hpp"
 #include "modules/scene/components/Metadata.hpp"
 
-class GameEngine;
-
 class Imgui_HierarchyPanel : public EditorPanel {
 public:
     static constexpr float PANEL_WIDTH_RATIO = 0.15f;
@@ -25,7 +23,6 @@ public:
     Imgui_HierarchyPanel(AssetStore& assetStore,
                          EditorSelection& editorSelection,
                          RuntimeScene& scene,
-                         GameEngine& engine,
                          ActionDispatcher& actionDispatcher,
                          ShortcutBindingService& shortcutBindingService,
                          SceneQuickActions& sceneQuickActions,
@@ -33,7 +30,6 @@ public:
         assetStore_(assetStore),
         editorSelection_(editorSelection),
         scene_(scene),
-        engine_(engine),
         spherePopupModal_(sceneQuickActions),
         dropdownMenu_(assetStore,
                       sceneQuickActions,
@@ -118,7 +114,6 @@ private:
     AssetStore& assetStore_;
     EditorSelection& editorSelection_;
     RuntimeScene& scene_;
-    GameEngine& engine_;
     Imgui_SpherePopupModal spherePopupModal_;
     Imgui_HierarchyDropdownMenu dropdownMenu_;
 

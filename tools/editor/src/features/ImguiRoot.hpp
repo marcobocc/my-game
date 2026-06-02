@@ -6,6 +6,7 @@
 #include "scene_hierarchy/imgui/Imgui_HierarchyPanel.hpp"
 #include "scene_viewport/imgui/Imgui_EditorSceneViewport.hpp"
 #include "scene_viewport/scene_toolbar/Imgui_SceneViewToolbar.hpp"
+#include "scene_viewport/scene_toolbar/Imgui_SimHUD.hpp"
 
 class ImguiRoot {
 public:
@@ -42,4 +43,13 @@ private:
     Imgui_InspectorPanel& inspectorPanel_;
     Imgui_EditorSceneViewport& editorSceneViewport_;
     Imgui_Console& console_;
+};
+
+class SimHUDRoot {
+public:
+    explicit SimHUDRoot(Imgui_SimHUD& simHUD) : simHUD_(simHUD) {}
+    void draw() { simHUD_.draw(); }
+
+private:
+    Imgui_SimHUD& simHUD_;
 };

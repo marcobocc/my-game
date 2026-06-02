@@ -7,6 +7,8 @@
 #include "../features/scene_hierarchy/imgui/Imgui_HierarchyPanel.hpp"
 #include "../features/scene_viewport/imgui/Imgui_EditorSceneViewport.hpp"
 #include "../features/scene_viewport/scene_toolbar/Imgui_SceneViewToolbar.hpp"
+#include "../features/scene_viewport/scene_toolbar/Imgui_SimHUD.hpp"
+#include "../services/SimulationController.hpp"
 
 class AssetQuickActions;
 class ClipboardService;
@@ -22,7 +24,6 @@ class EditorGizmos;
 class EditorSettings;
 class ActionDispatcher;
 class ShortcutBindingService;
-class GameEngine;
 class GameWindow;
 
 class ImguiContainer {
@@ -44,17 +45,16 @@ public:
                    ClipboardService& clipboardService,
                    AssetQuickActions& assetQuickActions,
                    SceneQuickActions& sceneQuickActions,
-                   GameEngine& engine,
+                   SimulationController& simulationController,
                    Imgui_Console& console) :
 
         applicationMenuBar_(project, undoHistory, editorSelection, actionDispatcher, shortcutBindingService),
 
-        sceneViewToolbar_(editorSettings, editorGizmos),
+        sceneViewToolbar_(editorSettings, editorGizmos, simulationController),
 
         hierarchyPanel_(assetStore,
                         editorSelection,
                         scene,
-                        engine,
                         actionDispatcher,
                         shortcutBindingService,
                         sceneQuickActions,
@@ -76,15 +76,20 @@ public:
                              clipboardService,
                              sceneQuickActions),
 
+        simHUD_(simulationController),
+
         imguiRoot_(applicationMenuBar_,
                    sceneViewToolbar_,
                    hierarchyPanel_,
                    assetExplorerPanel_,
                    inspectorPanel_,
                    editorSceneViewport_,
-                   console) {}
+                   console),
+
+        simHUDRoot_(simHUD_) {}
 
     ImguiRoot& imguiRoot() { return imguiRoot_; }
+    SimHUDRoot& simHUDRoot() { return simHUDRoot_; }
 
 private:
     Imgui_ApplicationMenuBar applicationMenuBar_;
@@ -93,5 +98,7 @@ private:
     Imgui_AssetExplorerPanel assetExplorerPanel_;
     Imgui_InspectorPanel inspectorPanel_;
     Imgui_EditorSceneViewport editorSceneViewport_;
+    Imgui_SimHUD simHUD_;
     ImguiRoot imguiRoot_;
+    SimHUDRoot simHUDRoot_;
 };

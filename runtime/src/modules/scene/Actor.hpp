@@ -10,6 +10,8 @@ public:
 
     EntityHandle handle() const { return handle_; }
 
+    void addClonedComponent(std::unique_ptr<IComponent> c) { components_.push_back(std::move(c)); }
+
     template<typename Component, typename... Args>
     Component* addComponent(Args&&... args) {
         auto component = std::make_unique<Component>(std::forward<Args>(args)...);

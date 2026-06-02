@@ -1,9 +1,9 @@
 #pragma once
 #include <filesystem>
-#include "GameEngine.hpp"
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/asset_management/AssetLoader.hpp"
 #include "modules/asset_management/VirtualFileSystem.hpp"
+#include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
@@ -29,6 +29,7 @@
 #include "modules/rendering/vulkan/passes/VulkanOutlinePass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanUIPass.hpp"
 #include "modules/scene/World.hpp"
+#include "services/SimulationController.hpp"
 #include "structs/RendererSettings.hpp"
 
 class RuntimeContainer {
@@ -64,23 +65,16 @@ public:
         gameRenderSystem_(gameRenderer_),
         inputSystem_(window),
         time_([&window] { return static_cast<float>(window.getTime()); }),
-        engine_(window,
-                time_,
-                loadedAssets_,
-                inputSystem_,
-                physicsSystem_,
-                world_,
-                gameRenderSystem_,
-                rendererSettings_,
-                gameRenderer_),
         gridPass_(assetLoader_, resourcesManager_),
         gizmoPass_(vulkanContext_, assetLoader_, resourcesManager_, swapchainManager_),
         objectIdPass_(vulkanContext_, assetLoader_, resourcesManager_),
         outlinePass_(
                 vulkanContext_, assetLoader_, resourcesManager_, swapchainManager_.swapchain().swapchainImageFormat),
-        uiPass_(vulkanContext_, swapchainManager_, window) {}
+        uiPass_(vulkanContext_, swapchainManager_, window),
+        simulationController_(
+                window, time_, loadedAssets_, inputSystem_, gameRenderSystem_, rendererSettings_, gameRenderer_) {}
 
-    GameEngine& engine() { return engine_; }
+    DeveloperConsole& developerConsole() { return developerConsole_; }
     World& entityManager() { return world_; }
     InputSystem& inputSystem() { return inputSystem_; }
     PhysicsSystem& physicsSystem() { return physicsSystem_; }
@@ -101,6 +95,7 @@ public:
     VulkanOutlinePass& outlinePass() { return outlinePass_; }
     VulkanUIPass& uiPass() { return uiPass_; }
     VulkanSwapchainManager& swapchainManager() { return swapchainManager_; }
+    SimulationController& simulationController() { return simulationController_; }
 
 private:
     VirtualFileSystem vfs_;
@@ -127,10 +122,11 @@ private:
     GameRenderSystem gameRenderSystem_;
     InputSystem inputSystem_;
     TimeManager time_;
-    GameEngine engine_;
+    DeveloperConsole developerConsole_;
     VulkanGridPass gridPass_;
     VulkanGizmoPass gizmoPass_;
     VulkanObjectIdPass objectIdPass_;
     VulkanOutlinePass outlinePass_;
     VulkanUIPass uiPass_;
+    SimulationController simulationController_;
 };

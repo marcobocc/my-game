@@ -8,15 +8,17 @@
 #include "../features/scene_viewport/transform_handle/ObjectTransformHandle.hpp"
 #include "../services/ActionDispatcher.hpp"
 #include "ImguiContainer.hpp"
-#include "RuntimeContainer.hpp"
 #include "ServicesContainer.hpp"
+#include "modules/console/DeveloperConsole.hpp"
+#include "modules/input/InputSystem.hpp"
 
 class FeaturesContainer {
 public:
     explicit FeaturesContainer(GameWindow& window,
                                AssetLoader& assetLoader,
                                World& entityManager,
-                               GameEngine& engine,
+                               InputSystem& inputSystem,
+                               DeveloperConsole& developerConsole,
                                AssetThumbnailGenerator& assetThumbnailGenerator,
                                RuntimeScene& scene,
                                AssetStore& assetStore,
@@ -26,11 +28,12 @@ public:
                                EditorSettings& editorSettings,
                                AssetQuickActions& assetQuickActions,
                                SceneQuickActions& sceneQuickActions,
-                               ClipboardService& clipboardService) :
-        imguiConsole_(engine.developerConsole()),
+                               ClipboardService& clipboardService,
+                               SimulationController& simulationController) :
+        imguiConsole_(developerConsole),
         gizmosBuilder_(assetLoader, entityManager, editorSettings),
         pickingSystem_(assetLoader),
-        objectTransformHandle_(window, engine, scene, editorCamera_, editorSelection, editorSettings),
+        objectTransformHandle_(window, scene, editorCamera_, editorSelection, editorSettings),
         actionDispatcher_(undoHistory,
                           editorCamera_,
                           editorGizmos_,
@@ -56,7 +59,7 @@ public:
                clipboardService,
                assetQuickActions,
                sceneQuickActions,
-               engine,
+               simulationController,
                imguiConsole_) {}
 
     EditorGizmos& editorGizmos() { return editorGizmos_; }
@@ -67,6 +70,7 @@ public:
     ShortcutBindingService& shortcutBindingService() { return shortcutBindingService_; }
     ActionDispatcher& actionDispatcher() { return actionDispatcher_; }
     ImguiRoot& imguiRoot() { return imgui_.imguiRoot(); }
+    SimHUDRoot& simHUDRoot() { return imgui_.simHUDRoot(); }
 
 private:
     Imgui_Console imguiConsole_;

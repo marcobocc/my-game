@@ -44,6 +44,16 @@ public:
 
     const std::vector<std::unique_ptr<Actor>>& getActors() const { return actors_; }
 
+    World snapshot() const {
+        World copy;
+        for (const auto& actor: actors_) {
+            Actor* dst = copy.addActor(actor->handle());
+            for (const auto& c: actor->getComponents())
+                dst->addClonedComponent(c->clone());
+        }
+        return copy;
+    }
+
     template<typename... QueryComponents>
     auto query() const {
         std::vector<std::tuple<EntityHandle, const QueryComponents*...>> result;

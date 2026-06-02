@@ -227,6 +227,8 @@ static void transitionColorImageFinal(VkCommandBuffer cmd,
 }
 
 void VulkanBackend::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const EditorRenderData& renderData) {
+    uiPass_.prepareFrame();
+
     // Flush off-screen cameras first, within the same command buffer.
     for (auto& job: pendingOffscreenCameras_) {
         if (job.camera.renderTarget.isValid()) {

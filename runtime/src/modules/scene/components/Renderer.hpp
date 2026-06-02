@@ -18,6 +18,7 @@ struct Renderer final : IComponent {
         enabled(e) {}
 
     std::string typeName() const override { return "Renderer"; }
+    std::unique_ptr<IComponent> clone() const override { return std::make_unique<Renderer>(*this); }
 
     nlohmann::json serialize() const override {
         nlohmann::json j = {{"meshName", meshName}, {"materialName", materialName}, {"enabled", enabled}};

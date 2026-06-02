@@ -3,15 +3,14 @@
 #include "../../services/ClipboardService.hpp"
 #include "../../services/UndoHistory.hpp"
 #include "../scene_viewport/picking/PickingSystem.hpp"
-#include "GameEngine.hpp"
 #include "ShortcutBindingService.hpp"
 #include "modules/core/GameWindow.hpp"
+#include "modules/input/InputSystem.hpp"
 
 class EditorGizmos;
 class EditorCamera;
 class EditorSelection;
 class ObjectTransformHandle;
-class RuntimeScene;
 class RuntimeScene;
 class EditorSettings;
 
@@ -33,7 +32,7 @@ class EditorSettings;
 class InputHandler {
 public:
     InputHandler(GameWindow& window,
-                 GameEngine& engine,
+                 InputSystem& inputSystem,
                  PickingSystem& pickingSystem,
                  EditorCamera& editorCamera,
                  EditorSelection& editorSelection,
@@ -47,7 +46,7 @@ public:
                  ShortcutBindingService& shortcutBindingService,
                  ActionDispatcher& actionDispatcher) :
         window_(window),
-        engine_(engine),
+        inputSystem_(inputSystem),
         pickingSystem_(pickingSystem),
         editorCamera_(editorCamera),
         editorSelection_(editorSelection),
@@ -66,7 +65,7 @@ public:
 
 private:
     GameWindow& window_;
-    GameEngine& engine_;
+    InputSystem& inputSystem_;
     PickingSystem& pickingSystem_;
     EditorCamera& editorCamera_;
     EditorSelection& editorSelection_;

@@ -7,4 +7,5 @@ public:
 
     virtual std::string typeName() const = 0;
     virtual nlohmann::json serialize() const = 0;
+    virtual std::unique_ptr<IComponent> clone() const = 0;
 };

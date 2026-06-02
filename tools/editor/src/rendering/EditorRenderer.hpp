@@ -11,6 +11,7 @@ class GizmoBuilder;
 class ObjectTransformHandle;
 class PickingSystem;
 class ImguiRoot;
+class SimHUDRoot;
 struct DrawCall;
 
 class EditorRenderer {
@@ -25,8 +26,10 @@ public:
                    GizmoBuilder& gizmosBuilder,
                    ObjectTransformHandle& objectTransformHandle,
                    PickingSystem& pickingService,
-                   ImguiRoot& imguiRoot);
+                   ImguiRoot& imguiRoot,
+                   SimHUDRoot& simHUDRoot);
 
+    void setSimMode(bool enabled);
     void render(const World& entityManager, float gridScale);
 
 private:
@@ -41,6 +44,9 @@ private:
     GizmoBuilder& gizmosBuilder_;
     ObjectTransformHandle& objectTransformHandle_;
     PickingSystem& pickingSystem_;
+    ImguiRoot& imguiRoot_;
+    SimHUDRoot& simHUDRoot_;
+    bool simMode_ = false;
     std::vector<DrawCall> outlineQueue_;
     std::vector<VulkanGizmoPass::GizmoVertex> builtGizmoLines_;
 };

@@ -2,9 +2,9 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
 #include "../../../runtime/src/modules/console/ConsoleLogAppender.hpp"
-#include "GameEngine.hpp"
 #include "features/input_handling/InputHandler.hpp"
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
+#include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
@@ -12,6 +12,7 @@
 #include "rendering/EditorRenderer.hpp"
 #include "services/EditorContext.hpp"
 #include "services/EditorSettings.hpp"
+#include "services/SimulationController.hpp"
 #include "styling/ImguiStyling.hpp"
 
 class GameWindow;
@@ -24,27 +25,29 @@ class PickingSystem;
 class EditorApp {
 public:
     EditorApp(GameWindow& window,
-              GameEngine& engine,
+              DeveloperConsole& developerConsole,
+              InputSystem& inputSystem,
               World& entityManager,
               EditorCamera& editorOrbitCamera,
               InputHandler& inputHandler,
               EditorSettings& rendererSettings,
               EditorContext& project,
               TimeManager& time,
-              InputSystem& inputSystem,
               PhysicsSystem& physicsSystem,
-              EditorRenderer& editorRenderer) :
+              EditorRenderer& editorRenderer,
+              SimulationController& simulationController) :
         window_(window),
-        engine_(engine),
+        developerConsole_(developerConsole),
+        inputSystem_(inputSystem),
         entityManager_(entityManager),
         time_(time),
-        inputSystem_(inputSystem),
         physicsSystem_(physicsSystem),
         editorCamera_(editorOrbitCamera),
         editorSettings_(rendererSettings),
         project_(project),
         inputHandler_(inputHandler),
-        editorRenderer_(editorRenderer) {
+        editorRenderer_(editorRenderer),
+        simulationController_(simulationController) {
         initEditor();
         ImguiStyling::ApplyEditorStyle();
     }
@@ -52,20 +55,28 @@ public:
     void run() {
         setupConsoleAppender();
         while (!window_.shouldClose()) {
+            window_.pollEvents();
             time_.beginFrame();
             float deltaTime = time_.getGameDeltaTime();
 
-            window_.pollEvents();
-            inputSystem_.update();
-            physicsSystem_.update();
+            simulationController_.flushPendingStop();
 
-            auto [mouseX, mouseY] = engine_.getMousePosition();
-            inputHandler_.update(mouseX, mouseY, deltaTime);
+            bool simActive = simulationController_.isActive();
+            if (simActive != simWasActive_) {
+                editorRenderer_.setSimMode(simActive);
+                simWasActive_ = simActive;
+            }
 
-            engine_.developerConsole().tick();
-
-            float gridScale = editorSettings_.getGridScale();
-            editorRenderer_.render(entityManager_, gridScale);
+            if (simActive) {
+                simulationController_.tick(deltaTime);
+                editorRenderer_.render(simulationController_.world(), 0.0f);
+            } else {
+                inputSystem_.update();
+                auto [mouseX, mouseY] = inputSystem_.getMousePosition();
+                inputHandler_.update(mouseX, mouseY, deltaTime);
+                developerConsole_.tick();
+                editorRenderer_.render(entityManager_, editorSettings_.getGridScale());
+            }
 
             time_.endFrame();
         }
@@ -103,20 +114,22 @@ private:
     }
 
     void setupConsoleAppender() {
-        auto appender = std::make_shared<ConsoleLogAppender>(&engine_.developerConsole());
+        auto appender = std::make_shared<ConsoleLogAppender>(&developerConsole_);
         appender->setLayout(std::make_shared<log4cxx::PatternLayout>("%d %-5p %c - %m%n"));
         log4cxx::Logger::getRootLogger()->addAppender(appender);
     }
 
     GameWindow& window_;
-    GameEngine& engine_;
+    DeveloperConsole& developerConsole_;
+    InputSystem& inputSystem_;
     World& entityManager_;
     TimeManager& time_;
-    InputSystem& inputSystem_;
     PhysicsSystem& physicsSystem_;
     EditorCamera& editorCamera_;
     EditorSettings& editorSettings_;
     EditorContext& project_;
     InputHandler& inputHandler_;
     EditorRenderer& editorRenderer_;
+    SimulationController& simulationController_;
+    bool simWasActive_ = false;
 };

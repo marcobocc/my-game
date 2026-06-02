@@ -22,6 +22,7 @@ public:
     }
 
     std::string typeName() const override { return "Light"; }
+    std::unique_ptr<IComponent> clone() const override { return std::make_unique<Light>(*this); }
 
     static Light deserialize(const nlohmann::json& j) {
         LightType type = static_cast<LightType>(j.at("type").get<int>());

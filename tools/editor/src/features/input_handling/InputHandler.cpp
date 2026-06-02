@@ -7,14 +7,14 @@
 #include "../scene_viewport/editor_camera/EditorCamera.hpp"
 #include "../scene_viewport/gizmos/EditorGizmos.hpp"
 #include "../scene_viewport/transform_handle/ObjectTransformHandle.hpp"
-#include "GameEngine.hpp"
+
 
 void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
     bool imguiCapturingInput = ImGui::GetIO().WantTextInput || ImGui::GetIO().WantCaptureMouse;
 
     if (!ImGui::GetIO().WantTextInput) {
         handleKeyboardInput();
-        bool leftDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
+        bool leftDown = inputSystem_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
         bool ctrl = false, shift = false, alt = false;
         getModifierState(ctrl, shift, alt);
         processGizmoDrag(mouseX, mouseY, leftDown);
@@ -52,7 +52,7 @@ void InputHandler::handleKeyboardInput() {
                                GLFW_KEY_SLASH};
 
     for (int key: keysToCheck) {
-        if (engine_.isKeyPressed(key)) {
+        if (inputSystem_.isKeyPressed(key)) {
             Shortcut shortcut{ctrl, shift, alt, key};
             auto action = shortcutBindingService_.getAction(shortcut);
             if (action) {
@@ -68,12 +68,12 @@ bool InputHandler::matchesShortcut(const Shortcut& s, bool ctrl, bool shift, boo
 
 bool InputHandler::getModifierState(bool& ctrl, bool& shift, bool& alt) const {
 #ifdef __APPLE__
-    ctrl = engine_.isKeyDown(GLFW_KEY_LEFT_SUPER) || engine_.isKeyDown(GLFW_KEY_RIGHT_SUPER);
+    ctrl = inputSystem_.isKeyDown(GLFW_KEY_LEFT_SUPER) || inputSystem_.isKeyDown(GLFW_KEY_RIGHT_SUPER);
 #else
-    ctrl = engine_.isKeyDown(GLFW_KEY_LEFT_CONTROL) || engine_.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
+    ctrl = inputSystem_.isKeyDown(GLFW_KEY_LEFT_CONTROL) || inputSystem_.isKeyDown(GLFW_KEY_RIGHT_CONTROL);
 #endif
-    shift = engine_.isKeyDown(GLFW_KEY_LEFT_SHIFT) || engine_.isKeyDown(GLFW_KEY_RIGHT_SHIFT);
-    alt = engine_.isKeyDown(GLFW_KEY_LEFT_ALT) || engine_.isKeyDown(GLFW_KEY_RIGHT_ALT);
+    shift = inputSystem_.isKeyDown(GLFW_KEY_LEFT_SHIFT) || inputSystem_.isKeyDown(GLFW_KEY_RIGHT_SHIFT);
+    alt = inputSystem_.isKeyDown(GLFW_KEY_LEFT_ALT) || inputSystem_.isKeyDown(GLFW_KEY_RIGHT_ALT);
     return true;
 }
 
@@ -115,8 +115,8 @@ void InputHandler::processMouseInteraction(double mouseX, double mouseY, bool le
 }
 
 void InputHandler::processCameraInput(double mouseX, double mouseY, double deltaTime) {
-    bool rightDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT);
-    bool middleDown = engine_.isMouseButtonDown(GLFW_MOUSE_BUTTON_MIDDLE);
+    bool rightDown = inputSystem_.isMouseButtonDown(GLFW_MOUSE_BUTTON_RIGHT);
+    bool middleDown = inputSystem_.isMouseButtonDown(GLFW_MOUSE_BUTTON_MIDDLE);
 
     // Handle orbit
     if (rightDown) {
@@ -145,20 +145,20 @@ void InputHandler::processCameraInput(double mouseX, double mouseY, double delta
     }
 
     // Handle zoom
-    double scroll = engine_.getScrollDelta();
+    double scroll = inputSystem_.getScrollDelta();
     if (scroll != 0.0) {
         editorCamera_.zoom(scroll);
     }
 
     // Handle keyboard movement
     int moveDir = 0;
-    if (engine_.isKeyDown(GLFW_KEY_W)) moveDir |= 1;
-    if (engine_.isKeyDown(GLFW_KEY_S)) moveDir |= 2;
-    if (engine_.isKeyDown(GLFW_KEY_A)) moveDir |= 4;
-    if (engine_.isKeyDown(GLFW_KEY_D)) moveDir |= 8;
+    if (inputSystem_.isKeyDown(GLFW_KEY_W)) moveDir |= 1;
+    if (inputSystem_.isKeyDown(GLFW_KEY_S)) moveDir |= 2;
+    if (inputSystem_.isKeyDown(GLFW_KEY_A)) moveDir |= 4;
+    if (inputSystem_.isKeyDown(GLFW_KEY_D)) moveDir |= 8;
 
     if (moveDir != 0) {
-        bool sprint = engine_.isKeyDown(GLFW_KEY_LEFT_SHIFT);
+        bool sprint = inputSystem_.isKeyDown(GLFW_KEY_LEFT_SHIFT);
         editorCamera_.moveFromKeyboard(moveDir, sprint, deltaTime);
     }
 

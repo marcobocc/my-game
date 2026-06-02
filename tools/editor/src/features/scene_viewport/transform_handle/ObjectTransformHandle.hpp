@@ -13,7 +13,6 @@
 #include "utils/math/Ray.hpp"
 
 class GameWindow;
-class GameEngine;
 class RuntimeScene;
 class EditorCamera;
 class EditorSelection;
@@ -67,13 +66,11 @@ struct TransformDragState {
 class ObjectTransformHandle {
 public:
     ObjectTransformHandle(GameWindow& window,
-                          GameEngine& engine,
                           RuntimeScene& scene,
                           EditorCamera& editorOrbitCamera,
                           EditorSelection& editorSelection,
                           EditorSettings& rendererSettings) :
         window_(window),
-        engine_(engine),
         scene_(scene),
         editorOrbitCamera_(editorOrbitCamera),
         editorSelection_(editorSelection),
@@ -113,7 +110,6 @@ public:
 
 private:
     GameWindow& window_;
-    GameEngine& engine_;
     RuntimeScene& scene_;
     EditorCamera& editorOrbitCamera_;
     EditorSelection& editorSelection_;

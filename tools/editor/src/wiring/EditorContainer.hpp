@@ -18,7 +18,8 @@ public:
         features_(window,
                   runtime_.assetLoader(),
                   runtime_.entityManager(),
-                  runtime_.engine(),
+                  runtime_.inputSystem(),
+                  runtime_.developerConsole(),
                   runtime_.assetThumbnailGenerator(),
                   services_.scene(),
                   services_.assetStore(),
@@ -28,9 +29,10 @@ public:
                   services_.editorSettings(),
                   services_.assetQuickActions(),
                   services_.sceneQuickActions(),
-                  services_.clipboardService()),
+                  services_.clipboardService(),
+                  runtime_.simulationController()),
         inputHandler_(window,
-                      runtime_.engine(),
+                      runtime_.inputSystem(),
                       features_.pickingSystem(),
                       features_.editorCamera(),
                       services_.editorSelection(),
@@ -52,18 +54,22 @@ public:
                    features_.pickingSystem(),
                    features_.gizmosBuilder(),
                    features_.objectTransformHandle(),
-                   features_.imguiRoot()),
+                   features_.imguiRoot(),
+                   features_.simHUDRoot()),
         editorApp_(window,
-                   runtime_.engine(),
+                   runtime_.developerConsole(),
+                   runtime_.inputSystem(),
                    runtime_.entityManager(),
                    features_.editorCamera(),
                    inputHandler_,
                    services_.editorSettings(),
                    services_.project(),
                    runtime_.time(),
-                   runtime_.inputSystem(),
                    runtime_.physicsSystem(),
-                   rendering_.editorRenderer()) {}
+                   rendering_.editorRenderer(),
+                   runtime_.simulationController()) {
+        runtime_.simulationController().setEditorWorld(&runtime_.entityManager());
+    }
 
     EditorApp& editorApp() { return editorApp_; }
 

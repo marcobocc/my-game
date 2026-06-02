@@ -12,6 +12,7 @@ struct Metadata final : IComponent {
     nlohmann::json serialize() const override { return {{"displayName", displayName}}; }
 
     std::string typeName() const override { return "Metadata"; }
+    std::unique_ptr<IComponent> clone() const override { return std::make_unique<Metadata>(*this); }
 
     static Metadata deserialize(const nlohmann::json& j) {
         Metadata m{};

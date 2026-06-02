@@ -12,6 +12,7 @@ struct BoxCollider final : IComponent {
     }
 
     std::string typeName() const override { return "BoxCollider"; }
+    std::unique_ptr<IComponent> clone() const override { return std::make_unique<BoxCollider>(*this); }
 
     static BoxCollider deserialize(const nlohmann::json& j) {
         BoxCollider b{};

@@ -1,6 +1,7 @@
 #pragma once
 #include <imgui.h>
 #include "../../../services/EditorSettings.hpp"
+#include "../../../services/SimulationController.hpp"
 #include "../gizmos/EditorGizmos.hpp"
 
 
@@ -10,9 +11,12 @@ public:
     static constexpr float INSPECTOR_WIDTH_RATIO = 0.25f;
     static constexpr float BAR_HEIGHT = 20.0f;
 
-    Imgui_SceneViewToolbar(EditorSettings& editorSettings, EditorGizmos& editorGizmos) :
+    Imgui_SceneViewToolbar(EditorSettings& editorSettings,
+                           EditorGizmos& editorGizmos,
+                           SimulationController& simulationController) :
         editorSettings_(editorSettings),
-        editorGizmos_(editorGizmos) {}
+        editorGizmos_(editorGizmos),
+        simulationController_(simulationController) {}
 
     void draw() {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -81,6 +85,25 @@ public:
                 [&] { editorSettings_.toggleSnapping(); },
                 ImVec4{0.8f, 0.4f, 0.0f, 1.0f});
 
+        // Centre: Play button
+        ImGui::SameLine();
+        {
+            float availWidth = ImGui::GetContentRegionAvail().x;
+            float playW = ImGui::CalcTextSize("> Play").x + ImGui::GetStyle().FramePadding.x * 2 + 12.0f;
+            float rightGroupW = ImGui::CalcTextSize("Grid").x + ImGui::GetStyle().FramePadding.x * 2 +
+                                ImGui::CalcTextSize("Lighting").x + ImGui::GetStyle().FramePadding.x * 2 +
+                                ImGui::CalcTextSize("BVH").x + ImGui::GetStyle().FramePadding.x * 2 +
+                                ImGui::GetStyle().ItemSpacing.x * 2;
+            float centreOffset = (availWidth - rightGroupW - playW) * 0.5f;
+            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + centreOffset);
+
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.1f, 0.55f, 0.1f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.2f, 0.70f, 0.2f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.3f, 0.80f, 0.3f, 1.0f});
+            if (ImGui::Button("> Play")) simulationController_.requestPlay();
+            ImGui::PopStyleColor(3);
+        }
+
         // Right-align remaining buttons
         ImGui::SameLine();
         float availableWidth = ImGui::GetContentRegionAvail().x;
@@ -105,4 +128,5 @@ public:
 private:
     EditorSettings& editorSettings_;
     EditorGizmos& editorGizmos_;
+    SimulationController& simulationController_;
 };

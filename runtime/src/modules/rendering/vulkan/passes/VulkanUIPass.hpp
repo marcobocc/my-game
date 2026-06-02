@@ -12,6 +12,7 @@ public:
     ~VulkanUIPass();
 
     void setDrawCallback(std::function<void()> callback);
+    void prepareFrame();
     void record(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent);
 
 private:

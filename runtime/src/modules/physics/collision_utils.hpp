@@ -1,6 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <optional>
+#include "../scene/EntityHandle.hpp"
 #include "../scene/components/Metadata.hpp"
 #include "modules/scene/components/BoxCollider.hpp"
 #include "modules/scene/components/Transform.hpp"
