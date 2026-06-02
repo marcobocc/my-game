@@ -11,7 +11,12 @@
 
 class Imgui_Console {
 public:
-    explicit Imgui_Console(DeveloperConsole& console) : console_(console) { console_.subscribe(responseBuffer_); }
+    explicit Imgui_Console(DeveloperConsole& console) : console_(&console) { console_->subscribe(responseBuffer_); }
+
+    void setConsole(DeveloperConsole& console) {
+        console_ = &console;
+        console_->subscribe(responseBuffer_);
+    }
 
     void draw();
     void show() { visible_ = true; }
@@ -27,7 +32,7 @@ private:
     bool matchesFilters(const LogMessage& msg) const;
 
     bool visible_ = false;
-    DeveloperConsole& console_;
+    DeveloperConsole* console_;
     ConsoleBuffer<std::shared_ptr<IConsoleMessage>> responseBuffer_;
     std::deque<std::shared_ptr<IConsoleMessage>> cachedMessages_;
     std::set<LogLevel> enabledLevels_ = {LogLevel::Debug, LogLevel::Info, LogLevel::Warn, LogLevel::Error};

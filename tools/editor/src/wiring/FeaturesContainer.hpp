@@ -71,6 +71,7 @@ public:
     ActionDispatcher& actionDispatcher() { return actionDispatcher_; }
     ImguiRoot& imguiRoot() { return imgui_.imguiRoot(); }
     SimHUDRoot& simHUDRoot() { return imgui_.simHUDRoot(); }
+    Imgui_Console& imguiConsole() { return imguiConsole_; }
 
 private:
     Imgui_Console imguiConsole_;

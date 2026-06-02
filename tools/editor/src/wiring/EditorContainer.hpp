@@ -6,6 +6,8 @@
 #include "RenderingContainer.hpp"
 #include "RuntimeContainer.hpp"
 #include "ServicesContainer.hpp"
+#include "modules/console/commands/EchoCommand.hpp"
+#include "modules/console/commands/ListActorsCommand.hpp"
 #include "modules/core/GameWindow.hpp"
 
 class EditorContainer {
@@ -67,9 +69,13 @@ public:
                    runtime_.time(),
                    runtime_.physicsSystem(),
                    rendering_.editorRenderer(),
-                   runtime_.simulationController()) {
+                   runtime_.simulationController(),
+                   features_.imguiConsole()) {
         runtime_.simulationController().setEditorWorld(&runtime_.entityManager());
         runtime_.simulationController().setProjectRoot(runtime_.projectRoot());
+        runtime_.developerConsole().registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
+        runtime_.developerConsole().registerCommand(
+                "list-actors", [this] { return std::make_unique<ListActorsCommand>(runtime_.entityManager()); });
     }
 
     EditorApp& editorApp() { return editorApp_; }

@@ -2,6 +2,7 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
 #include "../../../runtime/src/modules/console/ConsoleLogAppender.hpp"
+#include "../../../runtime/src/modules/console/Imgui_Console.hpp"
 #include "features/input_handling/InputHandler.hpp"
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "modules/console/DeveloperConsole.hpp"
@@ -35,7 +36,8 @@ public:
               TimeManager& time,
               PhysicsSystem& physicsSystem,
               EditorRenderer& editorRenderer,
-              SimulationController& simulationController) :
+              SimulationController& simulationController,
+              Imgui_Console& imguiConsole) :
         window_(window),
         developerConsole_(developerConsole),
         inputSystem_(inputSystem),
@@ -47,7 +49,8 @@ public:
         project_(project),
         inputHandler_(inputHandler),
         editorRenderer_(editorRenderer),
-        simulationController_(simulationController) {
+        simulationController_(simulationController),
+        imguiConsole_(imguiConsole) {
         initEditor();
         ImguiStyling::ApplyEditorStyle();
     }
@@ -67,9 +70,11 @@ public:
                 if (simActive) {
                     auto [w, h] = window_.getLogicalSize();
                     window_.setSceneViewport({0, 0, w, h});
+                    imguiConsole_.setConsole(simulationController_.gameInstance()->developerConsole());
                 } else {
                     window_.setSceneViewport(
                             computeSceneViewport(window_.getLogicalSize().first, window_.getLogicalSize().second));
+                    imguiConsole_.setConsole(developerConsole_);
                 }
                 simWasActive_ = simActive;
             }
@@ -139,5 +144,6 @@ private:
     InputHandler& inputHandler_;
     EditorRenderer& editorRenderer_;
     SimulationController& simulationController_;
+    Imgui_Console& imguiConsole_;
     bool simWasActive_ = false;
 };

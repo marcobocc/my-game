@@ -104,14 +104,14 @@ void Imgui_Console::draw() {
             ImGui::InputText("##command", commandBuf, sizeof(commandBuf), ImGuiInputTextFlags_EnterReturnsTrue);
     if (inputChanged) {
         lastCommand_ = commandBuf;
-        console_.submitCommand(commandBuf);
+        console_->submitCommand(commandBuf);
         commandBuf[0] = '\0';
         matchedCommands_.clear();
     } else if (ImGui::IsItemActive()) {
         std::string input = commandBuf;
         matchedCommands_.clear();
         if (!input.empty()) {
-            for (const auto& cmd: console_.listCommands()) {
+            for (const auto& cmd: console_->listCommands()) {
                 if (cmd.substr(0, input.size()) == input) matchedCommands_.push_back(cmd);
             }
         }
