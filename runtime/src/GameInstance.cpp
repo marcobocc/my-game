@@ -27,7 +27,7 @@ GameInstance::GameInstance(GameWindow& window,
     renderSystem_(renderSystem),
     rendererSettings_(rendererSettings),
     renderer_(renderer),
-    scriptManager_(ScriptInstanceContext{&world_}) {
+    scriptManager_(ScriptInstanceContext{&world_, &inputSystem_}) {
     developerConsole_.registerCommand("list-actors", [this] { return std::make_unique<ListActorsCommand>(world_); });
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
 
@@ -75,6 +75,12 @@ void GameInstance::requestClose() const { window_.requestClose(); }
 // --------------------------------------------------------
 
 std::pair<double, double> GameInstance::getMousePosition() const { return inputSystem_.getMousePosition(); }
+
+std::pair<double, double> GameInstance::getMouseDelta() const { return inputSystem_.getMouseDelta(); }
+
+void GameInstance::lockMouse() const { inputSystem_.lockMouse(); }
+
+void GameInstance::unlockMouse() const { inputSystem_.unlockMouse(); }
 
 bool GameInstance::isKeyDown(int key) const { return inputSystem_.isKeyDown(key); }
 

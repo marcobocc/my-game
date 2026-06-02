@@ -94,6 +94,10 @@ public:
     SceneViewport getSceneViewport() const { return sceneViewport_; }
     void setSceneViewport(SceneViewport viewport) { sceneViewport_ = viewport; }
 
+    void lockMouse() const { glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED); }
+    void unlockMouse() const { glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL); }
+    bool isMouseLocked() const { return glfwGetInputMode(window_, GLFW_CURSOR) == GLFW_CURSOR_DISABLED; }
+
     bool shouldClose() const { return glfwWindowShouldClose(window_); }
     void requestClose() const { glfwSetWindowShouldClose(window_, GLFW_TRUE); }
     void pollEvents() const { glfwPollEvents(); }

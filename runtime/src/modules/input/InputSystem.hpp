@@ -19,6 +19,15 @@ public:
         prevKeys_ = keys_;
         updateKeys();
         updateMouseButtons();
+        auto [mx, my] = window_.getMousePosition();
+        if (mouseDeltaInitialized_) {
+            mouseDelta_ = {mx - prevMouseX_, my - prevMouseY_};
+        } else {
+            mouseDelta_ = {0.0, 0.0};
+            mouseDeltaInitialized_ = true;
+        }
+        prevMouseX_ = mx;
+        prevMouseY_ = my;
     }
 
     bool isKeyDown(int key) const {
@@ -38,8 +47,12 @@ public:
     }
 
     std::pair<double, double> getMousePosition() const { return window_.getMousePosition(); }
+    std::pair<double, double> getMouseDelta() const { return mouseDelta_; }
 
     double getScrollDelta() const { return scrollDeltaConsumed_; }
+
+    void lockMouse() const { window_.lockMouse(); }
+    void unlockMouse() const { window_.unlockMouse(); }
 
 private:
     void updateKeys() {
@@ -58,4 +71,8 @@ private:
     std::unordered_map<int, bool> mouseButtons_{};
     double scrollDelta_ = 0.0;
     double scrollDeltaConsumed_ = 0.0;
+    double prevMouseX_ = 0.0;
+    double prevMouseY_ = 0.0;
+    std::pair<double, double> mouseDelta_{0.0, 0.0};
+    bool mouseDeltaInitialized_ = false;
 };

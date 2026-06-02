@@ -56,11 +56,15 @@ public:
     // Input API
     // --------------------------------------------------------
     std::pair<double, double> getMousePosition() const;
+    std::pair<double, double> getMouseDelta() const;
     double getScrollDelta() const;
 
     bool isKeyDown(int key) const;
     bool isKeyPressed(int key) const;
     bool isMouseButtonDown(int button) const;
+
+    void lockMouse() const;
+    void unlockMouse() const;
 
     // --------------------------------------------------------
     // Rendering API
