@@ -5,61 +5,57 @@
 namespace {
     const log4cxx::LoggerPtr logger = log4cxx::Logger::getLogger("ScriptCompiler");
 
-    std::filesystem::path dylibPath(const std::filesystem::path& sourceFile) {
-        return sourceFile.parent_path() / (sourceFile.stem().string() + ".dylib");
-    }
-
-    bool isStale(const std::filesystem::path& source, const std::filesystem::path& dylib) {
+    bool isStale(const std::filesystem::path& dylib, const std::filesystem::path& scriptsDir) {
         if (!std::filesystem::exists(dylib)) return true;
-        return std::filesystem::last_write_time(source) > std::filesystem::last_write_time(dylib);
+        auto dylibTime = std::filesystem::last_write_time(dylib);
+        for (const auto& entry: std::filesystem::directory_iterator(scriptsDir)) {
+            if (entry.path().extension() == ".cpp" && std::filesystem::last_write_time(entry.path()) > dylibTime)
+                return true;
+        }
+        return false;
     }
 } // namespace
 
-CompileResult ScriptCompiler::compile(const std::filesystem::path& sourceFile) const {
+std::filesystem::path ScriptCompiler::dylibPath(const std::filesystem::path& scriptsDir) {
+    return scriptsDir / "scripts.dylib";
+}
+
+CompileResult ScriptCompiler::compile(const std::filesystem::path& scriptsDir) const {
     CompileResult result;
-    result.scriptName = sourceFile.stem().string();
 
-    auto outPath = dylibPath(sourceFile);
+    std::vector<std::string> args = {"clang++",
+                                     "-shared",
+                                     "-fPIC",
+                                     "-std=c++23",
+                                     "-undefined",
+                                     "dynamic_lookup",
+                                     "-I",
+                                     ENGINE_SRC_DIR,
+                                     "-I",
+                                     ENGINE_DEPS_INCLUDE_DIR,
+                                     "-o",
+                                     dylibPath(scriptsDir).string()};
 
-    auto proc = subprocess::Popen({"clang++",
-                                   "-shared",
-                                   "-fPIC",
-                                   "-std=c++23",
-                                   sourceFile.string(),
-                                   "-undefined",
-                                   "dynamic_lookup",
-                                   "-I",
-                                   ENGINE_SRC_DIR,
-                                   "-I",
-                                   ENGINE_DEPS_INCLUDE_DIR,
-                                   "-o",
-                                   outPath.string()},
-                                  subprocess::output{subprocess::PIPE},
-                                  subprocess::error{subprocess::PIPE});
+    for (const auto& entry: std::filesystem::directory_iterator(scriptsDir)) {
+        if (entry.path().extension() == ".cpp") args.push_back(entry.path().string());
+    }
+
+    auto proc = subprocess::Popen(args, subprocess::output{subprocess::PIPE}, subprocess::error{subprocess::PIPE});
 
     auto [out, err] = proc.communicate();
     result.output = std::string(out.buf.begin(), out.buf.end()) + std::string(err.buf.begin(), err.buf.end());
     result.success = (proc.retcode() == 0);
 
     if (result.success)
-        LOG4CXX_INFO(logger, "Compiled: " << result.scriptName);
+        LOG4CXX_INFO(logger, "Compiled scripts.dylib");
     else
-        LOG4CXX_WARN(logger, "Failed to compile: " << result.scriptName << "\n" << result.output);
+        LOG4CXX_WARN(logger, "Failed to compile scripts.dylib\n" << result.output);
 
     return result;
 }
 
-std::vector<CompileResult> ScriptCompiler::compileStale(const std::filesystem::path& scriptsDir) const {
-    std::vector<CompileResult> results;
-
-    if (!std::filesystem::exists(scriptsDir)) return results;
-
-    for (const auto& entry: std::filesystem::directory_iterator(scriptsDir)) {
-        if (entry.path().extension() != ".cpp") continue;
-        if (isStale(entry.path(), dylibPath(entry.path()))) {
-            results.push_back(compile(entry.path()));
-        }
-    }
-
-    return results;
+std::optional<CompileResult> ScriptCompiler::compileStale(const std::filesystem::path& scriptsDir) const {
+    if (!std::filesystem::exists(scriptsDir)) return std::nullopt;
+    if (!isStale(dylibPath(scriptsDir), scriptsDir)) return std::nullopt;
+    return compile(scriptsDir);
 }

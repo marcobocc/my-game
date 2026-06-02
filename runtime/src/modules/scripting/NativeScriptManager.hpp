@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <typeindex>
 #include <unordered_map>
 #include <vector>
 #include "BehaviourComponent.hpp"
@@ -18,25 +19,21 @@ public:
     NativeScriptManager(const NativeScriptManager&) = delete;
     NativeScriptManager& operator=(const NativeScriptManager&) = delete;
 
-    // Load the .dylib and register its factory function. No-op if already loaded.
-    void loadScript(const std::string& name, const std::filesystem::path& path);
+    // Load scripts.dylib and register all create_<ClassName> factory symbols found in it.
+    void loadDylib(const std::filesystem::path& path);
 
-    // Instantiate a behaviour for an actor and call onStart(). Returns nullptr if script not loaded.
-    BehaviourComponent* spawnInstance(const std::string& name, EntityHandle handle);
+    // Instantiate a behaviour by class name and call onStart(). Returns nullptr if class not found.
+    BehaviourComponent* spawnInstance(const std::string& className, EntityHandle handle);
 
     // Call onUpdate(dt) on all live instances.
     void tickAll(float dt);
 
 private:
-    void unloadAll();
-
-    struct ScriptEntry {
-        void* handle = nullptr;
-        CreateBehaviourFn createFn = nullptr;
-        std::filesystem::path path;
-    };
+    void unload();
 
     ScriptInstanceContext ctx_;
-    std::unordered_map<std::string, ScriptEntry> scripts_;
+    void* dylibHandle_ = nullptr;
+    std::unordered_map<std::string, CreateBehaviourFn> factories_;
     std::vector<std::unique_ptr<BehaviourComponent>> instances_;
+    std::unordered_map<EntityHandle, std::vector<BehaviourComponent*>> entityInstances_;
 };

@@ -32,12 +32,13 @@ GameInstance::GameInstance(GameWindow& window,
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
 
     if (!scriptsDir.empty()) {
-        for (auto& [handle, script]: world_.query<BehaviourScript>()) {
-            if (script->scriptName.empty()) continue;
-            std::string stem = std::filesystem::path(script->scriptName).stem().string();
-            auto dylibPath = scriptsDir / (stem + ".dylib");
-            scriptManager_.loadScript(stem, dylibPath);
-            scriptManager_.spawnInstance(stem, handle);
+        auto dylibPath = scriptsDir / "scripts.dylib";
+        if (std::filesystem::exists(dylibPath)) scriptManager_.loadDylib(dylibPath);
+        for (const auto& actor: world_.getActors()) {
+            for (const auto* script: actor->getComponents<BehaviourScript>()) {
+                if (script->scriptName.empty()) continue;
+                scriptManager_.spawnInstance(script->scriptName, actor->handle());
+            }
         }
     }
 }

@@ -44,10 +44,8 @@ public:
         std::filesystem::path scriptsDir;
         if (!projectRoot_.empty()) {
             scriptsDir = projectRoot_ / "assets" / "scripts";
-            auto results = scriptCompiler_.compileStale(scriptsDir);
-            for (const auto& r: results) {
-                if (!r.success) return; // abort — caller sees simulation stayed stopped
-            }
+            auto result = scriptCompiler_.compileStale(scriptsDir);
+            if (result.has_value() && !result->success) return; // abort — compile failed
         }
 
         start(editorWorld_->snapshot(), scriptsDir);

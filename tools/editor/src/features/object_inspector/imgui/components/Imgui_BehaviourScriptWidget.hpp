@@ -2,6 +2,7 @@
 #include <array>
 #include <filesystem>
 #include <imgui.h>
+#include <string>
 #include "../Imgui_InspectorWidget.hpp"
 #include "modules/scene/components/BehaviourScript.hpp"
 
@@ -44,14 +45,21 @@ private:
         if (ImGui::BeginDragDropTarget()) {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCRIPT_ASSET")) {
                 std::string vfsPath = static_cast<const char*>(payload->Data);
-                component_.scriptName = std::filesystem::path(vfsPath).filename().string();
-                component_.scriptName.copy(nameBuf_.data(), nameBuf_.size() - 1);
-                nameBuf_[component_.scriptName.size()] = '\0';
-                commitEdit();
+                std::string className = extractClassName(vfsPath);
+                if (!className.empty()) {
+                    component_.scriptName = className;
+                    component_.scriptName.copy(nameBuf_.data(), nameBuf_.size() - 1);
+                    nameBuf_[component_.scriptName.size()] = '\0';
+                    commitEdit();
+                }
             }
             ImGui::EndDragDropTarget();
         }
         ImGui::Columns(1);
+    }
+
+    static std::string extractClassName(const std::string& vfsPath) {
+        return std::filesystem::path(vfsPath).stem().string();
     }
 
     void commitEdit() {
