@@ -86,7 +86,7 @@ public:
                    editorSceneViewport_,
                    console),
 
-        simHUDRoot_(simHUD_) {}
+        simHUDRoot_(simHUD_, console) {}
 
     ImguiRoot& imguiRoot() { return imguiRoot_; }
     SimHUDRoot& simHUDRoot() { return simHUDRoot_; }

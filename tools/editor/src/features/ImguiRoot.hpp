@@ -47,9 +47,13 @@ private:
 
 class SimHUDRoot {
 public:
-    explicit SimHUDRoot(Imgui_SimHUD& simHUD) : simHUD_(simHUD) {}
-    void draw() { simHUD_.draw(); }
+    SimHUDRoot(Imgui_SimHUD& simHUD, Imgui_Console& console) : simHUD_(simHUD), console_(console) {}
+    void draw() {
+        simHUD_.draw();
+        console_.draw();
+    }
 
 private:
     Imgui_SimHUD& simHUD_;
+    Imgui_Console& console_;
 };

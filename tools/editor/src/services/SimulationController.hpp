@@ -95,7 +95,6 @@ public:
     void tick(double deltaTime) {
         if (state_ != State::Running || !gameInstance_) return;
 
-        inputSystem_.update();
         gameInstance_->tick(static_cast<float>(deltaTime));
     }
 

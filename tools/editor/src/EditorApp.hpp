@@ -67,14 +67,15 @@ public:
                 simWasActive_ = simActive;
             }
 
+            inputSystem_.update();
+            auto [mouseX, mouseY] = inputSystem_.getMousePosition();
+            inputHandler_.update(mouseX, mouseY, deltaTime);
+            developerConsole_.tick();
+
             if (simActive) {
                 simulationController_.tick(deltaTime);
                 editorRenderer_.render(simulationController_.world(), 0.0f);
             } else {
-                inputSystem_.update();
-                auto [mouseX, mouseY] = inputSystem_.getMousePosition();
-                inputHandler_.update(mouseX, mouseY, deltaTime);
-                developerConsole_.tick();
                 editorRenderer_.render(entityManager_, editorSettings_.getGridScale());
             }
 
