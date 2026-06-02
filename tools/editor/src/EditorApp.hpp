@@ -64,6 +64,13 @@ public:
             bool simActive = simulationController_.isActive();
             if (simActive != simWasActive_) {
                 editorRenderer_.setSimMode(simActive);
+                if (simActive) {
+                    auto [w, h] = window_.getLogicalSize();
+                    window_.setSceneViewport({0, 0, w, h});
+                } else {
+                    window_.setSceneViewport(
+                            computeSceneViewport(window_.getLogicalSize().first, window_.getLogicalSize().second));
+                }
                 simWasActive_ = simActive;
             }
 
