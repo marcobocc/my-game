@@ -42,16 +42,20 @@ Component Operations
 ------------------------------------------------------------
 
 - addComponent
-  Inserts or replaces a component on the Actor
-  Records undo/redo for removal/restoration
+  Inserts a component on the Actor. For single-instance types,
+  replaces the existing one. For multi-instance types (allowMultiple),
+  always appends a new instance.
+  Records undo/redo for removal/restoration.
 
-- removeComponent
-  Removes a component after backing up its state
-  Undo restores the previous component
+- removeComponent / removeComponentAt
+  Removes a component after backing up its state.
+  removeComponentAt targets a specific instance by index.
+  Undo restores the previous component.
 
-- mutateComponent
-  Applies a user-provided mutation function to a component
-  Stores both pre- and post-mutation states for undo/redo
+- mutateComponent / mutateComponentAt
+  Applies a user-provided mutation function to a component.
+  mutateComponentAt targets a specific instance by index.
+  Stores both pre- and post-mutation states for undo/redo.
 
 ------------------------------------------------------------
 Snapshot System
@@ -81,15 +85,23 @@ public:
         return actor->getComponent<Component>();
     }
 
+    template<typename Component>
+    std::vector<Component*> getComponents() {
+        Actor* actor = world_.getActor(entity_);
+        if (!actor) return {};
+        return actor->getComponents<Component>();
+    }
+
     // --------------------------------------------------------------------------------
     // Mutations
     // --------------------------------------------------------------------------------
+
     template<typename Component>
     void addComponent(const Component& c, const std::string& mutationGroup = "") {
         Actor* actor = world_.getActor(entity_);
         if (!actor) return;
         Component* existing = actor->template getComponent<Component>();
-        if (existing)
+        if (existing && !c.allowMultiple())
             *existing = c;
         else
             actor->template addComponent<Component>(c);
@@ -97,12 +109,15 @@ public:
         EntityHandle entity = entity_;
         undo_.push(
                 [world, entity] {
-                    if (Actor* a = world->getActor(entity)) a->removeComponent(a->template getComponent<Component>());
+                    if (Actor* a = world->getActor(entity)) {
+                        auto all = a->template getComponents<Component>();
+                        if (!all.empty()) a->removeComponent(all.back());
+                    }
                 },
                 [world, entity, c] {
                     if (Actor* a = world->getActor(entity)) {
                         Component* ex = a->template getComponent<Component>();
-                        if (ex)
+                        if (ex && !c.allowMultiple())
                             *ex = c;
                         else
                             a->template addComponent<Component>(c);
@@ -118,16 +133,28 @@ public:
         if (!actor) return;
         Component* old = actor->template getComponent<Component>();
         if (!old) return;
-        Component backup = *old;
-        actor->removeComponent(old);
+        removeComponentAt<Component>(0, mutationGroup);
+    }
+
+    template<typename Component>
+    void removeComponentAt(size_t index, const std::string& mutationGroup = "") {
+        Actor* actor = world_.getActor(entity_);
+        if (!actor) return;
+        auto all = actor->template getComponents<Component>();
+        if (index >= all.size()) return;
+        Component backup = *all[index];
+        actor->removeComponent(all[index]);
         World* world = &world_;
         EntityHandle entity = entity_;
         undo_.push(
                 [world, entity, backup] {
                     if (Actor* a = world->getActor(entity)) a->template addComponent<Component>(backup);
                 },
-                [world, entity] {
-                    if (Actor* a = world->getActor(entity)) a->removeComponent(a->template getComponent<Component>());
+                [world, entity, index] {
+                    if (Actor* a = world->getActor(entity)) {
+                        auto all = a->template getComponents<Component>();
+                        if (index < all.size()) a->removeComponent(all[index]);
+                    }
                 },
                 "Remove Component",
                 mutationGroup);
@@ -135,24 +162,32 @@ public:
 
     template<typename Component, typename Fn>
     void mutateComponent(Fn&& fn, const std::string& mutationGroup = "") {
+        mutateComponentAt<Component>(0, std::forward<Fn>(fn), mutationGroup);
+    }
+
+    template<typename Component, typename Fn>
+    void mutateComponentAt(size_t index, Fn&& fn, const std::string& mutationGroup = "") {
         Actor* actor = world_.getActor(entity_);
         if (!actor) return;
-        Component* c = actor->template getComponent<Component>();
-        if (!c) return;
+        auto all = actor->template getComponents<Component>();
+        if (index >= all.size()) return;
+        Component* c = all[index];
         Component before = *c;
         std::forward<Fn>(fn)(*c);
         Component after = *c;
         World* world = &world_;
         EntityHandle entity = entity_;
         undo_.push(
-                [world, entity, before] {
+                [world, entity, index, before] {
                     if (Actor* a = world->getActor(entity)) {
-                        if (auto* comp = a->template getComponent<Component>()) *comp = before;
+                        auto all = a->template getComponents<Component>();
+                        if (index < all.size()) *all[index] = before;
                     }
                 },
-                [world, entity, after] {
+                [world, entity, index, after] {
                     if (Actor* a = world->getActor(entity)) {
-                        if (auto* comp = a->template getComponent<Component>()) *comp = after;
+                        auto all = a->template getComponents<Component>();
+                        if (index < all.size()) *all[index] = after;
                     }
                 },
                 "Modify Component",

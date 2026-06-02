@@ -9,15 +9,15 @@ class RuntimeScene;
 
 class Imgui_BehaviourScriptWidget : public Imgui_InspectorWidget {
 public:
-    explicit Imgui_BehaviourScriptWidget(RuntimeScene& scene) :
-        Imgui_InspectorWidget("BehaviourScript", 3),
+    Imgui_BehaviourScriptWidget(RuntimeScene& scene, std::string title) :
+        Imgui_InspectorWidget(std::move(title), 3),
         scene_(scene) {}
 
     void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
 
-    void setComponent(const BehaviourScript& c) {
+    void setComponent(const BehaviourScript& c, size_t index) {
+        index_ = index;
         component_ = c;
-        // Keep the char buffer in sync with the string value
         component_.scriptName.copy(nameBuf_.data(), nameBuf_.size() - 1);
         nameBuf_[component_.scriptName.size()] = '\0';
     }
@@ -27,6 +27,7 @@ private:
     std::optional<EntityHandle> lastObjectId_;
     BehaviourScript component_{};
     std::array<char, 256> nameBuf_{};
+    size_t index_ = 0;
 
     void drawBody() override {
         if (!lastObjectId_) return;
@@ -44,7 +45,6 @@ private:
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCRIPT_ASSET")) {
                 std::string vfsPath = static_cast<const char*>(payload->Data);
                 component_.scriptName = std::filesystem::path(vfsPath).filename().string();
-                // sync buffer
                 component_.scriptName.copy(nameBuf_.data(), nameBuf_.size() - 1);
                 nameBuf_[component_.scriptName.size()] = '\0';
                 commitEdit();
@@ -57,8 +57,11 @@ private:
     void commitEdit() {
         if (!lastObjectId_) return;
         BehaviourScript snapshot = component_;
+        size_t index = index_;
         scene_.getObject(*lastObjectId_)
-                .mutateComponent<BehaviourScript>([snapshot](BehaviourScript& b) { b = snapshot; },
-                                                  UndoHistory::randomGroupId("Set Script Name"));
+                .mutateComponentAt<BehaviourScript>(
+                        index,
+                        [snapshot](BehaviourScript& b) { b = snapshot; },
+                        UndoHistory::randomGroupId("Set Script Name"));
     }
 };

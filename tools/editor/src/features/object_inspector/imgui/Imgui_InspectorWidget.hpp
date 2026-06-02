@@ -1,15 +1,16 @@
 #pragma once
 #include <functional>
 #include <imgui.h>
+#include <string>
 #include "../../../styling/ImguiStyling.hpp"
 
 class Imgui_InspectorWidget {
 public:
     virtual ~Imgui_InspectorWidget() = default;
-    Imgui_InspectorWidget(const char* title, int rows) : title_(title), rows_(rows) {}
+    Imgui_InspectorWidget(std::string title, int rows) : title_(std::move(title)), rows_(rows) {}
 
     void draw(const char* contextId = nullptr, std::function<void()> onRemove = nullptr) {
-        if (!ImGui::BeginChild(title_, {0, childHeight(rows_)}, false)) {
+        if (!ImGui::BeginChild(title_.c_str(), {0, childHeight(rows_)}, false)) {
             ImGui::EndChild();
             return;
         }
@@ -25,11 +26,11 @@ public:
     }
 
 protected:
-    const char* getTitle() const { return title_; }
+    const char* getTitle() const { return title_.c_str(); }
     virtual void drawBody() = 0;
 
 private:
-    const char* title_;
+    std::string title_;
     int rows_;
 
     void drawHeader(const char* contextId = nullptr, std::function<void()> onRemove = nullptr) {
@@ -43,7 +44,7 @@ private:
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, {0.14f, 0.14f, 0.14f, 1.0f});
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign, {0.0f, 0.5f});
-        ImGui::Button(title_, {ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y});
+        ImGui::Button(title_.c_str(), {ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y});
         ImGui::PopStyleVar(2);
         ImGui::PopStyleColor(2);
 
