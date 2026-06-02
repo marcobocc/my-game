@@ -128,9 +128,11 @@ void EditorRenderer::render(const World& entityManager, float gridScale) {
     if (simMode_) {
         static const std::vector<DrawCall> emptyOutlines;
         static const std::vector<VulkanGizmoPass::GizmoVertex> emptyGizmos;
-        auto cameras = entityManager.query<Camera, Transform>();
-        for (auto& [entity, camera, transform]: cameras) {
-            if (!camera->renderTarget.isValid()) {
+        const Actor* camActor = entityManager.getActiveCamera();
+        if (camActor) {
+            const auto* camera = camActor->getComponent<Camera>();
+            const auto* transform = camActor->getComponent<Transform>();
+            if (camera && transform) {
                 renderer_.renderFrame(EditorRenderData(
                         *camera, *transform, drawQueue, emptyOutlines, emptyGizmos, activeLights, 0.0f, false));
                 return;
@@ -139,7 +141,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale) {
         Camera defaultCamera;
         Transform defaultTransform;
         defaultTransform.position = glm::vec3(0.0f, 1.0f, 0.0f);
-        LOG4CXX_WARN(LOGGER, "No active Camera entity in simulation world — rendering with default camera at origin.");
+        LOG4CXX_DEBUG(LOGGER, "No active Camera entity in simulation world — rendering with default camera at origin.");
         renderer_.renderFrame(EditorRenderData(
                 defaultCamera, defaultTransform, drawQueue, emptyOutlines, emptyGizmos, activeLights, 0.0f, false));
         return;

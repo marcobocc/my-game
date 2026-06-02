@@ -79,6 +79,15 @@ public:
     void destroyObject(EntityHandle e, const std::string& mutationGroup = "");
     void restoreObject(const GameObjectDTO& dto, const std::string& mutationGroup = "");
 
+    // --------------------------------------------------------------------------------
+    // Active Camera
+    // --------------------------------------------------------------------------------
+    void setActiveCamera(EntityHandle e) { world_.setActiveCamera(e); }
+    void clearActiveCamera() { world_.clearActiveCamera(); }
+    bool isActiveCamera(EntityHandle e) const {
+        return world_.getActiveCamera() != nullptr && world_.getActiveCamera()->handle() == e;
+    }
+
 private:
     void restore_Impl(const SceneDTO& dto);
     void restore_Impl(const GameObjectDTO& dto);

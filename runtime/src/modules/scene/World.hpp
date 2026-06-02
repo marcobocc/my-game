@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -37,9 +38,21 @@ public:
 
     bool hasActor(EntityHandle handle) const { return handleToActor_.contains(handle); }
 
+    void setActiveCamera(EntityHandle handle) { activeCameraHandle_ = handle; }
+    void clearActiveCamera() { activeCameraHandle_.reset(); }
+    Actor* getActiveCamera() {
+        if (!activeCameraHandle_) return nullptr;
+        return getActor(*activeCameraHandle_);
+    }
+    const Actor* getActiveCamera() const {
+        if (!activeCameraHandle_) return nullptr;
+        return getActor(*activeCameraHandle_);
+    }
+
     void clear() {
         actors_.clear();
         handleToActor_.clear();
+        activeCameraHandle_.reset();
     }
 
     const std::vector<std::unique_ptr<Actor>>& getActors() const { return actors_; }
@@ -51,6 +64,7 @@ public:
             for (const auto& c: actor->getComponents())
                 dst->addClonedComponent(c->clone());
         }
+        copy.activeCameraHandle_ = activeCameraHandle_;
         return copy;
     }
 
@@ -68,4 +82,5 @@ public:
 private:
     std::vector<std::unique_ptr<Actor>> actors_;
     std::unordered_map<EntityHandle, Actor*> handleToActor_;
+    std::optional<EntityHandle> activeCameraHandle_;
 };

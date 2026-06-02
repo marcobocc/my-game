@@ -1,13 +1,12 @@
 #pragma once
 #include <imgui.h>
+#include "../../../../services/common_editing/RuntimeScene.hpp"
 #include "../Imgui_InspectorWidget.hpp"
 #include "modules/scene/components/Camera.hpp"
 
-class RuntimeScene;
-
 class Imgui_CameraWidget : public Imgui_InspectorWidget {
 public:
-    explicit Imgui_CameraWidget(RuntimeScene& scene) : Imgui_InspectorWidget("Camera", 8), scene_(scene) {}
+    explicit Imgui_CameraWidget(RuntimeScene& scene) : Imgui_InspectorWidget("Camera", 10), scene_(scene) {}
 
     void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
     void setComponent(const Camera& c) { component_ = c; }
@@ -20,6 +19,14 @@ private:
 
     void drawBody() override {
         if (!lastObjectId_) return;
+        bool isActive = scene_.isActiveCamera(*lastObjectId_);
+        if (ImGui::Checkbox("Active Camera", &isActive)) {
+            if (isActive)
+                scene_.setActiveCamera(*lastObjectId_);
+            else
+                scene_.clearActiveCamera();
+        }
+        ImGui::Spacing();
         drawRow("FOV", [&] {
             ImGui::DragFloat("##fov", &component_.fov, 0.5f, 1.0f, 179.0f);
             trackDrag(UndoHistory::randomGroupId("Set FOV"));
