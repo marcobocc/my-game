@@ -23,6 +23,7 @@ public:
     template<typename T>
     T* get(const std::string& name) {
         if (!cache_.contains(name)) load<T>(name);
+        if (!cache_.contains(name)) return nullptr;
         return cache_.get<T>(name);
     }
 
