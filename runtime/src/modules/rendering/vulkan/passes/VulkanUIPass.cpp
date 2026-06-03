@@ -51,22 +51,25 @@ void VulkanUIPass::prepareFrame() {
     ImGui::Render();
 }
 
-void VulkanUIPass::record(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent) {
-    beginRendering(cmd, colorView, extent);
+void VulkanUIPass::record(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent, bool clear) {
+    beginRendering(cmd, colorView, extent, clear);
     if (ImDrawData* drawData = ImGui::GetDrawData()) {
         ImGui_ImplVulkan_RenderDrawData(drawData, cmd);
     }
     endRendering(cmd);
 }
 
-void VulkanUIPass::beginRendering(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent) const {
+void VulkanUIPass::beginRendering(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent, bool clear) const {
+    VkClearValue clearVal{};
+    clearVal.color.float32[3] = 1.0f;
+
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     colorAttachment.imageView = colorView;
     colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    colorAttachment.loadOp = clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.clearValue = {};
+    colorAttachment.clearValue = clear ? clearVal : VkClearValue{};
     colorAttachment.pNext = nullptr;
 
     VkRenderingInfo renderInfo{};

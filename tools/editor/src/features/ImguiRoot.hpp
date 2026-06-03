@@ -7,6 +7,7 @@
 #include "scene_viewport/imgui/Imgui_EditorSceneViewport.hpp"
 #include "scene_viewport/scene_toolbar/Imgui_SceneViewToolbar.hpp"
 #include "scene_viewport/scene_toolbar/Imgui_SimHUD.hpp"
+#include "welcome/Imgui_WelcomeScreen.hpp"
 
 class ImguiRoot {
 public:
@@ -56,4 +57,13 @@ public:
 private:
     Imgui_SimHUD& simHUD_;
     Imgui_Console& console_;
+};
+
+class WelcomeRoot {
+public:
+    explicit WelcomeRoot(Imgui_WelcomeScreen& screen) : screen_(screen) {}
+    void draw() { screen_.draw(); }
+
+private:
+    Imgui_WelcomeScreen& screen_;
 };

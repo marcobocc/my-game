@@ -1,10 +1,13 @@
 #pragma once
+#include <filesystem>
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
 #include "../../../runtime/src/modules/console/ConsoleLogAppender.hpp"
 #include "../../../runtime/src/modules/console/Imgui_Console.hpp"
+#include "features/ImguiRoot.hpp"
 #include "features/input_handling/InputHandler.hpp"
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
+#include "features/welcome/Imgui_WelcomeScreen.hpp"
 #include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
@@ -37,7 +40,8 @@ public:
               PhysicsSystem& physicsSystem,
               EditorRenderer& editorRenderer,
               SimulationController& simulationController,
-              Imgui_Console& imguiConsole) :
+              Imgui_Console& imguiConsole,
+              Imgui_WelcomeScreen& welcomeScreen) :
         window_(window),
         developerConsole_(developerConsole),
         inputSystem_(inputSystem),
@@ -50,9 +54,32 @@ public:
         inputHandler_(inputHandler),
         editorRenderer_(editorRenderer),
         simulationController_(simulationController),
-        imguiConsole_(imguiConsole) {
-        initEditor();
+        imguiConsole_(imguiConsole),
+        welcomeScreen_(welcomeScreen) {
+        welcomeScreen_.setCallbacks({
+                [this](const std::filesystem::path& path) { openProject(path); },
+                [this] { newProject(); },
+        });
+        initApp();
         ImguiStyling::ApplyEditorStyle();
+    }
+
+    void openProject(const std::filesystem::path& projectRoot) {
+        project_.openProject(projectRoot);
+        simulationController_.setProjectRoot(projectRoot);
+        enterEditor();
+    }
+
+    void newProject() {
+        std::filesystem::path projectsRoot{PROJECTS_DIR};
+        std::filesystem::path newPath = projectsRoot / "NewProject";
+        int index = 2;
+        while (std::filesystem::exists(newPath)) {
+            newPath = projectsRoot / ("NewProject" + std::to_string(index));
+            ++index;
+        }
+        std::filesystem::create_directories(newPath);
+        openProject(newPath);
     }
 
     void run() {
@@ -61,6 +88,12 @@ public:
             window_.pollEvents();
             time_.beginFrame();
             float deltaTime = time_.getGameDeltaTime();
+
+            if (appState_ == AppState::Welcome) {
+                editorRenderer_.renderWelcome();
+                time_.endFrame();
+                continue;
+            }
 
             simulationController_.flushPendingStop();
 
@@ -96,6 +129,8 @@ public:
     }
 
 private:
+    enum class AppState { Welcome, Editor };
+
     static SceneViewport computeSceneViewport(int w, int h) {
         constexpr float HIERARCHY_WIDTH_RATIO = 0.15f;
         constexpr float INSPECTOR_WIDTH_RATIO = 0.25f;
@@ -106,13 +141,19 @@ private:
         return {left, 0, right - left, bottom};
     }
 
-    void initEditor() {
+    void initApp() {
         setupViewport();
         editorSettings_.enableGrid();
+        // If a project was already loaded (via --project CLI arg), skip the welcome screen
+        if (project_.getCurrentScenePath().has_value()) enterEditor();
+    }
+
+    void enterEditor() {
+        appState_ = AppState::Editor;
+        editorRenderer_.setWelcomeMode(false);
         SceneViewport sv = window_.getSceneViewport();
         if (sv.width > 0 && sv.height > 0)
             editorCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
-        if (!project_.loadLatestScene()) project_.newScene();
     }
 
     void setupViewport() {
@@ -145,5 +186,7 @@ private:
     EditorRenderer& editorRenderer_;
     SimulationController& simulationController_;
     Imgui_Console& imguiConsole_;
+    Imgui_WelcomeScreen& welcomeScreen_;
+    AppState appState_ = AppState::Welcome;
     bool simWasActive_ = false;
 };

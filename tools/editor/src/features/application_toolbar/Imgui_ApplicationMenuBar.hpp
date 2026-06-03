@@ -1,4 +1,6 @@
 #pragma once
+#include <filesystem>
+#include <functional>
 #include <imgui.h>
 #include <nfd.hpp>
 #include <string>
@@ -12,6 +14,11 @@
 
 class Imgui_ApplicationMenuBar {
 public:
+    struct ProjectCallbacks {
+        std::function<void()> onNewProject;
+        std::function<void(std::filesystem::path)> onOpenProject;
+    };
+
     explicit Imgui_ApplicationMenuBar(EditorContext& project,
                                       UndoHistory& undoHistory,
                                       EditorSelection& editorSelection,
@@ -23,9 +30,14 @@ public:
         actionDispatcher_(actionDispatcher),
         shortcutBindingService_(shortcutBindingService) {}
 
+    void setProjectCallbacks(ProjectCallbacks callbacks) { projectCallbacks_ = std::move(callbacks); }
+
     void draw() {
         ImguiStyling::withMenuBar(ImVec4(0.08f, 0.08f, 0.08f, 1.00f), [this] {
             if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("New Project") && projectCallbacks_.onNewProject) projectCallbacks_.onNewProject();
+                if (ImGui::MenuItem("Open Project...")) openProjectDialog();
+                ImGui::Separator();
                 if (ImGui::MenuItem("Save",
                                     shortcutBindingService_.getShortcut(ActionID::SAVE).c_str(),
                                     false,
@@ -33,7 +45,7 @@ public:
                     actionDispatcher_.execute(ActionID::SAVE);
                 }
                 if (ImGui::MenuItem("Save As...")) openSaveDialog();
-                if (ImGui::MenuItem("Open...")) openLoadDialog();
+                if (ImGui::MenuItem("Open Scene...")) openLoadDialog();
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Edit")) {
@@ -57,6 +69,7 @@ private:
     EditorSelection& editorSelection_;
     ActionDispatcher& actionDispatcher_;
     ShortcutBindingService& shortcutBindingService_;
+    ProjectCallbacks projectCallbacks_;
 
     void drawObjectEditMenu() const {
         bool hasSelection = !editorSelection_.getSelectedEntityIds().empty();
@@ -70,6 +83,15 @@ private:
             if (ImGui::MenuItem(actionNames[i], shortcutStr.c_str(), false, hasSelection)) {
                 actionDispatcher_.execute(editActions[i]);
             }
+        }
+    }
+
+    void openProjectDialog() const {
+        NFD::Guard nfdGuard;
+        nfdnchar_t* outPath = nullptr;
+        if (NFD::PickFolder(outPath) == NFD_OKAY) {
+            if (projectCallbacks_.onOpenProject) projectCallbacks_.onOpenProject(std::filesystem::path{outPath});
+            NFD::FreePath(outPath);
         }
     }
 

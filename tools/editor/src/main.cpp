@@ -39,9 +39,6 @@ int main(int argc, char* argv[]) {
             i++;
         }
     }
-    if (projectRoot.empty()) {
-        throw std::runtime_error("Project root not provided. Use --project <path> to specify the project root.");
-    }
     GameWindow window("Editor");
     auto mountPaths = createMountPaths(projectRoot);
     EditorContainer editorContainer(window, mountPaths, projectRoot);

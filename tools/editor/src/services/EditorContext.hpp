@@ -30,6 +30,10 @@ public:
     void saveCurrentScene();
     bool loadScene(const char* path);
     bool loadLatestScene();
+    // Mount project assets, set write dir, and load/create scene. Use when project root was not known at startup.
+    void openProject(const std::filesystem::path& projectRoot);
+    // Load/create scene for a project root that was already mounted at startup.
+    void initProject();
 
     RuntimeScene& getCurrentScene() { return scene_; }
     std::optional<std::filesystem::path> getCurrentScenePath() const { return currentScenePath_; }

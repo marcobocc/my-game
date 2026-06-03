@@ -11,6 +11,7 @@ class GizmoBuilder;
 class ObjectTransformHandle;
 class ImguiRoot;
 class SimHUDRoot;
+class WelcomeRoot;
 
 class RenderingContainer {
 public:
@@ -24,7 +25,8 @@ public:
                        GizmoBuilder& gizmosBuilder,
                        ObjectTransformHandle& objectTransformHandle,
                        ImguiRoot& imguiRoot,
-                       SimHUDRoot& simHUDRoot) :
+                       SimHUDRoot& simHUDRoot,
+                       WelcomeRoot& welcomeRoot) :
 
         vulkanBackend_(window,
                        runtime.vulkanContext(),
@@ -49,7 +51,8 @@ public:
                         objectTransformHandle,
                         pickingService,
                         imguiRoot,
-                        simHUDRoot) {}
+                        simHUDRoot,
+                        welcomeRoot) {}
 
     EditorRenderer& editorRenderer() { return editorRenderer_; }
 

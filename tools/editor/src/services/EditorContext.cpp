@@ -40,6 +40,16 @@ bool EditorContext::loadScene(const char* path) {
     }
 }
 
+void EditorContext::openProject(const std::filesystem::path& projectRoot) {
+    vfs_.mount(projectRoot);
+    vfs_.setWriteDir(projectRoot);
+    if (!loadLatestScene()) newScene();
+}
+
+void EditorContext::initProject() {
+    if (!loadLatestScene()) newScene();
+}
+
 bool EditorContext::loadLatestScene() {
     std::string latestScene;
     int64_t latestTime = -1;

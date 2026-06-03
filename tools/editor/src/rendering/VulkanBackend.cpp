@@ -303,6 +303,52 @@ void VulkanBackend::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, con
             cmd, swapchainTarget.image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0);
 }
 
+bool VulkanBackend::renderUIOnly() {
+    frameManager_.waitForCurrentFrame();
+
+    uint32_t imageIndex = 0;
+    if (!frameManager_.acquireImage(imageIndex)) return false;
+    VkCommandBuffer cmd = frameManager_.beginFrame();
+
+    uiPass_.prepareFrame();
+
+    VulkanRenderTarget swapchainTarget = swapchainManager_.getSwapchainTarget(imageIndex);
+    VkExtent2D extent{swapchainTarget.width, swapchainTarget.height};
+
+    // Transition UNDEFINED → COLOR_ATTACHMENT_OPTIMAL (no TRANSFER_DST_BIT needed)
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = swapchainTarget.image;
+    barrier.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    vkCmdPipelineBarrier(cmd,
+                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                         0,
+                         0,
+                         nullptr,
+                         0,
+                         nullptr,
+                         1,
+                         &barrier);
+
+    // Use LOAD_OP_CLEAR inside the UI pass to produce a black background
+    uiPass_.record(cmd, swapchainTarget.view, extent, /*clear=*/true);
+
+    transitionColorImageFinal(
+            cmd, swapchainTarget.image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0);
+
+    frameManager_.endFrame(cmd);
+    frameManager_.submit(imageIndex);
+    frameManager_.advanceFrame();
+    return true;
+}
+
 // ------------------- Render graph setup -------------------
 
 void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags colorUsage, VkExtent2D extent) {

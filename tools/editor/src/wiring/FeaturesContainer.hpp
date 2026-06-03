@@ -71,6 +71,9 @@ public:
     ActionDispatcher& actionDispatcher() { return actionDispatcher_; }
     ImguiRoot& imguiRoot() { return imgui_.imguiRoot(); }
     SimHUDRoot& simHUDRoot() { return imgui_.simHUDRoot(); }
+    WelcomeRoot& welcomeRoot() { return imgui_.welcomeRoot(); }
+    Imgui_WelcomeScreen& welcomeScreen() { return imgui_.welcomeScreen(); }
+    Imgui_ApplicationMenuBar& applicationMenuBar() { return imgui_.applicationMenuBar(); }
     Imgui_Console& imguiConsole() { return imguiConsole_; }
 
 private:

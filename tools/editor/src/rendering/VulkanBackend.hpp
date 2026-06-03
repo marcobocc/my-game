@@ -49,6 +49,9 @@ public:
     // at the start of the next swapchain frame.
     bool renderFrame(const EditorRenderData& renderData);
 
+    // Render only the UI pass — skips all geometry, lighting, and gizmo passes.
+    bool renderUIOnly();
+
     // Queue an off-screen camera render to be processed in the next swapchain frame.
     // The camera will render using the scene's draw queue from the next renderFrame() call.
     void queueOffscreenCamera(const Camera& camera, const Transform& cameraTransform) {

@@ -252,7 +252,7 @@ def find_executable(target: str) -> Path:
 def run_target(target: str, extra_args: list[str] | None = None) -> None:
     exe = find_executable(target)
     run_log(f"Running executable: {exe}")
-    cmd = [str(exe), "--project", str(PROJECT_ROOT)]
+    cmd = [str(exe)]
     if extra_args:
         cmd.extend(extra_args)
     run_cmd(cmd, cwd=exe.parent)

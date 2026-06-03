@@ -13,11 +13,11 @@ public:
 
     void setDrawCallback(std::function<void()> callback);
     void prepareFrame();
-    void record(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent);
+    void record(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent, bool clear = false);
 
 private:
     std::function<void()> drawCallback_;
 
-    void beginRendering(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent) const;
+    void beginRendering(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent, bool clear) const;
     void endRendering(VkCommandBuffer cmd);
 };

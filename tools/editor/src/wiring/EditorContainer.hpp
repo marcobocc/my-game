@@ -57,7 +57,8 @@ public:
                    features_.gizmosBuilder(),
                    features_.objectTransformHandle(),
                    features_.imguiRoot(),
-                   features_.simHUDRoot()),
+                   features_.simHUDRoot(),
+                   features_.welcomeRoot()),
         editorApp_(window,
                    runtime_.developerConsole(),
                    runtime_.inputSystem(),
@@ -70,12 +71,18 @@ public:
                    runtime_.physicsSystem(),
                    rendering_.editorRenderer(),
                    runtime_.simulationController(),
-                   features_.imguiConsole()) {
+                   features_.imguiConsole(),
+                   features_.welcomeScreen()) {
         runtime_.simulationController().setEditorWorld(&runtime_.entityManager());
         runtime_.simulationController().setProjectRoot(runtime_.projectRoot());
+        if (!runtime_.projectRoot().empty()) services_.project().initProject();
         runtime_.developerConsole().registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
         runtime_.developerConsole().registerCommand(
                 "list-actors", [this] { return std::make_unique<ListActorsCommand>(runtime_.entityManager()); });
+        features_.applicationMenuBar().setProjectCallbacks({
+                [this] { editorApp_.newProject(); },
+                [this](const std::filesystem::path& path) { editorApp_.openProject(path); },
+        });
     }
 
     EditorApp& editorApp() { return editorApp_; }

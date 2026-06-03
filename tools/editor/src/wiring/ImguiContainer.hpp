@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include "../../../../runtime/src/modules/console/Imgui_Console.hpp"
 #include "../features/ImguiRoot.hpp"
 #include "../features/application_toolbar/Imgui_ApplicationMenuBar.hpp"
@@ -8,6 +9,7 @@
 #include "../features/scene_viewport/imgui/Imgui_EditorSceneViewport.hpp"
 #include "../features/scene_viewport/scene_toolbar/Imgui_SceneViewToolbar.hpp"
 #include "../features/scene_viewport/scene_toolbar/Imgui_SimHUD.hpp"
+#include "../features/welcome/Imgui_WelcomeScreen.hpp"
 #include "../services/SimulationController.hpp"
 
 class AssetQuickActions;
@@ -86,10 +88,15 @@ public:
                    editorSceneViewport_,
                    console),
 
-        simHUDRoot_(simHUD_, console) {}
+        simHUDRoot_(simHUD_, console),
+        welcomeScreen_(std::filesystem::path{PROJECTS_DIR}),
+        welcomeRoot_(welcomeScreen_) {}
 
     ImguiRoot& imguiRoot() { return imguiRoot_; }
     SimHUDRoot& simHUDRoot() { return simHUDRoot_; }
+    WelcomeRoot& welcomeRoot() { return welcomeRoot_; }
+    Imgui_WelcomeScreen& welcomeScreen() { return welcomeScreen_; }
+    Imgui_ApplicationMenuBar& applicationMenuBar() { return applicationMenuBar_; }
 
 private:
     Imgui_ApplicationMenuBar applicationMenuBar_;
@@ -101,4 +108,6 @@ private:
     Imgui_SimHUD simHUD_;
     ImguiRoot imguiRoot_;
     SimHUDRoot simHUDRoot_;
+    Imgui_WelcomeScreen welcomeScreen_;
+    WelcomeRoot welcomeRoot_;
 };

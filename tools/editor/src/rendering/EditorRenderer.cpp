@@ -20,7 +20,8 @@ EditorRenderer::EditorRenderer(VulkanBackend& renderer,
                                ObjectTransformHandle& objectTransformHandle,
                                PickingSystem& pickingService,
                                ImguiRoot& imguiRoot,
-                               SimHUDRoot& simHUDRoot) :
+                               SimHUDRoot& simHUDRoot,
+                               WelcomeRoot& welcomeRoot) :
     renderer_(renderer),
     editorOrbitCamera_(editorOrbitCamera),
     editorSelection_(editorSelection),
@@ -30,8 +31,9 @@ EditorRenderer::EditorRenderer(VulkanBackend& renderer,
     objectTransformHandle_(objectTransformHandle),
     pickingSystem_(pickingService),
     imguiRoot_(imguiRoot),
-    simHUDRoot_(simHUDRoot) {
-    renderer_.setDrawCallback([this] { imguiRoot_.draw(); });
+    simHUDRoot_(simHUDRoot),
+    welcomeRoot_(welcomeRoot) {
+    renderer_.setDrawCallback([this] { welcomeRoot_.draw(); });
 }
 
 void EditorRenderer::setSimMode(bool enabled) {
@@ -42,6 +44,16 @@ void EditorRenderer::setSimMode(bool enabled) {
         renderer_.setDrawCallback([this] { imguiRoot_.draw(); });
     }
 }
+
+void EditorRenderer::setWelcomeMode(bool enabled) {
+    if (enabled) {
+        renderer_.setDrawCallback([this] { welcomeRoot_.draw(); });
+    } else {
+        renderer_.setDrawCallback([this] { imguiRoot_.draw(); });
+    }
+}
+
+void EditorRenderer::renderWelcome() { renderer_.renderUIOnly(); }
 
 void EditorRenderer::buildOutlines() {
     outlineQueue_.clear();
