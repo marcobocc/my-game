@@ -102,6 +102,7 @@ public:
                                &push);
 
             const Mesh* mesh = assetLoader_.get<Mesh>(dc.renderer.meshName);
+            if (!mesh) continue;
             const auto& meshBuffers = resourcesManager_.getMesh(*mesh);
             VkDeviceSize offset = 0;
             vkCmdBindVertexBuffers(cmd, 0, 1, &meshBuffers.vertexBuffer.buffer, &offset);

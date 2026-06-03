@@ -110,6 +110,7 @@ private:
                            &pc);
 
         const Mesh* mesh = assetLoader_.get<Mesh>(drawCall.renderer.meshName);
+        if (!mesh) return;
         const auto& meshBuffers = resourcesManager_.getMesh(*mesh);
         std::array<VkDeviceSize, 1> offsets{};
         vkCmdBindVertexBuffers(cmd, 0, 1, &meshBuffers.vertexBuffer.buffer, offsets.data());

@@ -17,6 +17,7 @@ SceneDTO RuntimeScene::snapshotScene() const {
     for (const auto& actor: world_.getActors()) {
         scene.objects.push_back(snapshotObject(actor->handle()));
     }
+    if (const Actor* cam = world_.getActiveCamera()) scene.activeCameraHandle = cam->handle();
     return scene;
 }
 
@@ -102,6 +103,7 @@ void RuntimeScene::restore_Impl(const SceneDTO& dto) {
         restore_Impl(objDto);
         if (objDto.handle >= nextHandle_) nextHandle_ = objDto.handle + 1;
     }
+    if (dto.activeCameraHandle) world_.setActiveCamera(*dto.activeCameraHandle);
 }
 
 void RuntimeScene::restore_Impl(const GameObjectDTO& dto) {
