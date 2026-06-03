@@ -106,6 +106,7 @@ public:
                     imguiConsole_.setConsole(simulationController_.gameInstance()->developerConsole());
                     editorSettings_.disableGrid();
                 } else {
+                    inputSystem_.setBlocked(false);
                     window_.setSceneViewport(
                             computeSceneViewport(window_.getLogicalSize().first, window_.getLogicalSize().second));
                     imguiConsole_.setConsole(developerConsole_);
@@ -115,6 +116,7 @@ public:
             }
 
             inputSystem_.update();
+            if (simActive) inputSystem_.setBlocked(imguiConsole_.isVisible());
             auto [mouseX, mouseY] = inputSystem_.getMousePosition();
             inputHandler_.update(mouseX, mouseY, deltaTime);
             developerConsole_.tick();
