@@ -104,10 +104,12 @@ public:
                     auto [w, h] = window_.getLogicalSize();
                     window_.setSceneViewport({0, 0, w, h});
                     imguiConsole_.setConsole(simulationController_.gameInstance()->developerConsole());
+                    editorSettings_.disableGrid();
                 } else {
                     window_.setSceneViewport(
                             computeSceneViewport(window_.getLogicalSize().first, window_.getLogicalSize().second));
                     imguiConsole_.setConsole(developerConsole_);
+                    editorSettings_.enableGrid();
                 }
                 simWasActive_ = simActive;
             }
