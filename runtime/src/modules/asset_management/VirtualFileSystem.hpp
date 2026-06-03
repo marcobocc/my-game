@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <log4cxx/logger.h>
 #include <memory>
+#include <optional>
 #include <physfs.h>
 #include <string>
 #include <vector>
@@ -127,6 +128,13 @@ public:
             return stat.modtime;
         }
         return -1;
+    }
+
+    // Returns the real absolute filesystem path for a VFS-relative path.
+    std::optional<std::filesystem::path> getRealPath(const std::string& vfsPath) const {
+        const char* realDir = PHYSFS_getRealDir(vfsPath.c_str());
+        if (!realDir) return std::nullopt;
+        return std::filesystem::path(realDir) / vfsPath;
     }
 
 private:

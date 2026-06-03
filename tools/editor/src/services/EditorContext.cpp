@@ -51,17 +51,19 @@ void EditorContext::initProject() {
 }
 
 bool EditorContext::loadLatestScene() {
-    std::string latestScene;
+    std::string latestVfsPath;
     int64_t latestTime = -1;
     for (const auto& file: vfs_.listFilesRecursive()) {
         if (std::filesystem::path(file).extension() == ".scene") {
             auto modTime = vfs_.getModifiedTime(file);
-            if (latestScene.empty() || modTime > latestTime) {
-                latestScene = file;
+            if (latestVfsPath.empty() || modTime > latestTime) {
+                latestVfsPath = file;
                 latestTime = modTime;
             }
         }
     }
-    if (latestScene.empty()) return false;
-    return loadScene(latestScene.c_str());
+    if (latestVfsPath.empty()) return false;
+    auto realPath = vfs_.getRealPath(latestVfsPath);
+    if (!realPath) return false;
+    return loadScene(realPath->string().c_str());
 }
