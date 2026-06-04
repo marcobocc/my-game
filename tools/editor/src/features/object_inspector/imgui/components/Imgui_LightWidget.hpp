@@ -7,7 +7,7 @@ class RuntimeScene;
 
 class Imgui_LightWidget : public Imgui_InspectorWidget {
 public:
-    explicit Imgui_LightWidget(RuntimeScene& scene) : Imgui_InspectorWidget("Light", 7), scene_(scene) {}
+    explicit Imgui_LightWidget(RuntimeScene& scene) : Imgui_InspectorWidget("Light", 8), scene_(scene) {}
 
     void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
     void setComponent(const Light& c) { component_ = c; }
@@ -26,6 +26,14 @@ private:
             if (ImGui::Combo("##type", &currentType, items, IM_ARRAYSIZE(items))) {
                 component_.type = static_cast<LightType>(currentType);
                 commitEdit(UndoHistory::randomGroupId("Set Type"));
+            }
+        });
+
+        drawRow("Color", [&] {
+            float col[3] = {component_.color.r, component_.color.g, component_.color.b};
+            if (ImGui::ColorEdit3("##color", col)) {
+                component_.color = glm::vec3(col[0], col[1], col[2]);
+                commitEdit(UndoHistory::randomGroupId("Set Color"));
             }
         });
 

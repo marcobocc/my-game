@@ -1,5 +1,5 @@
 #pragma once
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 #include "IComponent.hpp"
 
@@ -13,6 +13,7 @@ public:
 
     LightType type;
     float intensity;
+    glm::vec3 color = glm::vec3(1.0f);
 
     // Spotlight-only. Cone half-angles in degrees; the cone falls off between inner and outer.
     // range is the distance at which the light fully attenuates.
@@ -26,6 +27,7 @@ public:
         nlohmann::json j;
         j["type"] = static_cast<int>(type);
         j["intensity"] = intensity;
+        j["color"] = nlohmann::json::array({color.r, color.g, color.b});
         j["innerConeAngle"] = innerConeAngle;
         j["outerConeAngle"] = outerConeAngle;
         j["range"] = range;
@@ -40,6 +42,10 @@ public:
         LightType type = static_cast<LightType>(j.at("type").get<int>());
         float intensity = j.at("intensity").get<float>();
         Light light(type, intensity);
+        if (j.contains("color")) {
+            const auto& c = j["color"];
+            light.color = glm::vec3(c[0].get<float>(), c[1].get<float>(), c[2].get<float>());
+        }
         light.innerConeAngle = j.value("innerConeAngle", light.innerConeAngle);
         light.outerConeAngle = j.value("outerConeAngle", light.outerConeAngle);
         light.range = j.value("range", light.range);

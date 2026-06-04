@@ -22,7 +22,7 @@
 class VulkanLightingPass {
 public:
     // Number of vec4s each light occupies in the light data region. Must match the shader.
-    static constexpr uint32_t LIGHT_STRIDE = 3;
+    static constexpr uint32_t LIGHT_STRIDE = 4;
 
     // 32-byte header prepended to every per-slot SSBO.
     // Layout matches the shader's `uvec4 header[2]` declaration.
@@ -81,7 +81,8 @@ public:
             const float cosInner = std::cos(glm::radians(light.innerConeAngle));
             const float cosOuter = std::cos(glm::radians(light.outerConeAngle));
             lightData.emplace_back(direction, type);
-            lightData.emplace_back(transform.position, light.intensity);
+            lightData.emplace_back(light.color, light.intensity);
+            lightData.emplace_back(transform.position, 0.0f);
             lightData.emplace_back(cosInner, cosOuter, light.range, 0.0f);
         }
 

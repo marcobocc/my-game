@@ -20,9 +20,10 @@ layout(push_constant) uniform Push {
 //
 // Each light occupies LIGHT_STRIDE vec4s in data[]:
 //   [0] = (direction.xyz, type)        type: 0 = directional, 1 = spot
-//   [1] = (position.xyz, intensity)
-//   [2] = (cosInnerCone, cosOuterCone, range, unused)
-const uint LIGHT_STRIDE = 3u;
+//   [1] = (color.rgb, intensity)
+//   [2] = (position.xyz, unused)
+//   [3] = (cosInnerCone, cosOuterCone, range, unused)
+const uint LIGHT_STRIDE = 4u;
 const float LIGHT_DIRECTIONAL = 0.0;
 const float LIGHT_SPOT = 1.0;
 
@@ -108,15 +109,17 @@ void main() {
 
     uint base = lightIndex * LIGHT_STRIDE;
     vec4 dirType      = lightsBuffer.data[base + 0u];
-    vec4 posIntensity = lightsBuffer.data[base + 1u];
-    vec4 cone         = lightsBuffer.data[base + 2u];
+    vec4 colorIntensity = lightsBuffer.data[base + 1u];
+    vec4 posUnused    = lightsBuffer.data[base + 2u];
+    vec4 cone         = lightsBuffer.data[base + 3u];
 
     float type      = dirType.w;
-    float intensity = posIntensity.w;
+    vec3 lightColor = colorIntensity.rgb;
+    float intensity = colorIntensity.w;
+    vec3 lightPos = posUnused.xyz;
 
     float diffuse = 0.0;
     if (type == LIGHT_SPOT) {
-        vec3 lightPos = posIntensity.xyz;
         vec3 toLight  = lightPos - worldPos;
         float dist    = length(toLight);
         vec3 L        = toLight / max(dist, 1e-4);
@@ -138,7 +141,7 @@ void main() {
     }
 
     float shadow = calculateShadow();
-    lighting += vec3(diffuse) * (1.0 - shadow);
+    lighting += lightColor * vec3(diffuse) * (1.0 - shadow);
 
     outColor = vec4(albedoSample.rgb * lighting, 1.0);
 }
