@@ -15,6 +15,7 @@
 #include "modules/rendering/vulkan/passes/VulkanObjectIdPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanOutlinePass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanShadowPass.hpp"
+#include "modules/rendering/vulkan/passes/VulkanSkyPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanUIPass.hpp"
 #include "structs/RenderTargetHandle.hpp"
 
@@ -42,6 +43,7 @@ VulkanBackend::VulkanBackend(GameWindow& window,
     geometryPass_(geometryPass),
     lightingPass_(lightingPass),
     shadowPass_(std::make_unique<VulkanShadowPass>(resourcesManager, assetLoader)),
+    skyPass_(std::make_unique<VulkanSkyPass>(context, assetLoader, resourcesManager)),
     gridPass_(gridPass),
     gizmoPass_(gizmoPass),
     objectIdPass_(objectIdPass),
@@ -574,6 +576,35 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                                  gbH,
                                  settings_.enableLighting,
                                  isFirst);
+            return true;
+        };
+        renderGraph_->addPass(std::move(n));
+    }
+
+    // --- Sky pass (after lighting so LOAD_OP_CLEAR doesn't wipe it; depth test at 1.0 fills sky pixels) ---
+    {
+        VulkanRenderGraph<EditorRenderData>::RenderPassNode n;
+        n.name = "SkyPass";
+        n.reads = {{gbufferDepthHandle_,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT}};
+        n.writes = {{colorTargetHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd,
+                           const VulkanRenderGraph<EditorRenderData>& graph,
+                           const EditorRenderData& ctx) -> bool {
+            const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
+            skyPass_->record(cmd,
+                             graph.getImageView(colorTargetHandle_),
+                             graph.getImageView(gbufferDepthHandle_),
+                             extent,
+                             ctx.camera,
+                             ctx.cameraTransform);
             return true;
         };
         renderGraph_->addPass(std::move(n));

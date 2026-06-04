@@ -84,6 +84,7 @@ inline std::unique_ptr<Shader> AssetLoader::load<Shader>(const std::string& name
         bool positionColorVertexLayout = JsonUtils::getOptional<bool>(j, "positionColorVertexLayout", false);
         bool tangentVertexLayout = JsonUtils::getOptional<bool>(j, "tangentVertexLayout", false);
         bool depthBias = JsonUtils::getOptional<bool>(j, "depthBias", false);
+        bool depthLessOrEqual = JsonUtils::getOptional<bool>(j, "depthLessOrEqual", false);
 
         auto readBytecode = [&](const std::string& path) -> std::vector<char> {
             auto data = vfs_.read(path);
@@ -103,7 +104,8 @@ inline std::unique_ptr<Shader> AssetLoader::load<Shader>(const std::string& name
                                                lineTopology,
                                                positionColorVertexLayout,
                                                tangentVertexLayout,
-                                               depthBias);
+                                               depthBias,
+                                               depthLessOrEqual);
         if (shader) {
             auto shaderPtr = shader.get();
             cache_.insert<Shader>(std::move(shader));

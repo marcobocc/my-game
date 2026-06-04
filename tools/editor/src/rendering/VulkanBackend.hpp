@@ -18,6 +18,7 @@ class GameWindow;
 class VulkanGeometryPass;
 class VulkanLightingPass;
 class VulkanShadowPass;
+class VulkanSkyPass;
 class VulkanGridPass;
 class VulkanGizmoPass;
 class VulkanObjectIdPass;
@@ -103,6 +104,7 @@ private:
     VulkanUIPass& uiPass_;
 
     std::unique_ptr<VulkanShadowPass> shadowPass_;
+    std::unique_ptr<VulkanSkyPass> skyPass_;
 
     // --- Render graph ---
     std::optional<VulkanRenderGraph<EditorRenderData>> renderGraph_;

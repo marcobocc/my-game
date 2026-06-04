@@ -29,7 +29,11 @@ public:
                         VkFormat depthFormat = VK_FORMAT_D32_SFLOAT,
                         bool cullFront = false,
                         bool additiveBlend = false) {
-        CacheKey key{shader.name, {colorFormats.begin(), colorFormats.end()}, depthFormat, additiveBlend};
+        CacheKey key{shader.name,
+                     {colorFormats.begin(), colorFormats.end()},
+                     depthFormat,
+                     additiveBlend,
+                     shader.depthLessOrEqual};
         auto it = cache_.find(key);
         if (it != cache_.end()) return it->second;
 
@@ -137,7 +141,7 @@ public:
         depth.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depth.depthTestEnable = shader.disableDepthTest ? VK_FALSE : VK_TRUE;
         depth.depthWriteEnable = shader.disableDepthWrite ? VK_FALSE : VK_TRUE;
-        depth.depthCompareOp = VK_COMPARE_OP_LESS;
+        depth.depthCompareOp = shader.depthLessOrEqual ? VK_COMPARE_OP_LESS_OR_EQUAL : VK_COMPARE_OP_LESS;
 
         VkPipelineColorBlendAttachmentState blendAttachment{};
         blendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
@@ -200,7 +204,7 @@ public:
     void clear() { cache_.clear(); }
 
 private:
-    using CacheKey = std::tuple<std::string, std::vector<VkFormat>, VkFormat, bool>;
+    using CacheKey = std::tuple<std::string, std::vector<VkFormat>, VkFormat, bool, bool>;
 
     const VulkanContext& context_;
     std::map<CacheKey, VulkanPipeline> cache_;

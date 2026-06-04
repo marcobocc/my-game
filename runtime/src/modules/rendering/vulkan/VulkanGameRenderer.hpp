@@ -13,6 +13,7 @@
 class VulkanGeometryPass;
 class VulkanLightingPass;
 class VulkanShadowPass;
+class VulkanSkyPass;
 class VulkanSwapchainManager;
 class VulkanFrameManager;
 class VulkanRenderTargetManager;
@@ -60,6 +61,7 @@ private:
     VulkanGeometryPass& geometryPass_;
     VulkanLightingPass& lightingPass_;
     std::unique_ptr<VulkanShadowPass> shadowPass_;
+    std::unique_ptr<VulkanSkyPass> skyPass_;
 
     // --- Render graph ---
     std::optional<VulkanRenderGraph<GameRenderData>> graph_;

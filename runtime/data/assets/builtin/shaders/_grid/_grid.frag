@@ -34,7 +34,9 @@ void main() {
     vec2 lines = abs(fract(grid - 0.5) - 0.5) / fwidth(grid);
     float line = min(lines.x, lines.y);
 
-    float intensity = 1.0 - clamp(line, 0.0, 1.0);
+    float dist = length(hit - pc.cameraPos);
+    float fade = exp(-dist * 0.02); // tweak 0.02
+    float intensity = (1.0 - clamp(line, 0.0, 1.0)) * fade;
 
     float axisWidth = 1.5;
     float axisX = 1.0 - clamp(abs(hit.x) / (fwidth(hit.x) * axisWidth), 0.0, 1.0);

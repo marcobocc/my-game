@@ -8,6 +8,7 @@
 #include "passes/VulkanGeometryPass.hpp"
 #include "passes/VulkanLightingPass.hpp"
 #include "passes/VulkanShadowPass.hpp"
+#include "passes/VulkanSkyPass.hpp"
 
 VulkanGameRenderer::VulkanGameRenderer(VulkanContext& context,
                                        VulkanFrameManager& frameManager,
@@ -26,6 +27,7 @@ VulkanGameRenderer::VulkanGameRenderer(VulkanContext& context,
     geometryPass_(geometryPass),
     lightingPass_(lightingPass),
     shadowPass_(std::make_unique<VulkanShadowPass>(resourcesManager, assetLoader)),
+    skyPass_(std::make_unique<VulkanSkyPass>(context, assetLoader, resourcesManager)),
     frameCount_(static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size())),
     swapchainColorFormat_(swapchainManager.swapchain().swapchainImageFormat) {
     const auto& sc = swapchainManager_.swapchain();
@@ -276,6 +278,35 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
                                  static_cast<float>(extent.height),
                                  settings_.enableLighting,
                                  /*isFirstLight=*/true);
+            return true;
+        };
+        graph_->addPass(std::move(n));
+    }
+
+    // --- Sky pass (after lighting so LOAD_OP_CLEAR doesn't wipe it; depth test at 1.0 fills sky pixels) ---
+    {
+        VulkanRenderGraph<GameRenderData>::RenderPassNode n;
+        n.name = "SkyPass";
+        n.reads = {{gbufferDepthHandle_,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT}};
+        n.writes = {{colorTargetHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd,
+                           const VulkanRenderGraph<GameRenderData>& graph,
+                           const GameRenderData& ctx) -> bool {
+            const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
+            skyPass_->record(cmd,
+                             graph.getImageView(colorTargetHandle_),
+                             graph.getImageView(gbufferDepthHandle_),
+                             extent,
+                             ctx.camera,
+                             ctx.cameraTransform);
             return true;
         };
         graph_->addPass(std::move(n));
