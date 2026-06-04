@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include <imgui.h>
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
 #include "../../../runtime/src/modules/console/ConsoleLogAppender.hpp"
@@ -9,6 +10,7 @@
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "features/welcome/Imgui_WelcomeScreen.hpp"
 #include "modules/console/DeveloperConsole.hpp"
+#include "modules/core/GameWindow.hpp"
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
@@ -17,9 +19,9 @@
 #include "services/EditorContext.hpp"
 #include "services/EditorSettings.hpp"
 #include "services/SimulationController.hpp"
+#include "services/UndoHistory.hpp"
 #include "styling/ImguiStyling.hpp"
 
-class GameWindow;
 class VulkanBackend;
 class EditorGizmos;
 class GizmoBuilder;
@@ -36,9 +38,11 @@ public:
               InputHandler& inputHandler,
               EditorSettings& rendererSettings,
               EditorContext& project,
+              UndoHistory& undoHistory,
               TimeManager& time,
               PhysicsSystem& physicsSystem,
               EditorRenderer& editorRenderer,
+              ImguiRoot& imguiRoot,
               SimulationController& simulationController,
               Imgui_Console& imguiConsole,
               Imgui_WelcomeScreen& welcomeScreen) :
@@ -51,8 +55,10 @@ public:
         editorCamera_(editorOrbitCamera),
         editorSettings_(rendererSettings),
         project_(project),
+        undoHistory_(undoHistory),
         inputHandler_(inputHandler),
         editorRenderer_(editorRenderer),
+        imguiRoot_(imguiRoot),
         simulationController_(simulationController),
         imguiConsole_(imguiConsole),
         welcomeScreen_(welcomeScreen) {
@@ -148,6 +154,13 @@ private:
     void initApp() {
         setupViewport();
         editorSettings_.enableGrid();
+        window_.onCloseRequest([this] {
+            if (appState_ == AppState::Editor && undoHistory_.hasUnsavedChanges())
+                confirmingClose_ = true;
+            else
+                window_.requestClose();
+        });
+        imguiRoot_.setOverlayCallback([this] { drawCloseConfirmModal(); });
         // If a project was already loaded (via --project CLI arg), skip the welcome screen
         if (project_.getCurrentScenePath().has_value()) enterEditor();
     }
@@ -171,6 +184,43 @@ private:
         });
     }
 
+    void drawCloseConfirmModal() {
+        if (!confirmingClose_) return;
+
+        ImGuiViewport* vp = ImGui::GetMainViewport();
+        ImGui::SetNextWindowPos(vp->Pos);
+        ImGui::SetNextWindowSize(vp->Size);
+        constexpr ImGuiWindowFlags hostFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                                               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+                                               ImGuiWindowFlags_NoSavedSettings |
+                                               ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground;
+        ImGui::Begin("##CloseModalHost", nullptr, hostFlags);
+        ImGui::OpenPopup("Unsaved Changes");
+        if (ImGui::BeginPopupModal("Unsaved Changes", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("You have unsaved changes. Quit anyway?");
+            ImGui::Spacing();
+            if (ImGui::Button("Save & Quit")) {
+                project_.saveCurrentScene();
+                ImGui::CloseCurrentPopup();
+                confirmingClose_ = false;
+                window_.requestClose();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Quit Without Saving")) {
+                ImGui::CloseCurrentPopup();
+                confirmingClose_ = false;
+                window_.requestClose();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                ImGui::CloseCurrentPopup();
+                confirmingClose_ = false;
+            }
+            ImGui::EndPopup();
+        }
+        ImGui::End();
+    }
+
     void setupConsoleAppender() {
         auto appender = std::make_shared<ConsoleLogAppender>(&developerConsole_);
         appender->setLayout(std::make_shared<log4cxx::PatternLayout>("%d %-5p %c - %m%n"));
@@ -186,11 +236,14 @@ private:
     EditorCamera& editorCamera_;
     EditorSettings& editorSettings_;
     EditorContext& project_;
+    UndoHistory& undoHistory_;
     InputHandler& inputHandler_;
     EditorRenderer& editorRenderer_;
+    ImguiRoot& imguiRoot_;
     SimulationController& simulationController_;
     Imgui_Console& imguiConsole_;
     Imgui_WelcomeScreen& welcomeScreen_;
     AppState appState_ = AppState::Welcome;
     bool simWasActive_ = false;
+    bool confirmingClose_ = false;
 };

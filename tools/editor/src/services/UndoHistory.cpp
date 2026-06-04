@@ -47,6 +47,7 @@ void UndoHistory::redo() {
 void UndoHistory::clear() {
     stack_.clear();
     position_ = 0;
+    savedPosition_ = 0;
     LOG4CXX_INFO(LOGGER, "Clear undo history");
 }
 

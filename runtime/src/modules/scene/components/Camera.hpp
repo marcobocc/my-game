@@ -16,7 +16,14 @@ struct Camera final : IComponent {
         glm::mat4 proj = glm::perspective(glm::radians(fov), aspect, nearPlane, farPlane);
         proj[1][1] *= -1.0f; // Vulkan NDC has Y pointing down; flip here so the Vulkan backend uses plain
                              // positive-height viewports
-        return proj;
+
+        // GLM (no GLM_FORCE_DEPTH_ZERO_TO_ONE) emits NDC z in [-1,1], but Vulkan's depth range is
+        // [0,1]. Without this remap the near half of the frustum is clamped to 0 in the depth
+        // buffer, and depth reconstruction (e.g. the lighting pass) is fed the wrong convention.
+        glm::mat4 zCorrect(1.0f);
+        zCorrect[2][2] = 0.5f;
+        zCorrect[3][2] = 0.5f;
+        return zCorrect * proj;
     }
 
     nlohmann::json serialize() const override {

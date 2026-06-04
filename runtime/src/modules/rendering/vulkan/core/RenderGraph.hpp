@@ -121,12 +121,8 @@ public:
     void onResize(uint32_t width, uint32_t height) {
         currentExtent_ = {width, height};
         freeTransientImages();
-        for (auto& res: resources_) {
-            if (!res.imported && res.width > 0) {
-                res.width = width;
-                res.height = height;
-            }
-        }
+        // Resources with explicit fixed size (width > 0) keep their dimensions across resizes.
+        // Resources with width == 0 implicitly use currentExtent_ at allocation time.
         allocateTransientImages();
     }
 

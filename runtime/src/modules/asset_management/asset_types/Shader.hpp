@@ -15,7 +15,8 @@ public:
            bool noVertexInput = false,
            bool lineTopology = false,
            bool positionColorVertexLayout = false,
-           bool tangentVertexLayout = false) :
+           bool tangentVertexLayout = false,
+           bool depthBias = false) :
         Asset(name),
         vertexBytecode(std::move(vertexBytecode)),
         fragmentBytecode(std::move(fragmentBytecode)),
@@ -26,7 +27,8 @@ public:
         noVertexInput(noVertexInput),
         lineTopology(lineTopology),
         positionColorVertexLayout(positionColorVertexLayout),
-        tangentVertexLayout(tangentVertexLayout) {}
+        tangentVertexLayout(tangentVertexLayout),
+        depthBias(depthBias) {}
 
     std::vector<char> vertexBytecode;
     std::vector<char> fragmentBytecode;
@@ -38,4 +40,5 @@ public:
     bool lineTopology;
     bool positionColorVertexLayout;
     bool tangentVertexLayout;
+    bool depthBias;
 };

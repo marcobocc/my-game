@@ -1,5 +1,7 @@
 #pragma once
+#include <array>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -15,6 +17,7 @@
 class GameWindow;
 class VulkanGeometryPass;
 class VulkanLightingPass;
+class VulkanShadowPass;
 class VulkanGridPass;
 class VulkanGizmoPass;
 class VulkanObjectIdPass;
@@ -23,6 +26,8 @@ class VulkanUIPass;
 class VulkanSwapchainManager;
 class VulkanFrameManager;
 class VulkanRenderTargetManager;
+class VulkanResourcesManager;
+class AssetLoader;
 
 class VulkanBackend {
 public:
@@ -38,7 +43,9 @@ public:
                   VulkanOutlinePass& outlinePass,
                   VulkanUIPass& uiPass,
                   VulkanSwapchainManager& swapchainManager,
-                  RendererSettings& settings);
+                  RendererSettings& settings,
+                  VulkanResourcesManager& resourcesManager,
+                  AssetLoader& assetLoader);
 
     ~VulkanBackend();
 
@@ -95,12 +102,16 @@ private:
     VulkanOutlinePass& outlinePass_;
     VulkanUIPass& uiPass_;
 
+    std::unique_ptr<VulkanShadowPass> shadowPass_;
+
     // --- Render graph ---
     std::optional<VulkanRenderGraph<EditorRenderData>> renderGraph_;
     ResourceHandle colorTargetHandle_;
     ResourceHandle gbufferAlbedoHandle_;
     ResourceHandle gbufferNormalHandle_;
     ResourceHandle gbufferDepthHandle_;
+    // One shadow depth image per light slot.
+    std::array<ResourceHandle, 4> shadowDepthHandles_;
     ResourceHandle objectIdColorHandle_;
 
     std::vector<std::string> objectIdMap_;
@@ -109,14 +120,16 @@ private:
     uint32_t frameCount_ = 0;
     VkFormat swapchainColorFormat_ = VK_FORMAT_UNDEFINED;
 
-    // Per-frame resources for the main swapchain render (one slot per swapchain image).
-    std::vector<VkDescriptorSet> mainLightingDescriptorSets_;
+    // Per-frame resources for the main swapchain render.
+    // Lighting: [frameIdx][lightSlot]. Outline/Geometry: [frameIdx].
+    std::vector<std::array<VkDescriptorSet, 4>> mainLightingDescriptorSets_;
     std::vector<VkDescriptorSet> mainOutlineDescriptorSets_;
     std::vector<VkDescriptorSet> mainGeometryDescriptorSets_;
     std::vector<VulkanBuffer> mainGeometryBuffers_;
 
     // Per-frame descriptor sets and buffers for each off-screen render target (by handle index).
-    std::unordered_map<uint32_t, std::vector<VkDescriptorSet>> renderTargetLightingDescriptorSets_;
+    // Lighting: [handleIdx] -> vector<array<DS,4>> indexed [frameIdx][lightSlot].
+    std::unordered_map<uint32_t, std::vector<std::array<VkDescriptorSet, 4>>> renderTargetLightingDescriptorSets_;
     std::unordered_map<uint32_t, std::vector<VkDescriptorSet>> renderTargetOutlineDescriptorSets_;
     std::unordered_map<uint32_t, std::vector<VkDescriptorSet>> renderTargetGeometryDescriptorSets_;
     std::unordered_map<uint32_t, std::vector<VulkanBuffer>> renderTargetGeometryBuffers_;
@@ -124,8 +137,8 @@ private:
     // ImGui descriptor sets for rendering targets in the editor UI (managed by handle index).
     std::unordered_map<uint32_t, VkDescriptorSet> renderTargetImGuiSets_;
 
-    // Current frame descriptor sets (updated before each render graph execution)
-    VkDescriptorSet currentFrameLightingDescriptorSet_ = VK_NULL_HANDLE;
+    // Current frame descriptor sets (updated before each render graph execution).
+    // Lighting DS is selected per-slot inside each LightingPass lambda; no shared pointer needed.
     VkDescriptorSet currentFrameOutlineDescriptorSet_ = VK_NULL_HANDLE;
     VkDescriptorSet currentFrameGeometryDescriptorSet_ = VK_NULL_HANDLE;
     VulkanBuffer* currentFrameGeometryBuffer_ = nullptr;

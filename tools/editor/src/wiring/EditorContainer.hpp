@@ -67,9 +67,11 @@ public:
                    inputHandler_,
                    services_.editorSettings(),
                    services_.project(),
+                   services_.undoHistory(),
                    runtime_.time(),
                    runtime_.physicsSystem(),
                    rendering_.editorRenderer(),
+                   features_.imguiRoot(),
                    runtime_.simulationController(),
                    features_.imguiConsole(),
                    features_.welcomeScreen()) {

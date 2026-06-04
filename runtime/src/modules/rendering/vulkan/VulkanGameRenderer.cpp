@@ -3,8 +3,11 @@
 #include "core/VulkanFrameManager.hpp"
 #include "core/VulkanSwapchainManager.hpp"
 #include "core/resources/VulkanRenderTargetManager.hpp"
+#include "core/resources/VulkanResourcesManager.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
 #include "passes/VulkanGeometryPass.hpp"
 #include "passes/VulkanLightingPass.hpp"
+#include "passes/VulkanShadowPass.hpp"
 
 VulkanGameRenderer::VulkanGameRenderer(VulkanContext& context,
                                        VulkanFrameManager& frameManager,
@@ -12,7 +15,9 @@ VulkanGameRenderer::VulkanGameRenderer(VulkanContext& context,
                                        VulkanGeometryPass& geometryPass,
                                        VulkanLightingPass& lightingPass,
                                        VulkanSwapchainManager& swapchainManager,
-                                       RendererSettings& settings) :
+                                       RendererSettings& settings,
+                                       VulkanResourcesManager& resourcesManager,
+                                       AssetLoader& assetLoader) :
     context_(context),
     settings_(settings),
     swapchainManager_(swapchainManager),
@@ -20,6 +25,7 @@ VulkanGameRenderer::VulkanGameRenderer(VulkanContext& context,
     renderTargetManager_(renderTargetManager),
     geometryPass_(geometryPass),
     lightingPass_(lightingPass),
+    shadowPass_(std::make_unique<VulkanShadowPass>(resourcesManager, assetLoader)),
     frameCount_(static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size())),
     swapchainColorFormat_(swapchainManager.swapchain().swapchainImageFormat) {
     const auto& sc = swapchainManager_.swapchain();
@@ -33,7 +39,7 @@ VulkanGameRenderer::VulkanGameRenderer(VulkanContext& context,
         auto [buf, gds] = geometryPass_.createRenderContext();
         mainGeometryBuffers_[i] = std::move(buf);
         mainGeometryDescriptorSets_[i] = gds;
-        mainLightingDescriptorSets_[i] = lightingPass_.createDescriptorSet();
+        mainLightingDescriptorSets_[i] = lightingPass_.createDescriptorSet(0);
     }
 };
 
@@ -126,6 +132,14 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
     // --- Import main color target
     colorTargetHandle_ = graph_->importImage("colorTarget", colorFormat, colorUsage);
 
+    // --- Shadow map (fixed resolution, depth-only)
+    shadowDepthHandle_ =
+            graph_->createTransientImage("shadow_depth",
+                                         VK_FORMAT_D32_SFLOAT,
+                                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                         VulkanShadowPass::SHADOW_MAP_SIZE,
+                                         VulkanShadowPass::SHADOW_MAP_SIZE);
+
     // --- Create G-Buffer resources (used by geometry + lighting)
     gbufferAlbedoHandle_ =
             graph_->createTransientImage("gbuffer_albedo",
@@ -137,6 +151,30 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
             graph_->createTransientImage("gbuffer_depth",
                                          VK_FORMAT_D32_SFLOAT,
                                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+
+    // --- Shadow pass (runs before geometry)
+    {
+        VulkanRenderGraph<GameRenderData>::RenderPassNode n;
+        n.name = "ShadowPass";
+        n.writes = {{shadowDepthHandle_,
+                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                     VK_IMAGE_ASPECT_DEPTH_BIT}};
+        n.execute = [this](VkCommandBuffer cmd,
+                           const VulkanRenderGraph<GameRenderData>& graph,
+                           const GameRenderData& ctx) -> bool {
+            shadowPass_->record(cmd,
+                                graph.getImageView(shadowDepthHandle_),
+                                ctx.drawQueue,
+                                ctx.lightsWithTransforms,
+                                ctx.camera,
+                                ctx.cameraTransform,
+                                0);
+            return true;
+        };
+        graph_->addPass(std::move(n));
+    }
 
     // --- Geometry pass ---
     {
@@ -197,6 +235,11 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     VK_ACCESS_SHADER_READ_BIT,
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT},
+                   {shadowDepthHandle_,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_SHADER_READ_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     VK_IMAGE_ASPECT_DEPTH_BIT}};
         n.writes = {{colorTargetHandle_,
                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -207,6 +250,8 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
                            const VulkanRenderGraph<GameRenderData>& graph,
                            const GameRenderData& ctx) -> bool {
             if (!settings_.enableLighting) return false;
+            lightingPass_.updateLights(ctx.lightsWithTransforms);
+            lightingPass_.uploadPassHeader(0, /*isFirstLight=*/true);
             const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
             lightingPass_.record(cmd,
                                  currentFrameLightingDescriptorSet_,
@@ -216,13 +261,21 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
                                  graph.getSampler(gbufferAlbedoHandle_),
                                  graph.getImageView(gbufferNormalHandle_),
                                  graph.getSampler(gbufferNormalHandle_),
-                                 0, // fbX
-                                 0, // fbY
-                                 static_cast<int>(extent.width), // fbW
-                                 static_cast<int>(extent.height), // fbH
+                                 graph.getImageView(shadowDepthHandle_),
+                                 graph.getSampler(shadowDepthHandle_),
+                                 graph.getImageView(gbufferDepthHandle_),
+                                 graph.getSampler(gbufferDepthHandle_),
+                                 shadowPass_->lightSpaceMatrix(0),
+                                 ctx.camera,
+                                 ctx.cameraTransform,
+                                 0,
+                                 0,
+                                 static_cast<int>(extent.width),
+                                 static_cast<int>(extent.height),
                                  static_cast<float>(extent.width),
                                  static_cast<float>(extent.height),
-                                 settings_.enableLighting);
+                                 settings_.enableLighting,
+                                 /*isFirstLight=*/true);
             return true;
         };
         graph_->addPass(std::move(n));

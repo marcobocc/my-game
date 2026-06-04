@@ -40,7 +40,9 @@ public:
                        runtime.outlinePass(),
                        runtime.uiPass(),
                        runtime.swapchainManager(),
-                       runtime.rendererSettings()),
+                       runtime.rendererSettings(),
+                       runtime.resourcesManager(),
+                       runtime.assetLoader()),
 
         editorRenderer_(vulkanBackend_,
                         editorCamera,

@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -11,9 +12,12 @@
 
 class VulkanGeometryPass;
 class VulkanLightingPass;
+class VulkanShadowPass;
 class VulkanSwapchainManager;
 class VulkanFrameManager;
 class VulkanRenderTargetManager;
+class VulkanResourcesManager;
+class AssetLoader;
 
 class VulkanGameRenderer {
 public:
@@ -23,7 +27,9 @@ public:
                        VulkanGeometryPass& geometryPass,
                        VulkanLightingPass& lightingPass,
                        VulkanSwapchainManager& swapchainManager,
-                       RendererSettings& settings);
+                       RendererSettings& settings,
+                       VulkanResourcesManager& resourcesManager,
+                       AssetLoader& assetLoader);
 
     ~VulkanGameRenderer();
 
@@ -53,6 +59,7 @@ private:
     VulkanRenderTargetManager& renderTargetManager_;
     VulkanGeometryPass& geometryPass_;
     VulkanLightingPass& lightingPass_;
+    std::unique_ptr<VulkanShadowPass> shadowPass_;
 
     // --- Render graph ---
     std::optional<VulkanRenderGraph<GameRenderData>> graph_;
@@ -60,6 +67,7 @@ private:
     ResourceHandle gbufferAlbedoHandle_;
     ResourceHandle gbufferNormalHandle_;
     ResourceHandle gbufferDepthHandle_;
+    ResourceHandle shadowDepthHandle_;
 
     // --- Frame state ---
     uint32_t frameCount_ = 0;

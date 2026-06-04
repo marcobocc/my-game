@@ -7,7 +7,7 @@ class RuntimeScene;
 
 class Imgui_LightWidget : public Imgui_InspectorWidget {
 public:
-    explicit Imgui_LightWidget(RuntimeScene& scene) : Imgui_InspectorWidget("Light", 6), scene_(scene) {}
+    explicit Imgui_LightWidget(RuntimeScene& scene) : Imgui_InspectorWidget("Light", 7), scene_(scene) {}
 
     void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
     void setComponent(const Light& c) { component_ = c; }
@@ -21,7 +21,7 @@ private:
         if (!lastObjectId_) return;
 
         drawRow("Type", [&] {
-            const char* items[] = {"Directional"};
+            const char* items[] = {"Directional", "Spot"};
             int currentType = static_cast<int>(component_.type);
             if (ImGui::Combo("##type", &currentType, items, IM_ARRAYSIZE(items))) {
                 component_.type = static_cast<LightType>(currentType);
@@ -33,6 +33,31 @@ private:
             ImGui::DragFloat("##intensity", &component_.intensity, 0.1f, 0.0f, 10.0f);
             trackDrag();
         });
+
+        drawRow("Cast Shadows", [&] {
+            bool v = component_.castShadows;
+            if (ImGui::Checkbox("##castShadows", &v)) {
+                component_.castShadows = v;
+                commitEdit(UndoHistory::randomGroupId("Set Cast Shadows"));
+            }
+        });
+
+        if (component_.type == LightType::SPOT) {
+            drawRow("Inner Angle", [&] {
+                ImGui::DragFloat("##innerAngle", &component_.innerConeAngle, 0.5f, 0.0f, 89.0f);
+                trackDrag("Set Inner Angle");
+            });
+
+            drawRow("Outer Angle", [&] {
+                ImGui::DragFloat("##outerAngle", &component_.outerConeAngle, 0.5f, 0.0f, 90.0f);
+                trackDrag("Set Outer Angle");
+            });
+
+            drawRow("Range", [&] {
+                ImGui::DragFloat("##range", &component_.range, 0.5f, 0.0f, 1000.0f);
+                trackDrag("Set Range");
+            });
+        }
     }
 
     template<typename Fn>
@@ -49,10 +74,10 @@ private:
         ImGui::Columns(1);
     }
 
-    void trackDrag() {
+    void trackDrag(const char* label = "Set Intensity") {
         if (!lastObjectId_) return;
         if (ImGui::IsItemDeactivatedAfterEdit()) {
-            commitEdit(UndoHistory::randomGroupId("Set Intensity"));
+            commitEdit(UndoHistory::randomGroupId(label));
         }
     }
 

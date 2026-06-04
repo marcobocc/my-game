@@ -1,5 +1,6 @@
 #pragma once
 #include <span>
+#include <vulkan/vulkan.h>
 #include "../../../../asset_management/asset_types/Shader.hpp"
 #include "../../../../asset_management/asset_types/Texture.hpp"
 #include "VulkanMaterialCache.hpp"
@@ -25,8 +26,18 @@ public:
 
     VulkanPipeline& getPipeline(const Shader& shader,
                                 VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
-                                VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) const {
-        return pipelineCache_.get(shader, colorFormat, depthFormat);
+                                VkFormat depthFormat = VK_FORMAT_D32_SFLOAT,
+                                bool cullFront = false,
+                                bool additiveBlend = false) const {
+        return pipelineCache_.get(shader, colorFormat, depthFormat, cullFront, additiveBlend);
+    }
+
+    VulkanPipeline& getPipeline(const Shader& shader,
+                                std::span<const VkFormat> colorFormats,
+                                VkFormat depthFormat = VK_FORMAT_D32_SFLOAT,
+                                bool cullFront = false,
+                                bool additiveBlend = false) const {
+        return pipelineCache_.get(shader, colorFormats, depthFormat, cullFront, additiveBlend);
     }
 
     VulkanMaterial& getMaterial(const Material& material) { return materialCache_.get(material); }

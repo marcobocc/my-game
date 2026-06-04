@@ -98,15 +98,16 @@ namespace JsonUtils {
 
     inline std::string serializeLightType(int type) {
         switch (type) {
+            case 1:
+                return "Spot";
             case 0:
-                return "Directional";
             default:
                 return "Directional";
         }
     }
 
     inline int deserializeLightType(const std::string& typeStr) {
-        if (typeStr == "Directional") return 0;
+        if (typeStr == "Spot") return 1;
         return 0; // default to Directional
     }
 } // namespace JsonUtils

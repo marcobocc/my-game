@@ -49,10 +49,11 @@ inline VulkanBuffer createUniformBuffer(VkDevice device, VkPhysicalDevice physic
                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 }
 
-inline void updateBuffer(VkDevice device, const VulkanBuffer& buf, const void* data, VkDeviceSize size) {
+inline void
+updateBuffer(VkDevice device, const VulkanBuffer& buf, const void* data, VkDeviceSize size, VkDeviceSize offset = 0) {
     void* mapped = nullptr;
-    VkDeviceSize safeSize = std::min(size, buf.allocSize);
-    vkMapMemory(device, buf.memory, 0, safeSize, 0, &mapped);
+    VkDeviceSize safeSize = std::min(size, buf.allocSize - std::min(offset, buf.allocSize));
+    vkMapMemory(device, buf.memory, offset, safeSize, 0, &mapped);
     std::memcpy(mapped, data, safeSize);
     vkUnmapMemory(device, buf.memory);
 }

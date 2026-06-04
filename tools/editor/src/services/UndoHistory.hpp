@@ -22,6 +22,8 @@ public:
     void undo();
     void redo();
     void clear();
+    void markSaved() { savedPosition_ = position_; }
+    bool hasUnsavedChanges() const { return position_ != savedPosition_; }
 
 private:
     struct Entry {
@@ -37,4 +39,5 @@ private:
 private:
     std::vector<Entry> stack_;
     int position_ = 0;
+    int savedPosition_ = 0;
 };

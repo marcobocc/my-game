@@ -2,16 +2,19 @@
 #include <functional>
 #include <imgui_impl_vulkan.h>
 #include <volk.h>
+#include "modules/asset_management/AssetLoader.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/rendering/vulkan/core/VulkanFrameManager.hpp"
 #include "modules/rendering/vulkan/core/VulkanSwapchainManager.hpp"
 #include "modules/rendering/vulkan/core/resources/VulkanRenderTargetManager.hpp"
+#include "modules/rendering/vulkan/core/resources/VulkanResourcesManager.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGeometryPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGridPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanLightingPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanObjectIdPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanOutlinePass.hpp"
+#include "modules/rendering/vulkan/passes/VulkanShadowPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanUIPass.hpp"
 #include "structs/RenderTargetHandle.hpp"
 
@@ -27,7 +30,9 @@ VulkanBackend::VulkanBackend(GameWindow& window,
                              VulkanOutlinePass& outlinePass,
                              VulkanUIPass& uiPass,
                              VulkanSwapchainManager& swapchainManager,
-                             RendererSettings& settings) :
+                             RendererSettings& settings,
+                             VulkanResourcesManager& resourcesManager,
+                             AssetLoader& assetLoader) :
     window_(window),
     context_(context),
     settings_(settings),
@@ -36,6 +41,7 @@ VulkanBackend::VulkanBackend(GameWindow& window,
     renderTargetManager_(renderTargetManager),
     geometryPass_(geometryPass),
     lightingPass_(lightingPass),
+    shadowPass_(std::make_unique<VulkanShadowPass>(resourcesManager, assetLoader)),
     gridPass_(gridPass),
     gizmoPass_(gizmoPass),
     objectIdPass_(objectIdPass),
@@ -47,6 +53,7 @@ VulkanBackend::VulkanBackend(GameWindow& window,
     setupRenderGraph(sc.swapchainImageFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, sc.swapchainExtent);
 
     // Allocate per-frame resources for main swapchain render
+    constexpr uint32_t MAX_SHADOW_LIGHTS = VulkanShadowPass::MAX_SHADOW_LIGHTS;
     mainLightingDescriptorSets_.resize(frameCount_);
     mainOutlineDescriptorSets_.resize(frameCount_);
     mainGeometryDescriptorSets_.resize(frameCount_);
@@ -55,7 +62,8 @@ VulkanBackend::VulkanBackend(GameWindow& window,
         auto [buf, gds] = geometryPass_.createRenderContext();
         mainGeometryBuffers_[i] = std::move(buf);
         mainGeometryDescriptorSets_[i] = gds;
-        mainLightingDescriptorSets_[i] = lightingPass_.createDescriptorSet();
+        for (uint32_t s = 0; s < MAX_SHADOW_LIGHTS; ++s)
+            mainLightingDescriptorSets_[i][s] = lightingPass_.createDescriptorSet(s);
         mainOutlineDescriptorSets_[i] = outlinePass_.createDescriptorSet();
     }
 
@@ -131,6 +139,7 @@ RenderTargetHandle VulkanBackend::createRenderTarget(uint32_t width, uint32_t he
     if (!rt) return handle;
 
     // Allocate per-frame resources for this render target
+    constexpr uint32_t MAX_SHADOW_LIGHTS = VulkanShadowPass::MAX_SHADOW_LIGHTS;
     auto& lightingDs = renderTargetLightingDescriptorSets_[handle.index];
     auto& outlineDs = renderTargetOutlineDescriptorSets_[handle.index];
     auto& geometryDs = renderTargetGeometryDescriptorSets_[handle.index];
@@ -145,7 +154,8 @@ RenderTargetHandle VulkanBackend::createRenderTarget(uint32_t width, uint32_t he
         auto [buf, gds] = geometryPass_.createRenderContext();
         geometryBufs[i] = std::move(buf);
         geometryDs[i] = gds;
-        lightingDs[i] = lightingPass_.createDescriptorSet();
+        for (uint32_t s = 0; s < MAX_SHADOW_LIGHTS; ++s)
+            lightingDs[i][s] = lightingPass_.createDescriptorSet(s);
         outlineDs[i] = outlinePass_.createDescriptorSet();
     }
 
@@ -245,13 +255,8 @@ void VulkanBackend::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, con
                                                           : const_cast<VulkanBuffer*>(&geomBufs[0]);
 
                     // Set current frame descriptor sets for render passes
-                    auto lit = renderTargetLightingDescriptorSets_.find(handleIdx);
                     auto oit = renderTargetOutlineDescriptorSets_.find(handleIdx);
                     auto git = renderTargetGeometryDescriptorSets_.find(handleIdx);
-                    if (lit != renderTargetLightingDescriptorSets_.end()) {
-                        currentFrameLightingDescriptorSet_ =
-                                (frameIdx < lit->second.size()) ? lit->second[frameIdx] : lit->second[0];
-                    }
                     if (oit != renderTargetOutlineDescriptorSets_.end()) {
                         currentFrameOutlineDescriptorSet_ =
                                 (frameIdx < oit->second.size()) ? oit->second[frameIdx] : oit->second[0];
@@ -288,7 +293,6 @@ void VulkanBackend::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, con
     size_t frameIdx = frameManager_.currentFrameIndex();
 
     // Set current frame descriptor sets and buffer for render passes
-    currentFrameLightingDescriptorSet_ = mainLightingDescriptorSets_[frameIdx];
     currentFrameOutlineDescriptorSet_ = mainOutlineDescriptorSets_[frameIdx];
     currentFrameGeometryDescriptorSet_ = mainGeometryDescriptorSets_[frameIdx];
     currentFrameGeometryBuffer_ = &mainGeometryBuffers_[frameIdx];
@@ -356,6 +360,45 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
 
     colorTargetHandle_ = renderGraph_->importImage("swapchain_color", colorFormat, colorUsage);
 
+    constexpr uint32_t MAX_SHADOW_LIGHTS = VulkanShadowPass::MAX_SHADOW_LIGHTS;
+
+    // --- N shadow depth images (fixed resolution, depth-only)
+    for (uint32_t s = 0; s < MAX_SHADOW_LIGHTS; ++s) {
+        shadowDepthHandles_[s] = renderGraph_->createTransientImage("shadow_depth_" + std::to_string(s),
+                                                                    VK_FORMAT_D32_SFLOAT,
+                                                                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                                                                            VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                                    VulkanShadowPass::SHADOW_MAP_SIZE,
+                                                                    VulkanShadowPass::SHADOW_MAP_SIZE);
+    }
+
+    // --- N shadow passes (run first, one per light slot)
+    for (uint32_t s = 0; s < MAX_SHADOW_LIGHTS; ++s) {
+        VulkanRenderGraph<EditorRenderData>::RenderPassNode n;
+        n.name = "ShadowPass_" + std::to_string(s);
+        n.writes = {{shadowDepthHandles_[s],
+                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                     VK_IMAGE_ASPECT_DEPTH_BIT}};
+        n.execute = [this, s](VkCommandBuffer cmd,
+                              const VulkanRenderGraph<EditorRenderData>& graph,
+                              const EditorRenderData& ctx) -> bool {
+            if (s >= ctx.lightsWithTransforms.size()) return false;
+            const bool castsShadows = ctx.lightsWithTransforms[s].first.castShadows;
+            static const std::vector<DrawCall> emptyQueue{};
+            shadowPass_->record(cmd,
+                                graph.getImageView(shadowDepthHandles_[s]),
+                                castsShadows ? ctx.drawQueue : emptyQueue,
+                                ctx.lightsWithTransforms,
+                                ctx.camera,
+                                ctx.cameraTransform,
+                                s);
+            return true;
+        };
+        renderGraph_->addPass(std::move(n));
+    }
+
     objectIdColorHandle_ = renderGraph_->createTransientImage(
             "objectid_color", VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
@@ -395,8 +438,10 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
             renderGraph_->createTransientImage("gbuffer_normal",
                                                VK_FORMAT_R16G16B16A16_SFLOAT,
                                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-    gbufferDepthHandle_ = renderGraph_->createTransientImage(
-            "gbuffer_depth", VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    gbufferDepthHandle_ = renderGraph_->createTransientImage("gbuffer_depth",
+                                                             VK_FORMAT_D32_SFLOAT,
+                                                             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                                                                     VK_IMAGE_USAGE_SAMPLED_BIT);
 
     // --- Geometry pass ---
     {
@@ -441,10 +486,10 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
         renderGraph_->addPass(std::move(n));
     }
 
-    // --- Lighting pass ---
-    {
+    // --- N lighting passes (one per light slot, additive after the first)
+    for (uint32_t s = 0; s < MAX_SHADOW_LIGHTS; ++s) {
         VulkanRenderGraph<EditorRenderData>::RenderPassNode n;
-        n.name = "LightingPass";
+        n.name = "LightingPass_" + std::to_string(s);
         n.reads = {{gbufferAlbedoHandle_,
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     VK_ACCESS_SHADER_READ_BIT,
@@ -454,16 +499,42 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     VK_ACCESS_SHADER_READ_BIT,
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                    VK_IMAGE_ASPECT_COLOR_BIT}};
+                    VK_IMAGE_ASPECT_COLOR_BIT},
+                   {shadowDepthHandles_[s],
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_SHADER_READ_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT},
+                   {gbufferDepthHandle_,
+                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_SHADER_READ_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT}};
         n.writes = {{colorTargetHandle_,
                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
                      VK_IMAGE_ASPECT_COLOR_BIT}};
-        n.execute = [this](VkCommandBuffer cmd,
-                           const VulkanRenderGraph<EditorRenderData>& graph,
-                           const EditorRenderData& ctx) -> bool {
-            lightingPass_.updateLights(ctx.lightsWithTransforms);
+        n.execute = [this, s](VkCommandBuffer cmd,
+                              const VulkanRenderGraph<EditorRenderData>& graph,
+                              const EditorRenderData& ctx) -> bool {
+            const bool isFirst = (s == 0);
+            // Slot 0 always runs to clear/write ambient; others skip if no light for that slot.
+            if (!isFirst && s >= ctx.lightsWithTransforms.size()) return false;
+
+            if (isFirst) lightingPass_.updateLights(ctx.lightsWithTransforms);
+            lightingPass_.uploadPassHeader(s, isFirst);
+
+            const size_t frameIdx = frameManager_.currentFrameIndex();
+            VkDescriptorSet ds = VK_NULL_HANDLE;
+            const uint32_t handleIdx = ctx.camera.renderTarget.index;
+            if (ctx.camera.renderTarget.isValid()) {
+                auto lit = renderTargetLightingDescriptorSets_.find(handleIdx);
+                if (lit != renderTargetLightingDescriptorSets_.end() && frameIdx < lit->second.size())
+                    ds = lit->second[frameIdx][s];
+            } else {
+                ds = mainLightingDescriptorSets_[frameIdx][s];
+            }
 
             const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
             const float gbW = static_cast<float>(graph.getWidth(gbufferAlbedoHandle_));
@@ -481,20 +552,28 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                 fbH = static_cast<int>(static_cast<float>(sv.height) * scaleY);
             }
             lightingPass_.record(cmd,
-                                 currentFrameLightingDescriptorSet_,
+                                 ds,
                                  graph.getImageView(colorTargetHandle_),
                                  extent,
                                  graph.getImageView(gbufferAlbedoHandle_),
                                  graph.getSampler(gbufferAlbedoHandle_),
                                  graph.getImageView(gbufferNormalHandle_),
                                  graph.getSampler(gbufferNormalHandle_),
+                                 graph.getImageView(shadowDepthHandles_[s]),
+                                 graph.getSampler(shadowDepthHandles_[s]),
+                                 graph.getImageView(gbufferDepthHandle_),
+                                 graph.getSampler(gbufferDepthHandle_),
+                                 shadowPass_->lightSpaceMatrix(s),
+                                 ctx.camera,
+                                 ctx.cameraTransform,
                                  fbX,
                                  fbY,
                                  fbW,
                                  fbH,
                                  gbW,
                                  gbH,
-                                 settings_.enableLighting);
+                                 settings_.enableLighting,
+                                 isFirst);
             return true;
         };
         renderGraph_->addPass(std::move(n));

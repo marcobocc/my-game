@@ -53,6 +53,14 @@ public:
             for (const auto& handler: self->scrollHandlers_)
                 handler(yoffset);
         });
+        glfwSetWindowCloseCallback(window_, [](GLFWwindow* win) {
+            auto* self = static_cast<GameWindow*>(glfwGetWindowUserPointer(win));
+            if (!self) return;
+            if (self->closeRequestHandler_) {
+                glfwSetWindowShouldClose(win, GLFW_FALSE);
+                self->closeRequestHandler_();
+            }
+        });
     }
 
     ~GameWindow() {
@@ -77,6 +85,8 @@ public:
     }
 
     void onScroll(std::function<void(double)> handler) { scrollHandlers_.push_back(std::move(handler)); }
+
+    void onCloseRequest(std::function<void()> handler) { closeRequestHandler_ = std::move(handler); }
 
     static constexpr int KEY_FIRST = GLFW_KEY_SPACE;
     static constexpr int KEY_LAST = GLFW_KEY_LAST;
@@ -109,4 +119,5 @@ private:
     SceneViewport sceneViewport_{};
     std::vector<std::function<void(int, int, int, int)>> windowResizeHandlers_;
     std::vector<std::function<void(double)>> scrollHandlers_;
+    std::function<void()> closeRequestHandler_;
 };

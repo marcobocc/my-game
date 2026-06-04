@@ -17,3 +17,4 @@ static constexpr auto OUTLINE_SHADER = "assets/builtin/shaders/_outline/_outline
 static constexpr auto GIZMO_SHADER = "assets/builtin/shaders/_gizmo/_gizmo.shad";
 static constexpr auto GBUFFER_SHADER = "assets/builtin/shaders/_gbuffer/_gbuffer.shad";
 static constexpr auto LIGHTING_SHADER = "assets/builtin/shaders/_lighting/_lighting.shad";
+static constexpr auto SHADOW_SHADER = "assets/builtin/shaders/_shadow/_shadow.shad";

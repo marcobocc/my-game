@@ -3,6 +3,7 @@
 #include "GameRenderData.hpp"
 #include "modules/scene/World.hpp"
 #include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/Renderer.hpp"
 #include "modules/scene/components/Transform.hpp"
 #include "vulkan/VulkanGameRenderer.hpp"
@@ -29,9 +30,16 @@ public:
                                  std::to_string(entity)});
         }
 
+        std::vector<std::pair<Light, Transform>> lightsWithTransforms;
+        auto lights = entityManager.query<Light, Transform>();
+        for (auto& [entity, lightPtr, transformPtr]: lights) {
+            if (!lightPtr || !transformPtr) continue;
+            lightsWithTransforms.emplace_back(*lightPtr, *transformPtr);
+        }
+
         const Camera& cam = getActiveCamera();
         const Transform& camTransform = getActiveCameraTransform();
-        renderer_.renderFrame({cam, camTransform, drawQueue});
+        renderer_.renderFrame({cam, camTransform, drawQueue, lightsWithTransforms});
     }
 
 private:

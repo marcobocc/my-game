@@ -20,6 +20,7 @@ void EditorContext::saveScene(const char* path) {
     nlohmann::json j = scene_.snapshotScene().serialize();
     f << j.dump(2);
     currentScenePath_ = std::filesystem::path(path);
+    undoHistory_.markSaved();
 }
 
 void EditorContext::saveCurrentScene() {

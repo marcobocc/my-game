@@ -62,7 +62,9 @@ public:
                       geometryPass_,
                       lightingPass_,
                       swapchainManager_,
-                      rendererSettings_),
+                      rendererSettings_,
+                      resourcesManager_,
+                      assetLoader_),
         gameRenderSystem_(gameRenderer_),
         inputSystem_(window),
         time_([&window] { return static_cast<float>(window.getTime()); }),
@@ -88,6 +90,7 @@ public:
     VulkanContext& vulkanContext() { return vulkanContext_; }
     VulkanFrameManager& frameManager() { return frameManager_; }
     VulkanRenderTargetManager& renderTargetManager() { return renderTargetManager_; }
+    VulkanResourcesManager& resourcesManager() { return resourcesManager_; }
     VulkanGeometryPass& geometryPass() { return geometryPass_; }
     VulkanLightingPass& lightingPass() { return lightingPass_; }
     VulkanGridPass& gridPass() { return gridPass_; }

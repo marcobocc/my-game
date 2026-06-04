@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include "../../../../runtime/src/modules/console/Imgui_Console.hpp"
 #include "application_toolbar/Imgui_ApplicationMenuBar.hpp"
 #include "asset_browser/imgui/Imgui_AssetExplorerPanel.hpp"
@@ -26,6 +27,8 @@ public:
         editorSceneViewport_(editorSceneViewport),
         console_(console) {}
 
+    void setOverlayCallback(std::function<void()> cb) { overlayCallback_ = std::move(cb); }
+
     void draw() {
         applicationMenuBar_.draw();
         sceneViewToolbar_.draw();
@@ -34,6 +37,7 @@ public:
         inspectorPanel_.draw();
         editorSceneViewport_.draw();
         console_.draw();
+        if (overlayCallback_) overlayCallback_();
     }
 
 private:
@@ -44,6 +48,7 @@ private:
     Imgui_InspectorPanel& inspectorPanel_;
     Imgui_EditorSceneViewport& editorSceneViewport_;
     Imgui_Console& console_;
+    std::function<void()> overlayCallback_;
 };
 
 class SimHUDRoot {

@@ -18,13 +18,18 @@ public:
     // Single color attachment convenience overload.
     VulkanPipeline& get(const Shader& shader,
                         VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
-                        VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) {
-        return get(shader, std::span<const VkFormat>{&colorFormat, 1}, depthFormat);
+                        VkFormat depthFormat = VK_FORMAT_D32_SFLOAT,
+                        bool cullFront = false,
+                        bool additiveBlend = false) {
+        return get(shader, std::span<const VkFormat>{&colorFormat, 1}, depthFormat, cullFront, additiveBlend);
     }
 
-    VulkanPipeline&
-    get(const Shader& shader, std::span<const VkFormat> colorFormats, VkFormat depthFormat = VK_FORMAT_D32_SFLOAT) {
-        CacheKey key{shader.name, {colorFormats.begin(), colorFormats.end()}, depthFormat};
+    VulkanPipeline& get(const Shader& shader,
+                        std::span<const VkFormat> colorFormats,
+                        VkFormat depthFormat = VK_FORMAT_D32_SFLOAT,
+                        bool cullFront = false,
+                        bool additiveBlend = false) {
+        CacheKey key{shader.name, {colorFormats.begin(), colorFormats.end()}, depthFormat, additiveBlend};
         auto it = cache_.find(key);
         if (it != cache_.end()) return it->second;
 
@@ -107,18 +112,22 @@ public:
         viewportState.viewportCount = 1;
         viewportState.scissorCount = 1;
 
-        VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        std::vector<VkDynamicState> dynamicStateList = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        if (shader.depthBias) dynamicStateList.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
         VkPipelineDynamicStateCreateInfo dynamicState{};
         dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamicState.dynamicStateCount = 2;
-        dynamicState.pDynamicStates = dynamicStates;
+        dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStateList.size());
+        dynamicState.pDynamicStates = dynamicStateList.data();
 
         VkPipelineRasterizationStateCreateInfo raster{};
         raster.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         raster.polygonMode = VK_POLYGON_MODE_FILL;
-        raster.cullMode = shader.disableCull ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT;
+        raster.cullMode = shader.disableCull ? VK_CULL_MODE_NONE
+                          : cullFront        ? VK_CULL_MODE_FRONT_BIT
+                                             : VK_CULL_MODE_BACK_BIT;
         raster.frontFace = VK_FRONT_FACE_CLOCKWISE;
         raster.lineWidth = 1.0f;
+        raster.depthBiasEnable = shader.depthBias ? VK_TRUE : VK_FALSE;
 
         VkPipelineMultisampleStateCreateInfo msaa{};
         msaa.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -140,6 +149,14 @@ public:
             blendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
             blendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
             blendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            blendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+        } else if (additiveBlend) {
+            blendAttachment.blendEnable = VK_TRUE;
+            blendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+            blendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+            blendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+            blendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            blendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
             blendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
         }
         std::vector<VkPipelineColorBlendAttachmentState> blendAttachments(colorFormats.size(), blendAttachment);
@@ -183,7 +200,7 @@ public:
     void clear() { cache_.clear(); }
 
 private:
-    using CacheKey = std::tuple<std::string, std::vector<VkFormat>, VkFormat>;
+    using CacheKey = std::tuple<std::string, std::vector<VkFormat>, VkFormat, bool>;
 
     const VulkanContext& context_;
     std::map<CacheKey, VulkanPipeline> cache_;
