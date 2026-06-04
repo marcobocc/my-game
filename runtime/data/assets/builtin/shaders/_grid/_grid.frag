@@ -35,7 +35,7 @@ void main() {
     float line = min(lines.x, lines.y);
 
     float dist = length(hit - pc.cameraPos);
-    float fade = exp(-dist * 0.02); // tweak 0.02
+    float fade = exp(-dist * 0.04);
     float intensity = (1.0 - clamp(line, 0.0, 1.0)) * fade;
 
     float axisWidth = 1.5;

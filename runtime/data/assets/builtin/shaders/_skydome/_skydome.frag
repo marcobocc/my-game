@@ -11,7 +11,7 @@ void main() {
 
     // Horizon band: map [-0.1, 0.15] to [0, 1] for a sharp-ish transition
     float horizon = smoothstep(-0.1, 0.15, t);
-    vec3 zenith  = vec3(0.08, 0.18, 0.48); // deep blue
+    vec3 zenith  = vec3(0.40, 0.50, 0.82); // deep blue
     vec3 mid     = vec3(0.52, 0.76, 0.95); // pale sky blue
     vec3 horiz   = vec3(0.98, 0.72, 0.42); // peachy orange
 
