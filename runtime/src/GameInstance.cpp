@@ -1,4 +1,5 @@
 #include "GameInstance.hpp"
+#include <tracy/Tracy.hpp>
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/console/DeveloperConsole.hpp"
 #include "modules/console/commands/EchoCommand.hpp"
@@ -55,15 +56,26 @@ void GameInstance::tick(float deltaTime) {
 
 void GameInstance::run(const std::function<void(double deltaTime)>& gameLoopFunc) {
     while (!shouldClose()) {
+        ZoneScoped;
         time_.beginFrame();
         float deltaTime = time_.getGameDeltaTime();
 
         window_.pollEvents();
-        inputSystem_.update();
-        tick(deltaTime);
-        gameLoopFunc(deltaTime);
-        renderSystem_.update(world_);
+        {
+            ZoneScopedN("Input");
+            inputSystem_.update();
+        }
+        {
+            ZoneScopedN("Tick");
+            tick(deltaTime);
+            gameLoopFunc(deltaTime);
+        }
+        {
+            ZoneScopedN("Render");
+            renderSystem_.update(world_);
+        }
         time_.endFrame();
+        FrameMark;
     }
 }
 

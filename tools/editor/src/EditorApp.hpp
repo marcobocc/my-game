@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
+#include <tracy/Tracy.hpp>
 #include "../../../runtime/src/modules/console/ConsoleLogAppender.hpp"
 #include "../../../runtime/src/modules/console/Imgui_Console.hpp"
 #include "features/ImguiRoot.hpp"
@@ -91,6 +92,7 @@ public:
     void run() {
         setupConsoleAppender();
         while (!window_.shouldClose()) {
+            ZoneScoped;
             window_.pollEvents();
             time_.beginFrame();
             float deltaTime = time_.getGameDeltaTime();
@@ -98,6 +100,7 @@ public:
             if (appState_ == AppState::Welcome) {
                 editorRenderer_.renderWelcome();
                 time_.endFrame();
+                FrameMark;
                 continue;
             }
 
@@ -121,20 +124,31 @@ public:
                 simWasActive_ = simActive;
             }
 
-            inputSystem_.update();
-            if (simActive) inputSystem_.setBlocked(imguiConsole_.isVisible());
-            auto [mouseX, mouseY] = inputSystem_.getMousePosition();
-            inputHandler_.update(mouseX, mouseY, deltaTime);
-            developerConsole_.tick();
+            {
+                ZoneScopedN("Input");
+                inputSystem_.update();
+                if (simActive) inputSystem_.setBlocked(imguiConsole_.isVisible());
+                auto [mouseX, mouseY] = inputSystem_.getMousePosition();
+                inputHandler_.update(mouseX, mouseY, deltaTime);
+            }
 
-            if (simActive) {
-                simulationController_.tick(deltaTime);
-                editorRenderer_.render(simulationController_.world(), 0.0f);
-            } else {
-                editorRenderer_.render(entityManager_, editorSettings_.getGridScale());
+            {
+                ZoneScopedN("DeveloperConsole");
+                developerConsole_.tick();
+            }
+
+            {
+                ZoneScopedN("Render");
+                if (simActive) {
+                    simulationController_.tick(deltaTime);
+                    editorRenderer_.render(simulationController_.world(), 0.0f);
+                } else {
+                    editorRenderer_.render(entityManager_, editorSettings_.getGridScale());
+                }
             }
 
             time_.endFrame();
+            FrameMark;
         }
     }
 
