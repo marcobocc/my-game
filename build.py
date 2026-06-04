@@ -188,7 +188,8 @@ def build_target(target: str | None) -> bool:
     if not BUILD_DIR.exists():
         BUILD_DIR.mkdir(parents=True, exist_ok=True)
     toolchain = get_vcpkg_toolchain()
-    compile_shaders()
+    if not compile_shaders():
+        return False
     if not configure_cmake(toolchain):
         return False
     cmd = ["cmake", "--build", "."]
