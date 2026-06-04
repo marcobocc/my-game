@@ -30,6 +30,7 @@ nbdist/
 
 # macOS
 .DS_Store
+build-xcode
 
 # Windows
 Thumbs.db

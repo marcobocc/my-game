@@ -14,6 +14,7 @@ from pathlib import Path
 # -----------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 BUILD_DIR = PROJECT_ROOT / "build"
+XCODE_BUILD_DIR = PROJECT_ROOT / "build-xcode"
 BINARIES_DIR = BUILD_DIR / "bin"
 
 
@@ -160,17 +161,27 @@ def clean_build_dir() -> None:
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def configure_cmake(toolchain: Path, build_type: str = "Debug") -> bool:
-    configure(f"Running CMake ({build_type})")
-    return_code = run_cmd([
+def configure_cmake(toolchain: Path, build_type: str = "Debug", xcode: bool = False) -> bool:
+    build_dir = XCODE_BUILD_DIR if xcode else BUILD_DIR
+    label = f"Xcode project" if xcode else build_type
+    configure(f"Running CMake ({label})")
+    cmd = [
         "cmake",
         str(PROJECT_ROOT),
         f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-    ], cwd=BUILD_DIR)
-    return return_code == 0
+    ]
+    if xcode:
+        cmd += ["-G", "Xcode"]
+    return run_cmd(cmd, cwd=build_dir) == 0
 
+
+def generate_xcode(toolchain: Path) -> bool:
+    if not XCODE_BUILD_DIR.exists():
+        XCODE_BUILD_DIR.mkdir(parents=True, exist_ok=True)
+    compile_shaders()
+    return configure_cmake(toolchain, xcode=True)
 
 
 def build_target(target: str | None) -> bool:
@@ -265,6 +276,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build script for CrossPlatformVulkanEngine")
     parser.add_argument("target", type=str, help="Name of the executable target to build and run", nargs="?")
     parser.add_argument("--tidy", action="store_true", help="Run clang-tidy after building")
+    parser.add_argument("--xcode", action="store_true", help="Generate Xcode project in build-xcode/ instead of building")
     args, unknown = parser.parse_known_args()
 
     # Extract extra args after '--'
@@ -276,6 +288,21 @@ def main() -> None:
     if args.target == "clean":
         clean_build_dir()
         success("Clean completed.")
+        return
+
+    if args.xcode:
+        toolchain = get_vcpkg_toolchain()
+        if not generate_xcode(toolchain):
+            error("Xcode project generation failed")
+            sys.exit(1)
+        build_log("Building via Xcode")
+        cmd = ["cmake", "--build", str(XCODE_BUILD_DIR)]
+        if args.target:
+            cmd += ["--target", args.target]
+        if run_cmd(cmd) != 0:
+            error("Xcode build failed")
+            sys.exit(1)
+        success(f"Xcode build completed in {XCODE_BUILD_DIR}")
         return
 
     # ----------------------------------------
