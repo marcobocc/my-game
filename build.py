@@ -161,7 +161,7 @@ def clean_build_dir() -> None:
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def configure_cmake(toolchain: Path, build_type: str = "Debug", xcode: bool = False) -> bool:
+def configure_cmake(toolchain: Path, build_type: str = "Debug", tracy: bool = False, xcode: bool = False) -> bool:
     build_dir = XCODE_BUILD_DIR if xcode else BUILD_DIR
     label = f"Xcode project" if xcode else build_type
     configure(f"Running CMake ({label})")
@@ -171,6 +171,7 @@ def configure_cmake(toolchain: Path, build_type: str = "Debug", xcode: bool = Fa
         f"-DCMAKE_TOOLCHAIN_FILE={toolchain}",
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        f"-DTRACY_ENABLE={'ON' if tracy else 'OFF'}",
     ]
     if xcode:
         cmd += ["-G", "Xcode"]
@@ -180,17 +181,18 @@ def configure_cmake(toolchain: Path, build_type: str = "Debug", xcode: bool = Fa
 def generate_xcode(toolchain: Path) -> bool:
     if not XCODE_BUILD_DIR.exists():
         XCODE_BUILD_DIR.mkdir(parents=True, exist_ok=True)
-    compile_shaders()
+    if not compile_shaders():
+        return False
     return configure_cmake(toolchain, xcode=True)
 
 
-def build_target(target: str | None) -> bool:
+def build_target(target: str | None, tracy: bool = False) -> bool:
     if not BUILD_DIR.exists():
         BUILD_DIR.mkdir(parents=True, exist_ok=True)
     toolchain = get_vcpkg_toolchain()
     if not compile_shaders():
         return False
-    if not configure_cmake(toolchain):
+    if not configure_cmake(toolchain, tracy=tracy):
         return False
     cmd = ["cmake", "--build", "."]
     if target:
@@ -277,7 +279,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build script for CrossPlatformVulkanEngine")
     parser.add_argument("target", type=str, help="Name of the executable target to build and run", nargs="?")
     parser.add_argument("--tidy", action="store_true", help="Run clang-tidy after building")
-    parser.add_argument("--xcode", action="store_true", help="Generate Xcode project in build-xcode/ instead of building")
+    parser.add_argument("--xcode", action="store_true", help="Generate Xcode project in build-xcode and build")
+    parser.add_argument("--tracy", action="store_true", help="Build with Tracy profiler enabled")
     args, unknown = parser.parse_known_args()
 
     # Extract extra args after '--'
@@ -312,7 +315,7 @@ def main() -> None:
     info("Starting build workflow")
     start_time = time.perf_counter()
 
-    if not build_target(args.target):
+    if not build_target(args.target, tracy=args.tracy):
         error("Build failed")
         sys.exit(1)
 

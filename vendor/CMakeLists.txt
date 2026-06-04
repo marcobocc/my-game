@@ -62,3 +62,10 @@ target_sources(subprocess PUBLIC
         BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/
 )
 add_library(cpp-subprocess::subprocess ALIAS subprocess)
+
+# -------------------------------------------------------------------------
+# Tracy Profiler
+# -------------------------------------------------------------------------
+option(TRACY_ENABLE "Enable Tracy profiler" OFF)
+option(TRACY_ON_DEMAND "Enable Tracy on-demand profiling" ON)
+add_subdirectory(${VENDOR_DIR}/tracy)

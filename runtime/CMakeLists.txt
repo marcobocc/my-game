@@ -28,6 +28,7 @@ target_link_libraries(GameEngineLib PUBLIC
     argparse
     cr
     subprocess
+    Tracy::TracyClient
 )
 
 # On macOS, link MoltenVK explicitly
