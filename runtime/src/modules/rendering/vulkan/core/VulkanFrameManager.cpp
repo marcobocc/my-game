@@ -23,16 +23,11 @@ bool VulkanFrameManager::acquireImage(uint32_t& imageIndex) {
 }
 
 VkCommandBuffer VulkanFrameManager::beginFrame() {
-    commandManager_.beginFrame();
-    currentCommandBuffer_ = commandManager_.allocateCommandBuffer();
-    VulkanCommandManager::beginCommandBuffer(currentCommandBuffer_);
+    currentCommandBuffer_ = commandManager_.beginFrame();
     return currentCommandBuffer_;
 }
 
-void VulkanFrameManager::endFrame(VkCommandBuffer cmd) {
-    VulkanCommandManager::endCommandBuffer(cmd);
-    commandManager_.endFrame();
-}
+void VulkanFrameManager::endFrame(VkCommandBuffer cmd) { commandManager_.endFrame(cmd); }
 
 void VulkanFrameManager::submit(uint32_t imageIndex) {
     const auto& frame = currentFrame();
@@ -49,7 +44,10 @@ void VulkanFrameManager::waitForCurrentFrame() {
     }
 }
 
-void VulkanFrameManager::advanceFrame() { currentFrameIndex_ = (currentFrameIndex_ + 1) % frames_.size(); }
+void VulkanFrameManager::advanceFrame() {
+    currentFrameIndex_ = (currentFrameIndex_ + 1) % frames_.size();
+    commandManager_.advanceFrame();
+}
 
 VulkanFrameManager::FrameSync& VulkanFrameManager::currentFrame() { return frames_.at(currentFrameIndex_); }
 

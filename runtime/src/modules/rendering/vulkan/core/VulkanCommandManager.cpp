@@ -15,7 +15,7 @@ VulkanCommandManager::VulkanCommandManager(const VulkanContext& vulkanContext,
 }
 
 VulkanCommandManager::~VulkanCommandManager() {
-    for (auto& [commandPool, frameFence]: frames_) {
+    for (auto& [commandPool, frameFence, commandBuffer]: frames_) {
         if (frameFence != VK_NULL_HANDLE) {
             vkWaitForFences(device_, 1, &frameFence, VK_TRUE, UINT64_MAX);
             vkDestroyFence(device_, frameFence, nullptr);
@@ -26,15 +26,23 @@ VulkanCommandManager::~VulkanCommandManager() {
     }
 }
 
-void VulkanCommandManager::beginFrame() {
-    auto& [commandPool, frameFence] = frames_.at(currentFrame_);
+VkCommandBuffer VulkanCommandManager::beginFrame() {
+    auto& [commandPool, frameFence, commandBuffer] = frames_.at(currentFrame_);
     vkResetCommandPool(device_, commandPool, 0);
+    beginCommandBuffer(commandBuffer);
+    return commandBuffer;
 }
 
-void VulkanCommandManager::endFrame() { currentFrame_ = (currentFrame_ + 1) % maxFramesInFlight_; }
+void VulkanCommandManager::endFrame(VkCommandBuffer cmd) { endCommandBuffer(cmd); }
+
+void VulkanCommandManager::advanceFrame() { currentFrame_ = (currentFrame_ + 1) % maxFramesInFlight_; }
+
+VkCommandBuffer VulkanCommandManager::currentCommandBuffer() const { return frames_.at(currentFrame_).commandBuffer; }
 
 VkCommandBuffer VulkanCommandManager::allocateCommandBuffer(VkCommandBufferLevel level) {
-    auto& [commandPool, frameFence] = frames_.at(currentFrame_);
+    auto& [commandPool, frameFence, commandBuffer] = frames_.at(currentFrame_);
+    if (level == VK_COMMAND_BUFFER_LEVEL_PRIMARY) return commandBuffer;
+
     VkCommandBufferAllocateInfo alloc{};
     alloc.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc.commandPool = commandPool;
@@ -50,7 +58,7 @@ void VulkanCommandManager::submitCommandBuffer(VkCommandBuffer cmd,
                                                VkSemaphore waitSemaphore,
                                                VkSemaphore signalSemaphore,
                                                VkFence fence) {
-    auto& [commandPool, frameFence] = frames_.at(currentFrame_);
+    auto& [commandPool, frameFence, commandBuffer] = frames_.at(currentFrame_);
     VkSubmitInfo submit{};
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -83,17 +91,24 @@ void VulkanCommandManager::beginCommandBuffer(VkCommandBuffer cmd, VkCommandBuff
 void VulkanCommandManager::endCommandBuffer(VkCommandBuffer cmd) { throwIfUnsuccessful(vkEndCommandBuffer(cmd)); }
 
 void VulkanCommandManager::createCommandPools() {
-    for (auto& [commandPool, frameFence]: frames_) {
+    for (auto& [commandPool, frameFence, commandBuffer]: frames_) {
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.queueFamilyIndex = graphicsQueueFamilyIndex_;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         throwIfUnsuccessful(vkCreateCommandPool(device_, &poolInfo, nullptr, &commandPool));
+
+        VkCommandBufferAllocateInfo alloc{};
+        alloc.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        alloc.commandPool = commandPool;
+        alloc.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        alloc.commandBufferCount = 1;
+        throwIfUnsuccessful(vkAllocateCommandBuffers(device_, &alloc, &commandBuffer));
     }
 }
 
 void VulkanCommandManager::createFences() {
-    for (auto& [commandPool, frameFence]: frames_) {
+    for (auto& [commandPool, frameFence, commandBuffer]: frames_) {
         VkFenceCreateInfo fenceInfo{};
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
