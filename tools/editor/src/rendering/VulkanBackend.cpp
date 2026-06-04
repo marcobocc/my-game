@@ -670,7 +670,8 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                              ctx.camera,
                              ctx.cameraTransform,
                              ctx.gridScale,
-                             graph.getImageView(gbufferDepthHandle_));
+                             graph.getImageView(gbufferDepthHandle_),
+                             window_);
             return true;
         };
         renderGraph_->addPass(std::move(n));

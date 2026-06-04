@@ -5,6 +5,7 @@
 #include "../core/utils/structs.hpp"
 #include "modules/asset_management/AssetLoader.hpp"
 #include "modules/asset_management/BuiltinAssetNames.hpp"
+#include "modules/core/GameWindow.hpp"
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Transform.hpp"
 
@@ -24,7 +25,8 @@ public:
                 const Camera& camera,
                 const Transform& cameraTransform,
                 float gridScale,
-                VkImageView depthView) const {
+                VkImageView depthView,
+                const GameWindow& window) const {
         if (pipeline_ == nullptr) return;
 
         VkRenderingAttachmentInfo colorAttachment{};
@@ -50,6 +52,19 @@ public:
         renderingInfo.pDepthAttachment = &depthAttachment;
 
         vkCmdBeginRendering(cmd, &renderingInfo);
+
+        const SceneViewport sv = window.getSceneViewport();
+        const auto [scaleX, scaleY] = window.getContentScale();
+        const float fbX = static_cast<float>(sv.x) * scaleX;
+        const float fbY = static_cast<float>(sv.y) * scaleY;
+        const float fbW = static_cast<float>(sv.width) * scaleX;
+        const float fbH = static_cast<float>(sv.height) * scaleY;
+
+        VkViewport viewport{fbX, fbY, fbW, fbH, 0.0f, 1.0f};
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+        VkRect2D scissor{{static_cast<int32_t>(fbX), static_cast<int32_t>(fbY)},
+                         {static_cast<uint32_t>(fbW), static_cast<uint32_t>(fbH)}};
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
 
         struct GridPushConstants {
             glm::mat4 invViewProj;
