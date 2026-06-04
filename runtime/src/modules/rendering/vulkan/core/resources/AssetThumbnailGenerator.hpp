@@ -11,9 +11,11 @@
 #include "modules/asset_management/AssetLoader.hpp"
 
 class AssetThumbnailGenerator {
-public:
+    inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetThumbnailGenerator");
     static constexpr const char* PREVIEW_NOT_AVAILABLE_PATH = "assets/editor/preview_not_available.jpg";
 
+
+public:
     AssetThumbnailGenerator(AssetLoader& assetLoader, VulkanTextureCache& textureCache) :
         assetLoader_(assetLoader),
         textureCache_(textureCache) {}
@@ -47,6 +49,7 @@ private:
     std::unordered_map<std::string, ImguiThumbnail> cache_;
 
     ImguiThumbnail toImguiThumbnail(const Texture& texture) {
+        LOG4CXX_DEBUG(LOGGER, "Generating Imgui thumbnail for " + texture.name);
         VulkanTexture& vulkanTexture = textureCache_.get(texture);
         VkDescriptorSet id = ImGui_ImplVulkan_AddTexture(
                 vulkanTexture.sampler, vulkanTexture.imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -54,9 +57,12 @@ private:
     }
 
     ImguiThumbnail thumbnail_PreviewNotAvailable() {
+        auto it = cache_.find(PREVIEW_NOT_AVAILABLE_PATH);
+        if (it != cache_.end()) return it->second;
         const Texture* texture = assetLoader_.get<Texture>(PREVIEW_NOT_AVAILABLE_PATH);
-        if (!texture) return ImguiThumbnail{};
-        return toImguiThumbnail(*texture);
+        ImguiThumbnail thumbnail = texture ? toImguiThumbnail(*texture) : ImguiThumbnail{};
+        cache_.emplace(PREVIEW_NOT_AVAILABLE_PATH, thumbnail);
+        return thumbnail;
     }
 
     std::optional<ImguiThumbnail> getTexturePreview(const std::string& assetName) {
