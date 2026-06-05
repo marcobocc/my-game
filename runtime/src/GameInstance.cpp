@@ -1,5 +1,6 @@
 #include "GameInstance.hpp"
 #include <tracy/Tracy.hpp>
+#include <unordered_map>
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/console/DeveloperConsole.hpp"
 #include "modules/console/commands/EchoCommand.hpp"
@@ -7,8 +8,7 @@
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/rendering/GameRenderSystem.hpp"
-#include "modules/scene/components/BehaviourScript.hpp"
-#include "modules/scripting/ScriptInstanceContext.hpp"
+#include "modules/scene/components/gameplay/HealthComponent.hpp"
 
 GameInstance::GameInstance(GameWindow& window,
                            TimeManager& time,
@@ -17,8 +17,7 @@ GameInstance::GameInstance(GameWindow& window,
                            World world,
                            GameRenderSystem& renderSystem,
                            RendererSettings& rendererSettings,
-                           VulkanGameRenderer& renderer,
-                           std::filesystem::path scriptsDir) :
+                           VulkanGameRenderer& renderer) :
     window_(window),
     time_(time),
     loadedAssets_(loadedAssets),
@@ -27,22 +26,22 @@ GameInstance::GameInstance(GameWindow& window,
     physicsSystem_(world_),
     renderSystem_(renderSystem),
     rendererSettings_(rendererSettings),
-    renderer_(renderer),
-    scriptManager_(ScriptInstanceContext{&world_, &inputSystem_}) {
+    renderer_(renderer) {
     developerConsole_.registerCommand("list-actors", [this] { return std::make_unique<ListActorsCommand>(world_); });
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
+    spawnBehaviours();
+}
 
-    if (!scriptsDir.empty()) {
-        auto dylibPath = scriptsDir / "scripts.dylib";
-        if (std::filesystem::exists(dylibPath)) scriptManager_.loadDylib(dylibPath);
-        for (const auto& actor: world_.getActors()) {
-            for (const auto* script: actor->getComponents<BehaviourScript>()) {
-                if (script->scriptName.empty()) continue;
-                scriptManager_.spawnInstance(script->scriptName, actor->handle());
-            }
-        }
+void GameInstance::spawnBehaviours() {
+    for (const auto& [handle, behaviour]: world_.query<BehaviourComponent>()) {
+        behaviour->init(handle, &world_, &inputSystem_);
+        behaviours_.push_back(behaviour);
+    }
+    for (auto* behaviour: behaviours_) {
+        behaviour->onStart();
     }
 }
+
 
 // --------------------------------------------------------
 // Game Loop
@@ -50,7 +49,9 @@ GameInstance::GameInstance(GameWindow& window,
 
 void GameInstance::tick(float deltaTime) {
     physicsSystem_.update();
-    scriptManager_.tickAll(deltaTime);
+    for (const auto& [handle, behaviour]: world_.query<BehaviourComponent>()) {
+        behaviour->onUpdate(deltaTime);
+    }
     developerConsole_.tick();
 }
 
@@ -80,7 +81,6 @@ void GameInstance::run(const std::function<void(double deltaTime)>& gameLoopFunc
 }
 
 bool GameInstance::shouldClose() const { return window_.shouldClose(); }
-
 void GameInstance::requestClose() const { window_.requestClose(); }
 
 // --------------------------------------------------------
@@ -88,19 +88,12 @@ void GameInstance::requestClose() const { window_.requestClose(); }
 // --------------------------------------------------------
 
 std::pair<double, double> GameInstance::getMousePosition() const { return inputSystem_.getMousePosition(); }
-
 std::pair<double, double> GameInstance::getMouseDelta() const { return inputSystem_.getMouseDelta(); }
-
 void GameInstance::lockMouse() const { inputSystem_.lockMouse(); }
-
 void GameInstance::unlockMouse() const { inputSystem_.unlockMouse(); }
-
 bool GameInstance::isKeyDown(int key) const { return inputSystem_.isKeyDown(key); }
-
 bool GameInstance::isKeyPressed(int key) const { return inputSystem_.isKeyPressed(key); }
-
-bool GameInstance::isMouseButtonDown(int button) const { return inputSystem_.isMouseButtonDown(button); }
-
+bool GameInstance::isMouseButtonDown(int btn) const { return inputSystem_.isMouseButtonDown(btn); }
 double GameInstance::getScrollDelta() const { return inputSystem_.getScrollDelta(); }
 
 // --------------------------------------------------------

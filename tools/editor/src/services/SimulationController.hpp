@@ -7,7 +7,6 @@
 #include "../../../runtime/src/modules/physics/PhysicsSystem.hpp"
 #include "../../../runtime/src/modules/rendering/GameRenderSystem.hpp"
 #include "../../../runtime/src/modules/scene/World.hpp"
-#include "ScriptCompiler.hpp"
 
 class GameWindow;
 class TimeManager;
@@ -37,21 +36,12 @@ public:
     void setEditorWorld(World* editorWorld) { editorWorld_ = editorWorld; }
     void setProjectRoot(const std::filesystem::path& projectRoot) { projectRoot_ = projectRoot; }
 
-    // Called by the Play button — compiles stale scripts, snapshots the editor world, starts simulation.
     void requestPlay() {
         if (state_ != State::Stopped || !editorWorld_) return;
-
-        std::filesystem::path scriptsDir;
-        if (!projectRoot_.empty()) {
-            scriptsDir = projectRoot_ / "assets" / "scripts";
-            auto result = scriptCompiler_.compileStale(scriptsDir);
-            if (result.has_value() && !result->success) return; // abort — compile failed
-        }
-
-        start(editorWorld_->snapshot(), scriptsDir);
+        start(editorWorld_->snapshot());
     }
 
-    void start(World snapshot, std::filesystem::path scriptsDir = {}) {
+    void start(World snapshot) {
         gameInstance_ = std::make_unique<GameInstance>(window_,
                                                        time_,
                                                        loadedAssets_,
@@ -59,8 +49,7 @@ public:
                                                        std::move(snapshot),
                                                        renderSystem_,
                                                        rendererSettings_,
-                                                       renderer_,
-                                                       std::move(scriptsDir));
+                                                       renderer_);
         gameInstance_->physicsSystem().resume();
         state_ = State::Running;
     }
@@ -79,10 +68,8 @@ public:
         }
     }
 
-    // Safe to call from inside a draw callback — actual teardown is deferred to flushPendingStop().
     void stop() { pendingStop_ = true; }
 
-    // Called at the top of the main loop, before any rendering.
     void flushPendingStop() {
         if (!pendingStop_) return;
         pendingStop_ = false;
@@ -93,7 +80,6 @@ public:
 
     void tick(double deltaTime) {
         if (state_ != State::Running || !gameInstance_) return;
-
         gameInstance_->tick(static_cast<float>(deltaTime));
     }
 
@@ -118,7 +104,6 @@ private:
 
     World* editorWorld_ = nullptr;
     std::filesystem::path projectRoot_;
-    ScriptCompiler scriptCompiler_;
     std::unique_ptr<GameInstance> gameInstance_;
     State state_ = State::Stopped;
     bool pendingStop_ = false;

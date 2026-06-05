@@ -28,8 +28,6 @@ target_link_libraries(GameEngineLib PUBLIC
     spirv_reflect
     PhysFS::PhysFS-static
     argparse
-    cr
-    subprocess
     Tracy::TracyClient
     assimp::assimp
 )

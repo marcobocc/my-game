@@ -69,6 +69,17 @@ public:
     }
 
     template<typename... QueryComponents>
+    auto query() {
+        std::vector<std::tuple<EntityHandle, QueryComponents*...>> result;
+        for (auto& actor: actors_) {
+            auto ptrs = std::make_tuple(static_cast<QueryComponents*>(actor->getComponent<QueryComponents>())...);
+            if ((std::get<QueryComponents*>(ptrs) && ...))
+                result.emplace_back(actor->handle(), std::get<QueryComponents*>(ptrs)...);
+        }
+        return result;
+    }
+
+    template<typename... QueryComponents>
     auto query() const {
         std::vector<std::tuple<EntityHandle, const QueryComponents*...>> result;
         for (const auto& actor: actors_) {

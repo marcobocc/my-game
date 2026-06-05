@@ -1,14 +1,14 @@
 #pragma once
-#include <filesystem>
 #include <functional>
 #include <string>
 #include <utility>
+#include <vector>
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
 #include "modules/scene/World.hpp"
-#include "modules/scripting/NativeScriptManager.hpp"
+#include "modules/scene/components/gameplay/BehaviourComponent.hpp"
 
 struct AABB;
 struct Camera;
@@ -42,8 +42,7 @@ public:
                  World world,
                  GameRenderSystem& renderSystem,
                  RendererSettings& rendererSettings,
-                 VulkanGameRenderer& renderer,
-                 std::filesystem::path scriptsDir = {});
+                 VulkanGameRenderer& renderer);
 
     // --------------------------------------------------------
     // Game Loop
@@ -88,6 +87,7 @@ public:
 
 private:
     bool shouldClose() const;
+    void spawnBehaviours();
 
     GameWindow& window_;
     TimeManager& time_;
@@ -100,5 +100,5 @@ private:
     VulkanGameRenderer& renderer_;
 
     DeveloperConsole developerConsole_;
-    NativeScriptManager scriptManager_;
+    std::vector<BehaviourComponent*> behaviours_;
 };

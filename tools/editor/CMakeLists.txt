@@ -11,17 +11,11 @@ target_include_directories(EditorLib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_link_libraries(EditorLib PUBLIC GameEngineLib nfd::nfd)
-get_target_property(_nlohmann_includes nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
-list(GET _nlohmann_includes 0 _first_nlohmann_include)
-# _first_nlohmann_include is the vcpkg <arch>/include dir — all vcpkg deps live here
 target_compile_definitions(EditorLib PUBLIC
     VK_NO_PROTOTYPES
     EDITOR_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data"
-    ENGINE_SRC_DIR="${CMAKE_SOURCE_DIR}/runtime/src"
-    ENGINE_LIB_DIR="${CMAKE_BINARY_DIR}"
-    ENGINE_DEPS_INCLUDE_DIR="${_first_nlohmann_include}"
     PROJECTS_DIR="${CMAKE_SOURCE_DIR}/projects"
-    SAMPLES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/samples"
+    SAMPLES_DIR="${CMAKE_SOURCE_DIR}/samples"
 )
 
 add_executable(editor ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)

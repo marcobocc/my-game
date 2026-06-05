@@ -44,13 +44,6 @@ add_library(argparse INTERFACE)
 target_include_directories(argparse INTERFACE ${VENDOR_DIR})
 
 # -------------------------------------------------------------------------
-# cr
-# -------------------------------------------------------------------------
-set(CR_DIR ${VENDOR_DIR}/cr)
-add_library(cr INTERFACE)
-target_include_directories(cr INTERFACE ${VENDOR_DIR})
-
-# -------------------------------------------------------------------------
 # subprocess
 # -------------------------------------------------------------------------
 add_library(subprocess INTERFACE)

@@ -77,3 +77,4 @@ imgui.ini
 
 # Assets
 *.spv
+*.dylib
