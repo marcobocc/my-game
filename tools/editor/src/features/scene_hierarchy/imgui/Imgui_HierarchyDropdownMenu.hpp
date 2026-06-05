@@ -5,27 +5,34 @@
 #include "../../../services/ClipboardService.hpp"
 #include "../../../services/EditorSelection.hpp"
 #include "../../../services/common_editing/AssetStore.hpp"
-
+#include "../../../services/common_editing/RuntimeScene.hpp"
 #include "../../../services/common_editing/SceneQuickActions.hpp"
 #include "../../../styling/DropdownMenuComponent.hpp"
 #include "../../input_handling/ShortcutBindingService.hpp"
 #include "Imgui_SpherePopupModal.hpp"
+#include "modules/scene/components/Metadata.hpp"
+
+class Imgui_HierarchyPanel;
 
 class Imgui_HierarchyDropdownMenu : public DropdownMenuComponent {
 public:
     Imgui_HierarchyDropdownMenu(AssetStore& assetStore,
+                                RuntimeScene& scene,
                                 SceneQuickActions& sceneQuickActions,
                                 ActionDispatcher& actionDispatcher,
                                 ShortcutBindingService& shortcutBindingService,
                                 EditorSelection& editorSelection,
                                 ClipboardService& clipboardService,
+                                Imgui_HierarchyPanel* hierarchyPanel = nullptr,
                                 Imgui_SpherePopupModal* spherePopupModal = nullptr) :
         assetStore_(assetStore),
+        scene_(scene),
         sceneQuickActions_(sceneQuickActions),
         actionDispatcher_(actionDispatcher),
         shortcutBindingService_(shortcutBindingService),
         editorSelection_(editorSelection),
         clipboardService_(clipboardService),
+        hierarchyPanel_(hierarchyPanel),
         spherePopupModal_(spherePopupModal) {}
 
     void draw(const char* popupId) {
@@ -48,8 +55,31 @@ public:
         DropdownMenuComponent::draw(popupId);
     }
 
+    void setContextEntity(EntityHandle entity, std::string_view currentName) {
+        contextEntity_ = entity;
+        contextEntityName_ = currentName;
+    }
+
+    std::optional<EntityHandle> getAndClearRenameRequest() {
+        auto result = renameRequested_;
+        renameRequested_.reset();
+        return result;
+    }
+
+    const std::string& getRenameRequestName() const { return contextEntityName_; }
+
 protected:
     void drawBody() override {
+        bool hasContextEntity = contextEntity_.has_value();
+
+        if (ImGui::MenuItem("Rename", nullptr, false, hasContextEntity)) {
+            if (contextEntity_) {
+                renameRequested_ = *contextEntity_;
+            }
+        }
+
+        ImGui::Separator();
+
         if (ImGui::MenuItem("Empty Object")) {
             sceneQuickActions_.createEmptyObject();
         }
@@ -74,12 +104,17 @@ protected:
 
 private:
     AssetStore& assetStore_;
+    RuntimeScene& scene_;
     SceneQuickActions& sceneQuickActions_;
     ActionDispatcher& actionDispatcher_;
     ShortcutBindingService& shortcutBindingService_;
     EditorSelection& editorSelection_;
     ClipboardService& clipboardService_;
+    Imgui_HierarchyPanel* hierarchyPanel_;
     Imgui_SpherePopupModal* spherePopupModal_;
+    std::optional<EntityHandle> contextEntity_;
+    std::optional<EntityHandle> renameRequested_;
+    std::string contextEntityName_;
 
     void drawModelsSubmenu() {
         if (ImGui::BeginMenu("Models")) {

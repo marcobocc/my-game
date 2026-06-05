@@ -123,3 +123,8 @@ void SceneQuickActions::ensurePrimitiveExists(const std::string& meshName) {
         throw std::runtime_error("Unknown mesh name: " + meshName);
     }
 }
+
+void SceneQuickActions::renameObject(EntityHandle entity, const std::string& newName) {
+    auto groupId = UndoHistory::randomGroupId("Rename Object");
+    scene_.getObject(entity).mutateComponent<Metadata>([newName](Metadata& m) { m.displayName = newName; }, groupId);
+}

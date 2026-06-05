@@ -35,11 +35,13 @@ public:
         editorCamera_(editorCamera),
         spherePopupModal_(sceneQuickActions),
         dropdownMenu_(assetStore,
+                      scene,
                       sceneQuickActions,
                       actionDispatcher,
                       shortcutBindingService,
                       editorSelection,
                       clipboardService,
+                      nullptr,
                       &spherePopupModal_) {}
 
     void draw() {

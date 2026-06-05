@@ -1,5 +1,7 @@
 #pragma once
 #include <GLFW/glfw3.h>
+#include <array>
+#include <cstring>
 #include <imgui.h>
 #include <string>
 #include "../../../services/ActionDispatcher.hpp"
@@ -30,13 +32,16 @@ public:
         assetStore_(assetStore),
         editorSelection_(editorSelection),
         scene_(scene),
+        sceneQuickActions_(sceneQuickActions),
         spherePopupModal_(sceneQuickActions),
         dropdownMenu_(assetStore,
+                      scene,
                       sceneQuickActions,
                       actionDispatcher,
                       shortcutBindingService,
                       editorSelection,
                       clipboardService,
+                      this,
                       &spherePopupModal_) {}
 
     void draw() {
@@ -49,6 +54,12 @@ public:
         ImVec2 position = {viewport->Pos.x, viewport->Pos.y + menuBarHeight};
         ImVec2 size = {width, height};
         EditorPanel::draw("Objects Hierarchy", position, size);
+    }
+
+    void startRenaming(EntityHandle entity, const std::string& currentName) {
+        editingEntity_ = entity;
+        editBuffer_.fill('\0');
+        std::strncpy(editBuffer_.data(), currentName.c_str(), editBuffer_.size() - 1);
     }
 
     void drawBody() override {
@@ -81,7 +92,45 @@ public:
                     ("##entity" + std::to_string(e)).c_str(), selected, ImGuiSelectableFlags_AllowOverlap, {0, 0});
             bool hovered = ImGui::IsItemHovered() || isContextTarget;
             ImGui::SameLine();
-            ImGui::TextUnformatted(label.c_str());
+
+            if (editingEntity_ == e) {
+                if (!editingStartedThisFrame_) {
+                    ImGui::SetKeyboardFocusHere();
+                    editingStartedThisFrame_ = true;
+                }
+
+                if (ImGui::InputText(("##rename_" + std::to_string(e)).c_str(),
+                                     editBuffer_.data(),
+                                     editBuffer_.size(),
+                                     ImGuiInputTextFlags_EnterReturnsTrue)) {
+                    std::string newName(editBuffer_.data());
+                    if (!newName.empty()) {
+                        sceneQuickActions_.renameObject(e, newName);
+                    }
+                    editingEntity_.reset();
+                    editBuffer_.fill('\0');
+                    editingStartedThisFrame_ = false;
+                }
+
+                bool itemActive = ImGui::IsItemActive();
+                if (!itemActive && editingStartedThisFrame_) {
+                    // Still on the same frame, wait for focus
+                } else if (!itemActive) {
+                    // Lost focus, cancel edit
+                    editingEntity_.reset();
+                    editBuffer_.fill('\0');
+                    editingStartedThisFrame_ = false;
+                }
+
+                if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+                    editingEntity_.reset();
+                    editBuffer_.fill('\0');
+                    editingStartedThisFrame_ = false;
+                }
+            } else {
+                ImGui::TextUnformatted(label.c_str());
+            }
+
             hovered = hovered || ImGui::IsItemHovered();
 
             if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -104,18 +153,43 @@ public:
 
         if (rightClickedThisFrame) {
             contextTargetId = rightClickedEntity;
+            if (rightClickedEntity) {
+                std::string label = "Entity " + std::to_string(*rightClickedEntity);
+                for (const auto& obj: dto.objects) {
+                    if (obj.handle == *rightClickedEntity) {
+                        for (const auto& c: obj.components) {
+                            if (const auto* meta = std::get_if<Metadata>(&c)) {
+                                if (!meta->displayName.empty()) label = meta->displayName;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+                dropdownMenu_.setContextEntity(*rightClickedEntity, label);
+            }
             ImGui::OpenPopup("HierarchyContextMenu");
         }
 
         dropdownMenu_.draw("HierarchyContextMenu");
+
+        if (auto renameEntity = dropdownMenu_.getAndClearRenameRequest()) {
+            startRenaming(*renameEntity, dropdownMenu_.getRenameRequestName());
+        }
     }
 
 private:
+    static constexpr size_t NAME_BUFFER_SIZE = 256;
+
     AssetStore& assetStore_;
     EditorSelection& editorSelection_;
     RuntimeScene& scene_;
+    SceneQuickActions& sceneQuickActions_;
     Imgui_SpherePopupModal spherePopupModal_;
     Imgui_HierarchyDropdownMenu dropdownMenu_;
 
     std::optional<EntityHandle> contextTargetId;
+    std::optional<EntityHandle> editingEntity_;
+    std::array<char, NAME_BUFFER_SIZE> editBuffer_{};
+    bool editingStartedThisFrame_ = false;
 };
