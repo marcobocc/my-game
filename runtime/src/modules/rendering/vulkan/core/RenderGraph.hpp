@@ -27,6 +27,7 @@ struct ResourceUsage {
 struct ResourceDesc {
     std::string name;
     bool imported = false;
+    bool isCubemap = false;
     VkFormat format = VK_FORMAT_UNDEFINED;
     VkImageUsageFlags usageFlags = 0;
     uint32_t width = 0; // 0 = swapchain extent
@@ -34,7 +35,8 @@ struct ResourceDesc {
 
     VkImage image = VK_NULL_HANDLE;
     VkDeviceMemory memory = VK_NULL_HANDLE;
-    VkImageView imageView = VK_NULL_HANDLE;
+    VkImageView imageView = VK_NULL_HANDLE; // full cube view (for sampling)
+    std::array<VkImageView, 6> faceViews{}; // per-face views (for rendering into)
     VkSampler sampler = VK_NULL_HANDLE;
 
     // Per-frame tracking state — reset each frame for imported swapchain images.
@@ -99,6 +101,23 @@ public:
         desc.usageFlags = usageFlags;
         desc.width = width;
         desc.height = height;
+        resources_.push_back(desc);
+        return h;
+    }
+
+    // Creates a fixed-size cube (6-layer) image. The main imageView is a CUBE view for sampling;
+    // getFaceView(handle, face) returns per-face views for rendering into.
+    ResourceHandle
+    createTransientCubemap(const std::string& name, VkFormat format, VkImageUsageFlags usageFlags, uint32_t size) {
+        ResourceHandle h{static_cast<uint32_t>(resources_.size())};
+        ResourceDesc desc{};
+        desc.name = name;
+        desc.imported = false;
+        desc.isCubemap = true;
+        desc.format = format;
+        desc.usageFlags = usageFlags;
+        desc.width = size;
+        desc.height = size;
         resources_.push_back(desc);
         return h;
     }
@@ -181,6 +200,12 @@ public:
 
     VkImageView getImageView(ResourceHandle handle) const { return resource(handle).imageView; }
 
+    // Returns the per-face view for a cubemap resource (face 0..5 = +X,-X,+Y,-Y,+Z,-Z).
+    VkImageView getFaceView(ResourceHandle handle, uint32_t face) const {
+        assert(resource(handle).isCubemap && face < 6);
+        return resource(handle).faceViews[face];
+    }
+
     VkSampler getSampler(ResourceHandle handle) const { return resource(handle).sampler; }
 
     uint32_t getWidth(ResourceHandle handle) const {
@@ -208,19 +233,21 @@ private:
             const bool isDepth = res.format == VK_FORMAT_D32_SFLOAT || res.format == VK_FORMAT_D24_UNORM_S8_UINT ||
                                  res.format == VK_FORMAT_D16_UNORM;
             const VkImageAspectFlags aspect = isDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+            const uint32_t layers = res.isCubemap ? 6u : 1u;
 
             VkImageCreateInfo imageInfo{};
             imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
             imageInfo.imageType = VK_IMAGE_TYPE_2D;
             imageInfo.extent = {w, h, 1};
             imageInfo.mipLevels = 1;
-            imageInfo.arrayLayers = 1;
+            imageInfo.arrayLayers = layers;
             imageInfo.format = res.format;
             imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
             imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
             imageInfo.usage = res.usageFlags;
             imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
             imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            if (res.isCubemap) imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
             vkCreateImage(context_.device, &imageInfo, nullptr, &res.image);
 
             VkMemoryRequirements memReq{};
@@ -236,14 +263,29 @@ private:
             VkImageViewCreateInfo viewInfo{};
             viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
             viewInfo.image = res.image;
-            viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
             viewInfo.format = res.format;
             viewInfo.subresourceRange.aspectMask = aspect;
             viewInfo.subresourceRange.baseMipLevel = 0;
             viewInfo.subresourceRange.levelCount = 1;
             viewInfo.subresourceRange.baseArrayLayer = 0;
-            viewInfo.subresourceRange.layerCount = 1;
-            vkCreateImageView(context_.device, &viewInfo, nullptr, &res.imageView);
+            viewInfo.subresourceRange.layerCount = layers;
+
+            if (res.isCubemap) {
+                // Full cube view for sampling in shaders.
+                viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+                vkCreateImageView(context_.device, &viewInfo, nullptr, &res.imageView);
+
+                // Per-face views for rendering into each face.
+                viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                viewInfo.subresourceRange.layerCount = 1;
+                for (uint32_t face = 0; face < 6; ++face) {
+                    viewInfo.subresourceRange.baseArrayLayer = face;
+                    vkCreateImageView(context_.device, &viewInfo, nullptr, &res.faceViews[face]);
+                }
+            } else {
+                viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                vkCreateImageView(context_.device, &viewInfo, nullptr, &res.imageView);
+            }
 
             if (res.usageFlags & VK_IMAGE_USAGE_SAMPLED_BIT) {
                 VkSamplerCreateInfo samplerInfo{};
@@ -268,6 +310,14 @@ private:
             if (res.sampler != VK_NULL_HANDLE) {
                 vkDestroySampler(context_.device, res.sampler, nullptr);
                 res.sampler = VK_NULL_HANDLE;
+            }
+            if (res.isCubemap) {
+                for (auto& fv: res.faceViews) {
+                    if (fv != VK_NULL_HANDLE) {
+                        vkDestroyImageView(context_.device, fv, nullptr);
+                        fv = VK_NULL_HANDLE;
+                    }
+                }
             }
             if (res.imageView != VK_NULL_HANDLE) {
                 vkDestroyImageView(context_.device, res.imageView, nullptr);
@@ -342,7 +392,8 @@ private:
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = res.image;
-        barrier.subresourceRange = {usage.aspectMask, 0, 1, 0, 1};
+        const uint32_t layers = res.isCubemap ? 6u : 1u;
+        barrier.subresourceRange = {usage.aspectMask, 0, 1, 0, layers};
 
         vkCmdPipelineBarrier(cmd, res.lastStage, usage.stageMask, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 

@@ -21,7 +21,7 @@ private:
         if (!lastObjectId_) return;
 
         drawRow("Type", [&] {
-            const char* items[] = {"Directional", "Spot"};
+            const char* items[] = {"Directional", "Spot", "Point"};
             int currentType = static_cast<int>(component_.type);
             if (ImGui::Combo("##type", &currentType, items, IM_ARRAYSIZE(items))) {
                 component_.type = static_cast<LightType>(currentType);
@@ -61,6 +61,13 @@ private:
                 trackDrag("Set Outer Angle");
             });
 
+            drawRow("Range", [&] {
+                ImGui::DragFloat("##range", &component_.range, 0.5f, 0.0f, 1000.0f);
+                trackDrag("Set Range");
+            });
+        }
+
+        if (component_.type == LightType::POINT) {
             drawRow("Range", [&] {
                 ImGui::DragFloat("##range", &component_.range, 0.5f, 0.0f, 1000.0f);
                 trackDrag("Set Range");

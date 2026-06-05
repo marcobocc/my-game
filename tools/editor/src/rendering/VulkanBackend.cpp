@@ -364,17 +364,21 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
 
     constexpr uint32_t MAX_SHADOW_LIGHTS = VulkanShadowPass::MAX_SHADOW_LIGHTS;
 
-    // --- N shadow depth images (fixed resolution, depth-only)
+    // --- N shadow cubemap images (fixed resolution, depth-only, 6 layers)
+    // Each slot is a cube-compatible image. Directional/spot lights render into face 0 only;
+    // point lights render into all 6 faces. The lighting shader samples the cube at binding 5.
     for (uint32_t s = 0; s < MAX_SHADOW_LIGHTS; ++s) {
-        shadowDepthHandles_[s] = renderGraph_->createTransientImage("shadow_depth_" + std::to_string(s),
-                                                                    VK_FORMAT_D32_SFLOAT,
-                                                                    VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
-                                                                            VK_IMAGE_USAGE_SAMPLED_BIT,
-                                                                    VulkanShadowPass::SHADOW_MAP_SIZE,
-                                                                    VulkanShadowPass::SHADOW_MAP_SIZE);
+        shadowDepthHandles_[s] = renderGraph_->createTransientCubemap("shadow_depth_" + std::to_string(s),
+                                                                      VK_FORMAT_D32_SFLOAT,
+                                                                      VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
+                                                                              VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                                      VulkanShadowPass::SHADOW_MAP_SIZE);
     }
 
     // --- N shadow passes (run first, one per light slot)
+    // Each shadow resource is a cubemap; all 6 faces are declared as writes so the render graph
+    // emits the correct layout barrier (UNDEFINED -> DEPTH_STENCIL_ATTACHMENT_OPTIMAL) covering
+    // all layers before we start rendering into them.
     for (uint32_t s = 0; s < MAX_SHADOW_LIGHTS; ++s) {
         VulkanRenderGraph<EditorRenderData>::RenderPassNode n;
         n.name = "ShadowPass_" + std::to_string(s);
@@ -387,15 +391,26 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                               const VulkanRenderGraph<EditorRenderData>& graph,
                               const EditorRenderData& ctx) -> bool {
             if (s >= ctx.lightsWithTransforms.size()) return false;
-            const bool castsShadows = ctx.lightsWithTransforms[s].first.castShadows;
+            const auto& [light, transform] = ctx.lightsWithTransforms[s];
+            const bool castsShadows = light.castShadows;
             static const std::vector<DrawCall> emptyQueue{};
-            shadowPass_->record(cmd,
-                                graph.getImageView(shadowDepthHandles_[s]),
-                                castsShadows ? ctx.drawQueue : emptyQueue,
-                                ctx.lightsWithTransforms,
-                                ctx.camera,
-                                ctx.cameraTransform,
-                                s);
+
+            if (light.type == LightType::POINT) {
+                std::array<VkImageView, 6> faceViews{};
+                for (uint32_t face = 0; face < 6; ++face)
+                    faceViews[face] = graph.getFaceView(shadowDepthHandles_[s], face);
+                shadowPass_->recordPointLight(
+                        cmd, faceViews, castsShadows ? ctx.drawQueue : emptyQueue, ctx.lightsWithTransforms, s);
+            } else {
+                // Directional / spot: render into face 0 of the cubemap.
+                shadowPass_->record(cmd,
+                                    graph.getFaceView(shadowDepthHandles_[s], 0),
+                                    castsShadows ? ctx.drawQueue : emptyQueue,
+                                    ctx.lightsWithTransforms,
+                                    ctx.camera,
+                                    ctx.cameraTransform,
+                                    s);
+            }
             return true;
         };
         renderGraph_->addPass(std::move(n));
@@ -502,6 +517,9 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                     VK_ACCESS_SHADER_READ_BIT,
                     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                     VK_IMAGE_ASPECT_COLOR_BIT},
+                   // The shadow resource is a cubemap; the full cube view is used for sampling.
+                   // For directional/spot only face 0 was written, but sampling an uninitialized
+                   // face returns 1.0 (farthest depth), which correctly means "no shadow".
                    {shadowDepthHandles_[s],
                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                     VK_ACCESS_SHADER_READ_BIT,
@@ -553,6 +571,15 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                 fbW = static_cast<int>(static_cast<float>(sv.width) * scaleX);
                 fbH = static_cast<int>(static_cast<float>(sv.height) * scaleY);
             }
+            // shadowDepthHandles_[s] is a cubemap. For directional/spot, binding 3 (shadowMap)
+            // receives the cube's full view — the 2D shadow path only accesses face 0 UVs so
+            // sampling a cube view with a 2D sampler would be invalid. Instead we pass face 0's
+            // 2D view for the sampler2D binding and the cube view for the samplerCube binding.
+            // The shader selects which to use based on the light type.
+            VkImageView face0View = graph.getFaceView(shadowDepthHandles_[s], 0);
+            VkImageView cubeView = graph.getImageView(shadowDepthHandles_[s]);
+            VkSampler shadowSampler = graph.getSampler(shadowDepthHandles_[s]);
+
             lightingPass_.record(cmd,
                                  ds,
                                  graph.getImageView(colorTargetHandle_),
@@ -561,8 +588,10 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                                  graph.getSampler(gbufferAlbedoHandle_),
                                  graph.getImageView(gbufferNormalHandle_),
                                  graph.getSampler(gbufferNormalHandle_),
-                                 graph.getImageView(shadowDepthHandles_[s]),
-                                 graph.getSampler(shadowDepthHandles_[s]),
+                                 face0View,
+                                 shadowSampler,
+                                 cubeView,
+                                 shadowSampler,
                                  graph.getImageView(gbufferDepthHandle_),
                                  graph.getSampler(gbufferDepthHandle_),
                                  shadowPass_->lightSpaceMatrix(s),

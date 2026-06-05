@@ -3,7 +3,7 @@
 #include <nlohmann/json.hpp>
 #include "IComponent.hpp"
 
-enum class LightType { DIRECTIONAL = 0, SPOT = 1 };
+enum class LightType { DIRECTIONAL = 0, SPOT = 1, POINT = 2 };
 
 class Light final : public IComponent {
 public:

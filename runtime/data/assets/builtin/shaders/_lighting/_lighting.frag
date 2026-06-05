@@ -19,13 +19,14 @@ layout(push_constant) uniform Push {
 //   header[0].z = lightCount    — total lights in scene
 //
 // Each light occupies LIGHT_STRIDE vec4s in data[]:
-//   [0] = (direction.xyz, type)        type: 0 = directional, 1 = spot
+//   [0] = (direction.xyz, type)        type: 0 = directional, 1 = spot, 2 = point
 //   [1] = (color.rgb, intensity)
 //   [2] = (position.xyz, unused)
 //   [3] = (cosInnerCone, cosOuterCone, range, unused)
 const uint LIGHT_STRIDE = 4u;
 const float LIGHT_DIRECTIONAL = 0.0;
 const float LIGHT_SPOT = 1.0;
+const float LIGHT_POINT = 2.0;
 
 layout(set = 0, binding = 0) uniform sampler2D albedoSampler;
 layout(set = 0, binding = 1) uniform sampler2D normalSampler;
@@ -35,6 +36,7 @@ layout(set = 0, binding = 2) readonly buffer LightsSSBO {
 } lightsBuffer;
 layout(set = 0, binding = 3) uniform sampler2D shadowMap;
 layout(set = 0, binding = 4) uniform sampler2D gbufferDepth;
+layout(set = 0, binding = 5) uniform samplerCube shadowCube;
 
 const vec3 AMBIENT = vec3(0.15);
 
@@ -73,6 +75,19 @@ float calculateShadow() {
     return shadow / 9.0;
 }
 
+// Point light shadow: sample the cubemap with the world-space vector from the light to the fragment.
+// The cubemap stores linear distance normalised by range, so comparison is straightforward.
+float calculatePointShadow(vec3 worldPos, vec3 lightPos, float range) {
+    vec3 fragToLight = worldPos - lightPos;
+    float currentDist = length(fragToLight) / max(range, 0.001);
+    if (currentDist >= 1.0) return 0.0;
+
+    // Simple single-sample comparison (PCF on cube maps is expensive; bias handles acne).
+    float closestDist = texture(shadowCube, fragToLight).r;
+    const float bias = 0.01;
+    return currentDist - bias > closestDist ? 1.0 : 0.0;
+}
+
 vec3 reconstructWorldPos(float depth) {
     vec2 rawUV = (inUV - pc.uvOffset) / pc.uvScale;
     vec4 ndcPos = vec4(rawUV * 2.0 - 1.0, depth, 1.0);
@@ -108,17 +123,19 @@ void main() {
     vec3 worldPos = reconstructWorldPos(surfaceDepth);
 
     uint base = lightIndex * LIGHT_STRIDE;
-    vec4 dirType      = lightsBuffer.data[base + 0u];
+    vec4 dirType        = lightsBuffer.data[base + 0u];
     vec4 colorIntensity = lightsBuffer.data[base + 1u];
-    vec4 posUnused    = lightsBuffer.data[base + 2u];
-    vec4 cone         = lightsBuffer.data[base + 3u];
+    vec4 posUnused      = lightsBuffer.data[base + 2u];
+    vec4 cone           = lightsBuffer.data[base + 3u];
 
     float type      = dirType.w;
     vec3 lightColor = colorIntensity.rgb;
     float intensity = colorIntensity.w;
-    vec3 lightPos = posUnused.xyz;
+    vec3 lightPos   = posUnused.xyz;
 
     float diffuse = 0.0;
+    float shadow  = 0.0;
+
     if (type == LIGHT_SPOT) {
         vec3 toLight  = lightPos - worldPos;
         float dist    = length(toLight);
@@ -135,12 +152,25 @@ void main() {
         distAtten *= distAtten;
 
         diffuse = max(dot(normal, L), 0.0) * intensity * coneFalloff * distAtten;
+        shadow  = calculateShadow();
+    } else if (type == LIGHT_POINT) {
+        vec3 toLight = lightPos - worldPos;
+        float dist   = length(toLight);
+        vec3 L       = toLight / max(dist, 1e-4);
+        float range  = cone.z;
+
+        float distAtten = clamp(1.0 - dist / max(range, 1e-4), 0.0, 1.0);
+        distAtten *= distAtten;
+
+        diffuse = max(dot(normal, L), 0.0) * intensity * distAtten;
+        shadow  = calculatePointShadow(worldPos, lightPos, range);
     } else {
+        // Directional
         vec3 lightDir = normalize(dirType.xyz);
         diffuse = max(dot(normal, lightDir), 0.0) * intensity;
+        shadow  = calculateShadow();
     }
 
-    float shadow = calculateShadow();
     lighting += lightColor * vec3(diffuse) * (1.0 - shadow);
 
     outColor = vec4(albedoSample.rgb * lighting, 1.0);

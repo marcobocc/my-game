@@ -26,12 +26,14 @@ public:
         resourcesManager_(resourcesManager),
         assetLoader_(assetLoader) {
         lightSpaceMatrices_.fill(glm::mat4(1.0f));
-        initPipeline();
+        initPipelines();
     }
 
     // Returns the light-space matrix computed for slot i in the last record() call.
+    // For point lights this is unused by the lighting pass (cube shadow sampling needs no matrix).
     const glm::mat4& lightSpaceMatrix(uint32_t i) const { return lightSpaceMatrices_[i]; }
 
+    // Record shadow depth for one light slot into a 2D depth image (directional / spot).
     void record(VkCommandBuffer cmd,
                 VkImageView shadowDepthView,
                 const std::vector<DrawCall>& drawQueue,
@@ -44,12 +46,91 @@ public:
         lightSpaceMatrices_[lightIndex] =
                 computeLightSpaceMatrix({lightsWithTransforms[lightIndex]}, camera, cameraTransform);
 
+        recordFace(cmd,
+                   shadowDepthView,
+                   drawQueue,
+                   lightSpaceMatrices_[lightIndex],
+                   /*isPointLight=*/false,
+                   glm::vec3(0.0f),
+                   0.0f);
+    }
+
+    // Record shadow depth for a point light into all 6 faces of a cubemap.
+    // faceViews[0..5] must be per-face 2D views of the cubemap (face order: +X,-X,+Y,-Y,+Z,-Z).
+    void recordPointLight(VkCommandBuffer cmd,
+                          const std::array<VkImageView, 6>& faceViews,
+                          const std::vector<DrawCall>& drawQueue,
+                          const std::vector<std::pair<Light, Transform>>& lightsWithTransforms,
+                          uint32_t lightIndex) {
+        if (!pipelinePoint_ || lightIndex >= lightsWithTransforms.size()) return;
+
+        const auto& [light, transform] = lightsWithTransforms[lightIndex];
+        const glm::vec3 lightPos = transform.position;
+        const float lightRange = std::max(light.range, 0.01f);
+
+        // 6 face matrices: perspective (90° FOV, 1:1 aspect) looking along each cube axis.
+        static const glm::vec3 faceDirections[6] = {
+                {1, 0, 0},
+                {-1, 0, 0},
+                {0, 1, 0},
+                {0, -1, 0},
+                {0, 0, 1},
+                {0, 0, -1},
+        };
+        static const glm::vec3 faceUps[6] = {
+                {0, -1, 0},
+                {0, -1, 0},
+                {0, 0, 1},
+                {0, 0, -1},
+                {0, -1, 0},
+                {0, -1, 0},
+        };
+
+        const glm::mat4 proj = [&] {
+            glm::mat4 p = glm::perspective(glm::radians(90.0f), 1.0f, 0.01f, lightRange);
+            p[1][1] *= -1.0f; // Vulkan Y flip
+            return p;
+        }();
+
+        for (uint32_t face = 0; face < 6; ++face) {
+            const glm::mat4 view = glm::lookAt(lightPos, lightPos + faceDirections[face], faceUps[face]);
+            const glm::mat4 lightSpaceMat = proj * view;
+            recordFace(cmd,
+                       faceViews[face],
+                       drawQueue,
+                       lightSpaceMat,
+                       /*isPointLight=*/true,
+                       lightPos,
+                       lightRange);
+        }
+    }
+
+private:
+    struct PushConstants {
+        glm::mat4 lightSpaceMatrix;
+        glm::mat4 model;
+        // Point light fields (isPointLight == 1 activates linear depth write in frag shader).
+        glm::vec3 lightPos;
+        float lightRange;
+        uint32_t isPointLight;
+    };
+
+    void recordFace(VkCommandBuffer cmd,
+                    VkImageView depthView,
+                    const std::vector<DrawCall>& drawQueue,
+                    const glm::mat4& lightSpaceMat,
+                    bool isPointLight,
+                    const glm::vec3& lightPos,
+                    float lightRange) {
+        VulkanPipeline* activePipeline = isPointLight ? pipelinePoint_ : pipeline_;
+        if (!activePipeline) return;
+
         VkClearValue clearDepth{};
         clearDepth.depthStencil = {1.0f, 0};
 
         VkRenderingAttachmentInfo depthAttachment{};
         depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        depthAttachment.imageView = shadowDepthView;
+        depthAttachment.imageView = depthView;
         depthAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -74,41 +155,43 @@ public:
         VkRect2D scissor{{0, 0}, {SHADOW_MAP_SIZE, SHADOW_MAP_SIZE}};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
-
-        // Pipeline enables dynamic depth bias; values must be set or they are undefined.
-        // Slope-scaled bias offsets each surface by its depth gradient w.r.t. the light,
-        // which is what prevents flat faces from self-shadowing.
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, activePipeline->pipeline);
         vkCmdSetDepthBias(cmd, DEPTH_BIAS_CONSTANT, 0.0f, DEPTH_BIAS_SLOPE);
 
         for (const auto& drawCall: drawQueue)
-            renderEntity(cmd, drawCall, lightIndex);
+            renderEntity(cmd, activePipeline, drawCall, lightSpaceMat, isPointLight, lightPos, lightRange);
 
         vkCmdEndRendering(cmd);
     }
 
-private:
-    struct PushConstants {
-        glm::mat4 lightSpaceMatrix;
-        glm::mat4 model;
-    };
-
-    void initPipeline() {
+    void initPipelines() {
         const Shader* shader = assetLoader_.get<Shader>(SHADOW_SHADER);
         if (!shader) return;
-        // Depth-only pass: no color attachments.
+        // Depth-only pass: no color attachments. Directional/spot: standard depth.
         pipeline_ = &resourcesManager_.getPipeline(*shader, std::span<const VkFormat>{}, SHADOW_DEPTH_FORMAT, true);
+        // Point light shadow: same pipeline variant but fragment shader writes gl_FragDepth.
+        // We reuse the same shader/pipeline — the isPointLight push constant drives the frag behaviour.
+        pipelinePoint_ = pipeline_;
     }
 
-    void renderEntity(VkCommandBuffer cmd, const DrawCall& drawCall, uint32_t lightIndex) const {
+    void renderEntity(VkCommandBuffer cmd,
+                      VulkanPipeline* activePipeline,
+                      const DrawCall& drawCall,
+                      const glm::mat4& lightSpaceMat,
+                      bool isPointLight,
+                      const glm::vec3& lightPos,
+                      float lightRange) const {
         const Mesh* mesh = assetLoader_.get<Mesh>(drawCall.renderer.meshName);
         if (!mesh) return;
 
         PushConstants pc{};
-        pc.lightSpaceMatrix = lightSpaceMatrices_[lightIndex];
+        pc.lightSpaceMatrix = lightSpaceMat;
         pc.model = drawCall.transform.getModelMatrix();
+        pc.lightPos = lightPos;
+        pc.lightRange = lightRange;
+        pc.isPointLight = isPointLight ? 1u : 0u;
         vkCmdPushConstants(cmd,
-                           pipeline_->layout,
+                           activePipeline->layout,
                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                            0,
                            sizeof(PushConstants),
@@ -124,9 +207,6 @@ private:
             vkCmdDraw(cmd, static_cast<uint32_t>(mesh->getVertexCount()), 1, 0, 0);
     }
 
-    // Vulkan's depth attachment is [0,1], but GLM (no GLM_FORCE_DEPTH_ZERO_TO_ONE) emits NDC
-    // z in [-1,1]. This matrix remaps z from [-1,1] to [0,1] so the shadow map stores usable
-    // depth instead of clamping the near half. The lighting shader expects this convention.
     static glm::mat4 zCorrectMatrix() {
         glm::mat4 zCorrect(1.0f);
         zCorrect[2][2] = 0.5f;
@@ -147,7 +227,6 @@ private:
         const glm::vec3 up =
                 (std::abs(glm::dot(lightDir, glm::vec3(0, 1, 0))) > 0.99f) ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0);
 
-        // Compute the 8 corners of the camera frustum in world space.
         const float nearH = camera.nearPlane * std::tan(glm::radians(camera.fov * 0.5f));
         const float nearW = nearH * camera.aspect;
 
@@ -175,19 +254,13 @@ private:
                 fc - camUp * farH + camRight * farW,
         };
 
-        // Centre the light view on the frustum centre so the eye is never
-        // inside or behind the frustum regardless of camera orientation.
         glm::vec3 frustumCenter(0.0f);
         for (const glm::vec3& c: corners)
             frustumCenter += c;
         frustumCenter /= 8.0f;
 
-        // lightDir is the direction the light travels (Transform forward). The shadow camera must
-        // look ALONG that direction, so place the eye upstream (frustumCenter - lightDir) looking
-        // toward the centre. This matches the spotlight path, which looks along +forward.
         const glm::mat4 lightView = glm::lookAt(frustumCenter - lightDir, frustumCenter, up);
 
-        // Find the AABB of the frustum corners in light space.
         float minX = std::numeric_limits<float>::max();
         float maxX = -std::numeric_limits<float>::max();
         float minY = std::numeric_limits<float>::max();
@@ -205,17 +278,9 @@ private:
             maxZ = std::max(maxZ, ls.z);
         }
 
-        // lightView (glm::lookAt, right-handed) looks down -z, so frustum corners have
-        // negative view-space z. glm::ortho expects positive near/far *distances*, so convert:
-        // the nearest corner (largest, least-negative z) gives the near distance, the farthest
-        // (most-negative z) gives the far distance.
         float nearDist = -maxZ;
         float farDist = -minZ;
 
-        // Pull the near plane toward the light so geometry just outside the camera frustum still
-        // casts shadows. Keep this small: inflating the ortho depth range flattens the per-texel
-        // depth slope, which makes the slope-scaled hardware depth bias ineffective and causes
-        // whole-face self-shadowing.
         constexpr float zPull = 10.0f;
         nearDist -= zPull;
 
@@ -225,9 +290,6 @@ private:
         return zCorrectMatrix() * proj * lightView;
     }
 
-    // Spotlights cast through a perspective frustum centred on the cone axis, from the light's
-    // position. The FOV is the full outer cone angle (plus a small margin so the cone edge isn't
-    // clipped), and the far plane is the light's range.
     static glm::mat4 computeSpotLightSpaceMatrix(const Light& light, const Transform& transform) {
         const glm::vec3 lightPos = transform.position;
         const glm::vec3 lightDir = glm::normalize(transform.getForward());
@@ -251,5 +313,6 @@ private:
     AssetLoader& assetLoader_;
 
     VulkanPipeline* pipeline_ = nullptr;
+    VulkanPipeline* pipelinePoint_ = nullptr;
     std::array<glm::mat4, MAX_SHADOW_LIGHTS> lightSpaceMatrices_{};
 };

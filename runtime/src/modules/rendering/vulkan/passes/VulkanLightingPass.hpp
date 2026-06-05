@@ -134,6 +134,8 @@ public:
                 VkSampler normalSampler,
                 VkImageView shadowMapView,
                 VkSampler shadowMapSampler,
+                VkImageView shadowCubeView,
+                VkSampler shadowCubeSampler,
                 VkImageView gbufferDepthView,
                 VkSampler gbufferDepthSampler,
                 const glm::mat4& lightSpaceMatrix,
@@ -157,6 +159,8 @@ public:
                          normalSampler,
                          shadowMapView,
                          shadowMapSampler,
+                         shadowCubeView,
+                         shadowCubeSampler,
                          gbufferDepthView,
                          gbufferDepthSampler);
 
@@ -224,7 +228,6 @@ private:
     void ensureSlotBuffer(uint32_t slot) const {
         auto& buf = lightsBuffers_[slot];
         if (buf.buffer) return;
-        // Minimal allocation: just the header + space for one light (for the DS binding).
         const VkDeviceSize minSize = sizeof(LightsSSBOHeader) + LIGHT_STRIDE * sizeof(glm::vec4);
         buf = createBuffer(context_.device,
                            context_.physicalDevice,
@@ -240,9 +243,11 @@ private:
                           VkSampler normalSampler,
                           VkImageView shadowMapView,
                           VkSampler shadowMapSampler,
+                          VkImageView shadowCubeView,
+                          VkSampler shadowCubeSampler,
                           VkImageView gbufferDepthView,
                           VkSampler gbufferDepthSampler) {
-        VkDescriptorImageInfo imageInfos[4] = {};
+        VkDescriptorImageInfo imageInfos[5] = {};
         imageInfos[0].sampler = albedoSampler;
         imageInfos[0].imageView = albedoView;
         imageInfos[0].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -255,8 +260,11 @@ private:
         imageInfos[3].sampler = gbufferDepthSampler;
         imageInfos[3].imageView = gbufferDepthView;
         imageInfos[3].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imageInfos[4].sampler = shadowCubeSampler;
+        imageInfos[4].imageView = shadowCubeView;
+        imageInfos[4].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        VkWriteDescriptorSet writes[4] = {};
+        VkWriteDescriptorSet writes[5] = {};
         writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         writes[0].dstSet = descriptorSet;
         writes[0].dstBinding = 0;
@@ -285,7 +293,14 @@ private:
         writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         writes[3].pImageInfo = &imageInfos[3];
 
-        vkUpdateDescriptorSets(context_.device, 4, writes, 0, nullptr);
+        writes[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writes[4].dstSet = descriptorSet;
+        writes[4].dstBinding = 5;
+        writes[4].descriptorCount = 1;
+        writes[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writes[4].pImageInfo = &imageInfos[4];
+
+        vkUpdateDescriptorSets(context_.device, 5, writes, 0, nullptr);
     }
 
     void updateLightsDescriptor(VkDescriptorSet ds, uint32_t slot) {

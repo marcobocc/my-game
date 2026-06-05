@@ -134,13 +134,12 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
     // --- Import main color target
     colorTargetHandle_ = graph_->importImage("colorTarget", colorFormat, colorUsage);
 
-    // --- Shadow map (fixed resolution, depth-only)
+    // --- Shadow cubemap (fixed resolution, depth-only, 6 layers)
     shadowDepthHandle_ =
-            graph_->createTransientImage("shadow_depth",
-                                         VK_FORMAT_D32_SFLOAT,
-                                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                         VulkanShadowPass::SHADOW_MAP_SIZE,
-                                         VulkanShadowPass::SHADOW_MAP_SIZE);
+            graph_->createTransientCubemap("shadow_depth",
+                                           VK_FORMAT_D32_SFLOAT,
+                                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                           VulkanShadowPass::SHADOW_MAP_SIZE);
 
     // --- Create G-Buffer resources (used by geometry + lighting)
     gbufferAlbedoHandle_ =
@@ -166,13 +165,20 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
         n.execute = [this](VkCommandBuffer cmd,
                            const VulkanRenderGraph<GameRenderData>& graph,
                            const GameRenderData& ctx) -> bool {
-            shadowPass_->record(cmd,
-                                graph.getImageView(shadowDepthHandle_),
-                                ctx.drawQueue,
-                                ctx.lightsWithTransforms,
-                                ctx.camera,
-                                ctx.cameraTransform,
-                                0);
+            if (!ctx.lightsWithTransforms.empty() && ctx.lightsWithTransforms[0].first.type == LightType::POINT) {
+                std::array<VkImageView, 6> faceViews{};
+                for (uint32_t face = 0; face < 6; ++face)
+                    faceViews[face] = graph.getFaceView(shadowDepthHandle_, face);
+                shadowPass_->recordPointLight(cmd, faceViews, ctx.drawQueue, ctx.lightsWithTransforms, 0);
+            } else {
+                shadowPass_->record(cmd,
+                                    graph.getFaceView(shadowDepthHandle_, 0),
+                                    ctx.drawQueue,
+                                    ctx.lightsWithTransforms,
+                                    ctx.camera,
+                                    ctx.cameraTransform,
+                                    0);
+            }
             return true;
         };
         graph_->addPass(std::move(n));
@@ -263,6 +269,8 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
                                  graph.getSampler(gbufferAlbedoHandle_),
                                  graph.getImageView(gbufferNormalHandle_),
                                  graph.getSampler(gbufferNormalHandle_),
+                                 graph.getFaceView(shadowDepthHandle_, 0),
+                                 graph.getSampler(shadowDepthHandle_),
                                  graph.getImageView(shadowDepthHandle_),
                                  graph.getSampler(shadowDepthHandle_),
                                  graph.getImageView(gbufferDepthHandle_),
