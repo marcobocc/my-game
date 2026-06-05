@@ -72,8 +72,10 @@ public:
                             hitId = sceneHit->objectId;
                             hasHit = true;
                         } else if (auto* gizmoHit = std::get_if<GizmoHit>(&*result)) {
-                            hitId = gizmoHit->objectId;
-                            hasHit = true;
+                            if (!gizmoHit->objectIds.empty()) {
+                                hitId = gizmoHit->objectIds[0];
+                                hasHit = true;
+                            }
                         }
 
                         if (hasHit) {
@@ -121,8 +123,10 @@ public:
                     hitId = sceneHit->objectId;
                     hasHit = true;
                 } else if (auto* gizmoHit = std::get_if<GizmoHit>(&*result)) {
-                    hitId = gizmoHit->objectId;
-                    hasHit = true;
+                    if (!gizmoHit->objectIds.empty()) {
+                        hitId = gizmoHit->objectIds[0];
+                        hasHit = true;
+                    }
                 }
 
                 if (hasHit && editorSelection_.isEntitySelected(hitId)) contextTargetId_ = hitId;

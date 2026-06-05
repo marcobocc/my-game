@@ -81,7 +81,7 @@ void InputHandler::processGizmoDrag(double mouseX, double mouseY, bool leftDown)
     auto& dragState = objectTransformHandle_.getDragState();
     if (leftDown) {
         objectTransformHandle_.updateDrag(mouseX, mouseY);
-    } else if (dragState.activeDrag || dragState.activeRotationDrag || dragState.activeScaleDrag) {
+    } else if (dragState.isActiveDrag()) {
         objectTransformHandle_.endDrag();
     }
 }

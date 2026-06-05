@@ -57,7 +57,7 @@ public:
             float dist2 = 0.0f;
             if (intersectsCapsule(ray, handle.base, handle.tip, handle.radius, t, dist2) && dist2 < bestDist2) {
                 bestDist2 = dist2;
-                bestHandle.emplace(handle.objectId, handle.type, handle.axis);
+                bestHandle.emplace(handle.objectIds, handle.type, handle.axis);
             }
         }
         if (bestHandle) return EditorPickResult{*bestHandle};

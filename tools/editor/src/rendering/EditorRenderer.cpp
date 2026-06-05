@@ -90,27 +90,27 @@ void EditorRenderer::buildGizmos() {
     }
 
     const auto& selectedIds = editorSelection_.getSelectedEntityIds();
-    if (selectedIds.size() != 1) return;
-    EntityHandle selectedId = selectedIds[0];
+    if (selectedIds.empty()) return;
 
+    glm::vec3 pivot = objectTransformHandle_.computeGroupPivot(selectedIds);
     const Camera& camera = editorOrbitCamera_.getCamera();
     const Transform& cameraTransform = editorOrbitCamera_.getCameraTransform();
     auto dragState = objectTransformHandle_.getDragState();
 
     if (dragState.gizmoMode == GizmoType::Translation) {
-        auto result = objectTransformHandle_.buildTranslationGizmo(selectedId, camera, cameraTransform);
+        auto result = objectTransformHandle_.buildTranslationGizmo(pivot, camera, cameraTransform);
         builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);
         }
     } else if (dragState.gizmoMode == GizmoType::Rotation) {
-        auto result = objectTransformHandle_.buildRotationGizmo(selectedId, camera, cameraTransform);
+        auto result = objectTransformHandle_.buildRotationGizmo(pivot, camera, cameraTransform);
         builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);
         }
     } else if (dragState.gizmoMode == GizmoType::Scale) {
-        auto result = objectTransformHandle_.buildScaleGizmo(selectedId, camera, cameraTransform);
+        auto result = objectTransformHandle_.buildScaleGizmo(pivot, camera, cameraTransform);
         builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);

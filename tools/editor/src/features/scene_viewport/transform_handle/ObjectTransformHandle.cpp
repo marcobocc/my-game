@@ -55,52 +55,78 @@ glm::vec3 ObjectTransformHandle::transformAxisToLocalSpace(GizmoAxis axis, const
     return glm::normalize(rotationMatrix * worldAxis);
 }
 
+glm::vec3 ObjectTransformHandle::computeGroupPivot(const std::vector<EntityHandle>& ids) const {
+    glm::vec3 sum{0};
+    int count = 0;
+    for (const auto& id: ids) {
+        const auto* t = scene_.getObject(id).getComponent<Transform>();
+        if (t) {
+            sum += t->position;
+            ++count;
+        }
+    }
+    return count > 0 ? sum / static_cast<float>(count) : glm::vec3{0};
+}
+
 void ObjectTransformHandle::beginTranslationDrag(GizmoAxis axis, double mouseX, double mouseY) {
     const auto& ids = editorSelection_.getSelectedEntityIds();
-    if (ids.size() != 1) return;
-    EntityHandle selectedId = ids[0];
+    if (ids.empty()) return;
 
-    const auto* transformPtr = scene_.getObject(selectedId).getComponent<Transform>();
-    if (!transformPtr) return;
+    glm::vec3 pivot = computeGroupPivot(ids);
 
-    glm::vec3 axisDir = transformAxisToLocalSpace(axis, *transformPtr);
-    glm::vec3 origin = transformPtr->position;
+    glm::vec3 axisDir = axisToDir(axis);
+    if (ids.size() == 1) {
+        const auto* t = scene_.getObject(ids[0]).getComponent<Transform>();
+        if (t) axisDir = transformAxisToLocalSpace(axis, *t);
+    }
 
-    glm::vec3 camDir = glm::normalize(editorOrbitCamera_.getCameraTransform().position - origin);
+    glm::vec3 camDir = glm::normalize(editorOrbitCamera_.getCameraTransform().position - pivot);
     glm::vec3 planeNormal = glm::normalize(camDir - glm::dot(camDir, axisDir) * axisDir);
     if (glm::length(planeNormal) < 1e-5f) planeNormal = editorOrbitCamera_.getCameraTransform().getUp();
 
     Ray ray = buildMouseRay(mouseX, mouseY);
-    auto hitPoint = rayPlaneIntersect(ray, origin, planeNormal);
+    auto hitPoint = rayPlaneIntersect(ray, pivot, planeNormal);
     if (!hitPoint) return;
 
     dragGroupId_ = UndoHistory::randomGroupId("Translate");
-    dragState_.activeDrag.emplace(selectedId, axis, axisDir, planeNormal, origin, *hitPoint);
+    prevTranslationDelta_ = glm::vec3{0.0f};
+
+    ActiveDrag drag;
+    drag.type = GizmoType::Translation;
+    drag.axis = axis;
+    drag.pivot = pivot;
+    drag.axisDir = axisDir;
+    drag.dragPlaneNormal = planeNormal;
+    drag.initialHitPoint = *hitPoint;
+    dragState_.activeDrag = drag;
 }
 
 void ObjectTransformHandle::updateTranslationDrag(double mouseX, double mouseY) {
     if (!dragState_.activeDrag) return;
-    const auto* transformPtr = scene_.getObject(dragState_.activeDrag->objectId).getComponent<Transform>();
-    if (!transformPtr) return;
+    const auto& drag = *dragState_.activeDrag;
 
     Ray ray = buildMouseRay(mouseX, mouseY);
-    auto hitPoint = rayPlaneIntersect(ray, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->dragPlaneNormal);
+    auto hitPoint = rayPlaneIntersect(ray, drag.initialHitPoint, drag.dragPlaneNormal);
     if (!hitPoint) return;
 
-    float startT = projectOnAxis(
-            dragState_.activeDrag->hitPointOnAxis, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->axisDir);
-    float currentT = projectOnAxis(*hitPoint, dragState_.activeDrag->dragOrigin, dragState_.activeDrag->axisDir);
-    float delta = currentT - startT;
-    glm::vec3 pos = dragState_.activeDrag->dragOrigin + dragState_.activeDrag->axisDir * delta;
+    float startT = projectOnAxis(drag.initialHitPoint, drag.pivot, drag.axisDir);
+    float currentT = projectOnAxis(*hitPoint, drag.pivot, drag.axisDir);
+    glm::vec3 currentDelta = drag.axisDir * (currentT - startT);
 
     if (rendererSettings_.isGridSnappingEnabled()) {
         float scale = rendererSettings_.getGridScale();
-        glm::vec3 gridOrigin = {0.0f, 0.0f, 0.0f};
-        pos = gridOrigin + glm::round((pos - gridOrigin) / scale) * scale;
+        currentDelta = glm::round(currentDelta / scale) * scale;
     }
 
-    scene_.getObject(dragState_.activeDrag->objectId)
-            .mutateComponent<Transform>([pos](Transform& t) { t.position = pos; }, dragGroupId_);
+    glm::vec3 frameDelta = currentDelta - prevTranslationDelta_;
+    prevTranslationDelta_ = currentDelta;
+
+    for (const auto& id: editorSelection_.getSelectedEntityIds()) {
+        const auto* t = scene_.getObject(id).getComponent<Transform>();
+        if (!t) continue;
+        glm::vec3 newPos = t->position + frameDelta;
+        scene_.getObject(id).mutateComponent<Transform>([newPos](Transform& t) { t.position = newPos; }, dragGroupId_);
+    }
 }
 
 void ObjectTransformHandle::commitTranslationDrag() {
@@ -110,131 +136,176 @@ void ObjectTransformHandle::commitTranslationDrag() {
 
 void ObjectTransformHandle::beginRotationDrag(GizmoAxis axis, double mouseX, double mouseY) {
     const auto& ids = editorSelection_.getSelectedEntityIds();
-    if (ids.size() != 1) return;
-    EntityHandle selectedId = ids[0];
+    if (ids.empty()) return;
 
-    const auto* transformPtr = scene_.getObject(selectedId).getComponent<Transform>();
-    if (!transformPtr) return;
+    glm::vec3 pivot = computeGroupPivot(ids);
 
-    glm::vec3 axisDir = transformAxisToLocalSpace(axis, *transformPtr);
-    glm::vec3 origin = transformPtr->position;
+    glm::vec3 axisDir = axisToDir(axis);
+    if (ids.size() == 1) {
+        const auto* t = scene_.getObject(ids[0]).getComponent<Transform>();
+        if (t) axisDir = transformAxisToLocalSpace(axis, *t);
+    }
 
     Ray ray = buildMouseRay(mouseX, mouseY);
-    auto hitPoint = rayPlaneIntersect(ray, origin, axisDir);
+    auto hitPoint = rayPlaneIntersect(ray, pivot, axisDir);
     if (!hitPoint) return;
 
-    glm::vec3 hitDir = *hitPoint - origin;
+    glm::vec3 hitDir = *hitPoint - pivot;
     if (glm::length(hitDir) < 1e-5f) return;
     hitDir = glm::normalize(hitDir);
 
     dragGroupId_ = UndoHistory::randomGroupId("Rotate");
-    dragState_.activeRotationDrag.emplace(selectedId, axis, axisDir, origin, transformPtr->rotation, hitDir);
+    prevRotationAngle_ = 0.0f;
+
+    ActiveDrag drag;
+    drag.type = GizmoType::Rotation;
+    drag.axis = axis;
+    drag.pivot = pivot;
+    drag.axisDir = axisDir;
+    drag.initialHitDir = hitDir;
+    dragState_.activeDrag = drag;
 }
 
 void ObjectTransformHandle::updateRotationDrag(double mouseX, double mouseY) {
-    if (!dragState_.activeRotationDrag) return;
-    const auto* transformPtr = scene_.getObject(dragState_.activeRotationDrag->objectId).getComponent<Transform>();
-    if (!transformPtr) return;
+    if (!dragState_.activeDrag) return;
+    const auto& drag = *dragState_.activeDrag;
 
     Ray ray = buildMouseRay(mouseX, mouseY);
-    auto hitPoint =
-            rayPlaneIntersect(ray, dragState_.activeRotationDrag->origin, dragState_.activeRotationDrag->axisDir);
+    auto hitPoint = rayPlaneIntersect(ray, drag.pivot, drag.axisDir);
     if (!hitPoint) return;
 
-    glm::vec3 hitDir = *hitPoint - dragState_.activeRotationDrag->origin;
+    glm::vec3 hitDir = *hitPoint - drag.pivot;
     if (glm::length(hitDir) < 1e-5f) return;
     hitDir = glm::normalize(hitDir);
 
-    float cosA = glm::clamp(glm::dot(dragState_.activeRotationDrag->initialHitDir, hitDir), -1.0f, 1.0f);
-    float angle = glm::acos(cosA);
-    if (glm::dot(glm::cross(dragState_.activeRotationDrag->initialHitDir, hitDir),
-                 dragState_.activeRotationDrag->axisDir) < 0.0f)
-        angle = -angle;
+    float cosA = glm::clamp(glm::dot(drag.initialHitDir, hitDir), -1.0f, 1.0f);
+    float currentAngle = glm::acos(cosA);
+    if (glm::dot(glm::cross(drag.initialHitDir, hitDir), drag.axisDir) < 0.0f) currentAngle = -currentAngle;
 
-    glm::quat newRotation = glm::angleAxis(angle, dragState_.activeRotationDrag->axisDir) *
-                            dragState_.activeRotationDrag->initialRotation;
+    float frameDeltaAngle = currentAngle - prevRotationAngle_;
+    prevRotationAngle_ = currentAngle;
 
-    scene_.getObject(dragState_.activeRotationDrag->objectId)
-            .mutateComponent<Transform>([newRotation](Transform& t) { t.rotation = newRotation; }, dragGroupId_);
+    glm::quat deltaRot = glm::angleAxis(frameDeltaAngle, drag.axisDir);
+
+    for (const auto& id: editorSelection_.getSelectedEntityIds()) {
+        const auto* t = scene_.getObject(id).getComponent<Transform>();
+        if (!t) continue;
+        glm::vec3 newPos = drag.pivot + deltaRot * (t->position - drag.pivot);
+        glm::quat newRot = deltaRot * t->rotation;
+        scene_.getObject(id).mutateComponent<Transform>(
+                [newPos, newRot](Transform& t) {
+                    t.position = newPos;
+                    t.rotation = newRot;
+                },
+                dragGroupId_);
+    }
 }
 
 void ObjectTransformHandle::commitRotationDrag() {
-    dragState_.activeRotationDrag.reset();
+    dragState_.activeDrag.reset();
     dragGroupId_.clear();
 }
 
 void ObjectTransformHandle::beginScaleDrag(GizmoAxis axis, double mouseX, double mouseY) {
     const auto& ids = editorSelection_.getSelectedEntityIds();
-    if (ids.size() != 1) return;
-    EntityHandle selectedId = ids[0];
-    const auto* transformPtr = scene_.getObject(selectedId).getComponent<Transform>();
-    if (!transformPtr) return;
+    if (ids.empty()) return;
 
-    glm::vec3 origin = transformPtr->position;
+    glm::vec3 pivot = computeGroupPivot(ids);
 
     glm::vec3 axisDir;
     glm::vec3 planeNormal;
     if (axis == GizmoAxis::All) {
         axisDir = glm::normalize(editorOrbitCamera_.getCameraTransform().getRight());
-        planeNormal = glm::normalize(editorOrbitCamera_.getCameraTransform().position - origin);
+        planeNormal = glm::normalize(editorOrbitCamera_.getCameraTransform().position - pivot);
     } else {
         glm::vec3 worldAxis = axisToDir(axis);
-        glm::mat3 rotationMatrix = glm::mat3_cast(transformPtr->rotation);
-        axisDir = glm::normalize(rotationMatrix * worldAxis);
-        glm::vec3 camDir = glm::normalize(editorOrbitCamera_.getCameraTransform().position - origin);
+        if (ids.size() == 1) {
+            const auto* t = scene_.getObject(ids[0]).getComponent<Transform>();
+            if (t) {
+                glm::mat3 rotationMatrix = glm::mat3_cast(t->rotation);
+                worldAxis = glm::normalize(rotationMatrix * worldAxis);
+            }
+        }
+        axisDir = worldAxis;
+        glm::vec3 camDir = glm::normalize(editorOrbitCamera_.getCameraTransform().position - pivot);
         planeNormal = glm::normalize(camDir - glm::dot(camDir, axisDir) * axisDir);
         if (glm::length(planeNormal) < 1e-5f) planeNormal = editorOrbitCamera_.getCameraTransform().getUp();
     }
 
     Ray ray = buildMouseRay(mouseX, mouseY);
-    auto hitPoint = rayPlaneIntersect(ray, origin, planeNormal);
+    auto hitPoint = rayPlaneIntersect(ray, pivot, planeNormal);
     if (!hitPoint) return;
 
-    float initialT = glm::dot(*hitPoint - origin, axisDir);
+    float initialT = glm::dot(*hitPoint - pivot, axisDir);
     if (std::abs(initialT) < 1e-5f) return;
 
     dragGroupId_ = UndoHistory::randomGroupId("Scale");
-    dragState_.activeScaleDrag.emplace(selectedId, axis, axisDir, origin, transformPtr->scale, planeNormal, initialT);
+    prevScaleFactor_ = 1.0f;
+
+    ActiveDrag drag;
+    drag.type = GizmoType::Scale;
+    drag.axis = axis;
+    drag.pivot = pivot;
+    drag.axisDir = axisDir;
+    drag.dragPlaneNormal = planeNormal;
+    drag.initialT = initialT;
+    dragState_.activeDrag = drag;
 }
 
 void ObjectTransformHandle::updateScaleDrag(double mouseX, double mouseY) {
-    if (!dragState_.activeScaleDrag) return;
-    const auto* transformPtr = scene_.getObject(dragState_.activeScaleDrag->objectId).getComponent<Transform>();
-    if (!transformPtr) return;
+    if (!dragState_.activeDrag) return;
+    const auto& drag = *dragState_.activeDrag;
 
     Ray ray = buildMouseRay(mouseX, mouseY);
-    auto hitPoint =
-            rayPlaneIntersect(ray, dragState_.activeScaleDrag->origin, dragState_.activeScaleDrag->dragPlaneNormal);
+    auto hitPoint = rayPlaneIntersect(ray, drag.pivot, drag.dragPlaneNormal);
     if (!hitPoint) return;
 
-    float currentT = glm::dot(*hitPoint - dragState_.activeScaleDrag->origin, dragState_.activeScaleDrag->axisDir);
-    float factor = glm::max(currentT / dragState_.activeScaleDrag->initialT, 0.01f);
+    float currentT = glm::dot(*hitPoint - drag.pivot, drag.axisDir);
+    float currentFactor = glm::max(currentT / drag.initialT, 0.01f);
+    float frameFactor = currentFactor / prevScaleFactor_;
+    prevScaleFactor_ = currentFactor;
 
-    glm::vec3 newScale = dragState_.activeScaleDrag->initialScale;
-    if (dragState_.activeScaleDrag->axis == GizmoAxis::All) {
-        newScale = dragState_.activeScaleDrag->initialScale * factor;
-    } else {
-        switch (dragState_.activeScaleDrag->axis) {
-            case GizmoAxis::X:
-                newScale.x = dragState_.activeScaleDrag->initialScale.x * factor;
-                break;
-            case GizmoAxis::Y:
-                newScale.y = dragState_.activeScaleDrag->initialScale.y * factor;
-                break;
-            case GizmoAxis::Z:
-                newScale.z = dragState_.activeScaleDrag->initialScale.z * factor;
-                break;
-            default:
-                break;
+    for (const auto& id: editorSelection_.getSelectedEntityIds()) {
+        const auto* t = scene_.getObject(id).getComponent<Transform>();
+        if (!t) continue;
+
+        glm::vec3 offset = t->position - drag.pivot;
+        glm::vec3 newPos;
+        glm::vec3 newScale = t->scale;
+
+        if (drag.axis == GizmoAxis::All) {
+            newPos = drag.pivot + offset * frameFactor;
+            newScale = t->scale * frameFactor;
+        } else {
+            glm::vec3 axisUnit = drag.axisDir;
+            float along = glm::dot(offset, axisUnit);
+            newPos = t->position + axisUnit * (along * (frameFactor - 1.0f));
+            switch (drag.axis) {
+                case GizmoAxis::X:
+                    newScale.x = t->scale.x * frameFactor;
+                    break;
+                case GizmoAxis::Y:
+                    newScale.y = t->scale.y * frameFactor;
+                    break;
+                case GizmoAxis::Z:
+                    newScale.z = t->scale.z * frameFactor;
+                    break;
+                default:
+                    break;
+            }
         }
-    }
 
-    scene_.getObject(dragState_.activeScaleDrag->objectId)
-            .mutateComponent<Transform>([newScale](Transform& t) { t.scale = newScale; }, dragGroupId_);
+        scene_.getObject(id).mutateComponent<Transform>(
+                [newPos, newScale](Transform& t) {
+                    t.position = newPos;
+                    t.scale = newScale;
+                },
+                dragGroupId_);
+    }
 }
 
 void ObjectTransformHandle::commitScaleDrag() {
-    dragState_.activeScaleDrag.reset();
+    dragState_.activeDrag.reset();
     dragGroupId_.clear();
 }
 
@@ -249,22 +320,32 @@ void ObjectTransformHandle::beginDrag(GizmoType type, GizmoAxis axis, double mou
 }
 
 void ObjectTransformHandle::updateDrag(double mouseX, double mouseY) {
-    if (dragState_.activeDrag) {
-        updateTranslationDrag(mouseX, mouseY);
-    } else if (dragState_.activeRotationDrag) {
-        updateRotationDrag(mouseX, mouseY);
-    } else if (dragState_.activeScaleDrag) {
-        updateScaleDrag(mouseX, mouseY);
+    if (!dragState_.activeDrag) return;
+    switch (dragState_.activeDrag->type) {
+        case GizmoType::Translation:
+            updateTranslationDrag(mouseX, mouseY);
+            break;
+        case GizmoType::Rotation:
+            updateRotationDrag(mouseX, mouseY);
+            break;
+        case GizmoType::Scale:
+            updateScaleDrag(mouseX, mouseY);
+            break;
     }
 }
 
 void ObjectTransformHandle::endDrag() {
-    if (dragState_.activeDrag) {
-        commitTranslationDrag();
-    } else if (dragState_.activeRotationDrag) {
-        commitRotationDrag();
-    } else if (dragState_.activeScaleDrag) {
-        commitScaleDrag();
+    if (!dragState_.activeDrag) return;
+    switch (dragState_.activeDrag->type) {
+        case GizmoType::Translation:
+            commitTranslationDrag();
+            break;
+        case GizmoType::Rotation:
+            commitRotationDrag();
+            break;
+        case GizmoType::Scale:
+            commitScaleDrag();
+            break;
     }
 }
 
@@ -311,16 +392,20 @@ ObjectTransformHandle::buildGizmoCube(const glm::vec3& center, float halfSize, c
     return gizmoObject;
 }
 
-ObjectTransformHandle::GizmoTransformHandle ObjectTransformHandle::buildTranslationGizmo(
-        EntityHandle objectId, const Camera& camera, const Transform& cameraTransform) {
+ObjectTransformHandle::GizmoTransformHandle
+ObjectTransformHandle::buildTranslationGizmo(glm::vec3 pivot, const Camera& camera, const Transform& cameraTransform) {
     GizmoTransformHandle result;
-    const auto* transform = scene_.getObject(objectId).getComponent<Transform>();
-    if (!transform) return result;
 
-    bool isLocal = rendererSettings_.isLocalTransformEnabled();
-    glm::vec3 origin = transform->position;
+    const auto& ids = editorSelection_.getSelectedEntityIds();
 
-    float dist = glm::length(cameraTransform.position - origin);
+    bool isLocal = rendererSettings_.isLocalTransformEnabled() && ids.size() == 1;
+    glm::quat localRot = glm::quat{1, 0, 0, 0};
+    if (isLocal) {
+        const auto* t = scene_.getObject(ids[0]).getComponent<Transform>();
+        if (t) localRot = t->rotation;
+    }
+
+    float dist = glm::length(cameraTransform.position - pivot);
     float scale = dist * 0.15f;
 
     float shaftLength = scale;
@@ -337,11 +422,11 @@ ObjectTransformHandle::GizmoTransformHandle ObjectTransformHandle::buildTranslat
 
     for (int i = 0; i < 3; ++i) {
         glm::vec3 dir = axes[i];
-        if (isLocal) dir = rotateVector(dir, transform->rotation);
+        if (isLocal) dir = rotateVector(dir, localRot);
         glm::vec3 color = colors[i];
-        glm::vec3 tip = origin + dir * shaftLength;
+        glm::vec3 tip = pivot + dir * shaftLength;
 
-        addGizmoLine(result.visualization, origin, tip, color);
+        addGizmoLine(result.visualization, pivot, tip, color);
 
         glm::vec3 perp1 =
                 glm::normalize(glm::cross(dir, glm::abs(dir.x) < 0.9f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0)));
@@ -352,23 +437,27 @@ ObjectTransformHandle::GizmoTransformHandle ObjectTransformHandle::buildTranslat
         addGizmoLine(result.visualization, headBase + perp2 * headSpread, tip, color);
         addGizmoLine(result.visualization, headBase - perp2 * headSpread, tip, color);
 
-        glm::vec3 capsuleBase = origin + dir * pickOffset;
-        result.pickingHandles.emplace_back(objectId, GizmoType::Translation, gaxes[i], capsuleBase, tip, pickRadius);
+        glm::vec3 capsuleBase = pivot + dir * pickOffset;
+        result.pickingHandles.push_back({ids, GizmoType::Translation, gaxes[i], capsuleBase, tip, pickRadius});
     }
 
     return result;
 }
 
-ObjectTransformHandle::GizmoTransformHandle ObjectTransformHandle::buildRotationGizmo(
-        EntityHandle objectId, const Camera& camera, const Transform& cameraTransform) {
+ObjectTransformHandle::GizmoTransformHandle
+ObjectTransformHandle::buildRotationGizmo(glm::vec3 pivot, const Camera& camera, const Transform& cameraTransform) {
     GizmoTransformHandle result;
-    const auto* transform = scene_.getObject(objectId).getComponent<Transform>();
-    if (!transform) return result;
 
-    bool isLocal = rendererSettings_.isLocalTransformEnabled();
-    glm::vec3 origin = transform->position;
+    const auto& ids = editorSelection_.getSelectedEntityIds();
 
-    float dist = glm::length(cameraTransform.position - origin);
+    bool isLocal = rendererSettings_.isLocalTransformEnabled() && ids.size() == 1;
+    glm::quat localRot = glm::quat{1, 0, 0, 0};
+    if (isLocal) {
+        const auto* t = scene_.getObject(ids[0]).getComponent<Transform>();
+        if (t) localRot = t->rotation;
+    }
+
+    float dist = glm::length(cameraTransform.position - pivot);
     float ringRadius = dist * 0.15f;
     float pickRadius = ringRadius * 0.18f;
 
@@ -385,18 +474,18 @@ ObjectTransformHandle::GizmoTransformHandle ObjectTransformHandle::buildRotation
         glm::vec3 p1 = perp1s[i];
         glm::vec3 p2 = perp2s[i];
         if (isLocal) {
-            p1 = rotateVector(p1, transform->rotation);
-            p2 = rotateVector(p2, transform->rotation);
+            p1 = rotateVector(p1, localRot);
+            p2 = rotateVector(p2, localRot);
         }
 
         glm::vec3 prevPt{};
         for (int s = 0; s <= segments; ++s) {
             float angle = glm::two_pi<float>() * static_cast<float>(s) / static_cast<float>(segments);
-            glm::vec3 pt = origin + (p1 * glm::cos(angle) + p2 * glm::sin(angle)) * ringRadius;
+            glm::vec3 pt = pivot + (p1 * glm::cos(angle) + p2 * glm::sin(angle)) * ringRadius;
             if (s > 0) {
                 addGizmoLine(result.visualization, prevPt, pt, color);
-                result.pickingHandles.emplace_back(
-                        objectId, GizmoType::Rotation, static_cast<GizmoAxis>(i), prevPt, pt, pickRadius);
+                result.pickingHandles.push_back(
+                        {ids, GizmoType::Rotation, static_cast<GizmoAxis>(i), prevPt, pt, pickRadius});
             }
             prevPt = pt;
         }
@@ -406,15 +495,12 @@ ObjectTransformHandle::GizmoTransformHandle ObjectTransformHandle::buildRotation
 }
 
 ObjectTransformHandle::GizmoTransformHandle
-ObjectTransformHandle::buildScaleGizmo(EntityHandle objectId, const Camera& camera, const Transform& cameraTransform) {
+ObjectTransformHandle::buildScaleGizmo(glm::vec3 pivot, const Camera& camera, const Transform& cameraTransform) {
     GizmoTransformHandle result;
-    const auto* transform = scene_.getObject(objectId).getComponent<Transform>();
-    if (!transform) return result;
 
-    bool isLocal = rendererSettings_.isLocalTransformEnabled();
-    glm::vec3 origin = transform->position;
+    const auto& ids = editorSelection_.getSelectedEntityIds();
 
-    float dist = glm::length(cameraTransform.position - origin);
+    float dist = glm::length(cameraTransform.position - pivot);
     float scale = dist * 0.15f;
 
     float shaftLength = scale;
@@ -430,29 +516,32 @@ ObjectTransformHandle::buildScaleGizmo(EntityHandle objectId, const Camera& came
 
     for (int i = 0; i < 3; ++i) {
         glm::vec3 dir = axes[i];
-        dir = rotateVector(dir, transform->rotation);
+        if (ids.size() == 1) {
+            const auto* t = scene_.getObject(ids[0]).getComponent<Transform>();
+            if (t) dir = rotateVector(dir, t->rotation);
+        }
         glm::vec3 color = colors[i];
-        glm::vec3 tip = origin + dir * shaftLength;
+        glm::vec3 tip = pivot + dir * shaftLength;
 
-        addGizmoLine(result.visualization, origin, tip, color);
+        addGizmoLine(result.visualization, pivot, tip, color);
         auto cubeGizmo = buildGizmoCube(tip, cubeHalf, color);
         result.visualization.insert(result.visualization.end(), cubeGizmo.begin(), cubeGizmo.end());
 
-        glm::vec3 capsuleBase = origin + dir * pickOffset;
-        result.pickingHandles.emplace_back(
-                objectId, GizmoType::Scale, gaxes[i], capsuleBase, tip + dir * cubeHalf, pickRadius);
+        glm::vec3 capsuleBase = pivot + dir * pickOffset;
+        result.pickingHandles.push_back(
+                {ids, GizmoType::Scale, gaxes[i], capsuleBase, tip + dir * cubeHalf, pickRadius});
     }
 
     float centerHalf = scale * 0.09f;
-    auto centerCubeGizmo = buildGizmoCube(origin, centerHalf, {1, 1, 1});
+    auto centerCubeGizmo = buildGizmoCube(pivot, centerHalf, {1, 1, 1});
     result.visualization.insert(result.visualization.end(), centerCubeGizmo.begin(), centerCubeGizmo.end());
 
-    result.pickingHandles.emplace_back(objectId,
-                                       GizmoType::Scale,
-                                       GizmoAxis::All,
-                                       origin - glm::vec3(0, centerHalf, 0),
-                                       origin + glm::vec3(0, centerHalf, 0),
-                                       centerHalf * 2.0f);
+    result.pickingHandles.push_back({ids,
+                                     GizmoType::Scale,
+                                     GizmoAxis::All,
+                                     pivot - glm::vec3(0, centerHalf, 0),
+                                     pivot + glm::vec3(0, centerHalf, 0),
+                                     centerHalf * 2.0f});
 
     return result;
 }

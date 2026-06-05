@@ -18,49 +18,23 @@ class EditorCamera;
 class EditorSelection;
 class EditorSettings;
 
+struct ActiveDrag {
+    GizmoType type;
+    GizmoAxis axis;
+    glm::vec3 pivot;
+    glm::vec3 axisDir;
+    glm::vec3 dragPlaneNormal;
+    glm::vec3 initialHitPoint;
+    glm::vec3 initialHitDir;
+    float initialT;
+};
+
 struct TransformDragState {
     GizmoType gizmoMode = GizmoType::Translation;
+    std::optional<ActiveDrag> activeDrag;
 
-    struct TranslationDrag {
-        EntityHandle objectId;
-        GizmoAxis axis;
-        glm::vec3 axisDir;
-        glm::vec3 dragPlaneNormal;
-        glm::vec3 dragOrigin;
-        glm::vec3 hitPointOnAxis;
-    };
-    std::optional<TranslationDrag> activeDrag;
-
-    struct RotationDrag {
-        EntityHandle objectId;
-        GizmoAxis axis;
-        glm::vec3 axisDir;
-        glm::vec3 origin;
-        glm::quat initialRotation;
-        glm::vec3 initialHitDir;
-    };
-    std::optional<RotationDrag> activeRotationDrag;
-
-    struct ScaleDrag {
-        EntityHandle objectId;
-        GizmoAxis axis;
-        glm::vec3 axisDir;
-        glm::vec3 origin;
-        glm::vec3 initialScale;
-        glm::vec3 dragPlaneNormal;
-        float initialT;
-    };
-    std::optional<ScaleDrag> activeScaleDrag;
-
-    void clearDrag() {
-        activeDrag.reset();
-        activeRotationDrag.reset();
-        activeScaleDrag.reset();
-    }
-
-    bool isActiveDrag() const {
-        return activeDrag.has_value() || activeRotationDrag.has_value() || activeScaleDrag.has_value();
-    }
+    void clearDrag() { activeDrag.reset(); }
+    bool isActiveDrag() const { return activeDrag.has_value(); }
 };
 
 class ObjectTransformHandle {
@@ -95,6 +69,8 @@ public:
     TransformDragState& getDragState() { return dragState_; }
     const TransformDragState& getDragState() const { return dragState_; }
 
+    glm::vec3 computeGroupPivot(const std::vector<EntityHandle>& ids) const;
+
     using GizmoObject = std::vector<VulkanGizmoPass::GizmoVertex>;
 
     struct GizmoTransformHandle {
@@ -102,11 +78,9 @@ public:
         std::vector<GizmoHandle> pickingHandles;
     };
 
-    GizmoTransformHandle
-    buildTranslationGizmo(EntityHandle objectId, const Camera& camera, const Transform& cameraTransform);
-    GizmoTransformHandle
-    buildRotationGizmo(EntityHandle objectId, const Camera& camera, const Transform& cameraTransform);
-    GizmoTransformHandle buildScaleGizmo(EntityHandle objectId, const Camera& camera, const Transform& cameraTransform);
+    GizmoTransformHandle buildTranslationGizmo(glm::vec3 pivot, const Camera& camera, const Transform& cameraTransform);
+    GizmoTransformHandle buildRotationGizmo(glm::vec3 pivot, const Camera& camera, const Transform& cameraTransform);
+    GizmoTransformHandle buildScaleGizmo(glm::vec3 pivot, const Camera& camera, const Transform& cameraTransform);
 
 private:
     GameWindow& window_;
@@ -116,6 +90,10 @@ private:
     EditorSettings& rendererSettings_;
     TransformDragState dragState_;
     std::string dragGroupId_;
+
+    glm::vec3 prevTranslationDelta_{0.0f};
+    float prevRotationAngle_ = 0.0f;
+    float prevScaleFactor_ = 1.0f;
 
     static std::optional<glm::vec3>
     rayPlaneIntersect(const Ray& ray, const glm::vec3& planePoint, const glm::vec3& planeNormal);

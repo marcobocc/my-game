@@ -1,11 +1,13 @@
 #pragma once
+#include <glm/glm.hpp>
+#include <vector>
 #include "modules/scene/EntityHandle.hpp"
 
 enum class GizmoType { Translation, Rotation, Scale };
 enum class GizmoAxis { X, Y, Z, All };
 
 struct GizmoHit {
-    EntityHandle objectId;
+    std::vector<EntityHandle> objectIds;
     GizmoType type;
     GizmoAxis axis;
 };
@@ -15,7 +17,7 @@ struct SceneObjectHit {
 };
 
 struct GizmoHandle {
-    EntityHandle objectId;
+    std::vector<EntityHandle> objectIds;
     GizmoType type;
     GizmoAxis axis;
     glm::vec3 base;
