@@ -89,7 +89,7 @@ public:
                    console),
 
         simHUDRoot_(simHUD_, console),
-        welcomeScreen_(std::filesystem::path{PROJECTS_DIR}),
+        welcomeScreen_(std::filesystem::path{PROJECTS_DIR}, std::filesystem::path{SAMPLES_DIR}),
         welcomeRoot_(welcomeScreen_) {}
 
     ImguiRoot& imguiRoot() { return imguiRoot_; }

@@ -13,7 +13,9 @@ public:
         std::function<void()> onNewProject;
     };
 
-    explicit Imgui_WelcomeScreen(std::filesystem::path projectsRoot) : projectsRoot_(std::move(projectsRoot)) {
+    explicit Imgui_WelcomeScreen(std::filesystem::path projectsRoot, std::filesystem::path samplesRoot = {}) :
+        projectsRoot_(std::move(projectsRoot)),
+        samplesRoot_(std::move(samplesRoot)) {
         scanProjects();
     }
 
@@ -56,13 +58,32 @@ public:
         ImGui::Separator();
         ImGui::Spacing();
 
+        const bool hasSamples = !samples_.empty();
+        const float listH = hasSamples ? (PANEL_H - 160.0f) * 0.5f : 0.0f;
+
         if (projects_.empty()) {
             ImGui::TextDisabled("No projects found in %s", projectsRoot_.string().c_str());
         } else {
             ImGui::TextDisabled("Projects");
             ImGui::Spacing();
-            ImGui::BeginChild("##projects", {0.0f, 0.0f}, ImGuiChildFlags_None, ImGuiWindowFlags_None);
+            ImGui::BeginChild(
+                    "##projects", {0.0f, hasSamples ? listH : 0.0f}, ImGuiChildFlags_None, ImGuiWindowFlags_None);
             for (const auto& p: projects_) {
+                if (ImGui::Selectable(p.filename().string().c_str())) {
+                    callbacks_.onOpenProject(p);
+                }
+            }
+            ImGui::EndChild();
+        }
+
+        if (hasSamples) {
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+            ImGui::TextDisabled("Samples");
+            ImGui::Spacing();
+            ImGui::BeginChild("##samples", {0.0f, 0.0f}, ImGuiChildFlags_None, ImGuiWindowFlags_None);
+            for (const auto& p: samples_) {
                 if (ImGui::Selectable(p.filename().string().c_str())) {
                     callbacks_.onOpenProject(p);
                 }
@@ -76,15 +97,21 @@ public:
 
 private:
     void scanProjects() {
-        projects_.clear();
-        if (!std::filesystem::exists(projectsRoot_)) return;
-        for (const auto& entry: std::filesystem::directory_iterator(projectsRoot_)) {
-            if (entry.is_directory()) projects_.push_back(entry.path());
-        }
-        std::sort(projects_.begin(), projects_.end());
+        auto scan = [](const std::filesystem::path& root, std::vector<std::filesystem::path>& out) {
+            out.clear();
+            if (!std::filesystem::exists(root)) return;
+            for (const auto& entry: std::filesystem::directory_iterator(root)) {
+                if (entry.is_directory()) out.push_back(entry.path());
+            }
+            std::sort(out.begin(), out.end());
+        };
+        scan(projectsRoot_, projects_);
+        scan(samplesRoot_, samples_);
     }
 
     std::filesystem::path projectsRoot_;
+    std::filesystem::path samplesRoot_;
     Callbacks callbacks_;
     std::vector<std::filesystem::path> projects_;
+    std::vector<std::filesystem::path> samples_;
 };

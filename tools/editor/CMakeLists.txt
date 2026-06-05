@@ -21,6 +21,7 @@ target_compile_definitions(EditorLib PUBLIC
     ENGINE_LIB_DIR="${CMAKE_BINARY_DIR}"
     ENGINE_DEPS_INCLUDE_DIR="${_first_nlohmann_include}"
     PROJECTS_DIR="${CMAKE_SOURCE_DIR}/projects"
+    SAMPLES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/samples"
 )
 
 add_executable(editor ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp)
