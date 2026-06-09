@@ -1,6 +1,5 @@
 #pragma once
 #include "../rendering/EditorRenderer.hpp"
-#include "../rendering/VulkanBackend.hpp"
 #include "RuntimeContainer.hpp"
 
 class EditorCamera;
@@ -28,23 +27,7 @@ public:
                        SimHUDRoot& simHUDRoot,
                        WelcomeRoot& welcomeRoot) :
 
-        vulkanBackend_(window,
-                       runtime.vulkanContext(),
-                       runtime.frameManager(),
-                       runtime.renderTargetManager(),
-                       runtime.geometryPass(),
-                       runtime.lightingPass(),
-                       runtime.gridPass(),
-                       runtime.gizmoPass(),
-                       runtime.objectIdPass(),
-                       runtime.outlinePass(),
-                       runtime.uiPass(),
-                       runtime.swapchainManager(),
-                       runtime.rendererSettings(),
-                       runtime.resourcesManager(),
-                       runtime.assetLoader()),
-
-        editorRenderer_(vulkanBackend_,
+        editorRenderer_(runtime.vulkanBackend(),
                         editorCamera,
                         editorSelection,
                         editorGizmos,
@@ -59,6 +42,5 @@ public:
     EditorRenderer& editorRenderer() { return editorRenderer_; }
 
 private:
-    VulkanBackend vulkanBackend_;
     EditorRenderer editorRenderer_;
 };

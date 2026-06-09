@@ -1,6 +1,7 @@
 #pragma once
 #include <utility>
 #include <vector>
+#include "modules/rendering/GameRenderData.hpp"
 #include "modules/rendering/vulkan/core/utils/structs.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "modules/scene/components/Camera.hpp"
@@ -14,6 +15,7 @@ struct EditorRenderData {
     const std::vector<DrawCall>& outlineQueue;
     const std::vector<VulkanGizmoPass::GizmoVertex>& gizmoLines;
     const std::vector<std::pair<Light, Transform>>& lightsWithTransforms;
+    std::vector<ParticleEmitterRef> particleEmitters;
     float gridScale;
     bool isOffscreen = false;
 
@@ -23,6 +25,7 @@ struct EditorRenderData {
                      const std::vector<DrawCall>& outlineQ,
                      const std::vector<VulkanGizmoPass::GizmoVertex>& gizmoL,
                      const std::vector<std::pair<Light, Transform>>& lightsWT,
+                     std::vector<ParticleEmitterRef> particlesIn,
                      float gridS,
                      bool offscreen = false) :
         camera(cam),
@@ -31,6 +34,7 @@ struct EditorRenderData {
         outlineQueue(outlineQ),
         gizmoLines(gizmoL),
         lightsWithTransforms(lightsWT),
+        particleEmitters(std::move(particlesIn)),
         gridScale(gridS),
         isOffscreen(offscreen) {}
 };

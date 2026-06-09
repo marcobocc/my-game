@@ -77,8 +77,6 @@ inline std::unique_ptr<Shader> AssetLoader::load<Shader>(const std::string& name
         auto shaderStr = std::string(shaderDataVec.begin(), shaderDataVec.end());
         auto j = nlohmann::json::parse(shaderStr);
 
-        std::string vertexShaderPath = JsonUtils::getRequired<std::string>(j, "vertexShader");
-        std::string fragmentShaderPath = JsonUtils::getRequired<std::string>(j, "fragmentShader");
         bool disableCull = JsonUtils::getOptional<bool>(j, "disableCull", false);
         bool disableDepthTest = JsonUtils::getOptional<bool>(j, "disableDepthTest", false);
         bool disableDepthWrite = JsonUtils::getOptional<bool>(j, "disableDepthWrite", false);
@@ -95,8 +93,17 @@ inline std::unique_ptr<Shader> AssetLoader::load<Shader>(const std::string& name
             return std::vector<char>(data.begin(), data.end());
         };
 
-        auto vertexBytecode = readBytecode(vertexShaderPath);
-        auto fragmentBytecode = readBytecode(fragmentShaderPath);
+        std::vector<char> vertexBytecode;
+        std::vector<char> fragmentBytecode;
+        std::vector<char> computeBytecode;
+
+        if (j.contains("computeShader")) {
+            computeBytecode = readBytecode(JsonUtils::getRequired<std::string>(j, "computeShader"));
+        } else {
+            vertexBytecode = readBytecode(JsonUtils::getRequired<std::string>(j, "vertexShader"));
+            fragmentBytecode = readBytecode(JsonUtils::getRequired<std::string>(j, "fragmentShader"));
+        }
+
         auto shader = std::make_unique<Shader>(name,
                                                std::move(vertexBytecode),
                                                std::move(fragmentBytecode),
@@ -109,7 +116,8 @@ inline std::unique_ptr<Shader> AssetLoader::load<Shader>(const std::string& name
                                                positionColorVertexLayout,
                                                tangentVertexLayout,
                                                depthBias,
-                                               depthLessOrEqual);
+                                               depthLessOrEqual,
+                                               std::move(computeBytecode));
         if (shader) {
             auto shaderPtr = shader.get();
             cache_.insert<Shader>(std::move(shader));

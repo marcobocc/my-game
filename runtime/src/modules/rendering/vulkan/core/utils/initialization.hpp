@@ -136,15 +136,15 @@ inline VulkanContext initVulkanContext() {
     vkGetDeviceQueue(ctx.device, ctx.graphicsQueueFamilyIndex, 0, &ctx.graphicsQueue);
 
     // Create descriptor pool
-    std::vector<VkDescriptorPoolSize> poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100},
-                                                   {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 400},
-                                                   {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 400},
+    std::vector<VkDescriptorPoolSize> poolSizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+                                                   {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+                                                   {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
                                                    {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100}};
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = 400;
+    poolInfo.maxSets = 2000;
     poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
     throwIfUnsuccessful(vkCreateDescriptorPool(ctx.device, &poolInfo, nullptr, &ctx.descriptorPool));
 

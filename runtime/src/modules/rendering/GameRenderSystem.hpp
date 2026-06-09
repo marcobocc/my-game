@@ -1,22 +1,28 @@
 #pragma once
 #include <log4cxx/logger.h>
 #include "GameRenderData.hpp"
+#include "IGameRenderer.hpp"
 #include "modules/scene/World.hpp"
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Light.hpp"
+#include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
 #include "modules/scene/components/Transform.hpp"
-#include "vulkan/VulkanGameRenderer.hpp"
 
 class GameRenderSystem {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("GameRenderSystem");
 
 public:
-    explicit GameRenderSystem(VulkanGameRenderer& renderer) : renderer_(renderer) {}
+    explicit GameRenderSystem(IGameRenderer& renderer) : renderer_(renderer) {}
 
     void setActiveCamera(const Camera& camera, const Transform& cameraTransform) {
         activeCamera_ = &camera;
         activeCameraTransform_ = &cameraTransform;
+    }
+
+    void setDeltaTime(float dt) {
+        deltaTime_ = dt;
+        renderer_.setDeltaTime(dt);
     }
 
     void update(const World& entityManager) {
@@ -37,9 +43,22 @@ public:
             lightsWithTransforms.emplace_back(*lightPtr, *transformPtr);
         }
 
+        std::vector<ParticleEmitterRef> particleEmitters;
+        auto emitters = entityManager.query<ParticleEmitter, Transform>();
+        for (auto& [entity, emitterPtr, transformPtr]: emitters) {
+            if (!emitterPtr || !transformPtr) continue;
+            auto* e = const_cast<ParticleEmitter*>(emitterPtr);
+            e->spawnAccumulator += deltaTime_ * e->emissionRate;
+            auto toSpawn = static_cast<uint32_t>(e->spawnAccumulator);
+            e->spawnAccumulator -= static_cast<float>(toSpawn);
+            toSpawn = std::min(toSpawn, e->maxParticles);
+            particleEmitters.push_back({e, transformPtr->position, toSpawn});
+        }
+
         const Camera& cam = getActiveCamera();
         const Transform& camTransform = getActiveCameraTransform();
-        renderer_.renderFrame({cam, camTransform, drawQueue, lightsWithTransforms});
+        GameRenderData rd{cam, camTransform, drawQueue, lightsWithTransforms, std::move(particleEmitters)};
+        renderer_.renderFrame(rd);
     }
 
 private:
@@ -55,7 +74,8 @@ private:
         return Transform();
     }
 
-    VulkanGameRenderer& renderer_;
+    IGameRenderer& renderer_;
     const Camera* activeCamera_ = nullptr;
     const Transform* activeCameraTransform_ = nullptr;
+    float deltaTime_ = 0.0f;
 };

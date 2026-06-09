@@ -1,0 +1,78 @@
+#version 450
+
+layout(local_size_x = 64) in;
+
+struct GpuParticle {
+    vec3  position;
+    float lifetime;
+    vec3  velocity;
+    float maxLifetime;
+    vec4  colorStart;
+    vec4  colorEnd;
+    float sizeStart;
+    float sizeEnd;
+    float rotation;
+    float _pad;
+};
+
+layout(set = 0, binding = 0) buffer ParticleBuffer {
+    GpuParticle particles[];
+};
+
+layout(set = 0, binding = 1) buffer FreelistBuffer {
+    uint count;
+    uint indices[];
+};
+
+layout(set = 1, binding = 0) uniform EmitterConfig {
+    vec3  emitterPos;
+    float lifetimeMin;
+    vec3  gravity;
+    float lifetimeMax;
+    float coneAngle;
+    float coneRadius;
+    float speedMin;
+    float speedMax;
+    float sizeStart;
+    float sizeEnd;
+    float _pad0;
+    float _pad1;
+    vec4  colorStartMin;
+    vec4  colorStartMax;
+    vec4  colorEndMin;
+    vec4  colorEndMax;
+    float rotationMin;
+    float rotationMax;
+    int   colorKeyCount;
+    float _pad2;
+    vec4  gradientColors[8];
+    vec4  gradientTimes[8];
+} config;
+
+layout(push_constant) uniform PC {
+    float deltaTime;
+    uint  maxParticles;
+} pc;
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    if (id >= pc.maxParticles) return;
+
+    GpuParticle p = particles[id];
+
+    if (p.lifetime < 0.0) return;
+
+    p.lifetime -= pc.deltaTime;
+
+    if (p.lifetime < 0.0) {
+        uint slot = atomicAdd(count, 1u);
+        indices[slot] = id;
+        p.lifetime = -1.0;
+        particles[id] = p;
+        return;
+    }
+
+    p.velocity += config.gravity * pc.deltaTime;
+    p.position += p.velocity * pc.deltaTime;
+    particles[id] = p;
+}

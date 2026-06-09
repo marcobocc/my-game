@@ -9,7 +9,6 @@
 #include "modules/input/InputSystem.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
 #include "modules/rendering/GameRenderSystem.hpp"
-#include "modules/rendering/vulkan/VulkanGameRenderer.hpp"
 #include "modules/rendering/vulkan/core/VulkanCommandManager.hpp"
 #include "modules/rendering/vulkan/core/VulkanDebugMessenger.hpp"
 #include "modules/rendering/vulkan/core/VulkanFrameManager.hpp"
@@ -29,6 +28,7 @@
 #include "modules/rendering/vulkan/passes/VulkanOutlinePass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanUIPass.hpp"
 #include "modules/scene/World.hpp"
+#include "rendering/VulkanBackend.hpp"
 #include "services/SimulationController.hpp"
 #include "structs/RendererSettings.hpp"
 
@@ -56,16 +56,6 @@ public:
         geometryPass_(vulkanContext_, resourcesManager_, assetLoader_, window),
         lightingPass_(
                 vulkanContext_, assetLoader_, resourcesManager_, swapchainManager_.swapchain().swapchainImageFormat),
-        gameRenderer_(vulkanContext_,
-                      frameManager_,
-                      renderTargetManager_,
-                      geometryPass_,
-                      lightingPass_,
-                      swapchainManager_,
-                      rendererSettings_,
-                      resourcesManager_,
-                      assetLoader_),
-        gameRenderSystem_(gameRenderer_),
         inputSystem_(window),
         time_([&window] { return static_cast<float>(window.getTime()); }),
         gridPass_(assetLoader_, resourcesManager_),
@@ -74,8 +64,24 @@ public:
         outlinePass_(
                 vulkanContext_, assetLoader_, resourcesManager_, swapchainManager_.swapchain().swapchainImageFormat),
         uiPass_(vulkanContext_, swapchainManager_, window),
+        vulkanBackend_(window,
+                       vulkanContext_,
+                       frameManager_,
+                       renderTargetManager_,
+                       geometryPass_,
+                       lightingPass_,
+                       gridPass_,
+                       gizmoPass_,
+                       objectIdPass_,
+                       outlinePass_,
+                       uiPass_,
+                       swapchainManager_,
+                       rendererSettings_,
+                       resourcesManager_,
+                       assetLoader_),
+        gameRenderSystem_(vulkanBackend_),
         simulationController_(
-                window, time_, loadedAssets_, inputSystem_, gameRenderSystem_, rendererSettings_, gameRenderer_) {}
+                window, time_, loadedAssets_, inputSystem_, gameRenderSystem_, rendererSettings_, vulkanBackend_) {}
 
     DeveloperConsole& developerConsole() { return developerConsole_; }
     World& entityManager() { return world_; }
@@ -99,6 +105,7 @@ public:
     VulkanOutlinePass& outlinePass() { return outlinePass_; }
     VulkanUIPass& uiPass() { return uiPass_; }
     VulkanSwapchainManager& swapchainManager() { return swapchainManager_; }
+    VulkanBackend& vulkanBackend() { return vulkanBackend_; }
     SimulationController& simulationController() { return simulationController_; }
     const std::filesystem::path& projectRoot() const { return projectRoot_; }
 
@@ -124,8 +131,6 @@ private:
     VulkanRenderTargetManager renderTargetManager_;
     VulkanGeometryPass geometryPass_;
     VulkanLightingPass lightingPass_;
-    VulkanGameRenderer gameRenderer_;
-    GameRenderSystem gameRenderSystem_;
     InputSystem inputSystem_;
     TimeManager time_;
     DeveloperConsole developerConsole_;
@@ -134,5 +139,7 @@ private:
     VulkanObjectIdPass objectIdPass_;
     VulkanOutlinePass outlinePass_;
     VulkanUIPass uiPass_;
+    VulkanBackend vulkanBackend_;
+    GameRenderSystem gameRenderSystem_;
     SimulationController simulationController_;
 };

@@ -20,3 +20,6 @@ static constexpr auto LIGHTING_SHADER = "assets/builtin/shaders/_lighting/_light
 static constexpr auto SHADOW_SHADER = "assets/builtin/shaders/_shadow/_shadow.shad";
 static constexpr auto SKYDOME_SHADER = "assets/builtin/shaders/_skydome/_skydome.shad";
 static constexpr auto SKYDOME_TEXTURE = "assets/builtin/textures/_skydome.jpg";
+static constexpr auto PARTICLES_SHADER = "assets/builtin/shaders/_particles/_particles.shad";
+static constexpr auto PARTICLES_SPAWN_SHADER = "assets/builtin/shaders/_particles/_particles_spawn.shad";
+static constexpr auto PARTICLES_SIMULATE_SHADER = "assets/builtin/shaders/_particles/_particles_simulate.shad";

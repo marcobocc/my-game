@@ -23,6 +23,7 @@ public:
     VulkanMeshBuffers& getMesh(const Mesh& mesh) const { return meshBuffersCache_.get(mesh); }
 
     VulkanTexture& getTexture(const Texture& texture) const { return textureCache_.get(texture); }
+    VulkanTextureCache& getTextureCache() { return textureCache_; }
 
     VulkanPipeline& getPipeline(const Shader& shader,
                                 VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,

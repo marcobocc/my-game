@@ -1,0 +1,109 @@
+#version 450
+
+layout(local_size_x = 64) in;
+
+struct GpuParticle {
+    vec3  position;
+    float lifetime;
+    vec3  velocity;
+    float maxLifetime;
+    vec4  colorStart;
+    vec4  colorEnd;
+    float sizeStart;
+    float sizeEnd;
+    float rotation;
+    float _pad;
+};
+
+layout(set = 0, binding = 0) buffer ParticleBuffer {
+    GpuParticle particles[];
+};
+
+layout(set = 0, binding = 1) buffer FreelistBuffer {
+    uint count;
+    uint indices[];
+};
+
+layout(set = 1, binding = 0) uniform EmitterConfig {
+    vec3  emitterPos;
+    float lifetimeMin;
+    vec3  gravity;
+    float lifetimeMax;
+    float coneAngle;    // half-angle in radians
+    float coneRadius;
+    float speedMin;
+    float speedMax;
+    float sizeStart;
+    float sizeEnd;
+    float _pad0;
+    float _pad1;
+    vec4  colorStartMin;
+    vec4  colorStartMax;
+    vec4  colorEndMin;
+    vec4  colorEndMax;
+    float rotationMin;
+    float rotationMax;
+    int   colorKeyCount;
+    float _pad2;
+    vec4  gradientColors[8];
+    vec4  gradientTimes[8];
+} config;
+
+layout(push_constant) uniform PC {
+    uint toSpawn;
+    uint frameIndex;
+} pc;
+
+uint pcg(uint v) {
+    v = v * 747796405u + 2891336453u;
+    v = ((v >> ((v >> 28u) + 4u)) ^ v) * 277803737u;
+    return (v >> 22u) ^ v;
+}
+
+// Stateful RNG: advance state and return a float in [0,1)
+float rand(inout uint s) {
+    s = pcg(s);
+    return float(s) / 4294967295.0;
+}
+
+void main() {
+    uint id = gl_GlobalInvocationID.x;
+    if (id >= pc.toSpawn) return;
+
+    uint freelistIdx = atomicAdd(count, uint(-1));
+    if (freelistIdx == 0u) return;
+    freelistIdx -= 1u;
+    uint slot = indices[freelistIdx];
+
+    // slot is unique per particle across the full pool — use it as the seed base
+    uint s = pcg(slot ^ (pc.frameIndex * 2654435761u));
+
+    // Cone direction: all particles travel at exactly coneAngle from +Y,
+    // spread uniformly around the full 360 degrees
+    float sinTheta = sin(config.coneAngle);
+    float cosTheta = cos(config.coneAngle);
+    float phi      = rand(s) * 6.28318530718;
+    vec3  dir      = vec3(sinTheta * cos(phi), cosTheta, sinTheta * sin(phi));
+
+    // Radial spawn offset from emitter center (disk in XZ plane)
+    float offsetPhi = rand(s) * 6.28318530718;
+    float offsetR   = config.coneRadius * sqrt(rand(s));
+    vec3  spawnPos  = config.emitterPos + vec3(offsetR * cos(offsetPhi), 0.0, offsetR * sin(offsetPhi));
+
+    float speed = mix(config.speedMin, config.speedMax, rand(s));
+    float lt    = rand(s);
+
+    GpuParticle p;
+    p.position    = spawnPos;
+    p.lifetime    = mix(config.lifetimeMin, config.lifetimeMax, lt);
+    p.maxLifetime = p.lifetime;
+    p.velocity    = dir * speed;
+    p.colorStart  = mix(config.colorStartMin, config.colorStartMax, rand(s));
+    p.colorEnd    = mix(config.colorEndMin,   config.colorEndMax,   rand(s));
+    p.sizeStart   = config.sizeStart;
+    p.sizeEnd     = config.sizeEnd;
+    p.rotation    = mix(config.rotationMin, config.rotationMax, rand(s));
+    p._pad        = 0.0;
+
+    particles[slot] = p;
+}

@@ -8,6 +8,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "EditorRenderData.hpp"
+#include "modules/rendering/IGameRenderer.hpp"
 #include "modules/rendering/vulkan/core/RenderGraph.hpp"
 #include "modules/rendering/vulkan/core/utils/structs.hpp"
 #include "modules/scene/components/Camera.hpp"
@@ -19,6 +20,7 @@ class VulkanGeometryPass;
 class VulkanLightingPass;
 class VulkanShadowPass;
 class VulkanSkyPass;
+class VulkanParticlePass;
 class VulkanGridPass;
 class VulkanGizmoPass;
 class VulkanObjectIdPass;
@@ -30,7 +32,7 @@ class VulkanRenderTargetManager;
 class VulkanResourcesManager;
 class AssetLoader;
 
-class VulkanBackend {
+class VulkanBackend : public IGameRenderer {
 public:
     VulkanBackend(GameWindow& window,
                   VulkanContext& context,
@@ -56,6 +58,9 @@ public:
     // Off-screen cameras (camera.renderTarget.isValid()) are queued and flushed
     // at the start of the next swapchain frame.
     bool renderFrame(const EditorRenderData& renderData);
+    bool renderFrame(const GameRenderData& renderData) override;
+
+    void setDeltaTime(float dt) override { deltaTime_ = dt; }
 
     // Render only the UI pass — skips all geometry, lighting, and gizmo passes.
     bool renderUIOnly();
@@ -105,6 +110,7 @@ private:
 
     std::unique_ptr<VulkanShadowPass> shadowPass_;
     std::unique_ptr<VulkanSkyPass> skyPass_;
+    std::unique_ptr<VulkanParticlePass> particlePass_;
 
     // --- Render graph ---
     std::optional<VulkanRenderGraph<EditorRenderData>> renderGraph_;
@@ -121,6 +127,7 @@ private:
     // --- Frame state ---
     uint32_t frameCount_ = 0;
     VkFormat swapchainColorFormat_ = VK_FORMAT_UNDEFINED;
+    float deltaTime_ = 0.0f;
 
     // Per-frame resources for the main swapchain render.
     // Lighting: [frameIdx][lightSlot]. Outline/Geometry: [frameIdx].

@@ -14,6 +14,7 @@
 #include "modules/rendering/vulkan/passes/VulkanLightingPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanObjectIdPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanOutlinePass.hpp"
+#include "modules/rendering/vulkan/passes/VulkanParticlePass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanShadowPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanSkyPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanUIPass.hpp"
@@ -44,6 +45,13 @@ VulkanBackend::VulkanBackend(GameWindow& window,
     lightingPass_(lightingPass),
     shadowPass_(std::make_unique<VulkanShadowPass>(resourcesManager, assetLoader)),
     skyPass_(std::make_unique<VulkanSkyPass>(context, assetLoader, resourcesManager)),
+    particlePass_(std::make_unique<VulkanParticlePass>(
+            context,
+            assetLoader,
+            resourcesManager.getTextureCache(),
+            static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size()),
+            swapchainManager.swapchain().swapchainImageFormat,
+            VK_FORMAT_D32_SFLOAT)),
     gridPass_(gridPass),
     gizmoPass_(gizmoPass),
     objectIdPass_(objectIdPass),
@@ -112,6 +120,20 @@ VulkanBackend::~VulkanBackend() {
 // ------------------- Public API -------------------
 
 void VulkanBackend::setDrawCallback(std::function<void()> callback) { uiPass_.setDrawCallback(std::move(callback)); }
+
+bool VulkanBackend::renderFrame(const GameRenderData& rd) {
+    static const std::vector<DrawCall> empty;
+    static const std::vector<VulkanGizmoPass::GizmoVertex> noGizmos;
+    return renderFrame(EditorRenderData{rd.camera,
+                                        rd.cameraTransform,
+                                        rd.drawQueue,
+                                        empty,
+                                        noGizmos,
+                                        rd.lightsWithTransforms,
+                                        rd.particleEmitters,
+                                        1.0f,
+                                        true});
+}
 
 bool VulkanBackend::renderFrame(const EditorRenderData& renderData) {
     // Off-screen cameras: queue up work to be batched into the next swapchain frame.
@@ -278,6 +300,7 @@ void VulkanBackend::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, con
                                                         renderData.outlineQueue,
                                                         renderData.gizmoLines,
                                                         renderData.lightsWithTransforms,
+                                                        renderData.particleEmitters,
                                                         renderData.gridScale,
                                                         true});
                     transitionColorImageFinal(cmd,
@@ -650,6 +673,40 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                              fbY,
                              fbW,
                              fbH);
+            return true;
+        };
+        renderGraph_->addPass(std::move(n));
+    }
+
+    // --- Particle pass ---
+    {
+        VulkanRenderGraph<EditorRenderData>::RenderPassNode n;
+        n.name = "ParticlePass";
+        n.reads = {{gbufferDepthHandle_,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT}};
+        n.writes = {{colorTargetHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd,
+                           const VulkanRenderGraph<EditorRenderData>& graph,
+                           const EditorRenderData& ctx) -> bool {
+            if (ctx.particleEmitters.empty()) return true;
+            const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
+            const uint32_t frameIdx = static_cast<uint32_t>(frameManager_.currentFrameIndex());
+            particlePass_->record(cmd,
+                                  ctx.particleEmitters,
+                                  frameIdx,
+                                  deltaTime_,
+                                  graph.getImageView(colorTargetHandle_),
+                                  graph.getImageView(gbufferDepthHandle_),
+                                  extent,
+                                  currentFrameGeometryDescriptorSet_,
+                                  ctx.isOffscreen ? nullptr : &window_);
             return true;
         };
         renderGraph_->addPass(std::move(n));

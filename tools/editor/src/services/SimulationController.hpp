@@ -11,7 +11,7 @@
 class GameWindow;
 class TimeManager;
 class AssetCache;
-class VulkanGameRenderer;
+#include "modules/rendering/IGameRenderer.hpp"
 struct RendererSettings;
 
 class SimulationController {
@@ -24,7 +24,7 @@ public:
                          InputSystem& inputSystem,
                          GameRenderSystem& renderSystem,
                          RendererSettings& rendererSettings,
-                         VulkanGameRenderer& renderer) :
+                         IGameRenderer& renderer) :
         window_(window),
         time_(time),
         loadedAssets_(loadedAssets),
@@ -100,7 +100,7 @@ private:
     InputSystem& inputSystem_;
     GameRenderSystem& renderSystem_;
     RendererSettings& rendererSettings_;
-    VulkanGameRenderer& renderer_;
+    IGameRenderer& renderer_;
 
     World* editorWorld_ = nullptr;
     std::filesystem::path projectRoot_;

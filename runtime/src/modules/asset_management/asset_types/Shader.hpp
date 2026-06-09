@@ -17,10 +17,12 @@ public:
            bool positionColorVertexLayout = false,
            bool tangentVertexLayout = false,
            bool depthBias = false,
-           bool depthLessOrEqual = false) :
+           bool depthLessOrEqual = false,
+           std::vector<char> computeBytecode = {}) :
         Asset(name),
         vertexBytecode(std::move(vertexBytecode)),
         fragmentBytecode(std::move(fragmentBytecode)),
+        computeBytecode(std::move(computeBytecode)),
         disableCull(disableCull),
         disableDepthTest(disableDepthTest),
         disableDepthWrite(disableDepthWrite),
@@ -34,6 +36,7 @@ public:
 
     std::vector<char> vertexBytecode;
     std::vector<char> fragmentBytecode;
+    std::vector<char> computeBytecode; // non-empty for compute-only shaders
     bool disableCull;
     bool disableDepthTest;
     bool disableDepthWrite;

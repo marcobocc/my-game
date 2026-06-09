@@ -4,6 +4,7 @@
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/Metadata.hpp"
+#include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
 #include "modules/scene/components/Transform.hpp"
 
@@ -34,6 +35,7 @@ GameObjectDTO RuntimeScene::snapshotObject(EntityHandle e) const {
     tryAdd.operator()<Renderer>();
     tryAdd.operator()<BoxCollider>();
     tryAdd.operator()<Light>();
+    tryAdd.operator()<ParticleEmitter>();
     tryAdd.operator()<BehaviourScript>();
     return dto;
 }

@@ -17,7 +17,7 @@ GameInstance::GameInstance(GameWindow& window,
                            World world,
                            GameRenderSystem& renderSystem,
                            RendererSettings& rendererSettings,
-                           VulkanGameRenderer& renderer) :
+                           IGameRenderer& renderer) :
     window_(window),
     time_(time),
     loadedAssets_(loadedAssets),
@@ -73,6 +73,7 @@ void GameInstance::run(const std::function<void(double deltaTime)>& gameLoopFunc
         }
         {
             ZoneScopedN("Render");
+            renderSystem_.setDeltaTime(deltaTime);
             renderSystem_.update(world_);
         }
         time_.endFrame();

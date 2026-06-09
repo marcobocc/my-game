@@ -116,6 +116,8 @@ public:
                     editorSettings_.disableGrid();
                 } else {
                     inputSystem_.setBlocked(false);
+                    window_.setSceneViewport(
+                            computeSceneViewport(window_.getLogicalSize().first, window_.getLogicalSize().second));
                     imguiConsole_.setConsole(developerConsole_);
                     editorSettings_.enableGrid();
                 }
@@ -139,12 +141,9 @@ public:
                 ZoneScopedN("Render");
                 if (simActive) {
                     simulationController_.tick(deltaTime);
-                    editorRenderer_.render(simulationController_.world(), 0.0f);
+                    editorRenderer_.render(simulationController_.world(), 0.0f, deltaTime);
                 } else {
-                    editorRenderer_.render(entityManager_, editorSettings_.getGridScale());
-                    SceneViewport sv = window_.getSceneViewport();
-                    if (sv.width > 0 && sv.height > 0)
-                        editorCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
+                    editorRenderer_.render(entityManager_, editorSettings_.getGridScale(), deltaTime);
                 }
             }
 
@@ -156,7 +155,18 @@ public:
 private:
     enum class AppState { Welcome, Editor };
 
+    static SceneViewport computeSceneViewport(int w, int h) {
+        constexpr float HIERARCHY_WIDTH_RATIO = 0.15f;
+        constexpr float INSPECTOR_WIDTH_RATIO = 0.25f;
+        constexpr float ASSETS_HEIGHT_RATIO = 0.3f;
+        int left = static_cast<int>(static_cast<float>(w) * HIERARCHY_WIDTH_RATIO);
+        int right = static_cast<int>(static_cast<float>(w) * (1.0f - INSPECTOR_WIDTH_RATIO));
+        int bottom = static_cast<int>(static_cast<float>(h) * (1.0f - ASSETS_HEIGHT_RATIO));
+        return {left, 0, right - left, bottom};
+    }
+
     void initApp() {
+        setupViewport();
         editorSettings_.enableGrid();
         window_.onCloseRequest([this] {
             if (appState_ == AppState::Editor && undoHistory_.hasUnsavedChanges())
@@ -172,6 +182,20 @@ private:
     void enterEditor() {
         appState_ = AppState::Editor;
         editorRenderer_.setWelcomeMode(false);
+        SceneViewport sv = window_.getSceneViewport();
+        if (sv.width > 0 && sv.height > 0)
+            editorCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
+    }
+
+    void setupViewport() {
+        auto [w, h] = window_.getLogicalSize();
+        window_.setSceneViewport(computeSceneViewport(w, h));
+        window_.onWindowResize([this](int newW, int newH, int, int) {
+            SceneViewport sv = computeSceneViewport(newW, newH);
+            window_.setSceneViewport(sv);
+            if (sv.width > 0 && sv.height > 0)
+                editorCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
+        });
     }
 
     void drawCloseConfirmModal() {

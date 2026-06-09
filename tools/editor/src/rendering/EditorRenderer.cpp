@@ -8,7 +8,9 @@
 #include "../services/EditorSelection.hpp"
 #include "EditorRenderData.hpp"
 #include "VulkanBackend.hpp"
+#include "modules/rendering/GameRenderData.hpp"
 #include "modules/scene/World.hpp"
+#include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
 
 EditorRenderer::EditorRenderer(VulkanBackend& renderer,
@@ -118,7 +120,9 @@ void EditorRenderer::buildGizmos() {
     }
 }
 
-void EditorRenderer::render(const World& entityManager, float gridScale) {
+void EditorRenderer::render(const World& entityManager, float gridScale, float deltaTime) {
+    deltaTime_ = deltaTime;
+    renderer_.setDeltaTime(deltaTime);
     std::vector<DrawCall> drawQueue;
     auto drawables = entityManager.query<Renderer, Transform>();
     for (auto& [entity, renderer, transform]: drawables) {
@@ -138,6 +142,17 @@ void EditorRenderer::render(const World& entityManager, float gridScale) {
         activeLights.push_back({*light, *transform});
     }
 
+    std::vector<ParticleEmitterRef> particleEmitters;
+    auto emittersQuery = entityManager.query<ParticleEmitter, Transform>();
+    for (auto& [entity, emitterPtr, transformPtr]: emittersQuery) {
+        auto* e = const_cast<ParticleEmitter*>(emitterPtr);
+        e->spawnAccumulator += deltaTime_ * e->emissionRate;
+        auto toSpawn = static_cast<uint32_t>(e->spawnAccumulator);
+        e->spawnAccumulator -= static_cast<float>(toSpawn);
+        toSpawn = std::min(toSpawn, e->maxParticles);
+        particleEmitters.push_back({e, transformPtr->position, toSpawn});
+    }
+
     if (simMode_) {
         static const std::vector<DrawCall> emptyOutlines;
         static const std::vector<VulkanGizmoPass::GizmoVertex> emptyGizmos;
@@ -146,8 +161,15 @@ void EditorRenderer::render(const World& entityManager, float gridScale) {
             const auto* camera = camActor->getComponent<Camera>();
             const auto* transform = camActor->getComponent<Transform>();
             if (camera && transform) {
-                renderer_.renderFrame(EditorRenderData(
-                        *camera, *transform, drawQueue, emptyOutlines, emptyGizmos, activeLights, 0.0f, false));
+                renderer_.renderFrame(EditorRenderData(*camera,
+                                                       *transform,
+                                                       drawQueue,
+                                                       emptyOutlines,
+                                                       emptyGizmos,
+                                                       activeLights,
+                                                       particleEmitters,
+                                                       0.0f,
+                                                       false));
                 return;
             }
         }
@@ -155,8 +177,15 @@ void EditorRenderer::render(const World& entityManager, float gridScale) {
         Transform defaultTransform;
         defaultTransform.position = glm::vec3(0.0f, 1.0f, 0.0f);
         LOG4CXX_DEBUG(LOGGER, "No active Camera entity in simulation world — rendering with default camera at origin.");
-        renderer_.renderFrame(EditorRenderData(
-                defaultCamera, defaultTransform, drawQueue, emptyOutlines, emptyGizmos, activeLights, 0.0f, false));
+        renderer_.renderFrame(EditorRenderData(defaultCamera,
+                                               defaultTransform,
+                                               drawQueue,
+                                               emptyOutlines,
+                                               emptyGizmos,
+                                               activeLights,
+                                               particleEmitters,
+                                               0.0f,
+                                               false));
         return;
     }
 
@@ -166,8 +195,15 @@ void EditorRenderer::render(const World& entityManager, float gridScale) {
     auto cameras = entityManager.query<Camera, Transform>();
     for (auto& [entity, camera, transform]: cameras) {
         if (camera->renderTarget.isValid())
-            renderer_.renderFrame(EditorRenderData(
-                    *camera, *transform, drawQueue, outlineQueue_, builtGizmoLines_, activeLights, gridScale, true));
+            renderer_.renderFrame(EditorRenderData(*camera,
+                                                   *transform,
+                                                   drawQueue,
+                                                   outlineQueue_,
+                                                   builtGizmoLines_,
+                                                   activeLights,
+                                                   particleEmitters,
+                                                   gridScale,
+                                                   true));
     }
 
     renderer_.renderFrame(EditorRenderData(editorOrbitCamera_.getCamera(),
@@ -176,6 +212,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale) {
                                            outlineQueue_,
                                            builtGizmoLines_,
                                            activeLights,
+                                           particleEmitters,
                                            gridScale,
                                            false));
 }

@@ -33,7 +33,7 @@ public:
 
     void setSimMode(bool enabled);
     void setWelcomeMode(bool enabled);
-    void render(const World& entityManager, float gridScale);
+    void render(const World& entityManager, float gridScale, float deltaTime = 0.0f);
     void renderWelcome();
 
 private:
@@ -52,6 +52,7 @@ private:
     SimHUDRoot& simHUDRoot_;
     WelcomeRoot& welcomeRoot_;
     bool simMode_ = false;
+    float deltaTime_ = 0.0f;
     std::vector<DrawCall> outlineQueue_;
     std::vector<VulkanGizmoPass::GizmoVertex> builtGizmoLines_;
 };

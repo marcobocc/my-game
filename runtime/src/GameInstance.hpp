@@ -18,7 +18,7 @@ struct RendererSettings;
 class InputSystem;
 class GameRenderSystem;
 class TimeManager;
-class VulkanGameRenderer;
+#include "modules/rendering/IGameRenderer.hpp"
 
 /*
     GameInstance
@@ -42,7 +42,7 @@ public:
                  World world,
                  GameRenderSystem& renderSystem,
                  RendererSettings& rendererSettings,
-                 VulkanGameRenderer& renderer);
+                 IGameRenderer& renderer);
 
     // --------------------------------------------------------
     // Game Loop
@@ -97,7 +97,7 @@ private:
     PhysicsSystem physicsSystem_;
     GameRenderSystem& renderSystem_;
     RendererSettings& rendererSettings_;
-    VulkanGameRenderer& renderer_;
+    IGameRenderer& renderer_;
 
     DeveloperConsole developerConsole_;
     std::vector<BehaviourComponent*> behaviours_;

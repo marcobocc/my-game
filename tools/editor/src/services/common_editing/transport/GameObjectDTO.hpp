@@ -5,11 +5,13 @@
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/Metadata.hpp"
+#include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 struct GameObjectDTO {
-    using ComponentVariant = std::variant<Transform, Camera, Renderer, BoxCollider, Light, Metadata, BehaviourScript>;
+    using ComponentVariant =
+            std::variant<Transform, Camera, Renderer, BoxCollider, Light, Metadata, BehaviourScript, ParticleEmitter>;
     EntityHandle handle;
     std::vector<ComponentVariant> components;
 
@@ -51,6 +53,8 @@ struct GameObjectDTO {
                 dto.components.emplace_back(Metadata::deserialize(c["data"]));
             else if (type == "BehaviourScript")
                 dto.components.emplace_back(BehaviourScript::deserialize(c["data"]));
+            else if (type == "ParticleEmitter")
+                dto.components.emplace_back(ParticleEmitter::deserialize(c["data"]));
             else
                 throw std::runtime_error("Invalid component: " + type);
         }
