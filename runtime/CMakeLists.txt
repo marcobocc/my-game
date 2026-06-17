@@ -11,6 +11,8 @@ target_include_directories(GameEngineLib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
+find_package(assimp CONFIG REQUIRED)
+
 target_link_libraries(GameEngineLib PUBLIC
     log4cxx
     fmt::fmt
@@ -29,6 +31,7 @@ target_link_libraries(GameEngineLib PUBLIC
     cr
     subprocess
     Tracy::TracyClient
+    assimp::assimp
 )
 
 # On macOS, link MoltenVK explicitly

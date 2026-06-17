@@ -41,14 +41,14 @@ inline std::unique_ptr<Mesh> AssetLoader::load<Mesh>(const std::string& name) co
         LOG4CXX_ERROR(LOGGER, "Asset not found: " << name);
         return nullptr;
     }
-    std::string objFilePath = name;
+    std::string meshFilePath = name;
     bool reverseWinding = false;
     if (std::filesystem::path(name).extension() == ".mesh") {
         try {
             auto meshData = vfs_.read(name);
             auto meshStr = std::string(meshData.begin(), meshData.end());
             auto j = nlohmann::json::parse(meshStr);
-            objFilePath = JsonUtils::getRequired<std::string>(j, "meshFile");
+            meshFilePath = JsonUtils::getRequired<std::string>(j, "meshFile");
             bool ccw = JsonUtils::getOptional<bool>(j, "ccw", true);
             reverseWinding = !ccw;
         } catch (const std::exception& e) {
@@ -56,14 +56,18 @@ inline std::unique_ptr<Mesh> AssetLoader::load<Mesh>(const std::string& name) co
             return nullptr;
         }
     }
-    auto mesh = importing::importObjFile(objFilePath, reverseWinding, name, vfs_);
-    if (mesh) {
+    try {
+        auto meshes = importing::importMeshFile(meshFilePath, reverseWinding, name, vfs_);
+        if (meshes.empty()) return nullptr;
+        auto& mesh = meshes[0];
         auto meshPtr = mesh.get();
         cache_.insert<Mesh>(std::move(mesh));
         LOG4CXX_INFO(LOGGER, "Successfully loaded mesh: " << name);
         return std::make_unique<Mesh>(*meshPtr);
+    } catch (const std::exception& e) {
+        LOG4CXX_ERROR(LOGGER, "Failed to import mesh: " << name << " - " << e.what());
+        return nullptr;
     }
-    return nullptr;
 }
 
 template<>

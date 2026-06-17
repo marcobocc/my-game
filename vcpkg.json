@@ -42,6 +42,10 @@
     {
       "name": "gtest",
       "default-features": true
+    },
+    {
+      "name": "assimp",
+      "default-features": true
     }
   ]
 }

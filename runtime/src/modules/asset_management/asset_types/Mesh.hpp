@@ -2,7 +2,6 @@
 #include <string>
 #include <vector>
 #include "Asset.hpp"
-#include "utils/JsonUtils.hpp"
 #include "utils/math/AABB.hpp"
 #include "utils/math/BoundingSphere.hpp"
 
@@ -21,6 +20,23 @@ public:
         indices_(std::move(indices)),
         normals_(std::move(normals)),
         tangents_(computeTangents(positions_, uvs_, indices_)),
+        aabb_(positions_),
+        boundingSphere_(positions_) {}
+
+    Mesh(const std::string& name,
+         std::vector<glm::vec3> positions,
+         std::vector<glm::vec2> uvs,
+         std::vector<glm::vec3> colors,
+         std::vector<uint32_t> indices,
+         std::vector<glm::vec3> normals,
+         std::vector<glm::vec4> tangents) :
+        Asset(name),
+        positions_(std::move(positions)),
+        uvs_(std::move(uvs)),
+        colors_(std::move(colors)),
+        indices_(std::move(indices)),
+        normals_(std::move(normals)),
+        tangents_(tangents.empty() ? computeTangents(positions_, uvs_, indices_) : std::move(tangents)),
         aabb_(positions_),
         boundingSphere_(positions_) {}
 

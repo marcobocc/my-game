@@ -1,135 +1,103 @@
 #include "MeshImporter.hpp"
-#include <filesystem>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 #include <glm/glm.hpp>
-#include <sstream>
-#include <string>
-#include <vector>
+#include <stdexcept>
 #include "VirtualFileSystem.hpp"
 
-struct ParsedData {
-    struct Index {
-        int p = -1, uv = -1, n = -1;
-    };
-    std::vector<glm::vec3> positions;
-    std::vector<glm::vec2> uvs;
-    std::vector<glm::vec3> normals;
-    std::vector<std::vector<Index>> faces;
-};
-
-ParsedData::Index parseFaceVertex(const std::string& s) {
-    ParsedData::Index out;
-    size_t first = s.find('/');
-    if (first == std::string::npos) {
-        out.p = std::stoi(s) - 1;
-        return out;
-    }
-    out.p = std::stoi(s.substr(0, first)) - 1;
-    size_t second = s.find('/', first + 1);
-    if (second == std::string::npos) {
-        if (first + 1 < s.size()) out.uv = std::stoi(s.substr(first + 1)) - 1;
-        return out;
-    }
-    if (second > first + 1) out.uv = std::stoi(s.substr(first + 1, second - first - 1)) - 1;
-    if (second + 1 < s.size()) out.n = std::stoi(s.substr(second + 1)) - 1;
-    return out;
-}
-
-ParsedData parseObjData(const std::filesystem::path& path, const VirtualFileSystem& vfs) {
-    auto data_vec = vfs.read(path.string());
-    if (data_vec.empty()) throw std::runtime_error("Failed to open OBJ file: " + path.string());
-    std::string fileContent(data_vec.begin(), data_vec.end());
-    std::istringstream fileStream(fileContent);
-    ParsedData data;
-    std::string line;
-    while (std::getline(fileStream, line)) {
-        if (line.empty() || line[0] == '#') continue;
-        std::istringstream ss(line);
-        std::string tag;
-        ss >> tag;
-        if (tag == "v") {
-            glm::vec3 p;
-            ss >> p.x >> p.y >> p.z;
-            data.positions.push_back(p);
-        } else if (tag == "vt") {
-            glm::vec2 uv;
-            ss >> uv.x >> uv.y;
-            uv.y = 1.0f - uv.y;
-            data.uvs.push_back(uv);
-        } else if (tag == "vn") {
-            glm::vec3 n;
-            ss >> n.x >> n.y >> n.z;
-            data.normals.push_back(n);
-        } else if (tag == "f") {
-            std::vector<ParsedData::Index> face;
-            std::string token;
-            while (ss >> token) {
-                face.push_back(parseFaceVertex(token));
-            }
-            if (face.size() >= 3) data.faces.push_back(std::move(face));
-        }
-    }
-    return data;
-}
-
-std::unique_ptr<Mesh> buildMesh(const ParsedData& data, bool reverseWinding, const std::string& name) {
-    std::vector<glm::vec3> positions;
-    std::vector<glm::vec3> colors;
-    std::vector<glm::vec2> uvs;
-    std::vector<glm::vec3> normals;
-    std::vector<uint32_t> indices;
-
-    uint32_t idx = 0;
-    for (const auto& face: data.faces) {
-        for (size_t i = 1; i + 1 < face.size(); ++i) {
-            const auto& v0 = face[0];
-            const auto& v1 = face[i];
-            const auto& v2 = face[i + 1];
-
-            const glm::vec3& p0 = data.positions[v0.p];
-            const glm::vec3& p1 = data.positions[v1.p];
-            const glm::vec3& p2 = data.positions[v2.p];
-
-            glm::vec3 faceNormal = glm::normalize(glm::cross(p1 - p0, p2 - p0));
-            const auto processVertex = [&](const auto& v) {
-                positions.push_back(data.positions[v.p]);
-
-                if (!data.uvs.empty() && v.uv >= 0 && v.uv < static_cast<int>(data.uvs.size())) {
-                    uvs.push_back(data.uvs[v.uv]);
-                } else {
-                    uvs.emplace_back(0.0f);
-                }
-
-                if (!data.normals.empty() && v.n >= 0 && v.n < static_cast<int>(data.normals.size())) {
-                    normals.push_back(data.normals[v.n]);
-                } else {
-                    normals.push_back(faceNormal);
-                }
-
-                indices.push_back(idx++);
-            };
-
-            processVertex(v0);
-            processVertex(v1);
-            processVertex(v2);
-        }
-    }
-
-    if (reverseWinding) {
-        for (size_t i = 0; i + 2 < indices.size(); i += 3) {
-            std::swap(indices[i + 1], indices[i + 2]);
-        }
-    }
-
-    return std::make_unique<Mesh>(
-            name, std::move(positions), std::move(uvs), std::move(colors), std::move(indices), std::move(normals));
-}
-
 namespace importing {
-    std::unique_ptr<Mesh> importObjFile(const std::filesystem::path& filepath,
-                                        bool reverseWinding,
-                                        const std::string& name,
-                                        const VirtualFileSystem& vfs) {
-        ParsedData data = parseObjData(filepath, vfs);
-        return buildMesh(data, reverseWinding, name);
+
+    std::vector<std::unique_ptr<Mesh>> importMeshFile(const std::filesystem::path& filepath,
+                                                      bool reverseWinding,
+                                                      const std::string& namePrefix,
+                                                      const VirtualFileSystem& vfs) {
+        auto realPathOpt = vfs.getRealPath(filepath.string());
+        if (!realPathOpt) {
+            throw std::runtime_error("Mesh file not found in VFS: " + filepath.string());
+        }
+
+        Assimp::Importer importer;
+
+        unsigned int flags = aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
+                             aiProcess_JoinIdenticalVertices | aiProcess_FlipUVs | aiProcess_SortByPType;
+
+        if (reverseWinding) flags |= aiProcess_FlipWindingOrder;
+
+        const aiScene* scene = importer.ReadFile(realPathOpt->string(), flags);
+        if (!scene || !scene->mRootNode || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE)) {
+            throw std::runtime_error("Assimp failed to load: " + filepath.string() + " - " + importer.GetErrorString());
+        }
+
+        std::vector<std::unique_ptr<Mesh>> meshes;
+        meshes.reserve(scene->mNumMeshes);
+
+        for (unsigned int m = 0; m < scene->mNumMeshes; ++m) {
+            const aiMesh* aim = scene->mMeshes[m];
+
+            std::vector<glm::vec3> positions;
+            std::vector<glm::vec2> uvs;
+            std::vector<glm::vec3> normals;
+            std::vector<glm::vec4> tangents;
+            std::vector<glm::vec3> colors;
+            std::vector<uint32_t> indices;
+
+            positions.reserve(aim->mNumVertices);
+            for (unsigned int i = 0; i < aim->mNumVertices; ++i) {
+                positions.emplace_back(aim->mVertices[i].x, aim->mVertices[i].y, aim->mVertices[i].z);
+            }
+
+            if (aim->HasTextureCoords(0)) {
+                uvs.reserve(aim->mNumVertices);
+                for (unsigned int i = 0; i < aim->mNumVertices; ++i) {
+                    uvs.emplace_back(aim->mTextureCoords[0][i].x, aim->mTextureCoords[0][i].y);
+                }
+            }
+
+            if (aim->HasNormals()) {
+                normals.reserve(aim->mNumVertices);
+                for (unsigned int i = 0; i < aim->mNumVertices; ++i) {
+                    normals.emplace_back(aim->mNormals[i].x, aim->mNormals[i].y, aim->mNormals[i].z);
+                }
+            }
+
+            if (aim->HasTangentsAndBitangents()) {
+                tangents.reserve(aim->mNumVertices);
+                for (unsigned int i = 0; i < aim->mNumVertices; ++i) {
+                    glm::vec3 t(aim->mTangents[i].x, aim->mTangents[i].y, aim->mTangents[i].z);
+                    glm::vec3 b(aim->mBitangents[i].x, aim->mBitangents[i].y, aim->mBitangents[i].z);
+                    glm::vec3 n(aim->mNormals[i].x, aim->mNormals[i].y, aim->mNormals[i].z);
+                    float w = (glm::dot(glm::cross(n, t), b) < 0.0f) ? -1.0f : 1.0f;
+                    tangents.emplace_back(t.x, t.y, t.z, w);
+                }
+            }
+
+            if (aim->HasVertexColors(0)) {
+                colors.reserve(aim->mNumVertices);
+                for (unsigned int i = 0; i < aim->mNumVertices; ++i) {
+                    colors.emplace_back(aim->mColors[0][i].r, aim->mColors[0][i].g, aim->mColors[0][i].b);
+                }
+            }
+
+            indices.reserve(aim->mNumFaces * 3);
+            for (unsigned int i = 0; i < aim->mNumFaces; ++i) {
+                for (unsigned int j = 0; j < aim->mFaces[i].mNumIndices; ++j) {
+                    indices.push_back(aim->mFaces[i].mIndices[j]);
+                }
+            }
+
+            std::string meshName = scene->mNumMeshes > 1 ? namePrefix + "_" + std::to_string(m) : namePrefix;
+
+            meshes.push_back(std::make_unique<Mesh>(meshName,
+                                                    std::move(positions),
+                                                    std::move(uvs),
+                                                    std::move(colors),
+                                                    std::move(indices),
+                                                    std::move(normals),
+                                                    std::move(tangents)));
+        }
+
+        return meshes;
     }
+
 } // namespace importing
