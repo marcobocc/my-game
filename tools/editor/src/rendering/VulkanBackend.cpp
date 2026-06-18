@@ -628,12 +628,28 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                            const VulkanRenderGraph<EditorRenderData>& graph,
                            const EditorRenderData& ctx) -> bool {
             const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
+            int fbX = 0, fbY = 0, fbW = 0, fbH = 0;
+            if (ctx.isOffscreen) {
+                fbW = static_cast<int>(extent.width);
+                fbH = static_cast<int>(extent.height);
+            } else {
+                const SceneViewport sv = window_.getSceneViewport();
+                const auto [scaleX, scaleY] = window_.getContentScale();
+                fbX = static_cast<int>(static_cast<float>(sv.x) * scaleX);
+                fbY = static_cast<int>(static_cast<float>(sv.y) * scaleY);
+                fbW = static_cast<int>(static_cast<float>(sv.width) * scaleX);
+                fbH = static_cast<int>(static_cast<float>(sv.height) * scaleY);
+            }
             skyPass_->record(cmd,
                              graph.getImageView(colorTargetHandle_),
                              graph.getImageView(gbufferDepthHandle_),
                              extent,
                              ctx.camera,
-                             ctx.cameraTransform);
+                             ctx.cameraTransform,
+                             fbX,
+                             fbY,
+                             fbW,
+                             fbH);
             return true;
         };
         renderGraph_->addPass(std::move(n));

@@ -3,7 +3,7 @@
 #include "../../../../runtime/src/modules/console/Imgui_Console.hpp"
 #include "../features/ImguiRoot.hpp"
 #include "../features/application_toolbar/Imgui_ApplicationMenuBar.hpp"
-#include "../features/asset_browser/imgui/Imgui_AssetExplorerPanel.hpp"
+#include "../features/asset_browser/imgui/Imgui_AssetGridPanel.hpp"
 #include "../features/object_inspector/imgui/Imgui_InspectorPanel.hpp"
 #include "../features/scene_hierarchy/imgui/Imgui_HierarchyPanel.hpp"
 #include "../features/scene_viewport/imgui/Imgui_EditorSceneViewport.hpp"
@@ -62,7 +62,7 @@ public:
                         sceneQuickActions,
                         clipboardService),
 
-        assetExplorerPanel_(assetStore, editorSelection, assetQuickActions, assetThumbnailGenerator),
+        assetGridPanel_(assetStore, editorSelection, assetQuickActions, assetThumbnailGenerator),
 
         inspectorPanel_(editorSelection, assetStore, scene, editorGizmos),
 
@@ -83,10 +83,11 @@ public:
         imguiRoot_(applicationMenuBar_,
                    sceneViewToolbar_,
                    hierarchyPanel_,
-                   assetExplorerPanel_,
+                   assetGridPanel_,
                    inspectorPanel_,
                    editorSceneViewport_,
-                   console),
+                   console,
+                   window),
 
         simHUDRoot_(simHUD_, console),
         welcomeScreen_(std::filesystem::path{PROJECTS_DIR}, std::filesystem::path{SAMPLES_DIR}),
@@ -102,7 +103,7 @@ private:
     Imgui_ApplicationMenuBar applicationMenuBar_;
     Imgui_SceneViewToolbar sceneViewToolbar_;
     Imgui_HierarchyPanel hierarchyPanel_;
-    Imgui_AssetExplorerPanel assetExplorerPanel_;
+    Imgui_AssetGridPanel assetGridPanel_;
     Imgui_InspectorPanel inspectorPanel_;
     Imgui_EditorSceneViewport editorSceneViewport_;
     Imgui_SimHUD simHUD_;

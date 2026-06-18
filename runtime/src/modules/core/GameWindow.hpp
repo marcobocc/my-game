@@ -1,5 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
+#include <algorithm>
 #include <functional>
 #include <stdexcept>
 #include <utility>
@@ -102,7 +103,11 @@ public:
     }
 
     SceneViewport getSceneViewport() const { return sceneViewport_; }
-    void setSceneViewport(SceneViewport viewport) { sceneViewport_ = viewport; }
+    void setSceneViewport(SceneViewport viewport) {
+        viewport.x = std::max(0, viewport.x);
+        viewport.y = std::max(0, viewport.y);
+        sceneViewport_ = viewport;
+    }
 
     void lockMouse() const { glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED); }
     void unlockMouse() const { glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_NORMAL); }

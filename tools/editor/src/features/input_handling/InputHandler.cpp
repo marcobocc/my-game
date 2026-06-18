@@ -144,10 +144,13 @@ void InputHandler::processCameraInput(double mouseX, double mouseY, double delta
         wasPanning_ = false;
     }
 
-    // Handle zoom
+    // Handle zoom — only when mouse is inside the scene viewport
     double scroll = inputSystem_.getScrollDelta();
     if (scroll != 0.0) {
-        editorCamera_.zoom(scroll);
+        auto sv = window_.getSceneViewport();
+        double mx = mouseX, my = mouseY;
+        bool inViewport = mx >= sv.x && mx < sv.x + sv.width && my >= sv.y && my < sv.y + sv.height;
+        if (inViewport) editorCamera_.zoom(scroll);
     }
 
     // Handle keyboard movement

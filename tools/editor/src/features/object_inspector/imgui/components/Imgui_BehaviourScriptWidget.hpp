@@ -1,7 +1,7 @@
 #pragma once
 #include <array>
 #include <filesystem>
-#include <imgui.h>
+#include <optional>
 #include <string>
 #include "../Imgui_InspectorWidget.hpp"
 #include "modules/scene/components/BehaviourScript.hpp"
@@ -11,7 +11,7 @@ class RuntimeScene;
 class Imgui_BehaviourScriptWidget : public Imgui_InspectorWidget {
 public:
     Imgui_BehaviourScriptWidget(RuntimeScene& scene, std::string title) :
-        Imgui_InspectorWidget(std::move(title), 3),
+        Imgui_InspectorWidget(std::move(title)),
         scene_(scene) {}
 
     void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
@@ -30,36 +30,26 @@ private:
     std::array<char, 256> nameBuf_{};
     size_t index_ = 0;
 
-    void drawBody() override {
+    void buildProperties() override {
         if (!lastObjectId_) return;
 
-        ImGui::Columns(2, nullptr, false);
-        ImGui::SetColumnWidth(0, 90.0f);
-        ImGui::TextUnformatted("Script");
-        ImGui::NextColumn();
-        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
-        if (ImGui::InputText("##scriptName", nameBuf_.data(), nameBuf_.size(), ImGuiInputTextFlags_EnterReturnsTrue)) {
-            component_.scriptName = nameBuf_.data();
-            commitEdit();
-        }
-        if (ImGui::BeginDragDropTarget()) {
-            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("SCRIPT_ASSET")) {
-                std::string vfsPath = static_cast<const char*>(payload->Data);
-                std::string className = extractClassName(vfsPath);
-                if (!className.empty()) {
-                    component_.scriptName = className;
-                    component_.scriptName.copy(nameBuf_.data(), nameBuf_.size() - 1);
-                    nameBuf_[component_.scriptName.size()] = '\0';
+        add<InputTextEditableProperty>(
+                "Script",
+                nameBuf_,
+                [this] {
+                    component_.scriptName = nameBuf_.data();
                     commitEdit();
-                }
-            }
-            ImGui::EndDragDropTarget();
-        }
-        ImGui::Columns(1);
-    }
-
-    static std::string extractClassName(const std::string& vfsPath) {
-        return std::filesystem::path(vfsPath).stem().string();
+                },
+                "SCRIPT_ASSET",
+                [this](const char* path) {
+                    std::string className = std::filesystem::path(path).stem().string();
+                    if (!className.empty()) {
+                        component_.scriptName = className;
+                        component_.scriptName.copy(nameBuf_.data(), nameBuf_.size() - 1);
+                        nameBuf_[component_.scriptName.size()] = '\0';
+                        commitEdit();
+                    }
+                });
     }
 
     void commitEdit() {

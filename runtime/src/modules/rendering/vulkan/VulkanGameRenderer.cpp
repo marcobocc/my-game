@@ -314,7 +314,11 @@ void VulkanGameRenderer::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlag
                              graph.getImageView(gbufferDepthHandle_),
                              extent,
                              ctx.camera,
-                             ctx.cameraTransform);
+                             ctx.cameraTransform,
+                             0,
+                             0,
+                             static_cast<int>(extent.width),
+                             static_cast<int>(extent.height));
             return true;
         };
         graph_->addPass(std::move(n));

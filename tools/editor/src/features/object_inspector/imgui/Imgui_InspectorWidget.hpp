@@ -1,25 +1,33 @@
 #pragma once
 #include <functional>
 #include <imgui.h>
+#include <memory>
 #include <string>
+#include <vector>
 #include "../../../styling/ImguiStyling.hpp"
+#include "../../../styling/InspectorProperty.hpp"
 
 class Imgui_InspectorWidget {
 public:
     virtual ~Imgui_InspectorWidget() = default;
-    Imgui_InspectorWidget(std::string title, int rows) : title_(std::move(title)), rows_(rows) {}
+    explicit Imgui_InspectorWidget(std::string title) : title_(std::move(title)) {}
 
     void draw(const char* contextId = nullptr, std::function<void()> onRemove = nullptr) {
-        if (!ImGui::BeginChild(title_.c_str(), {0, childHeight(rows_)}, false)) {
+        if (!ImGui::BeginChild(title_.c_str(), {0, 0}, ImGuiChildFlags_AutoResizeY)) {
             ImGui::EndChild();
             return;
         }
         drawHeader(contextId, onRemove);
 
         ImguiStyling::withBodyStyling([this] {
-            ImGui::BeginChild("##Body", ImVec2(0, 0), ImGuiChildFlags_AlwaysUseWindowPadding);
+            ImGui::BeginChild(
+                    "##Body", ImVec2(0, 0), ImGuiChildFlags_AutoResizeY | ImGuiChildFlags_AlwaysUseWindowPadding);
 
-            drawBody();
+            properties_.clear();
+            buildProperties();
+            for (auto& p: properties_)
+                p->draw();
+
             ImGui::EndChild();
         });
         ImGui::EndChild();
@@ -27,11 +35,20 @@ public:
 
 protected:
     const char* getTitle() const { return title_.c_str(); }
-    virtual void drawBody() = 0;
+
+    // Subclasses populate properties_ by calling add() inside buildProperties().
+    virtual void buildProperties() = 0;
+
+    template<typename T, typename... Args>
+    void add(Args&&... args) {
+        properties_.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
+    }
+
+    void addRaw(std::unique_ptr<InspectorProperty> p) { properties_.emplace_back(std::move(p)); }
 
 private:
     std::string title_;
-    int rows_;
+    std::vector<std::unique_ptr<InspectorProperty>> properties_;
 
     void drawHeader(const char* contextId = nullptr, std::function<void()> onRemove = nullptr) {
         constexpr float height = 20.0f;
@@ -59,9 +76,5 @@ private:
                     true);
         }
         ImGui::EndChild();
-    }
-
-    static float childHeight(int rows) {
-        return ImGui::GetFrameHeightWithSpacing() * static_cast<float>(rows) + ImGui::GetStyle().WindowPadding.y;
     }
 };

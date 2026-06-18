@@ -28,7 +28,11 @@ public:
                 VkImageView depthView,
                 VkExtent2D extent,
                 const Camera& camera,
-                const Transform& cameraTransform) const {
+                const Transform& cameraTransform,
+                int fbX,
+                int fbY,
+                int fbW,
+                int fbH) const {
         if (!pipeline_ || !meshBuffers_) return;
 
         VkRenderingAttachmentInfo colorAttachment{};
@@ -55,10 +59,14 @@ public:
 
         vkCmdBeginRendering(cmd, &renderingInfo);
 
-        VkViewport viewport{
-                0.0f, 0.0f, static_cast<float>(extent.width), static_cast<float>(extent.height), 0.0f, 1.0f};
+        VkViewport viewport{static_cast<float>(fbX),
+                            static_cast<float>(fbY),
+                            static_cast<float>(fbW),
+                            static_cast<float>(fbH),
+                            0.0f,
+                            1.0f};
         vkCmdSetViewport(cmd, 0, 1, &viewport);
-        VkRect2D scissor{{0, 0}, extent};
+        VkRect2D scissor{{fbX, fbY}, {static_cast<uint32_t>(fbW), static_cast<uint32_t>(fbH)}};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
         struct SkyPushConstants {

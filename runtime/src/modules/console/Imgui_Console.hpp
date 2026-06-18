@@ -31,7 +31,7 @@ public:
 private:
     bool matchesFilters(const LogMessage& msg) const;
 
-    bool visible_ = false;
+    bool visible_ = true;
     DeveloperConsole* console_;
     ConsoleBuffer<std::shared_ptr<IConsoleMessage>> responseBuffer_;
     std::deque<std::shared_ptr<IConsoleMessage>> cachedMessages_;

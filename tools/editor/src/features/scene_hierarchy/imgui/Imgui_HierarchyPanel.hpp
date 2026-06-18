@@ -19,9 +19,6 @@
 
 class Imgui_HierarchyPanel : public EditorPanel {
 public:
-    static constexpr float PANEL_WIDTH_RATIO = 0.15f;
-    static constexpr float ASSETS_HEIGHT_RATIO = 0.3f;
-
     Imgui_HierarchyPanel(AssetStore& assetStore,
                          EditorSelection& editorSelection,
                          RuntimeScene& scene,
@@ -44,17 +41,7 @@ public:
                       this,
                       &spherePopupModal_) {}
 
-    void draw() {
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        float menuBarHeight = ImGui::GetFrameHeight();
-        float width = viewport->Size.x * PANEL_WIDTH_RATIO;
-        float assetsHeight = viewport->Size.y * ASSETS_HEIGHT_RATIO;
-        float height = viewport->Size.y - menuBarHeight - assetsHeight;
-
-        ImVec2 position = {viewport->Pos.x, viewport->Pos.y + menuBarHeight};
-        ImVec2 size = {width, height};
-        EditorPanel::draw("Objects Hierarchy", position, size);
-    }
+    void draw() { EditorPanel::draw("Objects Hierarchy"); }
 
     void startRenaming(EntityHandle entity, const std::string& currentName) {
         editingEntity_ = entity;

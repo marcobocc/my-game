@@ -7,8 +7,6 @@
 
 class Imgui_SceneViewToolbar {
 public:
-    static constexpr float HIERARCHY_WIDTH_RATIO = 0.15f;
-    static constexpr float INSPECTOR_WIDTH_RATIO = 0.25f;
     static constexpr float BAR_HEIGHT = 20.0f;
 
     Imgui_SceneViewToolbar(EditorSettings& editorSettings,
@@ -18,36 +16,21 @@ public:
         editorGizmos_(editorGizmos),
         simulationController_(simulationController) {}
 
-    void draw() {
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        float menuBarHeight = ImGui::GetFrameHeight() * 0.5f;
-        float width = viewport->Size.x * (1.0f - HIERARCHY_WIDTH_RATIO - INSPECTOR_WIDTH_RATIO);
-        float xPos = viewport->Size.x * HIERARCHY_WIDTH_RATIO;
-
-        ImGui::SetNextWindowPos({viewport->Pos.x + xPos, viewport->Pos.y + menuBarHeight});
-        ImGui::SetNextWindowSize({width, BAR_HEIGHT});
-
-        constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                                           ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                                           ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus;
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {8.0f, 0.0f});
+    // Call this from inside the dockspace host window, before DockSpace().
+    void draw(float width) {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, {6.0f, 0.0f});
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {6.0f, 0.0f});
 
-        ImGui::Begin("SceneViewToolbar", nullptr, flags);
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImGui::GetWindowDrawList()->AddRectFilled(pos, {pos.x + width, pos.y + BAR_HEIGHT}, IM_COL32(20, 20, 20, 255));
 
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10.0f);
+        ImGui::BeginChild("ToolbarRow",
+                          ImVec2(width, BAR_HEIGHT),
+                          false,
+                          ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-        ImVec2 p0 = ImGui::GetWindowPos();
-        ImVec2 sz = ImGui::GetWindowSize();
-        ImGui::GetWindowDrawList()->AddRectFilled(
-                p0, {p0.x + sz.x, p0.y + sz.y}, ImGui::GetColorU32({0.05f, 0.05f, 0.05f, 1.0f}), 4.0f);
-
-        ImGui::BeginChild(
-                "ToolbarRow", ImVec2(0, 0), false, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4.0f);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 2.0f);
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 8.0f);
 
         ImGui::AlignTextToFramePadding();
 
@@ -120,9 +103,7 @@ public:
         drawButton("BVH", editorGizmos_.bvhEnabled(), [&] { editorGizmos_.toggleBVH(); });
 
         ImGui::EndChild();
-
-        ImGui::End();
-        ImGui::PopStyleVar(3);
+        ImGui::PopStyleVar(2);
     }
 
 private:

@@ -16,14 +16,7 @@ public:
         gameObjectInspector_(editorSelection, assetStore, scene, debugViz),
         materialInspector(assetStore, editorSelection) {}
 
-    void draw() {
-        ImGuiViewport* viewport = ImGui::GetMainViewport();
-        float menuBarHeight = ImGui::GetFrameHeight();
-        float width = viewport->Size.x * PANEL_WIDTH_RATIO;
-        ImVec2 position = {viewport->Pos.x + viewport->Size.x - width, viewport->Pos.y + menuBarHeight};
-        ImVec2 size = {width, viewport->Size.y - menuBarHeight};
-        EditorPanel::draw("Inspector", position, size);
-    }
+    void draw() { EditorPanel::draw("Inspector"); }
 
     void drawBody() override {
         const auto& inspectedEntity = editorSelection_.getInspectedEntity();
@@ -36,8 +29,6 @@ public:
             gameObjectInspector_.draw(*inspectedEntity);
         }
     }
-
-    static constexpr float PANEL_WIDTH_RATIO = 0.25f;
 
 private:
     EditorSelection& editorSelection_;

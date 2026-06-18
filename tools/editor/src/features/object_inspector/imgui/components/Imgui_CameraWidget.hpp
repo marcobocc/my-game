@@ -1,12 +1,12 @@
 #pragma once
-#include <imgui.h>
+#include <optional>
 #include "../../../../services/common_editing/RuntimeScene.hpp"
 #include "../Imgui_InspectorWidget.hpp"
 #include "modules/scene/components/Camera.hpp"
 
 class Imgui_CameraWidget : public Imgui_InspectorWidget {
 public:
-    explicit Imgui_CameraWidget(RuntimeScene& scene) : Imgui_InspectorWidget("Camera", 10), scene_(scene) {}
+    explicit Imgui_CameraWidget(RuntimeScene& scene) : Imgui_InspectorWidget("Camera"), scene_(scene) {}
 
     void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
     void setComponent(const Camera& c) { component_ = c; }
@@ -15,51 +15,56 @@ private:
     RuntimeScene& scene_;
     std::optional<EntityHandle> lastObjectId_;
     Camera component_{};
-    std::string groupId_;
 
-    void drawBody() override {
+    void buildProperties() override {
         if (!lastObjectId_) return;
-        bool isActive = scene_.isActiveCamera(*lastObjectId_);
-        if (ImGui::Checkbox("Active Camera", &isActive)) {
-            if (isActive)
-                scene_.setActiveCamera(*lastObjectId_);
-            else
-                scene_.clearActiveCamera();
-        }
-        ImGui::Spacing();
-        drawRow("FOV", [&] {
-            ImGui::DragFloat("##fov", &component_.fov, 0.5f, 1.0f, 179.0f);
-            trackDrag(UndoHistory::randomGroupId("Set FOV"));
-        });
-        drawRow("Near Plane", [&] {
-            ImGui::DragFloat("##near", &component_.nearPlane, 0.01f, 0.001f, 1000.0f);
-            trackDrag(UndoHistory::randomGroupId("Set Near Plane"));
-        });
-        drawRow("Far Plane", [&] {
-            ImGui::DragFloat("##far", &component_.farPlane, 0.5f, 0.1f, 10000.0f);
-            trackDrag(UndoHistory::randomGroupId("Set Far Plane"));
-        });
-        ImGui::Separator();
-        ImGui::Text("Aspect: %.3f", component_.aspect);
+
+        add<CheckboxProperty>(
+                "Active Camera",
+                [this] { return scene_.isActiveCamera(*lastObjectId_); },
+                [this](bool v) {
+                    if (v)
+                        scene_.setActiveCamera(*lastObjectId_);
+                    else
+                        scene_.clearActiveCamera();
+                });
+        add<SpacingProperty>();
+
+        add<DragFloatProperty>(
+                "FOV",
+                [this] { return component_.fov; },
+                [this](float v) { component_.fov = v; },
+                0.5f,
+                1.0f,
+                179.0f,
+                [this] { commit("Set FOV"); });
+
+        add<DragFloatProperty>(
+                "Near Plane",
+                [this] { return component_.nearPlane; },
+                [this](float v) { component_.nearPlane = v; },
+                0.01f,
+                0.001f,
+                1000.0f,
+                [this] { commit("Set Near Plane"); });
+
+        add<DragFloatProperty>(
+                "Far Plane",
+                [this] { return component_.farPlane; },
+                [this](float v) { component_.farPlane = v; },
+                0.5f,
+                0.1f,
+                10000.0f,
+                [this] { commit("Set Far Plane"); });
+
+        add<SeparatorProperty>();
+        add<FloatLabelProperty>("Aspect", [this] { return component_.aspect; }, "%.3f");
     }
 
-    template<typename Fn>
-    void drawRow(const char* label, Fn&& fn) {
-        ImGui::Columns(2, nullptr, false);
-        ImGui::SetColumnWidth(0, 90.0f);
-        ImGui::TextUnformatted(label);
-        ImGui::NextColumn();
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(6, 0));
-        fn();
-        ImGui::PopStyleVar();
-        ImGui::Columns(1);
-    }
-
-    void trackDrag(const std::string& groupId) {
+    void commit(const char* label) {
         if (!lastObjectId_) return;
-        if (ImGui::IsItemDeactivatedAfterEdit()) {
-            Camera snapshot = component_;
-            scene_.getObject(*lastObjectId_).mutateComponent<Camera>([snapshot](Camera& c) { c = snapshot; }, groupId);
-        }
+        Camera snapshot = component_;
+        scene_.getObject(*lastObjectId_)
+                .mutateComponent<Camera>([snapshot](Camera& c) { c = snapshot; }, UndoHistory::randomGroupId(label));
     }
 };

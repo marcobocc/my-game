@@ -14,6 +14,7 @@ VulkanUIPass::VulkanUIPass(const VulkanContext& vulkanContext,
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     ImGui_ImplGlfw_InitForVulkan(window.get(), true);
 
     VkFormat swapchainImageFormat = swapchainManager.swapchain().swapchainImageFormat;
@@ -49,6 +50,11 @@ void VulkanUIPass::prepareFrame() {
     ImGui::NewFrame();
     if (drawCallback_) drawCallback_();
     ImGui::Render();
+
+    if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+    }
 }
 
 void VulkanUIPass::record(VkCommandBuffer cmd, VkImageView colorView, VkExtent2D extent, bool clear) {

@@ -1,5 +1,6 @@
 #pragma once
 #include <imgui.h>
+#include <memory>
 #include <string>
 #include <vector>
 #include "../../../services/EditorSelection.hpp"
@@ -53,7 +54,7 @@ private:
     Imgui_BoxColliderWidget boxColliderWidget_;
     Imgui_CameraWidget cameraWidget_;
     Imgui_LightWidget lightWidget_;
-    std::vector<Imgui_BehaviourScriptWidget> behaviourScriptWidgets_;
+    std::vector<std::unique_ptr<Imgui_BehaviourScriptWidget>> behaviourScriptWidgets_;
 
     void drawObject(EntityHandle entity) {
         RuntimeGameObject obj = scene_.getObject(entity);
@@ -82,13 +83,13 @@ private:
         }
         auto scripts = scene_.getObject(entity).getComponents<BehaviourScript>();
         while (behaviourScriptWidgets_.size() < scripts.size())
-            behaviourScriptWidgets_.emplace_back(scene_,
-                                                 "BehaviourScript_" + std::to_string(behaviourScriptWidgets_.size()));
+            behaviourScriptWidgets_.emplace_back(std::make_unique<Imgui_BehaviourScriptWidget>(
+                    scene_, "BehaviourScript_" + std::to_string(behaviourScriptWidgets_.size())));
         for (size_t i = 0; i < scripts.size(); ++i) {
-            behaviourScriptWidgets_[i].setCurrentObjectId(entity);
-            behaviourScriptWidgets_[i].setComponent(*scripts[i], i);
+            behaviourScriptWidgets_[i]->setCurrentObjectId(entity);
+            behaviourScriptWidgets_[i]->setComponent(*scripts[i], i);
             std::string contextId = "BehaviourScriptContext_" + std::to_string(i);
-            behaviourScriptWidgets_[i].draw(contextId.c_str(), [this, entity, i] {
+            behaviourScriptWidgets_[i]->draw(contextId.c_str(), [this, entity, i] {
                 scene_.getObject(entity).removeComponentAt<BehaviourScript>(i);
             });
         }

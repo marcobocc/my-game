@@ -4,12 +4,12 @@
 #include "../../scene_hierarchy/imgui/Imgui_HierarchyDropdownMenu.hpp"
 #include "../editor_camera/EditorCamera.hpp"
 #include "../picking/PickingSystem.hpp"
+#include "modules/core/GameWindow.hpp"
 #include "modules/scene/components/Renderer.hpp"
 
 class RuntimeScene;
 class AssetStore;
 class EditorSelection;
-class GameWindow;
 
 class Imgui_EditorSceneViewport {
 public:
@@ -44,13 +44,16 @@ public:
                       nullptr,
                       &spherePopupModal_) {}
 
+    bool isMouseInViewport() const { return isMouseInViewport_; }
+
     void draw() {
         spherePopupModal_.draw();
 
         auto sv = window_.getSceneViewport();
         ImVec2 mousePos = ImGui::GetMousePos();
-        bool isInViewport = mousePos.x >= sv.x && mousePos.x < sv.x + sv.width && mousePos.y >= sv.y &&
-                            mousePos.y < sv.y + sv.height;
+        isMouseInViewport_ = mousePos.x >= sv.x && mousePos.x < sv.x + sv.width && mousePos.y >= sv.y &&
+                             mousePos.y < sv.y + sv.height;
+        bool isInViewport = isMouseInViewport_;
 
         if (isInViewport && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
             if (const ImGuiPayload* payload = ImGui::GetDragDropPayload()) {
@@ -152,5 +155,6 @@ private:
     float rightClickStartX_ = 0.0f;
     float rightClickStartY_ = 0.0f;
     bool hasMovedSinceRightClick_ = false;
+    bool isMouseInViewport_ = false;
     std::optional<EntityHandle> contextTargetId_;
 };

@@ -23,16 +23,16 @@ public:
 
         colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
         colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-        colors[ImGuiCol_WindowBg] = ImVec4(0.2f, 0.2f, 0.2f, 1.00f);
+        colors[ImGuiCol_WindowBg] = ImVec4(0.208f, 0.239f, 0.290f, 1.00f); // rgb(53 61 74) — panel bg
         colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
         colors[ImGuiCol_PopupBg] = ImVec4(0.14f, 0.14f, 0.14f, 0.95f);
-        colors[ImGuiCol_Border] = ImVec4(0.01f, 0.01f, 0.01f, 1.00f);
+        colors[ImGuiCol_Border] = ImVec4(0.141f, 0.169f, 0.208f, 1.00f); // rgb(36 43 53)
         colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
         colors[ImGuiCol_FrameBg] = ImVec4(0.16f, 0.16f, 0.17f, 1.00f);
         colors[ImGuiCol_FrameBgHovered] = ImVec4(0.22f, 0.22f, 0.24f, 1.00f);
         colors[ImGuiCol_FrameBgActive] = ImVec4(0.25f, 0.25f, 0.27f, 1.00f);
-        colors[ImGuiCol_TitleBg] = ImVec4(0.12f, 0.12f, 0.13f, 1.00f);
-        colors[ImGuiCol_TitleBgActive] = ImVec4(0.16f, 0.16f, 0.17f, 1.00f);
+        colors[ImGuiCol_TitleBg] = ImVec4(0.137f, 0.165f, 0.204f, 1.00f); // rgb(35 42 52) — docking container tab bar
+        colors[ImGuiCol_TitleBgActive] = ImVec4(0.137f, 0.165f, 0.204f, 1.00f);
         colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
         colors[ImGuiCol_MenuBarBg] = ImVec4(0.14f, 0.14f, 0.14f, 1.00f);
         colors[ImGuiCol_ScrollbarBg] = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
@@ -54,11 +54,11 @@ public:
         colors[ImGuiCol_ResizeGrip] = ImVec4(0.25f, 0.25f, 0.25f, 0.25f);
         colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.35f, 0.35f, 0.35f, 0.67f);
         colors[ImGuiCol_ResizeGripActive] = ImVec4(0.82f, 0.55f, 0.20f, 0.95f);
-        colors[ImGuiCol_Tab] = ImVec4(0.16f, 0.16f, 0.17f, 1.00f);
-        colors[ImGuiCol_TabHovered] = ImVec4(0.22f, 0.22f, 0.24f, 1.00f);
-        colors[ImGuiCol_TabActive] = ImVec4(0.82f, 0.55f, 0.20f, 0.25f);
-        colors[ImGuiCol_TabUnfocused] = ImVec4(0.12f, 0.12f, 0.13f, 1.00f);
-        colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.16f, 0.16f, 0.17f, 1.00f);
+        colors[ImGuiCol_Tab] = ImVec4(0.137f, 0.165f, 0.204f, 1.00f);
+        colors[ImGuiCol_TabHovered] = ImVec4(0.208f, 0.239f, 0.290f, 1.00f);
+        colors[ImGuiCol_TabActive] = ImVec4(0.208f, 0.239f, 0.290f, 1.00f);
+        colors[ImGuiCol_TabUnfocused] = ImVec4(0.137f, 0.165f, 0.204f, 1.00f);
+        colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.208f, 0.239f, 0.290f, 1.00f);
         colors[ImGuiCol_DockingPreview] = ImVec4(0.82f, 0.55f, 0.20f, 0.25f);
         colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.12f, 0.12f, 0.13f, 1.00f);
         colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
@@ -81,8 +81,8 @@ public:
     template<typename Fn>
     static void withBodyStyling(Fn&& fn) {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(10.0f, 2.0f));
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 3.0f));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 10.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(6.0f, 2.0f));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(8.0f, 4.0f));
         fn();
         ImGui::PopStyleVar(3);
     }

@@ -1,6 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <imgui.h>
+#include <memory>
+#include <vector>
 #include "../../../../services/EditorSelection.hpp"
 #include "../../../../services/common_editing/AssetStore.hpp"
 #include "../Imgui_InspectorWidget.hpp"
@@ -9,207 +10,131 @@
 class Imgui_MaterialWidget : public Imgui_InspectorWidget {
 public:
     Imgui_MaterialWidget(AssetStore& assetStore, EditorSelection& editorSelection) :
-        Imgui_InspectorWidget("Material", 18),
+        Imgui_InspectorWidget("Material"),
         assetStore_(assetStore),
-        editorSelection_(editorSelection),
-        colorPickerValue_{1.0f, 1.0f, 1.0f, 1.0f} {}
+        editorSelection_(editorSelection) {}
 
 private:
     AssetStore& assetStore_;
     EditorSelection& editorSelection_;
-    float colorPickerValue_[4];
 
-    void drawBody() override {
+    void buildProperties() override {
         const auto& inspected = editorSelection_.getInspectedAsset();
         if (!inspected.has_value()) return;
-        const AssetHandle& selectedAsset = *inspected;
+        const AssetHandle& asset = *inspected;
 
         try {
-            const Material& mat = assetStore_.getAsset<Material>(selectedAsset);
-            bool immutable = !AssetStore::isMutable(selectedAsset);
+            assetStore_.getAsset<Material>(asset); // validate exists
+            bool immutable = !AssetStore::isMutable(asset);
 
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 6));
+            std::vector<std::unique_ptr<InspectorProperty>> props;
 
-            if (immutable) {
-                ImGui::BeginDisabled();
-            }
+            props.emplace_back(std::make_unique<LabelProperty>("Name", [asset] { return std::string(asset); }));
 
-            row("Name", [&] { ImGui::TextUnformatted(selectedAsset.c_str()); });
-            row("Albedo", [&] {
-                ImGui::SetNextItemWidth(-1);
-                const std::string displayText = (mat.albedoTexture == EMPTY_TEXTURE) ? "" : mat.albedoTexture;
-                ImGui::InputText("##albedoTexture",
-                                 const_cast<char*>(displayText.c_str()),
-                                 displayText.size() + 1,
-                                 ImGuiInputTextFlags_ReadOnly);
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
-                        const char* textureName = static_cast<const char*>(payload->Data);
-                        assetStore_.mutateAsset<Material>(selectedAsset,
-                                                          [&](Material& m) { m.albedoTexture = textureName; });
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-            });
+            props.emplace_back(std::make_unique<InputTextProperty>(
+                    "Albedo",
+                    [this, asset] {
+                        const Material& m = assetStore_.getAsset<Material>(asset);
+                        return (m.albedoTexture == EMPTY_TEXTURE) ? std::string{} : m.albedoTexture;
+                    },
+                    "texture_asset",
+                    [this, asset](const char* tex) {
+                        assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.albedoTexture = tex; });
+                    }));
 
-            glm::vec4 color = mat.tint;
-            colorPickerValue_[0] = color.r;
-            colorPickerValue_[1] = color.g;
-            colorPickerValue_[2] = color.b;
-            colorPickerValue_[3] = color.a;
-            if (ImGui::ColorEdit4("Tint", colorPickerValue_)) {
-                assetStore_.mutateAsset<Material>(selectedAsset, [&](Material& m) {
-                    m.tint = glm::vec4(
-                            colorPickerValue_[0], colorPickerValue_[1], colorPickerValue_[2], colorPickerValue_[3]);
-                });
-            }
+            props.emplace_back(std::make_unique<ColorEdit4Property>(
+                    "Tint",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).tint; },
+                    [this, asset](glm::vec4 v) {
+                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.tint = v; });
+                    }));
 
-            ImGui::Spacing();
-            ImGui::Separator();
-            ImGui::Spacing();
+            props.emplace_back(std::make_unique<SeparatorProperty>());
 
-            row("Normal Texture", [&] {
-                ImGui::SetNextItemWidth(-1);
-                const std::string displayText = mat.normalTexture;
-                ImGui::InputText("##normalTexture",
-                                 const_cast<char*>(displayText.c_str()),
-                                 displayText.size() + 1,
-                                 ImGuiInputTextFlags_ReadOnly);
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
-                        const char* textureName = static_cast<const char*>(payload->Data);
-                        assetStore_.mutateAsset<Material>(selectedAsset,
-                                                          [&](Material& m) { m.normalTexture = textureName; });
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-            });
+            props.emplace_back(std::make_unique<InputTextProperty>(
+                    "Normal Texture",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).normalTexture; },
+                    "texture_asset",
+                    [this, asset](const char* tex) {
+                        assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.normalTexture = tex; });
+                    }));
 
-            row("Roughness Texture", [&] {
-                ImGui::SetNextItemWidth(-1);
-                const std::string displayText = mat.roughnessTexture;
-                ImGui::InputText("##roughnessTexture",
-                                 const_cast<char*>(displayText.c_str()),
-                                 displayText.size() + 1,
-                                 ImGuiInputTextFlags_ReadOnly);
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
-                        const char* textureName = static_cast<const char*>(payload->Data);
-                        assetStore_.mutateAsset<Material>(selectedAsset,
-                                                          [&](Material& m) { m.roughnessTexture = textureName; });
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-            });
+            props.emplace_back(std::make_unique<InputTextProperty>(
+                    "Roughness Texture",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).roughnessTexture; },
+                    "texture_asset",
+                    [this, asset](const char* tex) {
+                        assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.roughnessTexture = tex; });
+                    }));
 
-            row("Metallic Texture", [&] {
-                ImGui::SetNextItemWidth(-1);
-                const std::string displayText = mat.metallicTexture;
-                ImGui::InputText("##metallicTexture",
-                                 const_cast<char*>(displayText.c_str()),
-                                 displayText.size() + 1,
-                                 ImGuiInputTextFlags_ReadOnly);
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
-                        const char* textureName = static_cast<const char*>(payload->Data);
-                        assetStore_.mutateAsset<Material>(selectedAsset,
-                                                          [&](Material& m) { m.metallicTexture = textureName; });
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-            });
+            props.emplace_back(std::make_unique<InputTextProperty>(
+                    "Metallic Texture",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).metallicTexture; },
+                    "texture_asset",
+                    [this, asset](const char* tex) {
+                        assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.metallicTexture = tex; });
+                    }));
 
-            row("AO Texture", [&] {
-                ImGui::SetNextItemWidth(-1);
-                const std::string displayText = mat.aoTexture;
-                ImGui::InputText("##aoTexture",
-                                 const_cast<char*>(displayText.c_str()),
-                                 displayText.size() + 1,
-                                 ImGuiInputTextFlags_ReadOnly);
-                if (ImGui::BeginDragDropTarget()) {
-                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("texture_asset")) {
-                        const char* textureName = static_cast<const char*>(payload->Data);
-                        assetStore_.mutateAsset<Material>(selectedAsset,
-                                                          [&](Material& m) { m.aoTexture = textureName; });
-                    }
-                    ImGui::EndDragDropTarget();
-                }
-            });
+            props.emplace_back(std::make_unique<InputTextProperty>(
+                    "AO Texture",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).aoTexture; },
+                    "texture_asset",
+                    [this, asset](const char* tex) {
+                        assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.aoTexture = tex; });
+                    }));
 
-            row("Metallic", [&] {
-                float metallic = mat.metallic;
-                if (ImGui::SliderFloat("##metallic", &metallic, 0.0f, 1.0f)) {
-                    assetStore_.mutateAsset<Material>(selectedAsset, [&](Material& m) { m.metallic = metallic; });
-                }
-            });
+            props.emplace_back(std::make_unique<SliderFloatProperty>(
+                    "Metallic",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).metallic; },
+                    [this, asset](float v) {
+                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.metallic = v; });
+                    }));
 
-            row("Roughness", [&] {
-                float roughness = mat.roughness;
-                if (ImGui::SliderFloat("##roughness", &roughness, 0.0f, 1.0f)) {
-                    assetStore_.mutateAsset<Material>(selectedAsset, [&](Material& m) { m.roughness = roughness; });
-                }
-            });
+            props.emplace_back(std::make_unique<SliderFloatProperty>(
+                    "Roughness",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).roughness; },
+                    [this, asset](float v) {
+                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.roughness = v; });
+                    }));
 
-            row("Ambient Occlusion", [&] {
-                float ao = mat.ao;
-                if (ImGui::SliderFloat("##ao", &ao, 0.0f, 1.0f)) {
-                    assetStore_.mutateAsset<Material>(selectedAsset, [&](Material& m) { m.ao = ao; });
-                }
-            });
+            props.emplace_back(std::make_unique<SliderFloatProperty>(
+                    "Ambient Occlusion",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).ao; },
+                    [this, asset](float v) {
+                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.ao = v; });
+                    }));
 
-            row("Scale Invariant UV", [&] {
-                bool scaleInvariantUV = mat.scaleInvariantUV;
-                if (ImGui::Checkbox("##scaleInvariantUV", &scaleInvariantUV)) {
-                    assetStore_.mutateAsset<Material>(selectedAsset,
-                                                      [&](Material& m) { m.scaleInvariantUV = scaleInvariantUV; });
-                }
-            });
+            props.emplace_back(std::make_unique<CheckboxProperty>(
+                    "Scale Invariant UV",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).scaleInvariantUV; },
+                    [this, asset](bool v) {
+                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.scaleInvariantUV = v; });
+                    }));
 
-            row("Tiling", [&] {
-                glm::vec2 tiling = mat.tiling;
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f - 4.0f);
-                bool changed = false;
-                changed |= ImGui::InputFloat("##tilingX", &tiling.x, 0.0f, 0.0f, "%.3f");
-                ImGui::SameLine(0, 4.0f);
-                changed |= ImGui::InputFloat("##tilingY", &tiling.y, 0.0f, 0.0f, "%.3f");
-                ImGui::PopItemWidth();
-                if (changed) {
-                    assetStore_.mutateAsset<Material>(selectedAsset, [&](Material& m) { m.tiling = tiling; });
-                }
-            });
+            props.emplace_back(std::make_unique<Vec2Property>(
+                    "Tiling",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).tiling; },
+                    [this, asset](glm::vec2 v) {
+                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.tiling = v; });
+                    }));
 
-            row("Offset", [&] {
-                glm::vec2 offset = mat.offset;
-                ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x * 0.5f - 4.0f);
-                bool changed = false;
-                changed |= ImGui::InputFloat("##offsetX", &offset.x, 0.0f, 0.0f, "%.3f");
-                ImGui::SameLine(0, 4.0f);
-                changed |= ImGui::InputFloat("##offsetY", &offset.y, 0.0f, 0.0f, "%.3f");
-                ImGui::PopItemWidth();
-                if (changed) {
-                    assetStore_.mutateAsset<Material>(selectedAsset, [&](Material& m) { m.offset = offset; });
-                }
-            });
+            props.emplace_back(std::make_unique<Vec2Property>(
+                    "Offset",
+                    [this, asset] { return assetStore_.getAsset<Material>(asset).offset; },
+                    [this, asset](glm::vec2 v) {
+                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.offset = v; });
+                    }));
 
             if (immutable) {
-                ImGui::EndDisabled();
-                ImGui::Spacing();
-                ImGui::TextDisabled("(Builtin materials cannot be edited)");
+                addRaw(std::make_unique<DisabledGroupProperty>(std::move(props)));
+                add<SpacingProperty>();
+                add<LabelProperty>("", [] { return std::string("(Builtin materials cannot be edited)"); });
+            } else {
+                for (auto& p: props)
+                    addRaw(std::move(p));
             }
 
-            ImGui::PopStyleVar();
         } catch (const std::exception&) {
-            // Asset doesn't exist
         }
-    }
-
-    template<typename Fn>
-    static void row(const char* label, Fn&& fn) {
-        ImGui::Columns(2, nullptr, false);
-        ImGui::SetColumnWidth(0, 160.0f);
-        ImGui::Text("%s:", label);
-        ImGui::NextColumn();
-        fn();
-        ImGui::Columns(1);
     }
 };

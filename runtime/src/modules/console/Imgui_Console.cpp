@@ -67,7 +67,25 @@ void Imgui_Console::draw() {
     }
 
     static char searchBuf[256] = {0};
-    if (ImGui::InputText("Search##console", searchBuf, sizeof(searchBuf))) setSearchFilter(searchBuf);
+    {
+        constexpr float height = 24.0f;
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(6.0f, 4.0f));
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, IM_COL32(45, 45, 45, 220));
+        ImGui::BeginChild("##ConsoleSearch",
+                          ImVec2(0, height),
+                          ImGuiChildFlags_AlwaysUseWindowPadding,
+                          ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, IM_COL32(38, 38, 38, 255));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, IM_COL32(45, 45, 45, 255));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, IM_COL32(52, 52, 52, 255));
+        if (ImGui::InputTextWithHint("##consoleSearchInput", "Search...", searchBuf, sizeof(searchBuf)))
+            setSearchFilter(searchBuf);
+        ImGui::PopStyleColor(3);
+        ImGui::EndChild();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar();
+    }
 
     float footerHeight = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().ItemSpacing.y;
     ImGui::BeginChild("scroll", ImVec2(0, -footerHeight), false, ImGuiWindowFlags_None);
