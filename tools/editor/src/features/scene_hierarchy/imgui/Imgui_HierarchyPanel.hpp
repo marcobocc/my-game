@@ -99,7 +99,10 @@ public:
             return true;
         };
 
-        std::function<void(const HierarchyNode&)> drawNode = [&](const HierarchyNode& node) {
+        // Forward-declare so drawSiblings can call drawNode recursively.
+        std::function<void(const std::vector<HierarchyNode>&)> drawSiblings;
+
+        std::function<void(const HierarchyNode&, bool)> drawNode = [&](const HierarchyNode& node, bool isFirstSibling) {
             EntityHandle e = node.handle;
             const GameObjectDTO* obj = objMap.count(e) ? objMap[e] : nullptr;
             std::string label = obj ? getLabel(*obj) : "Entity " + std::to_string(e);
@@ -176,31 +179,81 @@ public:
                 rightClickedEntity.emplace(e);
             }
 
-            // Drag source: drag this entity
+            // Drag source
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 ImGui::SetDragDropPayload("HIERARCHY_ENTITY", &e, sizeof(EntityHandle));
                 ImGui::TextUnformatted(label.c_str());
                 ImGui::EndDragDropSource();
             }
 
-            // Drop target: drop onto this entity to reparent
+            // Drop target: bottom half = insert after (line), top half = reparent onto (rect).
+            // Always suppress ImGui's default rect and draw feedback manually so the two
+            // zones never overlap visually.
             if (ImGui::BeginDragDropTarget()) {
-                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("HIERARCHY_ENTITY")) {
-                    EntityHandle dragged = *static_cast<const EntityHandle*>(payload->Data);
-                    if (dragged != e) sceneQuickActions_.reparent(dragged, e);
+                ImVec2 rMin = ImGui::GetItemRectMin();
+                ImVec2 rMax = ImGui::GetItemRectMax();
+                bool botZone = ImGui::GetMousePos().y >= rMin.y + (rMax.y - rMin.y) / 2.0f;
+                ImDrawList* dl = ImGui::GetWindowDrawList();
+                ImU32 col = ImGui::GetColorU32(ImGuiCol_DragDropTarget);
+
+                if (botZone) {
+                    dl->AddLine({rMin.x, rMax.y}, {rMax.x, rMax.y}, col, 2.0f);
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(
+                                "HIERARCHY_ENTITY", ImGuiDragDropFlags_AcceptNoDrawDefaultRect)) {
+                        EntityHandle dragged = *static_cast<const EntityHandle*>(payload->Data);
+                        if (dragged != e) sceneQuickActions_.reorder(dragged, e, false);
+                    }
+                } else if (!isFirstSibling || ImGui::GetDragDropPayload() == nullptr) {
+                    // Suppress the reparent rect for the first sibling when a drag is active:
+                    // the invisible button above it already owns that zone.
+                    dl->AddRect(rMin, rMax, col);
+                    if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(
+                                "HIERARCHY_ENTITY", ImGuiDragDropFlags_AcceptNoDrawDefaultRect)) {
+                        EntityHandle dragged = *static_cast<const EntityHandle*>(payload->Data);
+                        if (dragged != e) sceneQuickActions_.reparent(dragged, e);
+                    }
+                } else {
+                    ImGui::AcceptDragDropPayload("HIERARCHY_ENTITY", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
                 }
                 ImGui::EndDragDropTarget();
             }
 
             if (hasChildren && nodeOpen) {
-                for (const auto& child: node.children)
-                    drawNode(child);
+                drawSiblings(node.children);
                 ImGui::TreePop();
             }
         };
 
-        for (const auto& node: dto.hierarchy)
-            drawNode(node);
+        // Draws a sibling list. Before the first sibling, renders a thin invisible drop zone
+        // so dragging above the first item shows a line and triggers "insert before" it.
+        drawSiblings = [&](const std::vector<HierarchyNode>& siblings) {
+            for (size_t i = 0; i < siblings.size(); ++i) {
+                bool isFirst = (i == 0);
+                if (isFirst && ImGui::GetDragDropPayload() != nullptr) {
+                    ImVec2 cursor = ImGui::GetCursorScreenPos();
+                    ImGui::InvisibleButton("##drop_before_first", {ImGui::GetContentRegionAvail().x, 4.0f});
+                    if (ImGui::BeginDragDropTarget()) {
+                        ImVec2 rMin = ImGui::GetItemRectMin();
+                        ImVec2 rMax = ImGui::GetItemRectMax();
+                        ImGui::GetWindowDrawList()->AddLine(
+                                {rMin.x, rMin.y}, {rMax.x, rMin.y}, ImGui::GetColorU32(ImGuiCol_DragDropTarget), 2.0f);
+                        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(
+                                    "HIERARCHY_ENTITY", ImGuiDragDropFlags_AcceptNoDrawDefaultRect)) {
+                            EntityHandle dragged = *static_cast<const EntityHandle*>(payload->Data);
+                            EntityHandle first = siblings[0].handle;
+                            if (dragged != first) sceneQuickActions_.reorder(dragged, first, true);
+                        }
+                        ImGui::EndDragDropTarget();
+                    }
+                    // Collapse the invisible button when not a drop target so layout is unaffected.
+                    if (!ImGui::IsItemActive()) ImGui::SetCursorScreenPos(cursor);
+                }
+                drawNode(siblings[i], isFirst);
+            }
+        };
+
+        drawSiblings(dto.hierarchy);
+
 
         if (!rightClickedThisFrame && ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             rightClickedThisFrame = true;

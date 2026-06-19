@@ -51,6 +51,8 @@ public:
     void ungroupNode(EntityHandle groupEntity);
     // Moves `child` under `newParent` in the hierarchy tree.
     void reparent(EntityHandle child, EntityHandle newParent);
+    // Moves `dragged` to be a sibling of `anchor`, inserted before or after it.
+    void reorder(EntityHandle dragged, EntityHandle anchor, bool insertBefore);
 
     // --------------------------------------------------------------------------------
     // Prefab Objects
