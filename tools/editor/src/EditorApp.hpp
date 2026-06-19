@@ -7,6 +7,7 @@
 #include "../../../runtime/src/modules/console/ConsoleLogAppender.hpp"
 #include "../../../runtime/src/modules/console/Imgui_Console.hpp"
 #include "features/ImguiRoot.hpp"
+#include "features/close_modal/Imgui_CloseModal.hpp"
 #include "features/input_handling/InputHandler.hpp"
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "features/welcome/Imgui_WelcomeScreen.hpp"
@@ -175,11 +176,19 @@ private:
         editorSettings_.enableGrid();
         window_.onCloseRequest([this] {
             if (appState_ == AppState::Editor && undoHistory_.hasUnsavedChanges())
-                confirmingClose_ = true;
+                closeModal_.show();
             else
                 window_.requestClose();
         });
-        imguiRoot_.setOverlayCallback([this] { drawCloseConfirmModal(); });
+        closeModal_.setCallbacks({
+                [this] {
+                    project_.saveCurrentScene();
+                    window_.requestClose();
+                },
+                [this] { window_.requestClose(); },
+                [this] { /* cancel — do nothing */ },
+        });
+        imguiRoot_.setOverlayCallback([this] { closeModal_.draw(); });
         // If a project was already loaded (via --project CLI arg), skip the welcome screen
         if (project_.getCurrentScenePath().has_value()) enterEditor();
     }
@@ -201,43 +210,6 @@ private:
             if (sv.width > 0 && sv.height > 0)
                 editorCamera_.setAspectRatio(static_cast<float>(sv.width) / static_cast<float>(sv.height));
         });
-    }
-
-    void drawCloseConfirmModal() {
-        if (!confirmingClose_) return;
-
-        ImGuiViewport* vp = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(vp->Pos);
-        ImGui::SetNextWindowSize(vp->Size);
-        constexpr ImGuiWindowFlags hostFlags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                                               ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-                                               ImGuiWindowFlags_NoSavedSettings |
-                                               ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground;
-        ImGui::Begin("##CloseModalHost", nullptr, hostFlags);
-        ImGui::OpenPopup("Unsaved Changes");
-        if (ImGui::BeginPopupModal("Unsaved Changes", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("You have unsaved changes. Quit anyway?");
-            ImGui::Spacing();
-            if (ImGui::Button("Save & Quit")) {
-                project_.saveCurrentScene();
-                ImGui::CloseCurrentPopup();
-                confirmingClose_ = false;
-                window_.requestClose();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Quit Without Saving")) {
-                ImGui::CloseCurrentPopup();
-                confirmingClose_ = false;
-                window_.requestClose();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel")) {
-                ImGui::CloseCurrentPopup();
-                confirmingClose_ = false;
-            }
-            ImGui::EndPopup();
-        }
-        ImGui::End();
     }
 
     void setupConsoleAppender() {
@@ -262,7 +234,7 @@ private:
     SimulationController& simulationController_;
     Imgui_Console& imguiConsole_;
     Imgui_WelcomeScreen& welcomeScreen_;
+    Imgui_CloseModal closeModal_;
     AppState appState_ = AppState::Welcome;
     bool simWasActive_ = false;
-    bool confirmingClose_ = false;
 };
