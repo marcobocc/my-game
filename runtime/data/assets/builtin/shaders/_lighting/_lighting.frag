@@ -84,7 +84,7 @@ float calculatePointShadow(vec3 worldPos, vec3 lightPos, float range) {
 
     // Simple single-sample comparison (PCF on cube maps is expensive; bias handles acne).
     float closestDist = texture(shadowCube, fragToLight).r;
-    const float bias = 0.01;
+    const float bias = 0.0001;
     return currentDist - bias > closestDist ? 1.0 : 0.0;
 }
 

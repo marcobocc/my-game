@@ -11,12 +11,14 @@
 #include "components/Imgui_BoxColliderWidget.hpp"
 #include "components/Imgui_CameraWidget.hpp"
 #include "components/Imgui_LightWidget.hpp"
+#include "components/Imgui_ParticleEmitterWidget.hpp"
 #include "components/Imgui_RendererWidget.hpp"
 #include "components/Imgui_TransformWidget.hpp"
 #include "modules/scene/components/BehaviourScript.hpp"
 #include "modules/scene/components/BoxCollider.hpp"
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Light.hpp"
+#include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
 #include "modules/scene/components/Transform.hpp"
 
@@ -34,13 +36,15 @@ public:
         rendererWidget_(assetStore, scene, debugViz),
         boxColliderWidget_(scene),
         cameraWidget_(scene),
-        lightWidget_(scene) {}
+        lightWidget_(scene),
+        particleEmitterWidget_(scene) {}
 
     void draw(EntityHandle entity) {
         transformWidget_.setCurrentObjectId(entity);
         cameraWidget_.setCurrentObjectId(entity);
         boxColliderWidget_.setCurrentObjectId(entity);
         lightWidget_.setCurrentObjectId(entity);
+        particleEmitterWidget_.setCurrentObjectId(entity);
         drawObject(entity);
     }
 
@@ -54,6 +58,7 @@ private:
     Imgui_BoxColliderWidget boxColliderWidget_;
     Imgui_CameraWidget cameraWidget_;
     Imgui_LightWidget lightWidget_;
+    Imgui_ParticleEmitterWidget particleEmitterWidget_;
     std::vector<std::unique_ptr<Imgui_BehaviourScriptWidget>> behaviourScriptWidgets_;
 
     void drawObject(EntityHandle entity) {
@@ -80,6 +85,12 @@ private:
         if (const auto* light = obj.getComponent<Light>()) {
             lightWidget_.setComponent(*light);
             lightWidget_.draw("LightContext", [this, entity] { scene_.getObject(entity).removeComponent<Light>(); });
+        }
+        if (const auto* particleEmitter = obj.getComponent<ParticleEmitter>()) {
+            particleEmitterWidget_.setComponent(*particleEmitter);
+            particleEmitterWidget_.draw("ParticleEmitterContext", [this, entity] {
+                scene_.getObject(entity).removeComponent<ParticleEmitter>();
+            });
         }
         auto scripts = scene_.getObject(entity).getComponents<BehaviourScript>();
         while (behaviourScriptWidgets_.size() < scripts.size())
@@ -119,10 +130,14 @@ private:
             if (!obj.getComponent<Light>()) {
                 if (ImGui::MenuItem("Light")) scene_.getObject(entity).addComponent<Light>(Light{});
             }
+            if (!obj.getComponent<ParticleEmitter>()) {
+                if (ImGui::MenuItem("Particle Emitter"))
+                    scene_.getObject(entity).addComponent<ParticleEmitter>(ParticleEmitter{});
+            }
             if (ImGui::MenuItem("Behaviour Script"))
                 scene_.getObject(entity).addComponent<BehaviourScript>(BehaviourScript{});
             if (obj.getComponent<Transform>() && obj.getComponent<Camera>() && obj.getComponent<Renderer>() &&
-                obj.getComponent<BoxCollider>() && obj.getComponent<Light>()) {
+                obj.getComponent<BoxCollider>() && obj.getComponent<Light>() && obj.getComponent<ParticleEmitter>()) {
                 ImGui::TextDisabled("All single-instance components added");
             }
         });

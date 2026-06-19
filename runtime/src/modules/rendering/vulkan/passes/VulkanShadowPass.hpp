@@ -19,8 +19,6 @@ public:
     static constexpr VkFormat SHADOW_DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT;
     static constexpr uint32_t SHADOW_MAP_SIZE = 1024;
     static constexpr uint32_t MAX_SHADOW_LIGHTS = 4;
-    static constexpr float DEPTH_BIAS_CONSTANT = 1.0f;
-    static constexpr float DEPTH_BIAS_SLOPE = 1.0f;
 
     VulkanShadowPass(VulkanResourcesManager& resourcesManager, AssetLoader& assetLoader) :
         resourcesManager_(resourcesManager),
@@ -156,7 +154,6 @@ private:
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, activePipeline->pipeline);
-        vkCmdSetDepthBias(cmd, DEPTH_BIAS_CONSTANT, 0.0f, DEPTH_BIAS_SLOPE);
 
         for (const auto& drawCall: drawQueue)
             renderEntity(cmd, activePipeline, drawCall, lightSpaceMat, isPointLight, lightPos, lightRange);
@@ -230,7 +227,7 @@ private:
         const float nearH = camera.nearPlane * std::tan(glm::radians(camera.fov * 0.5f));
         const float nearW = nearH * camera.aspect;
 
-        float shadowDistance = 25.0f;
+        float shadowDistance = 20.0f;
 
         const float farH = shadowDistance * std::tan(glm::radians(camera.fov * 0.5f));
         const float farW = farH * camera.aspect;

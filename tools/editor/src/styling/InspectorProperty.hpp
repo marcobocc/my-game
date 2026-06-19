@@ -176,6 +176,35 @@ private:
     std::function<void()> onDeactivated_;
 };
 
+// ---- SliderInt ----------------------------------------------------------
+
+class SliderIntProperty : public InspectorProperty {
+public:
+    SliderIntProperty(std::string label,
+                      std::function<int()> getValue,
+                      std::function<void(int)> onChange,
+                      int min = 0,
+                      int max = 100) :
+        label_(std::move(label)),
+        getValue_(std::move(getValue)),
+        onChange_(std::move(onChange)),
+        min_(min),
+        max_(max) {}
+
+    void draw() override {
+        row(label_.c_str(), [&] {
+            int v = getValue_();
+            if (ImGui::SliderInt("##v", &v, min_, max_)) onChange_(v);
+        });
+    }
+
+private:
+    std::string label_;
+    std::function<int()> getValue_;
+    std::function<void(int)> onChange_;
+    int min_, max_;
+};
+
 // ---- SliderFloat --------------------------------------------------------
 
 class SliderFloatProperty : public InspectorProperty {
@@ -230,7 +259,7 @@ private:
     std::function<void(glm::vec3)> onChange_;
 };
 
-// ---- ColorEdit4 (with optional undo-commit callbacks) -------------------
+// ---- ColorEdit4 (two-column label layout, optional undo callbacks) ------
 
 class ColorEdit4Property : public InspectorProperty {
 public:
@@ -246,11 +275,13 @@ public:
         onDeactivated_(std::move(onDeactivated)) {}
 
     void draw() override {
-        auto c = getValue_();
-        float col[4] = {c.r, c.g, c.b, c.a};
-        if (ImGui::ColorEdit4(label_.c_str(), col)) onChange_({col[0], col[1], col[2], col[3]});
-        if (onActivated_ && ImGui::IsItemActivated()) onActivated_();
-        if (onDeactivated_ && ImGui::IsItemDeactivatedAfterEdit()) onDeactivated_();
+        row(label_.c_str(), [&] {
+            auto c = getValue_();
+            float col[4] = {c.r, c.g, c.b, c.a};
+            if (ImGui::ColorEdit4("##v", col)) onChange_({col[0], col[1], col[2], col[3]});
+            if (onActivated_ && ImGui::IsItemActivated()) onActivated_();
+            if (onDeactivated_ && ImGui::IsItemDeactivatedAfterEdit()) onDeactivated_();
+        });
     }
 
 private:
