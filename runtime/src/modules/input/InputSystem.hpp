@@ -70,6 +70,10 @@ public:
     }
     bool isBlocked() const { return blocked_; }
 
+    // Call when the simulation ends to prevent the play-mode mouse lock state
+    // from being restored when setBlocked(false) fires on the next editor frame.
+    void clearMouseLockState() { mouseWasLocked_ = false; }
+
 private:
     void updateKeys() {
         for (int key = GameWindow::KEY_FIRST; key <= GameWindow::KEY_LAST; ++key)

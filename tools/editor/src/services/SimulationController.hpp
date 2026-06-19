@@ -75,6 +75,7 @@ public:
         pendingStop_ = false;
         gameInstance_.reset();
         state_ = State::Stopped;
+        inputSystem_.clearMouseLockState();
         window_.unlockMouse();
     }
 

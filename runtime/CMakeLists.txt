@@ -30,6 +30,7 @@ target_link_libraries(GameEngineLib PUBLIC
     argparse
     Tracy::TracyClient
     assimp::assimp
+    sol2
 )
 
 # On macOS, link MoltenVK explicitly

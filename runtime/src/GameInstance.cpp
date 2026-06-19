@@ -1,6 +1,5 @@
 #include "GameInstance.hpp"
 #include <tracy/Tracy.hpp>
-#include <unordered_map>
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/console/DeveloperConsole.hpp"
 #include "modules/console/commands/EchoCommand.hpp"
@@ -8,7 +7,6 @@
 #include "modules/core/TimeManager.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/rendering/GameRenderSystem.hpp"
-#include "modules/scene/components/gameplay/HealthComponent.hpp"
 
 GameInstance::GameInstance(GameWindow& window,
                            TimeManager& time,
@@ -29,17 +27,8 @@ GameInstance::GameInstance(GameWindow& window,
     renderer_(renderer) {
     developerConsole_.registerCommand("list-actors", [this] { return std::make_unique<ListActorsCommand>(world_); });
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
-    spawnBehaviours();
-}
 
-void GameInstance::spawnBehaviours() {
-    for (const auto& [handle, behaviour]: world_.query<BehaviourComponent>()) {
-        behaviour->init(handle, &world_, &inputSystem_);
-        behaviours_.push_back(behaviour);
-    }
-    for (auto* behaviour: behaviours_) {
-        behaviour->onStart();
-    }
+    luaScriptSystem_.init(world_, inputSystem_, std::filesystem::path(ENGINE_DATA_DIR) / "scripts");
 }
 
 
@@ -49,9 +38,7 @@ void GameInstance::spawnBehaviours() {
 
 void GameInstance::tick(float deltaTime) {
     physicsSystem_.update();
-    for (const auto& [handle, behaviour]: world_.query<BehaviourComponent>()) {
-        behaviour->onUpdate(deltaTime);
-    }
+    luaScriptSystem_.update(deltaTime);
     developerConsole_.tick();
 }
 

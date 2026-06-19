@@ -113,12 +113,14 @@ public:
                     auto [w, h] = window_.getLogicalSize();
                     window_.setSceneViewport({0, 0, w, h});
                     imguiConsole_.setConsole(simulationController_.gameInstance()->developerConsole());
+                    imguiConsole_.hide();
                     editorSettings_.disableGrid();
                 } else {
                     inputSystem_.setBlocked(false);
                     window_.setSceneViewport(
                             computeSceneViewport(window_.getLogicalSize().first, window_.getLogicalSize().second));
                     imguiConsole_.setConsole(developerConsole_);
+                    imguiConsole_.show();
                     editorSettings_.enableGrid();
                 }
                 simWasActive_ = simActive;
@@ -127,7 +129,10 @@ public:
             {
                 ZoneScopedN("Input");
                 inputSystem_.update();
-                if (simActive) inputSystem_.setBlocked(imguiConsole_.isVisible());
+                if (simActive) {
+                    if (ImGui::IsKeyPressed(ImGuiKey_Backslash, false)) imguiConsole_.toggleVisibility();
+                    inputSystem_.setBlocked(imguiConsole_.isVisible());
+                }
                 auto [mouseX, mouseY] = inputSystem_.getMousePosition();
                 inputHandler_.update(mouseX, mouseY, deltaTime);
             }

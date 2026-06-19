@@ -2,13 +2,12 @@
 #include <functional>
 #include <string>
 #include <utility>
-#include <vector>
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
 #include "modules/scene/World.hpp"
-#include "modules/scene/components/gameplay/BehaviourComponent.hpp"
+#include "modules/scripting/LuaScriptSystem.hpp"
 
 struct AABB;
 struct Camera;
@@ -87,7 +86,6 @@ public:
 
 private:
     bool shouldClose() const;
-    void spawnBehaviours();
 
     GameWindow& window_;
     TimeManager& time_;
@@ -100,5 +98,5 @@ private:
     IGameRenderer& renderer_;
 
     DeveloperConsole developerConsole_;
-    std::vector<BehaviourComponent*> behaviours_;
+    LuaScriptSystem luaScriptSystem_;
 };

@@ -48,7 +48,7 @@ private:
             {"Models", ".model", nullptr},
             {"Textures", ".png", ".jpg"},
             {"Shaders", ".shad", nullptr},
-            {"Scripts", ".cpp", nullptr},
+            {"Scripts", ".lua", nullptr},
     };
 
     static constexpr std::string_view knownExtensions[] = {
@@ -58,7 +58,7 @@ private:
             ".png",
             ".jpg",
             ".model",
-            ".cpp",
+            ".lua",
     };
 
     AssetStore& assetStore_;
@@ -175,7 +175,7 @@ private:
                 ImGui::TextUnformatted(asset.c_str());
                 ImGui::EndDragDropSource();
             }
-            if (asset.ends_with(".cpp") && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+            if (asset.ends_with(".lua") && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 ImGui::SetDragDropPayload("SCRIPT_ASSET", asset.c_str(), asset.size() + 1);
                 ImGui::TextUnformatted(asset.c_str());
                 ImGui::EndDragDropSource();

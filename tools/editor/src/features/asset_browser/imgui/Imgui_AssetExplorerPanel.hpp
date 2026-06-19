@@ -85,7 +85,7 @@ private:
             ".png",
             ".jpg",
             ".model",
-            ".cpp",
+            ".lua",
     };
 
     static bool isKnownAsset(const std::string& path) {
