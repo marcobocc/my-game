@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include "../UndoHistory.hpp"
 #include "RuntimeGameObject.hpp"
 #include "modules/scene/World.hpp"
@@ -88,12 +89,27 @@ public:
         return world_.getActiveCamera() != nullptr && world_.getActiveCamera()->handle() == e;
     }
 
+    // --------------------------------------------------------------------------------
+    // Hierarchy (editor-only, persistent)
+    // --------------------------------------------------------------------------------
+    const std::vector<HierarchyNode>& getHierarchy() const { return hierarchy_; }
+    // Replaces the hierarchy tree with undo support.
+    void setHierarchy(std::vector<HierarchyNode> newHierarchy, const std::string& mutationGroup = "");
+
 private:
     void restore_Impl(const SceneDTO& dto);
     void restore_Impl(const GameObjectDTO& dto);
+
+    // Remove a handle from anywhere in the tree (recursive).
+    static bool removeFromHierarchy(std::vector<HierarchyNode>& nodes, EntityHandle e);
+    // Append handle as a child of parent, return false if parent not found.
+    static bool addChildToNode(std::vector<HierarchyNode>& nodes, EntityHandle parent, EntityHandle child);
+    // Prune handles that no longer exist in the world.
+    void pruneHierarchy(std::vector<HierarchyNode>& nodes) const;
 
 private:
     World& world_;
     UndoHistory& undo_;
     EntityHandle nextHandle_ = 0;
+    std::vector<HierarchyNode> hierarchy_;
 };

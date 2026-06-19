@@ -43,6 +43,16 @@ public:
     void renameObject(EntityHandle entity, const std::string& newName);
 
     // --------------------------------------------------------------------------------
+    // Hierarchy
+    // --------------------------------------------------------------------------------
+    // Wraps all selected entities under a new named group node.
+    void groupSelected(const std::string& groupName = "Group");
+    // Dissolves a group node: its children become siblings at the same level.
+    void ungroupNode(EntityHandle groupEntity);
+    // Moves `child` under `newParent` in the hierarchy tree.
+    void reparent(EntityHandle child, EntityHandle newParent);
+
+    // --------------------------------------------------------------------------------
     // Prefab Objects
     // --------------------------------------------------------------------------------
     void createEmptyObject();

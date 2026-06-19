@@ -71,11 +71,19 @@ public:
 protected:
     void drawBody() override {
         bool hasContextEntity = contextEntity_.has_value();
+        bool hasSelection = !editorSelection_.getSelectedEntityIds().empty();
 
         if (ImGui::MenuItem("Rename", nullptr, false, hasContextEntity)) {
-            if (contextEntity_) {
-                renameRequested_ = *contextEntity_;
-            }
+            if (contextEntity_) renameRequested_ = *contextEntity_;
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::MenuItem("Group Selection", nullptr, false, hasSelection)) {
+            sceneQuickActions_.groupSelected("Group");
+        }
+        if (ImGui::MenuItem("Remove from Group", nullptr, false, hasContextEntity)) {
+            if (contextEntity_) sceneQuickActions_.ungroupNode(*contextEntity_);
         }
 
         ImGui::Separator();

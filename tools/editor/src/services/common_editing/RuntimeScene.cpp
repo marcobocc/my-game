@@ -15,9 +15,10 @@ RuntimeGameObject RuntimeScene::getObject(EntityHandle e) const {
 
 SceneDTO RuntimeScene::snapshotScene() const {
     SceneDTO scene;
-    for (const auto& actor: world_.getActors()) {
+    for (const auto& actor: world_.getActors())
         scene.objects.push_back(snapshotObject(actor->handle()));
-    }
+    scene.hierarchy = hierarchy_;
+    pruneHierarchy(scene.hierarchy);
     if (const Actor* cam = world_.getActiveCamera()) scene.activeCameraHandle = cam->handle();
     return scene;
 }
@@ -65,21 +66,40 @@ void RuntimeScene::restoreScene(const SceneDTO& dto, const std::string& mutation
 EntityHandle RuntimeScene::createObject(const std::string& mutationGroup) {
     EntityHandle handle = nextHandle_++;
     world_.addActor(handle);
-    undo_.push([this, handle] { world_.removeActor(handle); },
-               [this, handle] { world_.addActor(handle); },
-               "Create GameObject",
-               mutationGroup);
+    hierarchy_.push_back({handle, {}});
+    auto prevHierarchy = hierarchy_;
+    prevHierarchy.pop_back();
+    undo_.push(
+            [this, handle, prevHierarchy] {
+                world_.removeActor(handle);
+                hierarchy_ = prevHierarchy;
+            },
+            [this, handle] {
+                world_.addActor(handle);
+                hierarchy_.push_back({handle, {}});
+            },
+            "Create GameObject",
+            mutationGroup);
     return handle;
 }
 
 void RuntimeScene::destroyObject(EntityHandle e, const std::string& mutationGroup) {
     if (!world_.hasActor(e)) return;
     auto dto = snapshotObject(e);
+    auto prevHierarchy = hierarchy_;
     world_.removeActor(e);
-    undo_.push([this, dto] { restore_Impl(dto); },
-               [this, e] { world_.removeActor(e); },
-               "Destroy GameObject",
-               mutationGroup);
+    removeFromHierarchy(hierarchy_, e);
+    undo_.push(
+            [this, dto, prevHierarchy] {
+                restore_Impl(dto);
+                hierarchy_ = prevHierarchy;
+            },
+            [this, e] {
+                world_.removeActor(e);
+                removeFromHierarchy(hierarchy_, e);
+            },
+            "Destroy GameObject",
+            mutationGroup);
 }
 
 void RuntimeScene::restoreObject(const GameObjectDTO& dto, const std::string& mutationGroup) {
@@ -105,7 +125,55 @@ void RuntimeScene::restore_Impl(const SceneDTO& dto) {
         restore_Impl(objDto);
         if (objDto.handle >= nextHandle_) nextHandle_ = objDto.handle + 1;
     }
+    hierarchy_ = dto.hierarchy;
+    // If the saved DTO has no hierarchy (old scene files), build a flat one.
+    if (hierarchy_.empty()) {
+        for (const auto& objDto: dto.objects)
+            hierarchy_.push_back({objDto.handle, {}});
+    }
     if (dto.activeCameraHandle) world_.setActiveCamera(*dto.activeCameraHandle);
+}
+
+void RuntimeScene::setHierarchy(std::vector<HierarchyNode> newHierarchy, const std::string& mutationGroup) {
+    auto prev = hierarchy_;
+    hierarchy_ = std::move(newHierarchy);
+    undo_.push([this, prev] { hierarchy_ = prev; },
+               [this, newH = hierarchy_] { hierarchy_ = newH; },
+               "Rearrange Hierarchy",
+               mutationGroup);
+}
+
+bool RuntimeScene::removeFromHierarchy(std::vector<HierarchyNode>& nodes, EntityHandle e) {
+    for (auto it = nodes.begin(); it != nodes.end(); ++it) {
+        if (it->handle == e) {
+            nodes.erase(it);
+            return true;
+        }
+        if (removeFromHierarchy(it->children, e)) return true;
+    }
+    return false;
+}
+
+bool RuntimeScene::addChildToNode(std::vector<HierarchyNode>& nodes, EntityHandle parent, EntityHandle child) {
+    for (auto& node: nodes) {
+        if (node.handle == parent) {
+            node.children.push_back({child, {}});
+            return true;
+        }
+        if (addChildToNode(node.children, parent, child)) return true;
+    }
+    return false;
+}
+
+void RuntimeScene::pruneHierarchy(std::vector<HierarchyNode>& nodes) const {
+    for (auto it = nodes.begin(); it != nodes.end();) {
+        if (!world_.hasActor(it->handle)) {
+            it = nodes.erase(it);
+            continue;
+        }
+        pruneHierarchy(it->children);
+        ++it;
+    }
 }
 
 void RuntimeScene::restore_Impl(const GameObjectDTO& dto) {
