@@ -479,6 +479,36 @@ private:
     float speed_;
 };
 
+// ---- EntityProperty (read-only entity ID with HIERARCHY_ENTITY drag-drop) -
+
+class EntityProperty : public InspectorProperty {
+public:
+    EntityProperty(std::string label, std::function<uint64_t()> getValue, std::function<void(uint64_t)> onDrop) :
+        label_(std::move(label)),
+        getValue_(std::move(getValue)),
+        onDrop_(std::move(onDrop)) {}
+
+    void draw() override {
+        row(label_.c_str(), [&] {
+            uint64_t id = getValue_();
+            std::string text = (id == std::numeric_limits<uint64_t>::max()) ? "(none)" : std::to_string(id);
+            ImGui::InputText("##v", const_cast<char*>(text.c_str()), text.size() + 1, ImGuiInputTextFlags_ReadOnly);
+            if (ImGui::BeginDragDropTarget()) {
+                if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("HIERARCHY_ENTITY")) {
+                    uint64_t dropped = *static_cast<const uint64_t*>(payload->Data);
+                    onDrop_(dropped);
+                }
+                ImGui::EndDragDropTarget();
+            }
+        });
+    }
+
+private:
+    std::string label_;
+    std::function<uint64_t()> getValue_;
+    std::function<void(uint64_t)> onDrop_;
+};
+
 // ---- DisabledGroup (wraps child properties in BeginDisabled/EndDisabled) -
 
 class DisabledGroupProperty : public InspectorProperty {

@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <filesystem>
+#include <limits>
 #include <optional>
 #include <string>
 #include <vector>
@@ -171,6 +172,19 @@ private:
                             component_.propertyValues[key] = {v.x, v.y, v.z};
                             commitEdit();
                         }));
+
+            } else if (desc.type == "entity") {
+                add<EntityProperty>(
+                        key,
+                        [this, key] {
+                            auto it = component_.propertyValues.find(key);
+                            if (it == component_.propertyValues.end()) return uint64_t(0);
+                            return it->second.get<uint64_t>();
+                        },
+                        [this, key](uint64_t id) {
+                            component_.propertyValues[key] = id;
+                            commitEdit();
+                        });
 
             } else if (desc.type == "color") {
                 add<ColorEdit4Property>(

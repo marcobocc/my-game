@@ -154,7 +154,7 @@ public:
             }
 
             bool hovered = ImGui::IsItemHovered() || isContextTarget;
-            if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            if (hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
                 if (hasChildren) {
                     // Clicking a group selects/deselects all its leaf descendants.
                     std::vector<EntityHandle> leaves;

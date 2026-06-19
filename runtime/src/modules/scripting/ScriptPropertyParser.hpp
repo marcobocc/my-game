@@ -9,7 +9,7 @@
 
 struct ScriptPropertyDescriptor {
     std::string name;
-    std::string type; // "float", "int", "bool", "string", "vec3", "color"
+    std::string type; // "float", "int", "bool", "string", "vec3", "color", "entity"
     nlohmann::json defaultValue;
 };
 
@@ -75,6 +75,9 @@ private:
                 return nlohmann::json::array({t.get_or(1, 0.0), t.get_or(2, 0.0), t.get_or(3, 0.0)});
             }
             return nlohmann::json::array({0.0, 0.0, 0.0});
+        }
+        if (type == "entity") {
+            return nlohmann::json(uint64_t(0));
         }
         if (type == "color") {
             sol::object d = entry["default"];
