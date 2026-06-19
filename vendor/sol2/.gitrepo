@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
+;
+[subrepo]
+	remote = https://github.com/ThePhD/sol2.git
+	branch = develop
+	commit = c1f95a773c6f8f4fde8ca3efe872e7286afe4444
+	parent = f8ffdc53f3fc82036fca842a87d24bfb72a391ee
+	method = merge
+	cmdver = 0.4.9

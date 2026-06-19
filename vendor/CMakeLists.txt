@@ -62,3 +62,23 @@ add_library(cpp-subprocess::subprocess ALIAS subprocess)
 option(TRACY_ENABLE "Enable Tracy profiler" OFF)
 option(TRACY_ON_DEMAND "Enable Tracy on-demand profiling" ON)
 add_subdirectory(${VENDOR_DIR}/tracy)
+
+# -------------------------------------------------------------------------
+# LuaJIT
+# -------------------------------------------------------------------------
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LUAJIT REQUIRED luajit)
+
+add_library(luajit_lib INTERFACE)
+target_include_directories(luajit_lib INTERFACE ${LUAJIT_INCLUDE_DIRS})
+target_link_directories(luajit_lib INTERFACE ${LUAJIT_LIBRARY_DIRS})
+target_link_libraries(luajit_lib INTERFACE ${LUAJIT_LIBRARIES})
+
+# -------------------------------------------------------------------------
+# sol2 (Lua bindings)
+# -------------------------------------------------------------------------
+set(SOL2_DIR ${VENDOR_DIR}/sol2)
+add_library(sol2 INTERFACE)
+target_include_directories(sol2 INTERFACE ${SOL2_DIR}/include)
+target_link_libraries(sol2 INTERFACE luajit_lib)
+target_compile_definitions(sol2 INTERFACE SOL_USE_LUAJIT=1 SOL_ALL_SAFETIES_ON=1)
