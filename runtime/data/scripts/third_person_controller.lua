@@ -27,14 +27,10 @@ function M:onStart()
     Logger.info("third_person_controller started")
 end
 
-function M:onUpdate(dt)
+function M:recomputePosition()
     if not self.targetEntity or self.targetEntity == 0 then return end
     local targetT = World:getTransform(self.targetEntity)
     if not targetT then return end
-
-    local dx, dy = Input:getMouseDelta()
-    self.yaw   = self.yaw   - dx * self.mouseSens
-    self.pitch = math.max(-20, math.min(60, self.pitch + dy * self.mouseSens))
 
     local yawRad   = math.rad(self.yaw)
     local pitchRad = math.rad(self.pitch)
@@ -63,7 +59,14 @@ function M:onUpdate(dt)
     World:setTransform(self.entity, camT)
 end
 
--- Expose camera yaw so player_controller can read movement direction.
+function M:onUpdate(dt)
+    local dx, dy = Input:getMouseDelta()
+    self.yaw   = self.yaw   - dx * self.mouseSens
+    self.pitch = math.max(-20, math.min(60, self.pitch + dy * self.mouseSens))
+
+    self:recomputePosition()
+end
+
 function M:getCameraYaw()
     return self.yaw
 end

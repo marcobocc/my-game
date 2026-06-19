@@ -20,6 +20,13 @@ void LuaScriptSystem::init(World& world, InputSystem& input, const std::filesyst
     worldFacade_ = ownedWorld_.get();
     inputFacade_ = ownedInput_.get();
 
+    worldFacade_->setScriptLookup(
+            [this](EntityHandle entity, const std::string& scriptName) -> std::optional<sol::table> {
+                for (auto& inst: instances_)
+                    if (inst.entity == entity && inst.scriptName == scriptName) return inst.self;
+                return std::nullopt;
+            });
+
     LuaBindings::registerAll(lua_, *worldFacade_, *inputFacade_);
 
     // Instantiate one ScriptInstance per BehaviourScript component

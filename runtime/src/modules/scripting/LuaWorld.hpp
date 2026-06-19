@@ -1,5 +1,7 @@
 #pragma once
+#include <functional>
 #include <optional>
+#include <sol/sol.hpp>
 #include <string>
 #include "modules/scene/EntityHandle.hpp"
 #include "modules/scene/World.hpp"
@@ -9,7 +11,16 @@
 // Returns copies of components to keep ownership simple.
 class LuaWorld {
 public:
+    using ScriptLookup = std::function<std::optional<sol::table>(EntityHandle, const std::string&)>;
+
     explicit LuaWorld(World& world) : world_(world) {}
+
+    void setScriptLookup(ScriptLookup fn) { scriptLookup_ = std::move(fn); }
+
+    std::optional<sol::table> getScript(EntityHandle entity, const std::string& scriptName) const {
+        if (scriptLookup_) return scriptLookup_(entity, scriptName);
+        return std::nullopt;
+    }
 
     // Returns a copy of the entity's Transform, or nil if missing.
     std::optional<Transform> getTransform(EntityHandle entity) const {
@@ -40,4 +51,5 @@ public:
 
 private:
     World& world_;
+    ScriptLookup scriptLookup_;
 };

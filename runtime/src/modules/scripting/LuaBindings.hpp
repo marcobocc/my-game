@@ -89,7 +89,9 @@ namespace LuaBindings {
                                    "setTransform",
                                    &LuaWorld::setTransform,
                                    "findByName",
-                                   &LuaWorld::findByName);
+                                   &LuaWorld::findByName,
+                                   "getScript",
+                                   &LuaWorld::getScript);
 
         // ---- Input facade ------------------------------------------------------
 

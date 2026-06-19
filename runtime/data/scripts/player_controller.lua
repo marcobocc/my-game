@@ -6,6 +6,7 @@
 Properties = {
     { name = "cameraEntity",   type = "entity", default = 0   },
     { name = "moveSpeed",      type = "float",  default = 5.0 },
+    { name = "sprintSpeed",    type = "float",  default = 10.0 },
     { name = "rotationSpeed",  type = "float",  default = 8.0 },
     { name = "jumpForce",      type = "float",  default = 6.0 },
     { name = "gravity",        type = "float",  default = 18.0 },
@@ -16,14 +17,21 @@ local Logger = require("logger")
 local M = {}
 
 function M:onStart()
-    self.meshYaw  = 0.0
+    self.meshYaw   = 0.0
     self.velocityY = 0.0
     self.grounded  = false
+    self.groundY   = 0.0
+    self.camScript = nil
 
     local t = World:getTransform(self.entity)
     if t then
+        self.groundY = t.position.y
         local fwd = t:getForward()
         self.meshYaw = math.deg(math.atan2(fwd.x, fwd.z))
+    end
+
+    if self.cameraEntity and self.cameraEntity ~= 0 then
+        self.camScript = World:getScript(self.cameraEntity, "third_person_controller")
     end
 
     Logger.info("player_controller started on entity " .. tostring(self.entity))
@@ -33,21 +41,11 @@ function M:onUpdate(dt)
     local t = World:getTransform(self.entity)
     if not t then return end
 
-    -- Derive camera yaw from the camera's position relative to the player.
-    local cameraYaw = 0.0
-    if self.cameraEntity and self.cameraEntity ~= 0 then
-        local camT = World:getTransform(self.cameraEntity)
-        if camT then
-            local dx = camT.position.x - t.position.x
-            local dz = camT.position.z - t.position.z
-            -- atan2(dx, dz) gives the angle from player to camera; flip 180° to get look direction.
-            cameraYaw = math.deg(math.atan2(dx, dz))
-        end
-    end
+    local cameraYaw = self.camScript and self.camScript:getCameraYaw() or 0.0
 
     local yawRad   = math.rad(cameraYaw)
-    local camFwd   = Vec3(-math.sin(yawRad), 0, -math.cos(yawRad))
-    local camRight = Vec3( math.cos(yawRad), 0, -math.sin(yawRad))
+    local camFwd   = Vec3( math.sin(yawRad), 0,  math.cos(yawRad))
+    local camRight = Vec3(-math.cos(yawRad), 0,  math.sin(yawRad))
 
     -- Horizontal movement
     local moveDir = Vec3(0, 0, 0)
@@ -63,7 +61,8 @@ function M:onUpdate(dt)
             moveDir = Vec3(moveDir.x / len, 0, moveDir.z / len)
         end
 
-        t.position = t.position + moveDir * (self.moveSpeed * dt)
+        local speed = (Input:isKeyDown("LSHIFT") or Input:isKeyDown("RSHIFT")) and self.sprintSpeed or self.moveSpeed
+        t.position = t.position + moveDir * (speed * dt)
 
         local targetYaw = math.deg(math.atan2(moveDir.x, moveDir.z))
         local diff = ((targetYaw - self.meshYaw) + 540) % 360 - 180
@@ -72,14 +71,13 @@ function M:onUpdate(dt)
     end
 
     -- Vertical movement (gravity + jump)
-    -- Simple ground check: treat y <= 0 as ground.
-    self.grounded = t.position.y <= 0.001
+    self.grounded = t.position.y <= self.groundY + 0.001
 
     if self.grounded then
         self.velocityY = 0.0
-        t.position = Vec3(t.position.x, 0.0, t.position.z)
+        t.position = Vec3(t.position.x, self.groundY, t.position.z)
 
-        if Input:isKeyDown("Space") then
+        if Input:isKeyDown("SPACE") then
             self.velocityY = self.jumpForce
             self.grounded  = false
         end
@@ -90,6 +88,11 @@ function M:onUpdate(dt)
     t.position = Vec3(t.position.x, t.position.y + self.velocityY * dt, t.position.z)
 
     World:setTransform(self.entity, t)
+
+    -- Reposition camera immediately after player moves to eliminate one-frame lag.
+    if self.camScript then
+        self.camScript:recomputePosition()
+    end
 end
 
 return M
