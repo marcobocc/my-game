@@ -73,6 +73,7 @@ void SceneQuickActions::createEmptyObject() {
     EntityHandle handle = scene_.createObject(groupId);
     RuntimeGameObject obj = scene_.getObject(handle);
     obj.addComponent<Metadata>(Metadata{"GameObject"}, groupId);
+    obj.addComponent(Transform{glm::vec3(0.0f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), glm::vec3(1.0f)}, groupId);
 }
 
 void SceneQuickActions::createLight() {

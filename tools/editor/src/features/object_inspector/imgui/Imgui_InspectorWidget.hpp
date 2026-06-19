@@ -69,9 +69,8 @@ private:
             ImguiStyling::withPopup(
                     contextId,
                     [onRemove] {
-                        if (ImGui::MenuItem("Remove")) {
-                            onRemove();
-                        }
+                        bool canRemove = onRemove != nullptr;
+                        if (ImGui::MenuItem("Remove", nullptr, false, canRemove) && canRemove) onRemove();
                     },
                     true);
         }

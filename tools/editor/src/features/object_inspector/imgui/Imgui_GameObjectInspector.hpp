@@ -65,8 +65,7 @@ private:
         RuntimeGameObject obj = scene_.getObject(entity);
         if (const auto* transform = obj.getComponent<Transform>()) {
             transformWidget_.setComponent(*transform);
-            transformWidget_.draw("TransformContext",
-                                  [this, entity] { scene_.getObject(entity).removeComponent<Transform>(); });
+            transformWidget_.draw("TransformContext", nullptr);
         }
         if (const auto* camera = obj.getComponent<Camera>()) {
             cameraWidget_.setComponent(*camera);
