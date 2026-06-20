@@ -1,4 +1,5 @@
 #include "RuntimeScene.hpp"
+#include "modules/scene/components/Animator.hpp"
 #include "modules/scene/components/BehaviourScript.hpp"
 #include "modules/scene/components/BoxCollider.hpp"
 #include "modules/scene/components/Camera.hpp"
@@ -38,6 +39,7 @@ GameObjectDTO RuntimeScene::snapshotObject(EntityHandle e) const {
     tryAdd.operator()<Light>();
     tryAdd.operator()<ParticleEmitter>();
     tryAdd.operator()<BehaviourScript>();
+    tryAdd.operator()<Animator>();
     return dto;
 }
 

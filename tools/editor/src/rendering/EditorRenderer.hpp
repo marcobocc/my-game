@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include "modules/animation/AnimationSystem.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "modules/scene/World.hpp"
 
@@ -33,6 +34,7 @@ public:
 
     void setSimMode(bool enabled);
     void setWelcomeMode(bool enabled);
+    void setAnimationSystem(AnimationSystem* animSystem) { animationSystem_ = animSystem; }
     void render(const World& entityManager, float gridScale, float deltaTime = 0.0f);
     void renderWelcome();
 
@@ -51,6 +53,7 @@ private:
     ImguiRoot& imguiRoot_;
     SimHUDRoot& simHUDRoot_;
     WelcomeRoot& welcomeRoot_;
+    AnimationSystem* animationSystem_ = nullptr;
     bool simMode_ = false;
     float deltaTime_ = 0.0f;
     std::vector<DrawCall> outlineQueue_;

@@ -2,7 +2,9 @@
 #include <log4cxx/logger.h>
 #include "GameRenderData.hpp"
 #include "IGameRenderer.hpp"
+#include "modules/animation/AnimationSystem.hpp"
 #include "modules/scene/World.hpp"
+#include "modules/scene/components/Animator.hpp"
 #include "modules/scene/components/Camera.hpp"
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
@@ -14,6 +16,8 @@ class GameRenderSystem {
 
 public:
     explicit GameRenderSystem(IGameRenderer& renderer) : renderer_(renderer) {}
+
+    void setAnimationSystem(AnimationSystem* animationSystem) { animationSystem_ = animationSystem; }
 
     void setActiveCamera(const Camera& camera, const Transform& cameraTransform) {
         activeCamera_ = &camera;
@@ -31,9 +35,13 @@ public:
         for (auto& [entity, rendererPtr, transformPtr]: drawables) {
             if (!rendererPtr || !transformPtr) continue;
             if (!rendererPtr->enabled) continue;
+            const glm::mat4* skinBones = nullptr;
+            if (animationSystem_ && animationSystem_->hasSkinning(entity))
+                skinBones = animationSystem_->getSkinningMatrices(entity).bones;
             drawQueue.push_back({const_cast<Renderer&>(*rendererPtr),
                                  const_cast<Transform&>(*transformPtr),
-                                 std::to_string(entity)});
+                                 std::to_string(entity),
+                                 skinBones});
         }
 
         std::vector<std::pair<Light, Transform>> lightsWithTransforms;
@@ -75,6 +83,7 @@ private:
     }
 
     IGameRenderer& renderer_;
+    AnimationSystem* animationSystem_ = nullptr;
     const Camera* activeCamera_ = nullptr;
     const Transform* activeCameraTransform_ = nullptr;
     float deltaTime_ = 0.0f;

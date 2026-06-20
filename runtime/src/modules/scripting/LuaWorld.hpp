@@ -5,6 +5,7 @@
 #include <string>
 #include "modules/scene/EntityHandle.hpp"
 #include "modules/scene/World.hpp"
+#include "modules/scene/components/Animator.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 // Thin facade over World exposed to Lua scripts.
@@ -36,6 +37,12 @@ public:
         Actor* actor = world_.getActor(entity);
         if (!actor) return;
         if (auto* existing = actor->getComponent<Transform>()) *existing = t;
+    }
+
+    Animator* getAnimator(EntityHandle entity) const {
+        Actor* actor = world_.getActor(entity);
+        if (!actor) return nullptr;
+        return actor->getComponent<Animator>();
     }
 
     // Finds the first actor whose name tag matches. Returns invalid handle if not found.

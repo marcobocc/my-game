@@ -18,7 +18,8 @@ public:
            bool tangentVertexLayout = false,
            bool depthBias = false,
            bool depthLessOrEqual = false,
-           std::vector<char> computeBytecode = {}) :
+           std::vector<char> computeBytecode = {},
+           bool skinnedVertexLayout = false) :
         Asset(name),
         vertexBytecode(std::move(vertexBytecode)),
         fragmentBytecode(std::move(fragmentBytecode)),
@@ -32,7 +33,8 @@ public:
         positionColorVertexLayout(positionColorVertexLayout),
         tangentVertexLayout(tangentVertexLayout),
         depthBias(depthBias),
-        depthLessOrEqual(depthLessOrEqual) {}
+        depthLessOrEqual(depthLessOrEqual),
+        skinnedVertexLayout(skinnedVertexLayout) {}
 
     std::vector<char> vertexBytecode;
     std::vector<char> fragmentBytecode;
@@ -47,4 +49,5 @@ public:
     bool tangentVertexLayout;
     bool depthBias;
     bool depthLessOrEqual;
+    bool skinnedVertexLayout = false;
 };

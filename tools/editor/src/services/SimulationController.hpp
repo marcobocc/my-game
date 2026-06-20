@@ -11,6 +11,7 @@
 class GameWindow;
 class TimeManager;
 class AssetCache;
+class AssetLoader;
 #include "modules/rendering/IGameRenderer.hpp"
 struct RendererSettings;
 
@@ -21,6 +22,7 @@ public:
     SimulationController(GameWindow& window,
                          TimeManager& time,
                          AssetCache& loadedAssets,
+                         AssetLoader& assetLoader,
                          InputSystem& inputSystem,
                          GameRenderSystem& renderSystem,
                          RendererSettings& rendererSettings,
@@ -28,6 +30,7 @@ public:
         window_(window),
         time_(time),
         loadedAssets_(loadedAssets),
+        assetLoader_(assetLoader),
         inputSystem_(inputSystem),
         renderSystem_(renderSystem),
         rendererSettings_(rendererSettings),
@@ -45,6 +48,7 @@ public:
         gameInstance_ = std::make_unique<GameInstance>(window_,
                                                        time_,
                                                        loadedAssets_,
+                                                       assetLoader_,
                                                        inputSystem_,
                                                        std::move(snapshot),
                                                        renderSystem_,
@@ -98,6 +102,7 @@ private:
     GameWindow& window_;
     TimeManager& time_;
     AssetCache& loadedAssets_;
+    AssetLoader& assetLoader_;
     InputSystem& inputSystem_;
     GameRenderSystem& renderSystem_;
     RendererSettings& rendererSettings_;

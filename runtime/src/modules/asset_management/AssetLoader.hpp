@@ -6,8 +6,10 @@
 #include "AssetCache.hpp"
 #include "MeshImporter.hpp"
 #include "VirtualFileSystem.hpp"
+#include "asset_types/AnimationClip.hpp"
 #include "asset_types/Mesh.hpp"
 #include "asset_types/Shader.hpp"
+#include "asset_types/Skeleton.hpp"
 #include "asset_types/Texture.hpp"
 #include "modules/asset_management/asset_types/Material.hpp"
 #include "modules/asset_management/asset_types/Model.hpp"
@@ -57,9 +59,28 @@ inline std::unique_ptr<Mesh> AssetLoader::load<Mesh>(const std::string& name) co
         }
     }
     try {
-        auto meshes = importing::importMeshFile(meshFilePath, reverseWinding, name, vfs_);
-        if (meshes.empty()) return nullptr;
-        auto& mesh = meshes[0];
+        auto imported = importing::importMeshFile(meshFilePath, reverseWinding, name, vfs_);
+        if (imported.meshes.empty()) return nullptr;
+
+        // Collect clip names before moving clips into the cache.
+        std::vector<std::string> clipNames;
+        clipNames.reserve(imported.clips.size());
+        for (const auto& clip: imported.clips)
+            clipNames.push_back(clip->name);
+
+        // Insert companion skeleton and clips into the cache.
+        if (imported.skeleton) {
+            LOG4CXX_INFO(LOGGER, "Loaded skeleton: " << imported.skeleton->name);
+            cache_.insert<Skeleton>(std::move(imported.skeleton));
+        }
+        for (auto& clip: imported.clips) {
+            LOG4CXX_INFO(LOGGER, "Loaded animation clip: " << clip->name);
+            cache_.insert<AnimationClip>(std::move(clip));
+        }
+
+        auto& mesh = imported.meshes[0];
+        mesh->name = name; // ensure cache key matches the .mesh metadata filename
+        mesh->setClipNames(clipNames);
         auto meshPtr = mesh.get();
         cache_.insert<Mesh>(std::move(mesh));
         LOG4CXX_INFO(LOGGER, "Successfully loaded mesh: " << name);
@@ -68,6 +89,20 @@ inline std::unique_ptr<Mesh> AssetLoader::load<Mesh>(const std::string& name) co
         LOG4CXX_ERROR(LOGGER, "Failed to import mesh: " << name << " - " << e.what());
         return nullptr;
     }
+}
+
+template<>
+inline std::unique_ptr<Skeleton> AssetLoader::load<Skeleton>(const std::string& name) const {
+    // Skeletons are always inserted as companions during Mesh loading; they are never loaded standalone.
+    LOG4CXX_WARN(LOGGER, "Standalone Skeleton load requested for '" << name << "' — load the mesh first.");
+    return nullptr;
+}
+
+template<>
+inline std::unique_ptr<AnimationClip> AssetLoader::load<AnimationClip>(const std::string& name) const {
+    // AnimationClips are always inserted as companions during Mesh loading; they are never loaded standalone.
+    LOG4CXX_WARN(LOGGER, "Standalone AnimationClip load requested for '" << name << "' — load the mesh first.");
+    return nullptr;
 }
 
 template<>
@@ -87,6 +122,7 @@ inline std::unique_ptr<Shader> AssetLoader::load<Shader>(const std::string& name
         bool tangentVertexLayout = JsonUtils::getOptional<bool>(j, "tangentVertexLayout", false);
         bool depthBias = JsonUtils::getOptional<bool>(j, "depthBias", false);
         bool depthLessOrEqual = JsonUtils::getOptional<bool>(j, "depthLessOrEqual", false);
+        bool skinnedVertexLayout = JsonUtils::getOptional<bool>(j, "skinnedVertexLayout", false);
 
         auto readBytecode = [&](const std::string& path) -> std::vector<char> {
             auto data = vfs_.read(path);
@@ -117,7 +153,8 @@ inline std::unique_ptr<Shader> AssetLoader::load<Shader>(const std::string& name
                                                tangentVertexLayout,
                                                depthBias,
                                                depthLessOrEqual,
-                                               std::move(computeBytecode));
+                                               std::move(computeBytecode),
+                                               skinnedVertexLayout);
         if (shader) {
             auto shaderPtr = shader.get();
             cache_.insert<Shader>(std::move(shader));

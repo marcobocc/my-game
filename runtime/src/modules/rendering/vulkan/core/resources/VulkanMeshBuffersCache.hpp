@@ -18,7 +18,8 @@ public:
         auto it = cache_.find(meshAsset.name);
         if (it != cache_.end()) return it->second;
 
-        const std::vector<float> packedVertices = packMeshData(meshAsset);
+        const std::vector<float> packedVertices =
+                meshAsset.isSkinned() ? packSkinnedMeshData(meshAsset) : packMeshData(meshAsset);
 
         constexpr VkMemoryPropertyFlags hostVisible =
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;

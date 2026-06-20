@@ -1,11 +1,13 @@
 #pragma once
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include <volk.h>
 #include "../../../../modules/asset_management/asset_types/Mesh.hpp"
 #include "../../../asset_management/asset_types/Shader.hpp"
 #include "../core/resources/VulkanResourcesManager.hpp"
 #include "../core/utils/buffers.hpp"
+#include "../core/utils/descriptors.hpp"
 #include "../core/utils/structs.hpp"
 #include "modules/asset_management/AssetLoader.hpp"
 #include "modules/asset_management/BuiltinAssetNames.hpp"
@@ -22,10 +24,16 @@ public:
         assetLoader_(assetLoader),
         resourcesManager_(resourcesManager) {
         createUBO();
-        initPipeline();
+        initPipelines();
     }
 
-    ~VulkanObjectIdPass() { destroyBuffer(context_.device, perFrameUBOBuffer_); }
+    ~VulkanObjectIdPass() {
+        destroyBuffer(context_.device, perFrameUBOBuffer_);
+        for (auto& [id, entry]: skinningBuffers_)
+            destroyBuffer(context_.device, entry.buffer);
+        if (skinningUBOLayout_ != VK_NULL_HANDLE)
+            vkDestroyDescriptorSetLayout(context_.device, skinningUBOLayout_, nullptr);
+    }
 
     std::vector<std::string> record(VkCommandBuffer cmd,
                                     const std::vector<DrawCall>& outlineQueue,
@@ -78,15 +86,39 @@ public:
         VkRect2D scissor{{fbX, fbY}, {static_cast<uint32_t>(fbW), static_cast<uint32_t>(fbH)}};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->pipeline);
-        vkCmdBindDescriptorSets(
-                cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->layout, 0, 1, &perFrameUBODescriptorSet_, 0, nullptr);
-
         std::vector<std::string> objectIdMap;
         objectIdMap.reserve(outlineQueue.size());
         for (uint32_t i = 0; i < static_cast<uint32_t>(outlineQueue.size()); ++i) {
             const DrawCall& dc = outlineQueue[i];
             objectIdMap.push_back(dc.objectId);
+
+            const Mesh* mesh = assetLoader_.get<Mesh>(dc.renderer.meshName);
+            if (!mesh) continue;
+
+            // Use skinned pipeline whenever the mesh has bone data, regardless of animation state.
+            const bool meshIsSkinned = mesh->isSkinned() && (skinnedPipeline_ != nullptr);
+            const bool hasAnimBones = (dc.skinningBones != nullptr);
+            VulkanPipeline* pipeline = meshIsSkinned ? skinnedPipeline_ : pipeline_;
+
+            vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline);
+            vkCmdBindDescriptorSets(cmd,
+                                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                    pipeline->layout,
+                                    0,
+                                    1,
+                                    &perFrameUBODescriptorSet_,
+                                    0,
+                                    nullptr);
+
+            if (meshIsSkinned) {
+                VkDescriptorSet skinDS = getOrCreateSkinningDescriptorSet(dc.objectId);
+                if (hasAnimBones)
+                    updateSkinningBuffer(dc.objectId, dc.skinningBones);
+                else
+                    uploadIdentitySkinning(dc.objectId);
+                vkCmdBindDescriptorSets(
+                        cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout, 1, 1, &skinDS, 0, nullptr);
+            }
 
             struct ObjectIdPush {
                 glm::mat4 model;
@@ -95,14 +127,12 @@ public:
             push.model = dc.transform.getModelMatrix();
             push.objectId = i + 1;
             vkCmdPushConstants(cmd,
-                               pipeline_->layout,
+                               pipeline->layout,
                                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                                0,
                                sizeof(push),
                                &push);
 
-            const Mesh* mesh = assetLoader_.get<Mesh>(dc.renderer.meshName);
-            if (!mesh) continue;
             const auto& meshBuffers = resourcesManager_.getMesh(*mesh);
             VkDeviceSize offset = 0;
             vkCmdBindVertexBuffers(cmd, 0, 1, &meshBuffers.vertexBuffer.buffer, &offset);
@@ -118,12 +148,60 @@ public:
     }
 
 private:
+    struct SkinningEntry {
+        VulkanBuffer buffer{};
+        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+    };
+
     void createUBO() {
         constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * 2;
         perFrameUBOBuffer_ = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
     }
 
-    void initPipeline() {
+    void createSkinningUBOLayout() {
+        VkDescriptorSetLayoutBinding binding{};
+        binding.binding = 0;
+        binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        binding.descriptorCount = 1;
+        binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        VkDescriptorSetLayoutCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        info.bindingCount = 1;
+        info.pBindings = &binding;
+        vkCreateDescriptorSetLayout(context_.device, &info, nullptr, &skinningUBOLayout_);
+    }
+
+    VkDescriptorSet getOrCreateSkinningDescriptorSet(const std::string& objectId) {
+        auto it = skinningBuffers_.find(objectId);
+        if (it != skinningBuffers_.end()) return it->second.descriptorSet;
+
+        constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * DRAW_CALL_MAX_BONES;
+        SkinningEntry entry{};
+        entry.buffer = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
+        entry.descriptorSet = createUniformBufferDescriptorSet(
+                context_.device, context_.descriptorPool, skinningUBOLayout_, entry.buffer.buffer, uboSize);
+        auto [ins, _] = skinningBuffers_.emplace(objectId, std::move(entry));
+        return ins->second.descriptorSet;
+    }
+
+    void updateSkinningBuffer(const std::string& objectId, const glm::mat4* bones) {
+        auto it = skinningBuffers_.find(objectId);
+        if (it == skinningBuffers_.end()) return;
+        constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * DRAW_CALL_MAX_BONES;
+        updateBuffer(context_.device, it->second.buffer, bones, uboSize);
+    }
+
+    void uploadIdentitySkinning(const std::string& objectId) {
+        static const auto identityBones = []() {
+            std::array<glm::mat4, DRAW_CALL_MAX_BONES> arr{};
+            arr.fill(glm::mat4(1.0f));
+            return arr;
+        }();
+        updateSkinningBuffer(objectId, identityBones.data());
+    }
+
+    void initPipelines() {
         const Shader* shader = assetLoader_.get<Shader>(OBJECT_ID_SHADER);
         if (!shader) return;
         pipeline_ = &resourcesManager_.getPipeline(*shader, VK_FORMAT_R32_UINT, VK_FORMAT_UNDEFINED);
@@ -150,6 +228,12 @@ private:
         write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         write.pBufferInfo = &bufInfo;
         vkUpdateDescriptorSets(context_.device, 1, &write, 0, nullptr);
+
+        createSkinningUBOLayout();
+
+        const Shader* skinnedShader = assetLoader_.get<Shader>(OBJECT_ID_SKINNED_SHADER);
+        if (skinnedShader)
+            skinnedPipeline_ = &resourcesManager_.getPipeline(*skinnedShader, VK_FORMAT_R32_UINT, VK_FORMAT_UNDEFINED);
     }
 
     const VulkanContext& context_;
@@ -158,5 +242,9 @@ private:
 
     VulkanBuffer perFrameUBOBuffer_{};
     VkDescriptorSet perFrameUBODescriptorSet_ = VK_NULL_HANDLE;
+    VkDescriptorSetLayout skinningUBOLayout_ = VK_NULL_HANDLE;
+    std::unordered_map<std::string, SkinningEntry> skinningBuffers_;
+
     VulkanPipeline* pipeline_ = nullptr;
+    VulkanPipeline* skinnedPipeline_ = nullptr;
 };

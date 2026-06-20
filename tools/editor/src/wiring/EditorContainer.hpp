@@ -74,7 +74,8 @@ public:
                    features_.imguiRoot(),
                    runtime_.simulationController(),
                    features_.imguiConsole(),
-                   features_.welcomeScreen()) {
+                   features_.welcomeScreen(),
+                   runtime_.animationSystem()) {
         runtime_.simulationController().setEditorWorld(&runtime_.entityManager());
         runtime_.simulationController().setProjectRoot(runtime_.projectRoot());
         if (!runtime_.projectRoot().empty()) services_.project().initProject();

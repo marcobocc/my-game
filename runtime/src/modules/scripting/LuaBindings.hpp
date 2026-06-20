@@ -6,6 +6,7 @@
 #include <sol/sol.hpp>
 #include "LuaInput.hpp"
 #include "LuaWorld.hpp"
+#include "modules/scene/components/Animator.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 namespace LuaBindings {
@@ -81,6 +82,30 @@ namespace LuaBindings {
 
         lua.new_usertype<EntityHandle>("EntityHandle");
 
+        // ---- Animator ----------------------------------------------------------
+
+        lua.new_usertype<Animator>("Animator",
+                                   "play",
+                                   &Animator::play,
+                                   "pause",
+                                   &Animator::pause,
+                                   "stop",
+                                   &Animator::stop,
+                                   "seek",
+                                   &Animator::seek,
+                                   "currentClip",
+                                   &Animator::currentClip,
+                                   "currentTime",
+                                   &Animator::currentTime,
+                                   "playing",
+                                   &Animator::playing,
+                                   "speed",
+                                   &Animator::speed,
+                                   "loop",
+                                   &Animator::loop,
+                                   "clipNames",
+                                   &Animator::clipNames);
+
         // ---- World facade ------------------------------------------------------
 
         lua.new_usertype<LuaWorld>("LuaWorld",
@@ -91,7 +116,9 @@ namespace LuaBindings {
                                    "findByName",
                                    &LuaWorld::findByName,
                                    "getScript",
-                                   &LuaWorld::getScript);
+                                   &LuaWorld::getScript,
+                                   "getAnimator",
+                                   &LuaWorld::getAnimator);
 
         // ---- Input facade ------------------------------------------------------
 

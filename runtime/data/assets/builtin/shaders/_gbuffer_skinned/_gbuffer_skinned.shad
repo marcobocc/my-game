@@ -1,0 +1,5 @@
+{
+  "vertexShader": "assets/builtin/shaders/_gbuffer_skinned/_gbuffer_skinned.vert.spv",
+  "fragmentShader": "assets/builtin/shaders/_gbuffer_skinned/_gbuffer_skinned.frag.spv",
+  "skinnedVertexLayout": true
+}

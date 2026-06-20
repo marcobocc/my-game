@@ -43,7 +43,7 @@ VulkanBackend::VulkanBackend(GameWindow& window,
     renderTargetManager_(renderTargetManager),
     geometryPass_(geometryPass),
     lightingPass_(lightingPass),
-    shadowPass_(std::make_unique<VulkanShadowPass>(resourcesManager, assetLoader)),
+    shadowPass_(std::make_unique<VulkanShadowPass>(resourcesManager, assetLoader, context)),
     skyPass_(std::make_unique<VulkanSkyPass>(context, assetLoader, resourcesManager)),
     particlePass_(std::make_unique<VulkanParticlePass>(
             context,

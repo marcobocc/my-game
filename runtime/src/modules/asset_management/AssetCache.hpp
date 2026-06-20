@@ -7,11 +7,13 @@
 #include <unordered_map>
 #include <unordered_set>
 
+class AnimationClip;
 class Mesh;
-class Texture;
-class Shader;
 class Material;
 class Model;
+class Shader;
+class Skeleton;
+class Texture;
 
 class AssetCache {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetCache");

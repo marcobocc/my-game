@@ -1,5 +1,6 @@
 #pragma once
 #include <filesystem>
+#include "modules/animation/AnimationSystem.hpp"
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/asset_management/AssetLoader.hpp"
 #include "modules/asset_management/VirtualFileSystem.hpp"
@@ -80,8 +81,14 @@ public:
                        resourcesManager_,
                        assetLoader_),
         gameRenderSystem_(vulkanBackend_),
-        simulationController_(
-                window, time_, loadedAssets_, inputSystem_, gameRenderSystem_, rendererSettings_, vulkanBackend_) {}
+        simulationController_(window,
+                              time_,
+                              loadedAssets_,
+                              assetLoader_,
+                              inputSystem_,
+                              gameRenderSystem_,
+                              rendererSettings_,
+                              vulkanBackend_) {}
 
     DeveloperConsole& developerConsole() { return developerConsole_; }
     World& entityManager() { return world_; }
@@ -107,6 +114,7 @@ public:
     VulkanSwapchainManager& swapchainManager() { return swapchainManager_; }
     VulkanBackend& vulkanBackend() { return vulkanBackend_; }
     SimulationController& simulationController() { return simulationController_; }
+    AnimationSystem& animationSystem() { return animationSystem_; }
     const std::filesystem::path& projectRoot() const { return projectRoot_; }
 
 private:
@@ -142,4 +150,5 @@ private:
     VulkanBackend vulkanBackend_;
     GameRenderSystem gameRenderSystem_;
     SimulationController simulationController_;
+    AnimationSystem animationSystem_{assetLoader_};
 };

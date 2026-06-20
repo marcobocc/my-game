@@ -65,7 +65,10 @@ void EditorRenderer::buildOutlines() {
         auto* renderer = actor->getComponent<Renderer>();
         auto* transform = actor->getComponent<Transform>();
         if (renderer && transform) {
-            outlineQueue_.push_back(DrawCall{*renderer, *transform, std::to_string(selectedId)});
+            const glm::mat4* skinBones = nullptr;
+            if (animationSystem_ && animationSystem_->hasSkinning(selectedId))
+                skinBones = animationSystem_->getSkinningMatrices(selectedId).bones;
+            outlineQueue_.push_back(DrawCall{*renderer, *transform, std::to_string(selectedId), skinBones});
         }
     }
 }
@@ -133,7 +136,10 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                    << " has Renderer component with no mesh/material assigned, skipping draw call.");
             continue;
         }
-        drawQueue.push_back(DrawCall{*renderer, *transform, std::to_string(entity)});
+        const glm::mat4* skinBones = nullptr;
+        if (animationSystem_ && animationSystem_->hasSkinning(entity))
+            skinBones = animationSystem_->getSkinningMatrices(entity).bones;
+        drawQueue.push_back(DrawCall{*renderer, *transform, std::to_string(entity), skinBones});
     }
 
     auto lightsQuery = entityManager.query<Light, Transform>();

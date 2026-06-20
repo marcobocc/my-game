@@ -11,6 +11,7 @@
 GameInstance::GameInstance(GameWindow& window,
                            TimeManager& time,
                            AssetCache& loadedAssets,
+                           AssetLoader& assetLoader,
                            InputSystem& inputSystem,
                            World world,
                            GameRenderSystem& renderSystem,
@@ -24,11 +25,13 @@ GameInstance::GameInstance(GameWindow& window,
     physicsSystem_(world_),
     renderSystem_(renderSystem),
     rendererSettings_(rendererSettings),
-    renderer_(renderer) {
+    renderer_(renderer),
+    animationSystem_(assetLoader) {
     developerConsole_.registerCommand("list-actors", [this] { return std::make_unique<ListActorsCommand>(world_); });
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
 
     luaScriptSystem_.init(world_, inputSystem_, std::filesystem::path(ENGINE_DATA_DIR) / "scripts");
+    renderSystem_.setAnimationSystem(&animationSystem_);
 }
 
 
@@ -36,8 +39,11 @@ GameInstance::GameInstance(GameWindow& window,
 // Game Loop
 // --------------------------------------------------------
 
+GameInstance::~GameInstance() { renderSystem_.setAnimationSystem(nullptr); }
+
 void GameInstance::tick(float deltaTime) {
     physicsSystem_.update();
+    animationSystem_.update(deltaTime, world_);
     luaScriptSystem_.update(deltaTime);
     developerConsole_.tick();
 }

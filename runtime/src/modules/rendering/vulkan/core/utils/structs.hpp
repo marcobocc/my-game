@@ -1,4 +1,5 @@
 #pragma once
+#include <glm/glm.hpp>
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -104,8 +105,12 @@ struct VulkanPerFrameUBO {
 // Draw call
 // ------------------------------------------------------------------------
 
+inline constexpr uint32_t DRAW_CALL_MAX_BONES = 256;
+
 struct DrawCall {
     const Renderer& renderer;
     const Transform& transform;
     std::string objectId;
+    // Non-null when this entity has an active Animator. Points into AnimationSystem's cache.
+    const glm::mat4* skinningBones = nullptr; // array of DRAW_CALL_MAX_BONES matrices, or nullptr
 };

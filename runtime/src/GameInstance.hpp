@@ -2,7 +2,9 @@
 #include <functional>
 #include <string>
 #include <utility>
+#include "modules/animation/AnimationSystem.hpp"
 #include "modules/asset_management/AssetCache.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
 #include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
@@ -37,11 +39,14 @@ public:
     GameInstance(GameWindow& window,
                  TimeManager& time,
                  AssetCache& loadedAssets,
+                 AssetLoader& assetLoader,
                  InputSystem& inputSystem,
                  World world,
                  GameRenderSystem& renderSystem,
                  RendererSettings& rendererSettings,
                  IGameRenderer& renderer);
+
+    ~GameInstance();
 
     // --------------------------------------------------------
     // Game Loop
@@ -83,6 +88,7 @@ public:
     World& entities() { return world_; }
     DeveloperConsole& developerConsole() { return developerConsole_; }
     PhysicsSystem& physicsSystem() { return physicsSystem_; }
+    AnimationSystem& animationSystem() { return animationSystem_; }
 
 private:
     bool shouldClose() const;
@@ -98,5 +104,6 @@ private:
     IGameRenderer& renderer_;
 
     DeveloperConsole developerConsole_;
+    AnimationSystem animationSystem_;
     LuaScriptSystem luaScriptSystem_;
 };

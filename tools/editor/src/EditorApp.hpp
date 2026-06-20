@@ -11,6 +11,7 @@
 #include "features/input_handling/InputHandler.hpp"
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "features/welcome/Imgui_WelcomeScreen.hpp"
+#include "modules/animation/AnimationSystem.hpp"
 #include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/core/TimeManager.hpp"
@@ -47,7 +48,8 @@ public:
               ImguiRoot& imguiRoot,
               SimulationController& simulationController,
               Imgui_Console& imguiConsole,
-              Imgui_WelcomeScreen& welcomeScreen) :
+              Imgui_WelcomeScreen& welcomeScreen,
+              AnimationSystem& animationSystem) :
         window_(window),
         developerConsole_(developerConsole),
         inputSystem_(inputSystem),
@@ -63,11 +65,13 @@ public:
         imguiRoot_(imguiRoot),
         simulationController_(simulationController),
         imguiConsole_(imguiConsole),
-        welcomeScreen_(welcomeScreen) {
+        welcomeScreen_(welcomeScreen),
+        animationSystem_(animationSystem) {
         welcomeScreen_.setCallbacks({
                 [this](const std::filesystem::path& path) { openProject(path); },
                 [this] { newProject(); },
         });
+        editorRenderer_.setAnimationSystem(&animationSystem_);
         initApp();
         ImguiStyling::ApplyEditorStyle();
     }
@@ -116,6 +120,7 @@ public:
                     imguiConsole_.setConsole(simulationController_.gameInstance()->developerConsole());
                     imguiConsole_.hide();
                     editorSettings_.disableGrid();
+                    editorRenderer_.setAnimationSystem(&simulationController_.gameInstance()->animationSystem());
                 } else {
                     inputSystem_.setBlocked(false);
                     window_.setSceneViewport(
@@ -123,6 +128,7 @@ public:
                     imguiConsole_.setConsole(developerConsole_);
                     imguiConsole_.show();
                     editorSettings_.enableGrid();
+                    editorRenderer_.setAnimationSystem(&animationSystem_);
                 }
                 simWasActive_ = simActive;
             }
@@ -149,6 +155,7 @@ public:
                     simulationController_.tick(deltaTime);
                     editorRenderer_.render(simulationController_.world(), 0.0f, deltaTime);
                 } else {
+                    animationSystem_.update(deltaTime, entityManager_);
                     editorRenderer_.render(entityManager_, editorSettings_.getGridScale(), deltaTime);
                 }
             }
@@ -234,6 +241,7 @@ private:
     SimulationController& simulationController_;
     Imgui_Console& imguiConsole_;
     Imgui_WelcomeScreen& welcomeScreen_;
+    AnimationSystem& animationSystem_;
     Imgui_CloseModal closeModal_;
     AppState appState_ = AppState::Welcome;
     bool simWasActive_ = false;

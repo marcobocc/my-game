@@ -7,6 +7,8 @@
 
 class Mesh final : public Asset {
 public:
+    static constexpr uint32_t MAX_BONE_INFLUENCES = 4;
+
     Mesh(const std::string& name,
          std::vector<glm::vec3> positions,
          std::vector<glm::vec2> uvs,
@@ -46,16 +48,29 @@ public:
     const std::vector<uint32_t>& getIndices() const { return indices_; }
     const std::vector<glm::vec3>& getNormals() const { return normals_; }
     const std::vector<glm::vec4>& getTangents() const { return tangents_; }
+    const std::vector<glm::ivec4>& getBoneIndices() const { return boneIndices_; }
+    const std::vector<glm::vec4>& getBoneWeights() const { return boneWeights_; }
+    const std::string& getSkeletonName() const { return skeletonName_; }
     AABB getAABB() const { return aabb_; }
     BoundingSphere getBoundingSphere() const { return boundingSphere_; }
-
 
     bool hasIndices() const { return !indices_.empty(); }
     bool hasUvs() const { return !uvs_.empty(); }
     bool hasColors() const { return !colors_.empty(); }
     bool hasNormals() const { return !normals_.empty(); }
     bool hasTangents() const { return !tangents_.empty(); }
+    bool isSkinned() const { return !boneIndices_.empty(); }
     size_t getVertexCount() const { return positions_.size(); }
+
+    void
+    setSkinningData(std::vector<glm::ivec4> boneIndices, std::vector<glm::vec4> boneWeights, std::string skeletonName) {
+        boneIndices_ = std::move(boneIndices);
+        boneWeights_ = std::move(boneWeights);
+        skeletonName_ = std::move(skeletonName);
+    }
+
+    const std::vector<std::string>& getClipNames() const { return clipNames_; }
+    void setClipNames(std::vector<std::string> names) { clipNames_ = std::move(names); }
 
 private:
     static std::vector<glm::vec4> computeTangents(const std::vector<glm::vec3>& positions,
@@ -109,6 +124,10 @@ private:
     std::vector<uint32_t> indices_;
     std::vector<glm::vec3> normals_;
     std::vector<glm::vec4> tangents_;
+    std::vector<glm::ivec4> boneIndices_;
+    std::vector<glm::vec4> boneWeights_;
+    std::string skeletonName_;
+    std::vector<std::string> clipNames_;
     AABB aabb_;
     BoundingSphere boundingSphere_;
 };

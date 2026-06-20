@@ -44,30 +44,51 @@ public:
         vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
         if (!shader.noVertexInput) {
-            const uint32_t stride = shader.positionColorVertexLayout ? VertexLayout_PositionColor::VERTEX_STRIDE
-                                                                     : VertexLayout_PositionNormalUv::VERTEX_STRIDE;
-            const auto& attribs =
-                    shader.positionColorVertexLayout
-                            ? std::span<const VertexAttribute>(VertexLayout_PositionColor::VERTEX_ATTRIBS)
-                            : std::span<const VertexAttribute>(VertexLayout_PositionNormalUv::VERTEX_ATTRIBS);
-            vertexBinding.binding = 0;
-            vertexBinding.stride = sizeof(float) * stride;
-            vertexBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+            if (shader.skinnedVertexLayout) {
+                // Skinned layout: pos(3f) + normal(3f) + uv(2f) + boneIdx(4i) + boneWt(4f)
+                using SL = VertexLayout_PositionNormalUvSkinned;
+                vertexBinding.binding = 0;
+                vertexBinding.stride = sizeof(float) * SL::VERTEX_STRIDE;
+                vertexBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-            uint32_t location = 0;
-            for (const auto& [offset, componentCount]: attribs) {
-                VkFormat format = VK_FORMAT_UNDEFINED;
-                if (componentCount == 2) format = VK_FORMAT_R32G32_SFLOAT;
-                if (componentCount == 3) format = VK_FORMAT_R32G32B32_SFLOAT;
-                if (componentCount == 4) format = VK_FORMAT_R32G32B32A32_SFLOAT;
-                VkVertexInputAttributeDescription desc{};
-                desc.location = location++;
-                desc.binding = 0;
-                desc.format = format;
-                desc.offset = static_cast<uint32_t>(offset * sizeof(float));
-                vertexAttributes.push_back(desc);
+                auto addAttrib = [&](uint32_t location, uint32_t offset, VkFormat fmt) {
+                    VkVertexInputAttributeDescription d{};
+                    d.location = location;
+                    d.binding = 0;
+                    d.format = fmt;
+                    d.offset = offset * sizeof(float);
+                    vertexAttributes.push_back(d);
+                };
+                addAttrib(0, SL::POSITION_OFFSET, VK_FORMAT_R32G32B32_SFLOAT);
+                addAttrib(1, SL::NORMAL_OFFSET, VK_FORMAT_R32G32B32_SFLOAT);
+                addAttrib(2, SL::UV_OFFSET, VK_FORMAT_R32G32_SFLOAT);
+                addAttrib(3, SL::BONE_IDX_OFFSET, VK_FORMAT_R32G32B32A32_SINT);
+                addAttrib(4, SL::BONE_WT_OFFSET, VK_FORMAT_R32G32B32A32_SFLOAT);
+            } else {
+                const uint32_t stride = shader.positionColorVertexLayout ? VertexLayout_PositionColor::VERTEX_STRIDE
+                                                                         : VertexLayout_PositionNormalUv::VERTEX_STRIDE;
+                const auto& attribs =
+                        shader.positionColorVertexLayout
+                                ? std::span<const VertexAttribute>(VertexLayout_PositionColor::VERTEX_ATTRIBS)
+                                : std::span<const VertexAttribute>(VertexLayout_PositionNormalUv::VERTEX_ATTRIBS);
+                vertexBinding.stride = sizeof(float) * stride;
+                vertexBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                uint32_t location = 0;
+                for (const auto& [offset, componentCount]: attribs) {
+                    VkFormat format = VK_FORMAT_UNDEFINED;
+                    if (componentCount == 2) format = VK_FORMAT_R32G32_SFLOAT;
+                    if (componentCount == 3) format = VK_FORMAT_R32G32B32_SFLOAT;
+                    if (componentCount == 4) format = VK_FORMAT_R32G32B32A32_SFLOAT;
+                    VkVertexInputAttributeDescription desc{};
+                    desc.location = location++;
+                    desc.binding = 0;
+                    desc.format = format;
+                    desc.offset = static_cast<uint32_t>(offset * sizeof(float));
+                    vertexAttributes.push_back(desc);
+                }
             }
-
+            vertexBinding.binding = 0;
             vertexInputState.vertexBindingDescriptionCount = 1;
             vertexInputState.pVertexBindingDescriptions = &vertexBinding;
             vertexInputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributes.size());

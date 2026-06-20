@@ -4,9 +4,12 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <limits>
 #include <span>
+#include <unordered_map>
 #include <vector>
 #include <volk.h>
 #include "../core/resources/VulkanResourcesManager.hpp"
+#include "../core/utils/buffers.hpp"
+#include "../core/utils/descriptors.hpp"
 #include "../core/utils/structs.hpp"
 #include "modules/asset_management/AssetLoader.hpp"
 #include "modules/asset_management/BuiltinAssetNames.hpp"
@@ -20,11 +23,20 @@ public:
     static constexpr uint32_t SHADOW_MAP_SIZE = 1024;
     static constexpr uint32_t MAX_SHADOW_LIGHTS = 4;
 
-    VulkanShadowPass(VulkanResourcesManager& resourcesManager, AssetLoader& assetLoader) :
+    VulkanShadowPass(VulkanResourcesManager& resourcesManager, AssetLoader& assetLoader, const VulkanContext& context) :
         resourcesManager_(resourcesManager),
-        assetLoader_(assetLoader) {
+        assetLoader_(assetLoader),
+        context_(context) {
         lightSpaceMatrices_.fill(glm::mat4(1.0f));
         initPipelines();
+        createSkinningUBOLayout();
+    }
+
+    ~VulkanShadowPass() {
+        for (auto& [id, entry]: skinningBuffers_)
+            destroyBuffer(context_.device, entry.buffer);
+        if (skinningUBOLayout_ != VK_NULL_HANDLE)
+            vkDestroyDescriptorSetLayout(context_.device, skinningUBOLayout_, nullptr);
     }
 
     // Returns the light-space matrix computed for slot i in the last record() call.
@@ -153,33 +165,92 @@ private:
         VkRect2D scissor{{0, 0}, {SHADOW_MAP_SIZE, SHADOW_MAP_SIZE}};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, activePipeline->pipeline);
-
         for (const auto& drawCall: drawQueue)
-            renderEntity(cmd, activePipeline, drawCall, lightSpaceMat, isPointLight, lightPos, lightRange);
+            renderEntity(cmd, isPointLight, drawCall, lightSpaceMat, lightPos, lightRange);
 
         vkCmdEndRendering(cmd);
+    }
+
+    void createSkinningUBOLayout() {
+        VkDescriptorSetLayoutBinding binding{};
+        binding.binding = 0;
+        binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        binding.descriptorCount = 1;
+        binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        VkDescriptorSetLayoutCreateInfo info{};
+        info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        info.bindingCount = 1;
+        info.pBindings = &binding;
+        vkCreateDescriptorSetLayout(context_.device, &info, nullptr, &skinningUBOLayout_);
+    }
+
+    VkDescriptorSet getOrCreateSkinningDescriptorSet(const std::string& objectId) {
+        auto it = skinningBuffers_.find(objectId);
+        if (it != skinningBuffers_.end()) return it->second.descriptorSet;
+        constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * DRAW_CALL_MAX_BONES;
+        SkinningEntry entry{};
+        entry.buffer = createUniformBuffer(context_.device, context_.physicalDevice, uboSize);
+        entry.descriptorSet = createUniformBufferDescriptorSet(
+                context_.device, context_.descriptorPool, skinningUBOLayout_, entry.buffer.buffer, uboSize);
+        auto [ins, _] = skinningBuffers_.emplace(objectId, std::move(entry));
+        return ins->second.descriptorSet;
+    }
+
+    void updateSkinningBuffer(const std::string& objectId, const glm::mat4* bones) {
+        auto it = skinningBuffers_.find(objectId);
+        if (it == skinningBuffers_.end()) return;
+        constexpr VkDeviceSize uboSize = sizeof(glm::mat4) * DRAW_CALL_MAX_BONES;
+        updateBuffer(context_.device, it->second.buffer, bones, uboSize);
+    }
+
+    void uploadIdentitySkinning(const std::string& objectId) {
+        static const auto identityBones = []() {
+            std::array<glm::mat4, DRAW_CALL_MAX_BONES> arr{};
+            arr.fill(glm::mat4(1.0f));
+            return arr;
+        }();
+        updateSkinningBuffer(objectId, identityBones.data());
     }
 
     void initPipelines() {
         const Shader* shader = assetLoader_.get<Shader>(SHADOW_SHADER);
         if (!shader) return;
-        // Depth-only pass: no color attachments. Directional/spot: standard depth.
         pipeline_ = &resourcesManager_.getPipeline(*shader, std::span<const VkFormat>{}, SHADOW_DEPTH_FORMAT, true);
-        // Point light shadow: same pipeline variant but fragment shader writes gl_FragDepth.
-        // We reuse the same shader/pipeline — the isPointLight push constant drives the frag behaviour.
         pipelinePoint_ = pipeline_;
+
+        const Shader* skinnedShader = assetLoader_.get<Shader>(SHADOW_SKINNED_SHADER);
+        if (skinnedShader) {
+            skinnedPipeline_ = &resourcesManager_.getPipeline(
+                    *skinnedShader, std::span<const VkFormat>{}, SHADOW_DEPTH_FORMAT, true);
+            skinnedPipelinePoint_ = skinnedPipeline_;
+        }
     }
 
     void renderEntity(VkCommandBuffer cmd,
-                      VulkanPipeline* activePipeline,
+                      bool isPointLight,
                       const DrawCall& drawCall,
                       const glm::mat4& lightSpaceMat,
-                      bool isPointLight,
                       const glm::vec3& lightPos,
-                      float lightRange) const {
+                      float lightRange) {
         const Mesh* mesh = assetLoader_.get<Mesh>(drawCall.renderer.meshName);
         if (!mesh) return;
+
+        const bool meshIsSkinned = mesh->isSkinned() && (skinnedPipeline_ != nullptr);
+        VulkanPipeline* activePipeline = meshIsSkinned ? (isPointLight ? skinnedPipelinePoint_ : skinnedPipeline_)
+                                                       : (isPointLight ? pipelinePoint_ : pipeline_);
+        if (!activePipeline) return;
+
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, activePipeline->pipeline);
+
+        if (meshIsSkinned) {
+            VkDescriptorSet skinDS = getOrCreateSkinningDescriptorSet(drawCall.objectId);
+            if (drawCall.skinningBones)
+                updateSkinningBuffer(drawCall.objectId, drawCall.skinningBones);
+            else
+                uploadIdentitySkinning(drawCall.objectId);
+            vkCmdBindDescriptorSets(
+                    cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, activePipeline->layout, 0, 1, &skinDS, 0, nullptr);
+        }
 
         PushConstants pc{};
         pc.lightSpaceMatrix = lightSpaceMat;
@@ -306,10 +377,20 @@ private:
         return zCorrectMatrix() * proj * lightView;
     }
 
+    struct SkinningEntry {
+        VulkanBuffer buffer{};
+        VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+    };
+
     VulkanResourcesManager& resourcesManager_;
     AssetLoader& assetLoader_;
+    const VulkanContext& context_;
 
     VulkanPipeline* pipeline_ = nullptr;
     VulkanPipeline* pipelinePoint_ = nullptr;
+    VulkanPipeline* skinnedPipeline_ = nullptr;
+    VulkanPipeline* skinnedPipelinePoint_ = nullptr;
+    VkDescriptorSetLayout skinningUBOLayout_ = VK_NULL_HANDLE;
+    std::unordered_map<std::string, SkinningEntry> skinningBuffers_;
     std::array<glm::mat4, MAX_SHADOW_LIGHTS> lightSpaceMatrices_{};
 };

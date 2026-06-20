@@ -5,6 +5,7 @@
 #include "../../../styling/EditorPanel.hpp"
 #include "Imgui_GameObjectInspector.hpp"
 #include "assets/Imgui_MaterialWidget.hpp"
+#include "assets/Imgui_MeshWidget.hpp"
 
 class Imgui_InspectorPanel : public EditorPanel {
 public:
@@ -14,7 +15,8 @@ public:
                          EditorGizmos& debugViz) :
         editorSelection_(editorSelection),
         gameObjectInspector_(editorSelection, assetStore, scene, debugViz),
-        materialInspector(assetStore, editorSelection) {}
+        materialInspector(assetStore, editorSelection),
+        meshInspector(assetStore, editorSelection) {}
 
     void draw() { EditorPanel::draw("Inspector"); }
 
@@ -24,6 +26,8 @@ public:
         if (inspectedAsset.has_value()) {
             if (inspectedAsset->ends_with(".mat")) {
                 materialInspector.draw();
+            } else if (inspectedAsset->ends_with(".mesh")) {
+                meshInspector.draw();
             }
         } else if (inspectedEntity.has_value()) {
             gameObjectInspector_.draw(*inspectedEntity);
@@ -34,4 +38,5 @@ private:
     EditorSelection& editorSelection_;
     Imgui_GameObjectInspector gameObjectInspector_;
     Imgui_MaterialWidget materialInspector;
+    Imgui_MeshWidget meshInspector;
 };
