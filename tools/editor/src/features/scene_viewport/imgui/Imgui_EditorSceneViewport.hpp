@@ -1,6 +1,7 @@
 #pragma once
 #include <imgui.h>
 #include "../../../services/ClipboardService.hpp"
+#include "../../scene_hierarchy/imgui/Imgui_CapsulePopupModal.hpp"
 #include "../../scene_hierarchy/imgui/Imgui_HierarchyDropdownMenu.hpp"
 #include "../editor_camera/EditorCamera.hpp"
 #include "../picking/PickingSystem.hpp"
@@ -34,6 +35,7 @@ public:
         window_(window),
         editorCamera_(editorCamera),
         spherePopupModal_(sceneQuickActions),
+        capsulePopupModal_(sceneQuickActions),
         dropdownMenu_(assetStore,
                       scene,
                       sceneQuickActions,
@@ -42,12 +44,14 @@ public:
                       editorSelection,
                       clipboardService,
                       nullptr,
-                      &spherePopupModal_) {}
+                      &spherePopupModal_,
+                      &capsulePopupModal_) {}
 
     bool isMouseInViewport() const { return isMouseInViewport_; }
 
     void draw() {
         spherePopupModal_.draw();
+        capsulePopupModal_.draw();
 
         auto sv = window_.getSceneViewport();
         ImVec2 mousePos = ImGui::GetMousePos();
@@ -151,6 +155,7 @@ private:
     GameWindow& window_;
     EditorCamera& editorCamera_;
     Imgui_SpherePopupModal spherePopupModal_;
+    Imgui_CapsulePopupModal capsulePopupModal_;
     Imgui_HierarchyDropdownMenu dropdownMenu_;
     float rightClickStartX_ = 0.0f;
     float rightClickStartY_ = 0.0f;

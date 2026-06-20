@@ -15,6 +15,7 @@
 #include "../../../styling/EditorPanel.hpp"
 #include "../../../styling/ImguiStyling.hpp"
 #include "../../input_handling/ShortcutBindingService.hpp"
+#include "Imgui_CapsulePopupModal.hpp"
 #include "Imgui_HierarchyDropdownMenu.hpp"
 #include "Imgui_SpherePopupModal.hpp"
 #include "modules/scene/components/Metadata.hpp"
@@ -33,6 +34,7 @@ public:
         scene_(scene),
         sceneQuickActions_(sceneQuickActions),
         spherePopupModal_(sceneQuickActions),
+        capsulePopupModal_(sceneQuickActions),
         dropdownMenu_(assetStore,
                       scene,
                       sceneQuickActions,
@@ -41,7 +43,8 @@ public:
                       editorSelection,
                       clipboardService,
                       this,
-                      &spherePopupModal_) {}
+                      &spherePopupModal_,
+                      &capsulePopupModal_) {}
 
     void draw() { EditorPanel::draw("Objects Hierarchy"); }
 
@@ -54,6 +57,7 @@ public:
     void drawBody() override {
         contextTargetId.reset();
         spherePopupModal_.draw();
+        capsulePopupModal_.draw();
         if (ImGui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows) && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
             // routed through ActionDispatcher -> SceneQuickActions
         }
@@ -295,6 +299,7 @@ private:
     RuntimeScene& scene_;
     SceneQuickActions& sceneQuickActions_;
     Imgui_SpherePopupModal spherePopupModal_;
+    Imgui_CapsulePopupModal capsulePopupModal_;
     Imgui_HierarchyDropdownMenu dropdownMenu_;
 
     std::optional<EntityHandle> contextTargetId;

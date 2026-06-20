@@ -62,6 +62,7 @@ public:
     void createCube();
     void createPlane();
     void createSphere(uint32_t resolution);
+    void createCapsule(uint32_t resolution);
     void addModel(const std::string& modelName);
 
 private:

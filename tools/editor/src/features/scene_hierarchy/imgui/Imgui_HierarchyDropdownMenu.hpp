@@ -9,6 +9,7 @@
 #include "../../../services/common_editing/SceneQuickActions.hpp"
 #include "../../../styling/DropdownMenuComponent.hpp"
 #include "../../input_handling/ShortcutBindingService.hpp"
+#include "Imgui_CapsulePopupModal.hpp"
 #include "Imgui_SpherePopupModal.hpp"
 #include "modules/scene/components/Metadata.hpp"
 
@@ -24,7 +25,8 @@ public:
                                 EditorSelection& editorSelection,
                                 ClipboardService& clipboardService,
                                 Imgui_HierarchyPanel* hierarchyPanel = nullptr,
-                                Imgui_SpherePopupModal* spherePopupModal = nullptr) :
+                                Imgui_SpherePopupModal* spherePopupModal = nullptr,
+                                Imgui_CapsulePopupModal* capsulePopupModal = nullptr) :
         assetStore_(assetStore),
         scene_(scene),
         sceneQuickActions_(sceneQuickActions),
@@ -33,7 +35,8 @@ public:
         editorSelection_(editorSelection),
         clipboardService_(clipboardService),
         hierarchyPanel_(hierarchyPanel),
-        spherePopupModal_(spherePopupModal) {}
+        spherePopupModal_(spherePopupModal),
+        capsulePopupModal_(capsulePopupModal) {}
 
     void draw(const char* popupId) {
         bool hasSelection = !editorSelection_.getSelectedEntityIds().empty();
@@ -104,6 +107,9 @@ protected:
             if (ImGui::MenuItem("Sphere")) {
                 if (spherePopupModal_) spherePopupModal_->requestCreation();
             }
+            if (ImGui::MenuItem("Capsule")) {
+                if (capsulePopupModal_) capsulePopupModal_->requestCreation();
+            }
             ImGui::Separator();
             drawModelsSubmenu();
             ImGui::EndMenu();
@@ -120,6 +126,7 @@ private:
     ClipboardService& clipboardService_;
     Imgui_HierarchyPanel* hierarchyPanel_;
     Imgui_SpherePopupModal* spherePopupModal_;
+    Imgui_CapsulePopupModal* capsulePopupModal_;
     std::optional<EntityHandle> contextEntity_;
     std::optional<EntityHandle> renameRequested_;
     std::string contextEntityName_;

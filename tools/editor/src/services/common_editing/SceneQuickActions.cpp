@@ -106,6 +106,12 @@ void SceneQuickActions::createSphere(uint32_t resolution) {
     createPrimitiveGeometry(meshName, "Sphere", groupId);
 }
 
+void SceneQuickActions::createCapsule(uint32_t resolution) {
+    auto groupId = UndoHistory::randomGroupId("Create Capsule");
+    std::string meshName = "Capsule_" + std::to_string(resolution) + ".mesh";
+    createPrimitiveGeometry(meshName, "Capsule", groupId);
+}
+
 void SceneQuickActions::addModel(const std::string& modelName) {
     auto groupId = UndoHistory::randomGroupId("Add Model");
 
@@ -143,6 +149,11 @@ void SceneQuickActions::ensurePrimitiveExists(const std::string& meshName) {
         size_t dotPos = meshName.find('.');
         uint32_t resolution = std::stoul(meshName.substr(underscorePos + 1, dotPos - underscorePos - 1));
         assetStore.createAssetFile<Mesh>(AssetPrefabs::sphere(resolution, meshName));
+    } else if (meshName.find("Capsule_") == 0) {
+        size_t underscorePos = meshName.find('_');
+        size_t dotPos = meshName.find('.');
+        uint32_t resolution = std::stoul(meshName.substr(underscorePos + 1, dotPos - underscorePos - 1));
+        assetStore.createAssetFile<Mesh>(AssetPrefabs::capsule(resolution, meshName));
     } else {
         throw std::runtime_error("Unknown mesh name: " + meshName);
     }
