@@ -49,15 +49,26 @@ namespace importing {
             }
             if (offsetMatrices.empty()) return nullptr;
 
-            // Include all animated nodes in the skeleton, not just weighted bones.
-            // Assimp splits FBX pre/post rotations into helper nodes (_$AssimpFbx$_Rotation etc.)
-            // that carry animation channels but have no offsetMatrix — they must be in the hierarchy.
             const std::unordered_set<std::string> animatedNodes = collectAnimatedNodes(scene);
 
+            // Build the set of nodes that must be in the skeleton: influencers, animated nodes,
+            // and any ancestor of either (so the parent chain is never broken). This handles both
+            // FBX ($AssimpFbx$ helpers) and glTF (plain intermediate nodes with no weights/channels).
+            std::unordered_set<std::string> requiredNodes;
+            std::function<bool(const aiNode*)> markRequired = [&](const aiNode* node) -> bool {
+                bool childRequired = false;
+                for (unsigned int i = 0; i < node->mNumChildren; ++i)
+                    childRequired |= markRequired(node->mChildren[i]);
+                std::string name = node->mName.C_Str();
+                bool self = offsetMatrices.count(name) > 0 || animatedNodes.count(name) > 0;
+                if (self || childRequired) requiredNodes.insert(name);
+                return self || childRequired;
+            };
+            markRequired(scene->mRootNode);
+
             // Walk the node tree in DFS order (guarantees parent-before-child indexing).
-            // localBindTransform is derived from offsetMatrix so it exactly matches what Assimp
-            // used internally: localBind[i] = inverse(parentGlobalBind) * inverse(offsetMatrix[i]).
-            // For helper nodes (no offsetMatrix) we use the raw node transform.
+            // Any node in requiredNodes is included; others are skipped but their parent slot is
+            // passed through so the chain is never broken.
             std::vector<Bone> bones;
 
             // For each influencer bone, compute the full global bind pose by walking the raw node tree.
@@ -67,7 +78,8 @@ namespace importing {
             std::function<void(const aiNode*, glm::mat4)> computeGlobals = [&](const aiNode* node,
                                                                                glm::mat4 parentGlobal) {
                 glm::mat4 global = parentGlobal * toGlm(node->mTransformation);
-                nodeGlobalTransform[node->mName.C_Str()] = global;
+                // Keep first occurrence — GLB files can have duplicate node names.
+                nodeGlobalTransform.emplace(node->mName.C_Str(), global);
                 for (unsigned int i = 0; i < node->mNumChildren; ++i)
                     computeGlobals(node->mChildren[i], global);
             };
@@ -76,12 +88,11 @@ namespace importing {
             std::function<void(const aiNode*, int)> walk = [&](const aiNode* node, int parentIndex) {
                 std::string nodeName = node->mName.C_Str();
                 bool isInfluencer = offsetMatrices.count(nodeName) > 0;
-                bool isAnimated = animatedNodes.count(nodeName) > 0;
-                // Assimp helper nodes (PreRotation, PostRotation, etc.) are baked into offsetMatrix
-                // but may not have animation channels; they must still be in the skeleton chain.
-                bool isHelper = nodeName.find("$AssimpFbx$") != std::string::npos;
 
-                if (isInfluencer || isAnimated || isHelper) {
+                // Skip duplicate nodes (GLB files can produce multiple nodes with the same name).
+                bool alreadyAdded = outBoneNameToIndex.count(nodeName) > 0;
+
+                if (requiredNodes.count(nodeName) > 0 && !alreadyAdded) {
                     int myIndex = static_cast<int>(bones.size());
                     outBoneNameToIndex[nodeName] = myIndex;
                     Bone bone;
@@ -102,8 +113,9 @@ namespace importing {
                     bones.push_back(std::move(bone));
                 }
 
-                int nextParent =
-                        (isInfluencer || isAnimated || isHelper) ? static_cast<int>(bones.size()) - 1 : parentIndex;
+                int nextParent = (requiredNodes.count(nodeName) > 0 && !alreadyAdded)
+                                         ? static_cast<int>(bones.size()) - 1
+                                         : parentIndex;
                 for (unsigned int i = 0; i < node->mNumChildren; ++i)
                     walk(node->mChildren[i], nextParent);
             };

@@ -30,7 +30,16 @@ private:
     std::string groupId_;
 
     void buildProperties() override {
-        add<LabelProperty>("Mesh", [this] { return component_.meshName; });
+        add<InputTextProperty>(
+                "Mesh",
+                [this] { return component_.meshName; },
+                "MESH_ASSET",
+                [this](const char* name) {
+                    component_.meshName = name;
+                    Renderer snapshot = component_;
+                    scene_.getObject(objectId_).mutateComponent<Renderer>([snapshot](Renderer& r) { r = snapshot; },
+                                                                          UndoHistory::randomGroupId("Apply Mesh"));
+                });
 
         add<InputTextProperty>(
                 "Material",

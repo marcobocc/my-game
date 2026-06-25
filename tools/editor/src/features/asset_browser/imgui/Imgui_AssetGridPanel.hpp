@@ -49,6 +49,7 @@ private:
             {"Textures", ".png", ".jpg"},
             {"Shaders", ".shad", nullptr},
             {"Scripts", ".lua", nullptr},
+            {"Animators", ".animctrl", nullptr},
     };
 
     static constexpr std::string_view knownExtensions[] = {
@@ -59,6 +60,7 @@ private:
             ".jpg",
             ".model",
             ".lua",
+            ".animctrl",
     };
 
     AssetStore& assetStore_;
@@ -177,6 +179,16 @@ private:
             }
             if (asset.ends_with(".lua") && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 ImGui::SetDragDropPayload("SCRIPT_ASSET", asset.c_str(), asset.size() + 1);
+                ImGui::TextUnformatted(asset.c_str());
+                ImGui::EndDragDropSource();
+            }
+            if (asset.ends_with(".mesh") && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                ImGui::SetDragDropPayload("MESH_ASSET", asset.c_str(), asset.size() + 1);
+                ImGui::TextUnformatted(asset.c_str());
+                ImGui::EndDragDropSource();
+            }
+            if (asset.ends_with(".animctrl") && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                ImGui::SetDragDropPayload("ANIMCTRL_ASSET", asset.c_str(), asset.size() + 1);
                 ImGui::TextUnformatted(asset.c_str());
                 ImGui::EndDragDropSource();
             }

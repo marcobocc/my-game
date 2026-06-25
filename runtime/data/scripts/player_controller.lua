@@ -22,6 +22,8 @@ function M:onStart()
     self.grounded  = false
     self.groundY   = 0.0
     self.camScript = nil
+    self.animState = ""
+    self.spaceWasDown = false
 
     local t = World:getTransform(self.entity)
     if t then
@@ -35,6 +37,17 @@ function M:onStart()
     end
 
     Logger.info("player_controller started on entity " .. tostring(self.entity))
+end
+
+function M:setAnimState(state)
+    if self.animState == state then return end
+    local prev = self.animState
+    self.animState = state
+    local anim = World:getAnimator(self.entity)
+    if anim then
+        local blend = (prev == "Jump") and 0.5 or 0.2
+        anim:play(state, blend)
+    end
 end
 
 function M:onUpdate(dt)
@@ -77,10 +90,12 @@ function M:onUpdate(dt)
         self.velocityY = 0.0
         t.position = Vec3(t.position.x, self.groundY, t.position.z)
 
-        if Input:isKeyDown("SPACE") then
+        local spaceDown = Input:isKeyDown("SPACE")
+        if spaceDown and not self.spaceWasDown then
             self.velocityY = self.jumpForce
             self.grounded  = false
         end
+        self.spaceWasDown = spaceDown
     else
         self.velocityY = self.velocityY - self.gravity * dt
     end
@@ -88,6 +103,15 @@ function M:onUpdate(dt)
     t.position = Vec3(t.position.x, t.position.y + self.velocityY * dt, t.position.z)
 
     World:setTransform(self.entity, t)
+
+    -- Animation state
+    if not self.grounded then
+        self:setAnimState("Jump")
+    elseif moving then
+        self:setAnimState("Run")
+    else
+        self:setAnimState("Idle")
+    end
 
     -- Reposition camera immediately after player moves to eliminate one-frame lag.
     if self.camScript then

@@ -7,6 +7,7 @@
 #include "MeshImporter.hpp"
 #include "VirtualFileSystem.hpp"
 #include "asset_types/AnimationClip.hpp"
+#include "asset_types/AnimatorController.hpp"
 #include "asset_types/Mesh.hpp"
 #include "asset_types/Shader.hpp"
 #include "asset_types/Skeleton.hpp"
@@ -213,6 +214,23 @@ inline std::unique_ptr<Material> AssetLoader::load<Material>(const std::string& 
         }
     } catch (const std::exception& e) {
         LOG4CXX_ERROR(LOGGER, "Failed to load material: " << name << " - " << e.what());
+    }
+    return nullptr;
+}
+
+template<>
+inline std::unique_ptr<AnimatorController> AssetLoader::load<AnimatorController>(const std::string& name) const {
+    try {
+        auto dataVec = vfs_.read(name);
+        auto str = std::string(dataVec.begin(), dataVec.end());
+        auto j = nlohmann::json::parse(str);
+        auto asset = std::make_unique<AnimatorController>(AnimatorController::deserialize(j, name));
+        auto* ptr = asset.get();
+        cache_.insert<AnimatorController>(std::move(asset));
+        LOG4CXX_INFO(LOGGER, "Successfully loaded animator controller: " << name);
+        return std::make_unique<AnimatorController>(*ptr);
+    } catch (const std::exception& e) {
+        LOG4CXX_ERROR(LOGGER, "Failed to load animator controller: " << name << " - " << e.what());
     }
     return nullptr;
 }

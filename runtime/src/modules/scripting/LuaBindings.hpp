@@ -84,27 +84,24 @@ namespace LuaBindings {
 
         // ---- Animator ----------------------------------------------------------
 
-        lua.new_usertype<Animator>("Animator",
-                                   "play",
-                                   &Animator::play,
-                                   "pause",
-                                   &Animator::pause,
-                                   "stop",
-                                   &Animator::stop,
-                                   "seek",
-                                   &Animator::seek,
-                                   "currentClip",
-                                   &Animator::currentClip,
-                                   "currentTime",
-                                   &Animator::currentTime,
-                                   "playing",
-                                   &Animator::playing,
-                                   "speed",
-                                   &Animator::speed,
-                                   "loop",
-                                   &Animator::loop,
-                                   "clipNames",
-                                   &Animator::clipNames);
+        lua.new_usertype<Animator>(
+                "Animator",
+                "play",
+                &Animator::play,
+                "pause",
+                &Animator::pause,
+                "stop",
+                &Animator::stop,
+                "seek",
+                [](Animator& a, float t) { a.currentTime = t; },
+                "currentState",
+                &Animator::currentState,
+                "currentTime",
+                &Animator::currentTime,
+                "playing",
+                &Animator::playing,
+                "clipNames",
+                &Animator::clipNames);
 
         // ---- World facade ------------------------------------------------------
 

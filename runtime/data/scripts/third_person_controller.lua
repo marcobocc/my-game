@@ -6,6 +6,8 @@ Properties = {
     { name = "targetEntity",   type = "entity", default = 0   },
     { name = "mouseSens",      type = "float",  default = 0.1 },
     { name = "cameraDistance", type = "float",  default = 5.0 },
+    { name = "minDistance",    type = "float",  default = 1.0 },
+    { name = "maxDistance",    type = "float",  default = 15.0 },
     { name = "pivotHeight",    type = "float",  default = 1.0 },
 }
 
@@ -14,8 +16,10 @@ local Logger = require("logger")
 local M = {}
 
 function M:onStart()
-    self.yaw   = 0.0
-    self.pitch = 15.0
+    self.yaw            = 0.0
+    self.pitch          = 15.0
+    self.currentDistance = self.cameraDistance
+    self.targetDistance  = self.cameraDistance
 
     local t = self.targetEntity ~= 0 and World:getTransform(self.targetEntity)
     if t then
@@ -35,9 +39,10 @@ function M:recomputePosition()
     local yawRad   = math.rad(self.yaw)
     local pitchRad = math.rad(self.pitch)
 
-    local hDist = math.cos(pitchRad) * self.cameraDistance
+    local dist  = self.currentDistance
+    local hDist = math.cos(pitchRad) * dist
     local armX  = -math.sin(yawRad) * hDist
-    local armY  =  math.sin(pitchRad) * self.cameraDistance
+    local armY  =  math.sin(pitchRad) * dist
     local armZ  = -math.cos(yawRad) * hDist
 
     local pivot = Vec3(
@@ -63,6 +68,13 @@ function M:onUpdate(dt)
     local dx, dy = Input:getMouseDelta()
     self.yaw   = self.yaw   - dx * self.mouseSens
     self.pitch = math.max(-20, math.min(60, self.pitch + dy * self.mouseSens))
+
+    local scroll = Input:getScrollDelta()
+    local minDist = self.minDistance or 1.0
+    local maxDist = self.maxDistance or 15.0
+    self.targetDistance  = math.max(minDist, math.min(maxDist, self.targetDistance - scroll))
+    local alpha = 1.0 - math.exp(-10.0 * dt)
+    self.currentDistance = self.currentDistance + (self.targetDistance - self.currentDistance) * alpha
 
     self:recomputePosition()
 end
