@@ -14,11 +14,23 @@ public:
         return boundingSpheresEnabled_;
     }
 
+    void toggleBoxCollider(EntityHandle objectId);
+    bool boxColliderEnabled(EntityHandle objectId) const { return boxColliderEnabled_.contains(objectId); }
+    const std::unordered_set<EntityHandle>& getObjectsWithBoxColliderEnabled() const { return boxColliderEnabled_; }
+
+    void toggleCapsuleCollider(EntityHandle objectId);
+    bool capsuleColliderEnabled(EntityHandle objectId) const { return capsuleColliderEnabled_.contains(objectId); }
+    const std::unordered_set<EntityHandle>& getObjectsWithCapsuleColliderEnabled() const {
+        return capsuleColliderEnabled_;
+    }
+
     void toggleBVH();
     bool bvhEnabled() const { return bvhEnabled_; }
 
 private:
     std::unordered_set<EntityHandle> aabbEnabled_;
     std::unordered_set<EntityHandle> boundingSpheresEnabled_;
+    std::unordered_set<EntityHandle> boxColliderEnabled_;
+    std::unordered_set<EntityHandle> capsuleColliderEnabled_;
     bool bvhEnabled_ = false;
 };

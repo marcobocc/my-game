@@ -87,6 +87,8 @@ public:
     // --------------------------------------------------------------------------------
     // Active Camera
     // --------------------------------------------------------------------------------
+    const World& getWorld() const { return world_; }
+
     void setActiveCamera(EntityHandle e) { world_.setActiveCamera(e); }
     void clearActiveCamera() { world_.clearActiveCamera(); }
     bool isActiveCamera(EntityHandle e) const {

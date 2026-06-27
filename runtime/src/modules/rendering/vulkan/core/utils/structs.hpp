@@ -110,6 +110,7 @@ inline constexpr uint32_t DRAW_CALL_MAX_BONES = 256;
 struct DrawCall {
     const Renderer& renderer;
     const Transform& transform;
+    glm::mat4 worldMatrix{1.0f};
     std::string objectId;
     // Non-null when this entity has an active Animator. Points into AnimationSystem's cache.
     const glm::mat4* skinningBones = nullptr; // array of DRAW_CALL_MAX_BONES matrices, or nullptr

@@ -3,6 +3,7 @@
 #include "GameRenderData.hpp"
 #include "IGameRenderer.hpp"
 #include "modules/animation/AnimationSystem.hpp"
+#include "modules/scene/TransformUtils.hpp"
 #include "modules/scene/World.hpp"
 #include "modules/scene/components/Animator.hpp"
 #include "modules/scene/components/Camera.hpp"
@@ -40,6 +41,7 @@ public:
                 skinBones = animationSystem_->getSkinningMatrices(entity).bones;
             drawQueue.push_back({const_cast<Renderer&>(*rendererPtr),
                                  const_cast<Transform&>(*transformPtr),
+                                 TransformUtils::resolveWorldMatrix(*transformPtr, entityManager),
                                  std::to_string(entity),
                                  skinBones});
         }

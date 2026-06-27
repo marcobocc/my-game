@@ -3,6 +3,7 @@
 #include "modules/scene/components/BehaviourScript.hpp"
 #include "modules/scene/components/BoxCollider.hpp"
 #include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/CapsuleCollider.hpp"
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/Metadata.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
@@ -36,9 +37,11 @@ GameObjectDTO RuntimeScene::snapshotObject(EntityHandle e) const {
     tryAdd.operator()<Camera>();
     tryAdd.operator()<Renderer>();
     tryAdd.operator()<BoxCollider>();
+    tryAdd.operator()<CapsuleCollider>();
     tryAdd.operator()<Light>();
     tryAdd.operator()<ParticleEmitter>();
-    tryAdd.operator()<BehaviourScript>();
+    for (const BehaviourScript* s: actor->getComponents<BehaviourScript>())
+        dto.components.emplace_back(*s);
     tryAdd.operator()<Animator>();
     return dto;
 }
@@ -249,7 +252,9 @@ void RuntimeScene::restore_Impl(const GameObjectDTO& dto) {
         std::visit(
                 [&]<typename T0>(T0&& comp) {
                     using T = std::decay_t<T0>;
-                    if (actor->getComponent<T>()) actor->removeComponent(actor->getComponent<T>());
+                    // BehaviourScript is multi-instance; all others are singletons.
+                    if constexpr (!std::is_same_v<T, BehaviourScript>)
+                        if (actor->getComponent<T>()) actor->removeComponent(actor->getComponent<T>());
                     actor->addComponent<T>(comp);
                 },
                 c);

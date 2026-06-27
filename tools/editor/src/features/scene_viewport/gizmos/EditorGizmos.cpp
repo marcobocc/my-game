@@ -14,4 +14,18 @@ void EditorGizmos::toggleBoundingSphere(EntityHandle objectId) {
         boundingSpheresEnabled_.insert(objectId);
 }
 
+void EditorGizmos::toggleBoxCollider(EntityHandle objectId) {
+    if (boxColliderEnabled_.contains(objectId))
+        boxColliderEnabled_.erase(objectId);
+    else
+        boxColliderEnabled_.insert(objectId);
+}
+
+void EditorGizmos::toggleCapsuleCollider(EntityHandle objectId) {
+    if (capsuleColliderEnabled_.contains(objectId))
+        capsuleColliderEnabled_.erase(objectId);
+    else
+        capsuleColliderEnabled_.insert(objectId);
+}
+
 void EditorGizmos::toggleBVH() { bvhEnabled_ = !bvhEnabled_; }

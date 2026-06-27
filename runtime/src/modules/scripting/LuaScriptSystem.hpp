@@ -18,6 +18,7 @@ class LuaScriptSystem {
 public:
     void init(World& world, InputSystem& input, const std::filesystem::path& scriptsDir);
     void update(float dt);
+    void callOnCollision(EntityHandle self, EntityHandle other);
 
 private:
     struct ScriptChunk {

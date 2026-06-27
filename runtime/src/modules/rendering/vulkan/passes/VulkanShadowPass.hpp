@@ -254,7 +254,7 @@ private:
 
         PushConstants pc{};
         pc.lightSpaceMatrix = lightSpaceMat;
-        pc.model = drawCall.transform.getModelMatrix();
+        pc.model = drawCall.worldMatrix;
         pc.lightPos = lightPos;
         pc.lightRange = lightRange;
         pc.isPointLight = isPointLight ? 1u : 0u;

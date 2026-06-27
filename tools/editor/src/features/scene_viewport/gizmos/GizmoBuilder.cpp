@@ -5,7 +5,10 @@
 #include "modules/asset_management/AssetLoader.hpp"
 #include "modules/asset_management/asset_types/Mesh.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
+#include "modules/scene/TransformUtils.hpp"
 #include "modules/scene/World.hpp"
+#include "modules/scene/components/BoxCollider.hpp"
+#include "modules/scene/components/CapsuleCollider.hpp"
 #include "modules/scene/components/Renderer.hpp"
 #include "utils/math/AABB.hpp"
 #include "utils/math/BVH.hpp"
@@ -103,10 +106,121 @@ GizmoObject GizmoBuilder::buildGizmoObjectAABB(EntityHandle objectId, const glm:
     auto* renderer = actor->getComponent<Renderer>();
     if (transform && renderer) {
         auto mesh = assetLoader_.get<Mesh>(renderer->meshName);
-        auto aabb = mesh->getAABB().applyTransform(transform->getModelMatrix());
+        auto aabb = mesh->getAABB().applyTransform(TransformUtils::resolveWorldMatrix(*transform, entityManager_));
         return buildGizmoAABB(aabb, color);
     }
     return {};
+}
+
+GizmoObject GizmoBuilder::buildGizmoObjectBoxCollider(EntityHandle objectId, const glm::vec3& color) {
+    auto* actor = entityManager_.getActor(objectId);
+    if (!actor) return {};
+    auto* transform = actor->getComponent<Transform>();
+    auto* boxCollider = actor->getComponent<BoxCollider>();
+    if (!transform || !boxCollider) return {};
+
+    const glm::mat4 model = TransformUtils::resolveWorldMatrix(*transform, entityManager_);
+    const glm::vec3& c = boxCollider->center;
+    const glm::vec3& h = boxCollider->halfExtents;
+
+    glm::vec3 corners[8] = {
+            {c.x - h.x, c.y - h.y, c.z - h.z},
+            {c.x + h.x, c.y - h.y, c.z - h.z},
+            {c.x + h.x, c.y + h.y, c.z - h.z},
+            {c.x - h.x, c.y + h.y, c.z - h.z},
+            {c.x - h.x, c.y - h.y, c.z + h.z},
+            {c.x + h.x, c.y - h.y, c.z + h.z},
+            {c.x + h.x, c.y + h.y, c.z + h.z},
+            {c.x - h.x, c.y + h.y, c.z + h.z},
+    };
+    for (auto& v: corners)
+        v = glm::vec3(model * glm::vec4(v, 1.0f));
+
+    GizmoObject gizmoObject;
+    addGizmoLine(gizmoObject, corners[0], corners[1], color);
+    addGizmoLine(gizmoObject, corners[1], corners[2], color);
+    addGizmoLine(gizmoObject, corners[2], corners[3], color);
+    addGizmoLine(gizmoObject, corners[3], corners[0], color);
+    addGizmoLine(gizmoObject, corners[4], corners[5], color);
+    addGizmoLine(gizmoObject, corners[5], corners[6], color);
+    addGizmoLine(gizmoObject, corners[6], corners[7], color);
+    addGizmoLine(gizmoObject, corners[7], corners[4], color);
+    addGizmoLine(gizmoObject, corners[0], corners[4], color);
+    addGizmoLine(gizmoObject, corners[1], corners[5], color);
+    addGizmoLine(gizmoObject, corners[2], corners[6], color);
+    addGizmoLine(gizmoObject, corners[3], corners[7], color);
+    return gizmoObject;
+}
+
+GizmoObject GizmoBuilder::buildGizmoObjectCapsuleCollider(EntityHandle objectId, const glm::vec3& color) {
+    auto* actor = entityManager_.getActor(objectId);
+    if (!actor) return {};
+    auto* transform = actor->getComponent<Transform>();
+    auto* capsule = actor->getComponent<CapsuleCollider>();
+    if (!transform || !capsule) return {};
+
+    const glm::mat4 model = TransformUtils::resolveWorldMatrix(*transform, entityManager_);
+
+    // World-space up axis and center
+    glm::vec3 worldCenter = glm::vec3(model * glm::vec4(capsule->center, 1.0f));
+    glm::vec3 up = glm::normalize(glm::vec3(model * glm::vec4(0, 1, 0, 0)));
+    glm::vec3 right = glm::normalize(glm::vec3(model * glm::vec4(1, 0, 0, 0)));
+    glm::vec3 fwd = glm::normalize(glm::vec3(model * glm::vec4(0, 0, 1, 0)));
+
+    // Extract uniform scale to size radius
+    float scaleY = glm::length(glm::vec3(model[1]));
+    float scaleXZ = glm::length(glm::vec3(model[0]));
+    float r = capsule->radius * scaleXZ;
+    float halfH = capsule->height * 0.5f * scaleY;
+
+    glm::vec3 topCenter = worldCenter + up * halfH;
+    glm::vec3 botCenter = worldCenter - up * halfH;
+
+    GizmoObject gizmoObject;
+    constexpr int segments = 32;
+
+    auto addCircle = [&](const glm::vec3& center, const glm::vec3& p1, const glm::vec3& p2) {
+        glm::vec3 prev{};
+        for (int s = 0; s <= segments; ++s) {
+            float angle = glm::two_pi<float>() * static_cast<float>(s) / static_cast<float>(segments);
+            glm::vec3 pt = center + (p1 * glm::cos(angle) + p2 * glm::sin(angle)) * r;
+            if (s > 0) addGizmoLine(gizmoObject, prev, pt, color);
+            prev = pt;
+        }
+    };
+
+    // top=true  arcs from 0→π  (sin goes +, sweeping upward)
+    // top=false arcs from π→2π (sin goes -, sweeping downward)
+    auto addSemicircle = [&](const glm::vec3& center, const glm::vec3& p1, const glm::vec3& axis, bool top) {
+        glm::vec3 prev{};
+        int half = segments / 2;
+        for (int s = 0; s <= half; ++s) {
+            float t = static_cast<float>(s) / static_cast<float>(half);
+            float angle = (top ? 0.0f : glm::pi<float>()) + t * glm::pi<float>();
+            glm::vec3 pt = center + (p1 * glm::cos(angle) + axis * glm::sin(angle)) * r;
+            if (s > 0) addGizmoLine(gizmoObject, prev, pt, color);
+            prev = pt;
+        }
+    };
+
+    // Equatorial ring at top and bottom hemisphere centers
+    addCircle(topCenter, right, fwd);
+    addCircle(botCenter, right, fwd);
+
+    // Semicircle caps: two planes (right-up and fwd-up)
+    addSemicircle(topCenter, right, up, true);
+    addSemicircle(botCenter, right, up, false);
+    addSemicircle(topCenter, fwd, up, true);
+    addSemicircle(botCenter, fwd, up, false);
+
+    // Four vertical lines connecting top ring to bottom ring
+    for (int i = 0; i < 4; ++i) {
+        float angle = glm::half_pi<float>() * static_cast<float>(i);
+        glm::vec3 offset = (right * glm::cos(angle) + fwd * glm::sin(angle)) * r;
+        addGizmoLine(gizmoObject, topCenter + offset, botCenter + offset, color);
+    }
+
+    return gizmoObject;
 }
 
 GizmoObject GizmoBuilder::buildGizmoBoundingSphere(const BoundingSphere& sphere, const glm::vec3& color) {
@@ -139,7 +253,8 @@ GizmoObject GizmoBuilder::buildGizmoObjectBoundingSphere(EntityHandle objectId, 
     auto* renderer = actor->getComponent<Renderer>();
     if (transform && renderer) {
         auto mesh = assetLoader_.get<Mesh>(renderer->meshName);
-        auto sphere = mesh->getBoundingSphere().applyTransform(transform->getModelMatrix());
+        auto sphere = mesh->getBoundingSphere().applyTransform(
+                TransformUtils::resolveWorldMatrix(*transform, entityManager_));
         return buildGizmoBoundingSphere(sphere, color);
     }
     return {};
@@ -148,12 +263,22 @@ GizmoObject GizmoBuilder::buildGizmoObjectBoundingSphere(EntityHandle objectId, 
 GizmoObject GizmoBuilder::buildGizmoBVH(const glm::vec3& color) {
     GizmoObject gizmoObject;
     std::vector<Item> items;
-    auto renderables = entityManager_.query<Transform, Renderer>();
-    for (const auto& [entity, transform, renderer]: renderables) {
-        auto* mesh = assetLoader_.get<Mesh>(renderer->meshName);
-        if (!mesh) continue;
-        auto aabb = mesh->getAABB().applyTransform(transform->getModelMatrix());
-        items.emplace_back(aabb, std::to_string(entity));
+    auto collidables = entityManager_.query<Transform, BoxCollider>();
+    for (const auto& [entity, transform, boxCollider]: collidables) {
+        const glm::mat4 model = TransformUtils::resolveWorldMatrix(*transform, entityManager_);
+        const glm::vec3& c = boxCollider->center;
+        const glm::vec3& h = boxCollider->halfExtents;
+        std::vector<glm::vec3> worldCorners = {
+                glm::vec3(model * glm::vec4(c.x - h.x, c.y - h.y, c.z - h.z, 1.0f)),
+                glm::vec3(model * glm::vec4(c.x + h.x, c.y - h.y, c.z - h.z, 1.0f)),
+                glm::vec3(model * glm::vec4(c.x + h.x, c.y + h.y, c.z - h.z, 1.0f)),
+                glm::vec3(model * glm::vec4(c.x - h.x, c.y + h.y, c.z - h.z, 1.0f)),
+                glm::vec3(model * glm::vec4(c.x - h.x, c.y - h.y, c.z + h.z, 1.0f)),
+                glm::vec3(model * glm::vec4(c.x + h.x, c.y - h.y, c.z + h.z, 1.0f)),
+                glm::vec3(model * glm::vec4(c.x + h.x, c.y + h.y, c.z + h.z, 1.0f)),
+                glm::vec3(model * glm::vec4(c.x - h.x, c.y + h.y, c.z + h.z, 1.0f)),
+        };
+        items.emplace_back(AABB(worldCorners), std::to_string(entity));
     }
     if (items.empty()) return gizmoObject;
     BVH bvh;

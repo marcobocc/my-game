@@ -9,6 +9,7 @@
 #include "EditorRenderData.hpp"
 #include "VulkanBackend.hpp"
 #include "modules/rendering/GameRenderData.hpp"
+#include "modules/scene/TransformUtils.hpp"
 #include "modules/scene/World.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
@@ -68,7 +69,11 @@ void EditorRenderer::buildOutlines() {
             const glm::mat4* skinBones = nullptr;
             if (animationSystem_ && animationSystem_->hasSkinning(selectedId))
                 skinBones = animationSystem_->getSkinningMatrices(selectedId).bones;
-            outlineQueue_.push_back(DrawCall{*renderer, *transform, std::to_string(selectedId), skinBones});
+            outlineQueue_.push_back(DrawCall{*renderer,
+                                             *transform,
+                                             TransformUtils::resolveWorldMatrix(*transform, entityManager_),
+                                             std::to_string(selectedId),
+                                             skinBones});
         }
     }
 }
@@ -87,6 +92,18 @@ void EditorRenderer::buildGizmos() {
     for (const auto& objectId: boundingSpheresEnabled) {
         auto sphereGizmo = gizmosBuilder_.buildGizmoObjectBoundingSphere(objectId, {1.0f, 1.0f, 0.0f});
         builtGizmoLines_.insert(builtGizmoLines_.end(), sphereGizmo.begin(), sphereGizmo.end());
+    }
+
+    auto boxColliderEnabled = editorGizmos_.getObjectsWithBoxColliderEnabled();
+    for (const auto& objectId: boxColliderEnabled) {
+        auto boxGizmo = gizmosBuilder_.buildGizmoObjectBoxCollider(objectId, {0.0f, 1.0f, 0.5f});
+        builtGizmoLines_.insert(builtGizmoLines_.end(), boxGizmo.begin(), boxGizmo.end());
+    }
+
+    auto capsuleColliderEnabled = editorGizmos_.getObjectsWithCapsuleColliderEnabled();
+    for (const auto& objectId: capsuleColliderEnabled) {
+        auto capsuleGizmo = gizmosBuilder_.buildGizmoObjectCapsuleCollider(objectId, {0.0f, 0.8f, 1.0f});
+        builtGizmoLines_.insert(builtGizmoLines_.end(), capsuleGizmo.begin(), capsuleGizmo.end());
     }
 
     if (editorGizmos_.bvhEnabled()) {
@@ -139,7 +156,11 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
         const glm::mat4* skinBones = nullptr;
         if (animationSystem_ && animationSystem_->hasSkinning(entity))
             skinBones = animationSystem_->getSkinningMatrices(entity).bones;
-        drawQueue.push_back(DrawCall{*renderer, *transform, std::to_string(entity), skinBones});
+        drawQueue.push_back(DrawCall{*renderer,
+                                     *transform,
+                                     TransformUtils::resolveWorldMatrix(*transform, entityManager),
+                                     std::to_string(entity),
+                                     skinBones});
     }
 
     auto lightsQuery = entityManager.query<Light, Transform>();

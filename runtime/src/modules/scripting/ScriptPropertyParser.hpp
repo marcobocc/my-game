@@ -21,7 +21,11 @@ public:
         auto logger = log4cxx::Logger::getLogger("ScriptPropertyParser");
 
         sol::state lua;
-        lua.open_libraries(sol::lib::base, sol::lib::table);
+        lua.open_libraries(sol::lib::base, sol::lib::table, sol::lib::package, sol::lib::string);
+
+        // Point require() at the scripts directory so logger and other modules load
+        std::string packagePath = (scriptPath.parent_path() / "?.lua").string();
+        lua["package"]["path"] = packagePath;
 
         // Safe-execute: if the script errors (e.g. calls World which is nil), we still
         // attempt to read Properties — but if the chunk itself throws, return empty.

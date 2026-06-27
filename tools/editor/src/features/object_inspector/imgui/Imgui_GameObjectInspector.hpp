@@ -11,6 +11,7 @@
 #include "components/Imgui_BehaviourScriptWidget.hpp"
 #include "components/Imgui_BoxColliderWidget.hpp"
 #include "components/Imgui_CameraWidget.hpp"
+#include "components/Imgui_CapsuleColliderWidget.hpp"
 #include "components/Imgui_LightWidget.hpp"
 #include "components/Imgui_ParticleEmitterWidget.hpp"
 #include "components/Imgui_RendererWidget.hpp"
@@ -19,6 +20,7 @@
 #include "modules/scene/components/BehaviourScript.hpp"
 #include "modules/scene/components/BoxCollider.hpp"
 #include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/CapsuleCollider.hpp"
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
@@ -36,7 +38,8 @@ public:
         debugViz_(debugViz),
         transformWidget_(scene),
         rendererWidget_(assetStore, scene, debugViz),
-        boxColliderWidget_(scene),
+        boxColliderWidget_(scene, debugViz),
+        capsuleColliderWidget_(scene, debugViz),
         cameraWidget_(scene),
         lightWidget_(scene),
         particleEmitterWidget_(scene),
@@ -46,6 +49,7 @@ public:
         transformWidget_.setCurrentObjectId(entity);
         cameraWidget_.setCurrentObjectId(entity);
         boxColliderWidget_.setCurrentObjectId(entity);
+        capsuleColliderWidget_.setCurrentObjectId(entity);
         lightWidget_.setCurrentObjectId(entity);
         particleEmitterWidget_.setCurrentObjectId(entity);
         animatorWidget_.setCurrentObjectId(entity);
@@ -60,6 +64,7 @@ private:
     Imgui_TransformWidget transformWidget_;
     Imgui_RendererWidget rendererWidget_;
     Imgui_BoxColliderWidget boxColliderWidget_;
+    Imgui_CapsuleColliderWidget capsuleColliderWidget_;
     Imgui_CameraWidget cameraWidget_;
     Imgui_LightWidget lightWidget_;
     Imgui_ParticleEmitterWidget particleEmitterWidget_;
@@ -85,6 +90,12 @@ private:
             boxColliderWidget_.setComponent(*boxCollider);
             boxColliderWidget_.draw("BoxColliderContext",
                                     [this, entity] { scene_.getObject(entity).removeComponent<BoxCollider>(); });
+        }
+        if (const auto* capsuleCollider = obj.getComponent<CapsuleCollider>()) {
+            capsuleColliderWidget_.setComponent(*capsuleCollider);
+            capsuleColliderWidget_.draw("CapsuleColliderContext", [this, entity] {
+                scene_.getObject(entity).removeComponent<CapsuleCollider>();
+            });
         }
         if (const auto* light = obj.getComponent<Light>()) {
             lightWidget_.setComponent(*light);
@@ -136,6 +147,10 @@ private:
             }
             if (!obj.getComponent<BoxCollider>()) {
                 if (ImGui::MenuItem("Box Collider")) scene_.getObject(entity).addComponent<BoxCollider>(BoxCollider{});
+            }
+            if (!obj.getComponent<CapsuleCollider>()) {
+                if (ImGui::MenuItem("Capsule Collider"))
+                    scene_.getObject(entity).addComponent<CapsuleCollider>(CapsuleCollider{});
             }
             if (!obj.getComponent<Light>()) {
                 if (ImGui::MenuItem("Light")) scene_.getObject(entity).addComponent<Light>(Light{});

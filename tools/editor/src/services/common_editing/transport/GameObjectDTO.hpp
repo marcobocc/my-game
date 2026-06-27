@@ -4,6 +4,7 @@
 #include "modules/scene/components/BehaviourScript.hpp"
 #include "modules/scene/components/BoxCollider.hpp"
 #include "modules/scene/components/Camera.hpp"
+#include "modules/scene/components/CapsuleCollider.hpp"
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/Metadata.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
@@ -15,6 +16,7 @@ struct GameObjectDTO {
                                           Camera,
                                           Renderer,
                                           BoxCollider,
+                                          CapsuleCollider,
                                           Light,
                                           Metadata,
                                           BehaviourScript,
@@ -55,6 +57,8 @@ struct GameObjectDTO {
                 dto.components.emplace_back(Renderer::deserialize(c["data"]));
             else if (type == "BoxCollider")
                 dto.components.emplace_back(BoxCollider::deserialize(c["data"]));
+            else if (type == "CapsuleCollider")
+                dto.components.emplace_back(CapsuleCollider::deserialize(c["data"]));
             else if (type == "Light")
                 dto.components.emplace_back(Light::deserialize(c["data"]));
             else if (type == "Metadata")

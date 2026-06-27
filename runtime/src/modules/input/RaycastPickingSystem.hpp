@@ -3,6 +3,7 @@
 #include <limits>
 #include <optional>
 #include "../../modules/asset_management/AssetLoader.hpp"
+#include "../../modules/scene/TransformUtils.hpp"
 #include "../../modules/scene/World.hpp"
 #include "../../modules/scene/components/Camera.hpp"
 #include "../../modules/scene/components/Renderer.hpp"
@@ -38,7 +39,8 @@ public:
             const Mesh* mesh = assetLoader.get<Mesh>(rendererPtr->meshName);
             if (!mesh) continue;
 
-            AABB worldAABB = mesh->getAABB().applyTransform(transformPtr->getModelMatrix());
+            AABB worldAABB =
+                    mesh->getAABB().applyTransform(TransformUtils::resolveWorldMatrix(*transformPtr, entityManager));
 
             float t = 0.0f;
             if (ray.intersectsAABB(worldAABB, t) && t < bestT) {

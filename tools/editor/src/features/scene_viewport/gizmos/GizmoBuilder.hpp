@@ -19,6 +19,8 @@ public:
     GizmoObject buildGizmoCube(const glm::vec3& center, float halfSize, const glm::vec3& color);
     GizmoObject buildGizmoAABB(const AABB& aabb, const glm::vec3& color);
     GizmoObject buildGizmoObjectAABB(EntityHandle objectId, const glm::vec3& color);
+    GizmoObject buildGizmoObjectBoxCollider(EntityHandle objectId, const glm::vec3& color);
+    GizmoObject buildGizmoObjectCapsuleCollider(EntityHandle objectId, const glm::vec3& color);
     GizmoObject buildGizmoBoundingSphere(const BoundingSphere& sphere, const glm::vec3& color);
     GizmoObject buildGizmoObjectBoundingSphere(EntityHandle objectId, const glm::vec3& color);
     GizmoObject buildGizmoBVH(const glm::vec3& color);

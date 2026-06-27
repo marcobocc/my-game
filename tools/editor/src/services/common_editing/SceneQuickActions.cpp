@@ -1,7 +1,10 @@
 #include "SceneQuickActions.hpp"
 #include <functional>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <optional>
 #include <unordered_set>
+#include "modules/scene/TransformUtils.hpp"
 #include "transport/SceneDTO.hpp"
 
 void SceneQuickActions::deleteSelection() {
@@ -9,23 +12,34 @@ void SceneQuickActions::deleteSelection() {
     if (ids.empty()) return;
     auto groupId = UndoHistory::randomGroupId("Delete Selection");
 
-    // Collect all entities to destroy: for each selected entity, also collect
-    // all descendants of any group nodes that contain it (and the group itself).
-    // We walk the full hierarchy and destroy any node whose entire subtree is selected.
+    // Also collect all descendants of selected entities.
     auto hierarchy = scene_.getHierarchy();
     std::unordered_set<EntityHandle> toDestroy(ids.begin(), ids.end());
 
-    // Recursively mark a group for destruction if all its leaves are selected.
-    std::function<bool(const HierarchyNode&)> markIfFullySelected = [&](const HierarchyNode& node) -> bool {
-        if (node.children.empty()) return toDestroy.count(node.handle) > 0;
-        bool allChildren = true;
-        for (const auto& child: node.children)
-            allChildren &= markIfFullySelected(child);
-        if (allChildren) toDestroy.insert(node.handle);
-        return allChildren;
+    std::function<void(const HierarchyNode&)> collectDescendants = [&](const HierarchyNode& node) {
+        if (toDestroy.count(node.handle)) {
+            for (const auto& child: node.children)
+                collectDescendants(child);
+        } else {
+            for (const auto& child: node.children)
+                collectDescendants(child);
+        }
+    };
+    std::function<void(const HierarchyNode&)> markSubtree = [&](const HierarchyNode& node) {
+        if (toDestroy.count(node.handle)) {
+            std::function<void(const HierarchyNode&)> addAll = [&](const HierarchyNode& n) {
+                toDestroy.insert(n.handle);
+                for (const auto& c: n.children)
+                    addAll(c);
+            };
+            addAll(node);
+        } else {
+            for (const auto& child: node.children)
+                markSubtree(child);
+        }
     };
     for (const auto& node: hierarchy)
-        markIfFullySelected(node);
+        markSubtree(node);
 
     for (EntityHandle e: toDestroy)
         scene_.destroyObject(e, groupId);
@@ -169,16 +183,16 @@ void SceneQuickActions::groupSelected(const std::string& groupName) {
     if (ids.empty()) return;
     auto mutationGroup = UndoHistory::randomGroupId("Group Objects");
 
-    // Create an empty group entity
+    // Create an empty group entity with a Transform so children can be relative to it.
     EntityHandle groupHandle = scene_.createObject(mutationGroup);
     scene_.getObject(groupHandle).addComponent<Metadata>(Metadata{groupName}, mutationGroup);
+    scene_.getObject(groupHandle).addComponent<Transform>(Transform{}, mutationGroup);
 
     // Build new hierarchy: remove each selected entity from wherever it is,
     // then nest them under the new group node.
     auto hierarchy = scene_.getHierarchy();
     std::vector<HierarchyNode> gathered;
     for (EntityHandle e: ids) {
-        // Collect the subtree for e before removing it
         std::function<std::optional<HierarchyNode>(std::vector<HierarchyNode>&)> extract =
                 [&](std::vector<HierarchyNode>& nodes) -> std::optional<HierarchyNode> {
             for (auto it = nodes.begin(); it != nodes.end(); ++it) {
@@ -192,6 +206,10 @@ void SceneQuickActions::groupSelected(const std::string& groupName) {
             return std::nullopt;
         };
         if (auto node = extract(hierarchy)) gathered.push_back(std::move(*node));
+
+        // Set Transform.parent so the child's transform is relative to the group.
+        scene_.getObject(e).mutateComponent<Transform>([groupHandle](Transform& t) { t.parent = groupHandle; },
+                                                       mutationGroup);
     }
 
     // The group node was appended to the top level by createObject; find and populate it.
@@ -209,49 +227,15 @@ void SceneQuickActions::groupSelected(const std::string& groupName) {
 
 void SceneQuickActions::ungroupNode(EntityHandle entity) {
     auto hierarchy = scene_.getHierarchy();
-
-    // Find entity inside a parent's children list, extract the full subtree node,
-    // insert it next to the parent in that same list, and return the parent handle.
     std::optional<EntityHandle> parentHandle;
-    std::function<bool(std::vector<HierarchyNode>&)> extractAndInsert = [&](std::vector<HierarchyNode>& nodes) -> bool {
-        for (auto& node: nodes) {
-            auto& children = node.children;
-            for (auto it = children.begin(); it != children.end(); ++it) {
-                if (it->handle == entity) {
-                    // Extract the full subtree (preserving children of entity).
-                    HierarchyNode extracted = std::move(*it);
-                    it = children.erase(it);
-                    parentHandle = node.handle;
-                    // Insert next to the parent in the grandparent's list (nodes).
-                    // `nodes` here is the grandparent's children (or top-level list).
-                    // We need to find the parent in nodes and insert after it.
-                    for (auto pit = nodes.begin(); pit != nodes.end(); ++pit) {
-                        if (pit->handle == node.handle) {
-                            nodes.insert(std::next(pit), std::move(extracted));
-                            return true;
-                        }
-                    }
-                    // Parent not found in this list (shouldn't happen), append.
-                    nodes.push_back(std::move(extracted));
-                    return true;
-                }
-            }
-            if (extractAndInsert(node.children)) return true;
-        }
-        return false;
-    };
 
-    // Try to find entity nested inside some parent. If it's top-level, nothing to do.
-    // We need to search within each node's children, passing the parent list as context.
     std::function<bool(std::vector<HierarchyNode>&)> search = [&](std::vector<HierarchyNode>& nodes) -> bool {
         for (auto& node: nodes) {
-            // Check if entity is a direct child of this node.
             for (auto it = node.children.begin(); it != node.children.end(); ++it) {
                 if (it->handle == entity) {
                     HierarchyNode extracted = std::move(*it);
                     node.children.erase(it);
                     parentHandle = node.handle;
-                    // Insert extracted after node in nodes (the grandparent list).
                     for (auto pit = nodes.begin(); pit != nodes.end(); ++pit) {
                         if (pit->handle == node.handle) {
                             nodes.insert(std::next(pit), std::move(extracted));
@@ -271,7 +255,11 @@ void SceneQuickActions::ungroupNode(EntityHandle entity) {
 
     auto mutationGroup = UndoHistory::randomGroupId("Ungroup");
 
-    // If the parent group is now empty, destroy it.
+    // Clear Transform.parent so the entity is no longer relative to its old parent.
+    scene_.getObject(entity).mutateComponent<Transform>([](Transform& t) { t.parent = INVALID_ENTITY_HANDLE; },
+                                                        mutationGroup);
+
+    // If the parent group is now childless, destroy it.
     std::function<bool(std::vector<HierarchyNode>&)> findEmpty = [&](std::vector<HierarchyNode>& nodes) -> bool {
         for (auto it = nodes.begin(); it != nodes.end(); ++it) {
             if (it->handle == *parentHandle && it->children.empty()) {
@@ -289,21 +277,9 @@ void SceneQuickActions::ungroupNode(EntityHandle entity) {
 }
 
 void SceneQuickActions::reparent(EntityHandle child, EntityHandle newParent) {
+    if (child == newParent) return;
     auto hierarchy = scene_.getHierarchy();
     auto mutationGroup = UndoHistory::randomGroupId("Reparent");
-
-    // Check if newParent is already a group (has children in the hierarchy).
-    std::function<const HierarchyNode*(const std::vector<HierarchyNode>&)> findNode =
-            [&](const std::vector<HierarchyNode>& nodes) -> const HierarchyNode* {
-        for (const auto& node: nodes) {
-            if (node.handle == newParent) return &node;
-            if (auto* found = findNode(node.children)) return found;
-        }
-        return nullptr;
-    };
-    const HierarchyNode* parentNode = findNode(hierarchy);
-    if (!parentNode) return;
-    bool targetIsGroup = !parentNode->children.empty();
 
     // Extract the child node from its current location.
     std::optional<HierarchyNode> extracted;
@@ -320,41 +296,53 @@ void SceneQuickActions::reparent(EntityHandle child, EntityHandle newParent) {
     };
     if (!extract(hierarchy) || !extracted) return;
 
-    if (targetIsGroup) {
-        // newParent is already a group — add child into it.
-        std::function<bool(std::vector<HierarchyNode>&)> insert = [&](std::vector<HierarchyNode>& nodes) -> bool {
-            for (auto& node: nodes) {
-                if (node.handle == newParent) {
-                    node.children.push_back(std::move(*extracted));
-                    return true;
-                }
-                if (insert(node.children)) return true;
+    // Insert child under newParent.
+    std::function<bool(std::vector<HierarchyNode>&)> insert = [&](std::vector<HierarchyNode>& nodes) -> bool {
+        for (auto& node: nodes) {
+            if (node.handle == newParent) {
+                node.children.push_back(std::move(*extracted));
+                return true;
             }
-            return false;
-        };
-        if (!insert(hierarchy)) return;
-        scene_.setHierarchy(std::move(hierarchy), mutationGroup);
-    } else {
-        // newParent is a leaf — create a new group containing both.
-        EntityHandle groupHandle = scene_.createObject(mutationGroup);
-        scene_.getObject(groupHandle).addComponent<Metadata>(Metadata{"Group"}, mutationGroup);
+            if (insert(node.children)) return true;
+        }
+        return false;
+    };
+    if (!insert(hierarchy)) return;
 
-        // Replace newParent in the hierarchy with the new group node.
-        std::function<bool(std::vector<HierarchyNode>&)> replaceWithGroup =
-                [&](std::vector<HierarchyNode>& nodes) -> bool {
-            for (auto it = nodes.begin(); it != nodes.end(); ++it) {
-                if (it->handle == newParent) {
-                    HierarchyNode group{groupHandle, {std::move(*it), std::move(*extracted)}};
-                    *it = std::move(group);
-                    return true;
-                }
-                if (replaceWithGroup(it->children)) return true;
-            }
-            return false;
-        };
-        if (!replaceWithGroup(hierarchy)) return;
-        scene_.setHierarchy(std::move(hierarchy), mutationGroup);
+    // Preserve world position: compute child's current world matrix, then express it
+    // in the new parent's local space so the world transform stays the same.
+    const World& world = scene_.getWorld();
+    const Actor* childActor = world.getActor(child);
+    const Actor* parentActor = world.getActor(newParent);
+    if (childActor && parentActor) {
+        const Transform* childTransform = childActor->getComponent<Transform>();
+        const Transform* parentTransform = parentActor->getComponent<Transform>();
+        if (childTransform && parentTransform) {
+            glm::mat4 childWorld = TransformUtils::resolveWorldMatrix(*childTransform, world);
+            glm::mat4 parentWorld = TransformUtils::resolveWorldMatrix(*parentTransform, world);
+            glm::mat4 localMat = glm::inverse(parentWorld) * childWorld;
+
+            glm::vec3 newPos = glm::vec3(localMat[3]);
+            glm::vec3 newScale = {glm::length(glm::vec3(localMat[0])),
+                                  glm::length(glm::vec3(localMat[1])),
+                                  glm::length(glm::vec3(localMat[2]))};
+            glm::mat3 rotMat = {glm::vec3(localMat[0]) / newScale.x,
+                                glm::vec3(localMat[1]) / newScale.y,
+                                glm::vec3(localMat[2]) / newScale.z};
+            glm::quat newRot = glm::quat_cast(rotMat);
+
+            scene_.getObject(child).mutateComponent<Transform>(
+                    [newParent, newPos, newRot, newScale](Transform& t) {
+                        t.parent = newParent;
+                        t.position = newPos;
+                        t.rotation = newRot;
+                        t.scale = newScale;
+                    },
+                    mutationGroup);
+        }
     }
+
+    scene_.setHierarchy(std::move(hierarchy), mutationGroup);
 }
 
 void SceneQuickActions::reorder(EntityHandle dragged, EntityHandle anchor, bool insertBefore) {

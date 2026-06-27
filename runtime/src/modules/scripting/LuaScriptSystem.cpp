@@ -29,15 +29,17 @@ void LuaScriptSystem::init(World& world, InputSystem& input, const std::filesyst
 
     LuaBindings::registerAll(lua_, *worldFacade_, *inputFacade_);
 
-    // Instantiate one ScriptInstance per BehaviourScript component
-    for (const auto& [handle, script]: world.query<BehaviourScript>()) {
-        if (script->scriptName.empty()) continue;
-        safeCall(script->scriptName.c_str(), [&] {
-            ScriptChunk& chunk = loadChunk(script->scriptName);
-            sol::table self = instantiate(chunk.proto, handle, script->propertyValues);
-            instances_.push_back({handle, script->scriptName, std::move(self)});
-            callOnStart(instances_.back());
-        });
+    // Instantiate one ScriptInstance per BehaviourScript component (entities may have multiple)
+    for (const auto& actor: world.getActors()) {
+        for (const auto* script: actor->getComponents<BehaviourScript>()) {
+            if (script->scriptName.empty()) continue;
+            safeCall(script->scriptName.c_str(), [&] {
+                ScriptChunk& chunk = loadChunk(script->scriptName);
+                sol::table self = instantiate(chunk.proto, actor->handle(), script->propertyValues);
+                instances_.push_back({actor->handle(), script->scriptName, std::move(self)});
+                callOnStart(instances_.back());
+            });
+        }
     }
 
     LOG4CXX_INFO(logger_, "Initialized — " << instances_.size() << " script instance(s)");
@@ -101,6 +103,21 @@ sol::table LuaScriptSystem::instantiate(sol::table proto,
     }
 
     return self;
+}
+
+void LuaScriptSystem::callOnCollision(EntityHandle self, EntityHandle other) {
+    for (auto& inst: instances_) {
+        if (inst.entity != self) continue;
+        sol::protected_function onCollision = inst.self["onCollision"];
+        if (!onCollision.valid()) continue;
+        safeCall(inst.scriptName.c_str(), [&] {
+            auto result = onCollision(inst.self, other);
+            if (!result.valid()) {
+                sol::error err = result;
+                LOG4CXX_ERROR(logger_, "[" << inst.scriptName << "] onCollision error: " << err.what());
+            }
+        });
+    }
 }
 
 void LuaScriptSystem::callOnStart(ScriptInstance& inst) {

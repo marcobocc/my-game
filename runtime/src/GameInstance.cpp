@@ -31,6 +31,12 @@ GameInstance::GameInstance(GameWindow& window,
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
 
     luaScriptSystem_.init(world_, inputSystem_, std::filesystem::path(ENGINE_DATA_DIR) / "scripts");
+
+    physicsSystem_.onCollisionEnter([this](const PhysicsSystem::CollisionPair& pair) {
+        luaScriptSystem_.callOnCollision(pair.first, pair.second);
+        luaScriptSystem_.callOnCollision(pair.second, pair.first);
+    });
+
     renderSystem_.setAnimationSystem(&animationSystem_);
 }
 

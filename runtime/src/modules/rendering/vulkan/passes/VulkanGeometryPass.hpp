@@ -177,7 +177,7 @@ private:
             glm::vec2 offset;
             int scaleInvariantUV;
         } pc{};
-        pc.modelMatrix = drawCall.transform.getModelMatrix();
+        pc.modelMatrix = drawCall.worldMatrix;
         pc.tint = drawCall.renderer.tintOverride.value_or(material->tint);
         pc.tiling = material->tiling;
         pc.offset = material->offset;

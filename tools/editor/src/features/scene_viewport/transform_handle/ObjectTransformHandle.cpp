@@ -7,7 +7,38 @@
 #include "../../../services/common_editing/RuntimeScene.hpp"
 #include "../editor_camera/EditorCamera.hpp"
 #include "modules/input/RaycastPickingSystem.hpp"
+#include "modules/scene/TransformUtils.hpp"
 #include "modules/scene/components/Transform.hpp"
+
+// Walks the parent chain and returns the world matrix of t's parent (identity if no parent).
+static glm::mat4 parentWorldMatrix(const Transform& t, const RuntimeScene& scene) {
+    if (t.parent == INVALID_ENTITY_HANDLE) return glm::mat4(1.0f);
+    const auto* parentTransform = scene.getObject(t.parent).getComponent<Transform>();
+    if (!parentTransform) return glm::mat4(1.0f);
+    glm::mat4 result = glm::mat4(1.0f);
+    const Transform* cur = parentTransform;
+    std::vector<const Transform*> chain;
+    for (int i = 0; i < 64 && cur; ++i) {
+        chain.push_back(cur);
+        if (cur->parent == INVALID_ENTITY_HANDLE) break;
+        cur = scene.getObject(cur->parent).getComponent<Transform>();
+    }
+    for (auto it = chain.rbegin(); it != chain.rend(); ++it)
+        result = result * (*it)->getModelMatrix();
+    return result;
+}
+
+// Returns the world-space rotation of t (combines parent chain rotations with local rotation).
+static glm::quat worldRotation(const Transform& t, const RuntimeScene& scene) {
+    glm::mat4 parentMat = parentWorldMatrix(t, scene);
+    glm::mat3 rotPart = glm::mat3(parentMat);
+    // Strip scale from each column
+    glm::vec3 col0 = glm::normalize(rotPart[0]);
+    glm::vec3 col1 = glm::normalize(rotPart[1]);
+    glm::vec3 col2 = glm::normalize(rotPart[2]);
+    glm::quat parentRot = glm::quat_cast(glm::mat3(col0, col1, col2));
+    return parentRot * t.rotation;
+}
 
 std::optional<glm::vec3>
 ObjectTransformHandle::rayPlaneIntersect(const Ray& ray, const glm::vec3& planePoint, const glm::vec3& planeNormal) {
@@ -50,9 +81,8 @@ glm::vec3 ObjectTransformHandle::transformAxisToLocalSpace(GizmoAxis axis, const
     if (!rendererSettings_.isLocalTransformEnabled()) {
         return axisToDir(axis);
     }
-    glm::vec3 worldAxis = axisToDir(axis);
-    glm::mat3 rotationMatrix = glm::mat3_cast(transform.rotation);
-    return glm::normalize(rotationMatrix * worldAxis);
+    glm::quat rot = worldRotation(transform, scene_);
+    return glm::normalize(rot * axisToDir(axis));
 }
 
 glm::vec3 ObjectTransformHandle::computeGroupPivot(const std::vector<EntityHandle>& ids) const {
@@ -61,7 +91,8 @@ glm::vec3 ObjectTransformHandle::computeGroupPivot(const std::vector<EntityHandl
     for (const auto& id: ids) {
         const auto* t = scene_.getObject(id).getComponent<Transform>();
         if (t) {
-            sum += t->position;
+            glm::mat4 parentMat = parentWorldMatrix(*t, scene_);
+            sum += glm::vec3(parentMat * glm::vec4(t->position, 1.0f));
             ++count;
         }
     }
@@ -124,7 +155,9 @@ void ObjectTransformHandle::updateTranslationDrag(double mouseX, double mouseY) 
     for (const auto& id: editorSelection_.getSelectedEntityIds()) {
         const auto* t = scene_.getObject(id).getComponent<Transform>();
         if (!t) continue;
-        glm::vec3 newPos = t->position + frameDelta;
+        glm::mat4 parentMat = parentWorldMatrix(*t, scene_);
+        glm::vec3 localDelta = glm::vec3(glm::inverse(parentMat) * glm::vec4(frameDelta, 0.0f));
+        glm::vec3 newPos = t->position + localDelta;
         scene_.getObject(id).mutateComponent<Transform>([newPos](Transform& t) { t.position = newPos; }, dragGroupId_);
     }
 }
@@ -190,8 +223,15 @@ void ObjectTransformHandle::updateRotationDrag(double mouseX, double mouseY) {
     for (const auto& id: editorSelection_.getSelectedEntityIds()) {
         const auto* t = scene_.getObject(id).getComponent<Transform>();
         if (!t) continue;
-        glm::vec3 newPos = drag.pivot + deltaRot * (t->position - drag.pivot);
-        glm::quat newRot = deltaRot * t->rotation;
+        glm::mat4 parentMat = parentWorldMatrix(*t, scene_);
+        glm::mat4 invParent = glm::inverse(parentMat);
+        // Compute world-space position after rotation, then bring back to local space.
+        glm::vec3 worldPos = glm::vec3(parentMat * glm::vec4(t->position, 1.0f));
+        glm::vec3 newWorldPos = drag.pivot + deltaRot * (worldPos - drag.pivot);
+        glm::vec3 newPos = glm::vec3(invParent * glm::vec4(newWorldPos, 1.0f));
+        // Rotation: remove parent's rotation, apply delta, re-apply parent's rotation inverse.
+        glm::quat parentRot = glm::quat_cast(parentMat);
+        glm::quat newRot = glm::inverse(parentRot) * deltaRot * parentRot * t->rotation;
         scene_.getObject(id).mutateComponent<Transform>(
                 [newPos, newRot](Transform& t) {
                     t.position = newPos;
@@ -269,17 +309,20 @@ void ObjectTransformHandle::updateScaleDrag(double mouseX, double mouseY) {
         const auto* t = scene_.getObject(id).getComponent<Transform>();
         if (!t) continue;
 
-        glm::vec3 offset = t->position - drag.pivot;
-        glm::vec3 newPos;
+        glm::mat4 parentMat = parentWorldMatrix(*t, scene_);
+        glm::mat4 invParent = glm::inverse(parentMat);
+        glm::vec3 worldPos = glm::vec3(parentMat * glm::vec4(t->position, 1.0f));
+        glm::vec3 offset = worldPos - drag.pivot;
+        glm::vec3 newWorldPos;
         glm::vec3 newScale = t->scale;
 
         if (drag.axis == GizmoAxis::All) {
-            newPos = drag.pivot + offset * frameFactor;
+            newWorldPos = drag.pivot + offset * frameFactor;
             newScale = t->scale * frameFactor;
         } else {
             glm::vec3 axisUnit = drag.axisDir;
             float along = glm::dot(offset, axisUnit);
-            newPos = t->position + axisUnit * (along * (frameFactor - 1.0f));
+            newWorldPos = worldPos + axisUnit * (along * (frameFactor - 1.0f));
             switch (drag.axis) {
                 case GizmoAxis::X:
                     newScale.x = t->scale.x * frameFactor;
@@ -295,6 +338,7 @@ void ObjectTransformHandle::updateScaleDrag(double mouseX, double mouseY) {
             }
         }
 
+        glm::vec3 newPos = glm::vec3(invParent * glm::vec4(newWorldPos, 1.0f));
         scene_.getObject(id).mutateComponent<Transform>(
                 [newPos, newScale](Transform& t) {
                     t.position = newPos;
@@ -402,7 +446,7 @@ ObjectTransformHandle::buildTranslationGizmo(glm::vec3 pivot, const Camera& came
     glm::quat localRot = glm::quat{1, 0, 0, 0};
     if (isLocal) {
         const auto* t = scene_.getObject(ids[0]).getComponent<Transform>();
-        if (t) localRot = t->rotation;
+        if (t) localRot = worldRotation(*t, scene_);
     }
 
     float dist = glm::length(cameraTransform.position - pivot);
@@ -454,7 +498,7 @@ ObjectTransformHandle::buildRotationGizmo(glm::vec3 pivot, const Camera& camera,
     glm::quat localRot = glm::quat{1, 0, 0, 0};
     if (isLocal) {
         const auto* t = scene_.getObject(ids[0]).getComponent<Transform>();
-        if (t) localRot = t->rotation;
+        if (t) localRot = worldRotation(*t, scene_);
     }
 
     float dist = glm::length(cameraTransform.position - pivot);
@@ -518,7 +562,7 @@ ObjectTransformHandle::buildScaleGizmo(glm::vec3 pivot, const Camera& camera, co
         glm::vec3 dir = axes[i];
         if (ids.size() == 1) {
             const auto* t = scene_.getObject(ids[0]).getComponent<Transform>();
-            if (t) dir = rotateVector(dir, t->rotation);
+            if (t) dir = rotateVector(dir, worldRotation(*t, scene_));
         }
         glm::vec3 color = colors[i];
         glm::vec3 tip = pivot + dir * shaftLength;

@@ -5,12 +5,14 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/quaternion.hpp>
 #include "../../../utils/JsonUtils.hpp"
+#include "../EntityHandle.hpp"
 #include "IComponent.hpp"
 
 struct Transform final : IComponent {
     glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
     glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
+    EntityHandle parent = INVALID_ENTITY_HANDLE;
 
     Transform() = default;
     Transform(glm::vec3 p, glm::quat r, glm::vec3 s) : position(p), rotation(r), scale(s) {}
@@ -29,9 +31,11 @@ struct Transform final : IComponent {
     glm::mat4 getViewMatrix() const { return glm::lookAt(position, position + getForward(), getUp()); }
 
     nlohmann::json serialize() const override {
-        return {{"position", JsonUtils::serializeVec3(position)},
-                {"rotation", JsonUtils::serializeQuat(rotation)},
-                {"scale", JsonUtils::serializeVec3(scale)}};
+        nlohmann::json j = {{"position", JsonUtils::serializeVec3(position)},
+                            {"rotation", JsonUtils::serializeQuat(rotation)},
+                            {"scale", JsonUtils::serializeVec3(scale)}};
+        if (parent != INVALID_ENTITY_HANDLE) j["parent"] = parent;
+        return j;
     }
 
     std::string typeName() const override { return "Transform"; }
@@ -42,6 +46,7 @@ struct Transform final : IComponent {
         t.position = JsonUtils::deserializeVec3(j.at("position"));
         t.rotation = JsonUtils::deserializeQuat(j.at("rotation"));
         t.scale = JsonUtils::deserializeVec3(j.at("scale"));
+        if (j.contains("parent")) t.parent = j.at("parent").get<EntityHandle>();
         return t;
     }
 };

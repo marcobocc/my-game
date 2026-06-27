@@ -1,15 +1,12 @@
 -- player_controller.lua
--- Handles player movement and jumping.
--- Attach to the player actor.
--- Set cameraEntity to the entity that has third_person_controller attached.
+-- Reads keyboard input and drives a CharacterDynamics script.
+-- Attach to the same entity as CharacterDynamics.
 
 Properties = {
-    { name = "cameraEntity",   type = "entity", default = 0   },
-    { name = "moveSpeed",      type = "float",  default = 5.0 },
-    { name = "sprintSpeed",    type = "float",  default = 10.0 },
-    { name = "rotationSpeed",  type = "float",  default = 8.0 },
-    { name = "jumpForce",      type = "float",  default = 6.0 },
-    { name = "gravity",        type = "float",  default = 18.0 },
+    { name = "cameraEntity", type = "entity", default = 0    },
+    { name = "meshEntity",   type = "entity", default = 0    },
+    { name = "moveSpeed",    type = "float",  default = 5.0  },
+    { name = "sprintSpeed",  type = "float",  default = 10.0 },
 }
 
 local Logger = require("logger")
@@ -17,20 +14,10 @@ local Logger = require("logger")
 local M = {}
 
 function M:onStart()
-    self.meshYaw   = 0.0
-    self.velocityY = 0.0
-    self.grounded  = false
-    self.groundY   = 0.0
-    self.camScript = nil
-    self.animState = ""
+    print("player_controller onStart fired on entity " .. tostring(self.entity))
+    self.camScript    = nil
+    self.dynScript    = nil
     self.spaceWasDown = false
-
-    local t = World:getTransform(self.entity)
-    if t then
-        self.groundY = t.position.y
-        local fwd = t:getForward()
-        self.meshYaw = math.deg(math.atan2(fwd.x, fwd.z))
-    end
 
     if self.cameraEntity and self.cameraEntity ~= 0 then
         self.camScript = World:getScript(self.cameraEntity, "third_person_controller")
@@ -39,84 +26,64 @@ function M:onStart()
     Logger.info("player_controller started on entity " .. tostring(self.entity))
 end
 
-function M:setAnimState(state)
-    if self.animState == state then return end
-    local prev = self.animState
-    self.animState = state
-    local anim = World:getAnimator(self.entity)
-    if anim then
-        local blend = (prev == "Jump") and 0.5 or 0.2
-        anim:play(state, blend)
+function M:getDynScript()
+    if not self.dynScript then
+        self.dynScript = World:getScript(self.entity, "character_dynamics")
+        if not self.dynScript then
+            Logger.warn("player_controller: character_dynamics not found on entity " .. tostring(self.entity))
+        end
     end
+    return self.dynScript
 end
 
 function M:onUpdate(dt)
-    local t = World:getTransform(self.entity)
-    if not t then return end
-
     local cameraYaw = self.camScript and self.camScript:getCameraYaw() or 0.0
+    local yawRad    = math.rad(cameraYaw)
+    local camFwd    = Vec3( math.sin(yawRad), 0,  math.cos(yawRad))
+    local camRight  = Vec3(-math.cos(yawRad), 0,  math.sin(yawRad))
 
-    local yawRad   = math.rad(cameraYaw)
-    local camFwd   = Vec3( math.sin(yawRad), 0,  math.cos(yawRad))
-    local camRight = Vec3(-math.cos(yawRad), 0,  math.sin(yawRad))
-
-    -- Horizontal movement
     local moveDir = Vec3(0, 0, 0)
     local moving  = false
+    Logger.info("player_controller: onUpdate running, W=" .. tostring(Input:isKeyDown("W")))
     if Input:isKeyDown("W") then moveDir = moveDir + camFwd;   moving = true end
     if Input:isKeyDown("S") then moveDir = moveDir - camFwd;   moving = true end
     if Input:isKeyDown("A") then moveDir = moveDir - camRight; moving = true end
     if Input:isKeyDown("D") then moveDir = moveDir + camRight; moving = true end
 
+    local vx, vz = 0.0, 0.0
     if moving then
         local len = math.sqrt(moveDir.x * moveDir.x + moveDir.z * moveDir.z)
         if len > 0.001 then
             moveDir = Vec3(moveDir.x / len, 0, moveDir.z / len)
         end
-
         local speed = (Input:isKeyDown("LSHIFT") or Input:isKeyDown("RSHIFT")) and self.sprintSpeed or self.moveSpeed
-        t.position = t.position + moveDir * (speed * dt)
-
-        local targetYaw = math.deg(math.atan2(moveDir.x, moveDir.z))
-        local diff = ((targetYaw - self.meshYaw) + 540) % 360 - 180
-        self.meshYaw = self.meshYaw + diff * math.min(1.0, self.rotationSpeed * dt)
-        t.rotation = quatAxisAngle(Vec3(0, 1, 0), self.meshYaw)
+        vx = moveDir.x * speed
+        vz = moveDir.z * speed
     end
 
-    -- Vertical movement (gravity + jump)
-    self.grounded = t.position.y <= self.groundY + 0.001
-
-    if self.grounded then
-        self.velocityY = 0.0
-        t.position = Vec3(t.position.x, self.groundY, t.position.z)
-
-        local spaceDown = Input:isKeyDown("SPACE")
-        if spaceDown and not self.spaceWasDown then
-            self.velocityY = self.jumpForce
-            self.grounded  = false
-        end
-        self.spaceWasDown = spaceDown
-    else
-        self.velocityY = self.velocityY - self.gravity * dt
+    if moving then
+        Logger.info("player_controller: moving vx=" .. vx .. " vz=" .. vz)
     end
 
-    t.position = Vec3(t.position.x, t.position.y + self.velocityY * dt, t.position.z)
-
-    World:setTransform(self.entity, t)
-
-    -- Animation state
-    if not self.grounded then
-        self:setAnimState("Jump")
-    elseif moving then
-        self:setAnimState("Run")
-    else
-        self:setAnimState("Idle")
+    local dyn = self:getDynScript()
+    if dyn then
+        dyn:setMoveVelocity(vx, vz, moving)
     end
 
-    -- Reposition camera immediately after player moves to eliminate one-frame lag.
+    local spaceDown = Input:isKeyDown("SPACE")
+    if spaceDown and not self.spaceWasDown and dyn then
+        dyn:jump()
+    end
+    self.spaceWasDown = spaceDown
+
     if self.camScript then
         self.camScript:recomputePosition()
     end
+
+end
+
+function M:onCollision(other)
+    Logger.info("player_controller collision with entity " .. tostring(other))
 end
 
 return M

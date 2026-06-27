@@ -110,12 +110,18 @@ namespace LuaBindings {
                                    &LuaWorld::getTransform,
                                    "setTransform",
                                    &LuaWorld::setTransform,
+                                   "setParent",
+                                   &LuaWorld::setParent,
+                                   "clearParent",
+                                   &LuaWorld::clearParent,
                                    "findByName",
                                    &LuaWorld::findByName,
                                    "getScript",
                                    &LuaWorld::getScript,
                                    "getAnimator",
-                                   &LuaWorld::getAnimator);
+                                   &LuaWorld::getAnimator,
+                                   "resolveCollisions",
+                                   &LuaWorld::resolveCollisions);
 
         // ---- Input facade ------------------------------------------------------
 

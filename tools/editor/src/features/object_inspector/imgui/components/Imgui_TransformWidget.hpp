@@ -22,6 +22,10 @@ private:
     void buildProperties() override {
         if (!lastObjectId_) return;
 
+        add<LabelProperty>("Parent", [this] {
+            return component_.parent == INVALID_ENTITY_HANDLE ? "(none)" : std::to_string(component_.parent);
+        });
+
         add<Vec3Property>(
                 "Position",
                 [this] { return component_.position; },

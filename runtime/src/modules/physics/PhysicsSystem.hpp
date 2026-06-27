@@ -2,6 +2,7 @@
 #include <functional>
 #include <unordered_set>
 #include "modules/physics/collision_utils.hpp"
+#include "modules/scene/TransformUtils.hpp"
 #include "modules/scene/World.hpp"
 
 class PhysicsSystem {
@@ -15,8 +16,9 @@ public:
     void pause() { paused_ = true; }
     void resume() { paused_ = false; }
 
-    static bool checkCollision(const BoxCollider& a, const Transform& ta, const BoxCollider& b, const Transform& tb) {
-        return Physics::checkCollision(a, ta, b, tb);
+    static bool
+    checkCollision(const BoxCollider& a, const glm::mat4& matA, const BoxCollider& b, const glm::mat4& matB) {
+        return Physics::checkCollision(a, matA, b, matB);
     }
 
     std::optional<Physics::RaycastHit> raycast(const glm::vec3& origin, const glm::vec3& dir) const {
@@ -27,7 +29,7 @@ public:
                 wrapped.emplace_back(entity, collPtr, transformPtr);
             }
         }
-        return Physics::raycast(origin, dir, wrapped);
+        return Physics::raycast(origin, dir, wrapped, entityManager_);
     }
 
     void onCollisionEnter(CollisionCallback cb) { enterCallbacks_.push_back(std::move(cb)); }
@@ -41,10 +43,12 @@ public:
         for (size_t i = 0; i < objects.size(); ++i) {
             const auto& [idA, colliderAPtr, transformAPtr] = objects[i];
             if (!colliderAPtr || !transformAPtr) continue;
+            glm::mat4 matA = TransformUtils::resolveWorldMatrix(*transformAPtr, entityManager_);
             for (size_t j = i + 1; j < objects.size(); ++j) {
                 const auto& [idB, colliderBPtr, transformBPtr] = objects[j];
                 if (!colliderBPtr || !transformBPtr) continue;
-                if (checkCollision(*colliderAPtr, *transformAPtr, *colliderBPtr, *transformBPtr)) {
+                glm::mat4 matB = TransformUtils::resolveWorldMatrix(*transformBPtr, entityManager_);
+                if (checkCollision(*colliderAPtr, matA, *colliderBPtr, matB)) {
                     currentCollisions.insert(makeOrderedPair(idA, idB));
                 }
             }

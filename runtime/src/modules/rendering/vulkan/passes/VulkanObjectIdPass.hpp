@@ -124,7 +124,7 @@ public:
                 glm::mat4 model;
                 uint32_t objectId;
             } push{};
-            push.model = dc.transform.getModelMatrix();
+            push.model = dc.worldMatrix;
             push.objectId = i + 1;
             vkCmdPushConstants(cmd,
                                pipeline->layout,

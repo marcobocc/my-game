@@ -414,18 +414,27 @@ public:
             ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 0));
             bool changed = false;
             ImGui::SetNextItemWidth(w);
-            changed |= drawSpinbox("##x", v.x, speed_, 0, 0, "X: %.2f");
+            if (drawSpinbox("##x", v.x, speed_, 0, 0, "X: %.2f")) {
+                onChange_(v);
+                changed = true;
+            }
             trackItem();
             ImGui::SameLine();
             ImGui::SetNextItemWidth(w);
-            changed |= drawSpinbox("##y", v.y, speed_, 0, 0, "Y: %.2f");
+            if (drawSpinbox("##y", v.y, speed_, 0, 0, "Y: %.2f")) {
+                onChange_(v);
+                changed = true;
+            }
             trackItem();
             ImGui::SameLine();
             ImGui::SetNextItemWidth(w);
-            changed |= drawSpinbox("##z", v.z, speed_, 0, 0, "Z: %.2f");
+            if (drawSpinbox("##z", v.z, speed_, 0, 0, "Z: %.2f")) {
+                onChange_(v);
+                changed = true;
+            }
             trackItem();
             ImGui::PopStyleVar();
-            if (changed) onChange_(v);
+            (void) changed;
         });
     }
 

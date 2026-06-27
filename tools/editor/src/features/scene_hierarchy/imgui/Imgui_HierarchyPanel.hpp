@@ -84,24 +84,13 @@ public:
             return "Entity " + std::to_string(obj.handle);
         };
 
-        // Collect all leaf (non-group) entity handles in a subtree.
-        std::function<void(const HierarchyNode&, std::vector<EntityHandle>&)> collectLeaves =
+        // Collect all entity handles in a subtree (including the root).
+        std::function<void(const HierarchyNode&, std::vector<EntityHandle>&)> collectAll =
                 [&](const HierarchyNode& node, std::vector<EntityHandle>& out) {
-                    if (node.children.empty()) {
-                        out.push_back(node.handle);
-                    } else {
-                        for (const auto& child: node.children)
-                            collectLeaves(child, out);
-                    }
+                    out.push_back(node.handle);
+                    for (const auto& child: node.children)
+                        collectAll(child, out);
                 };
-
-        // Returns true if every leaf under this node is selected.
-        std::function<bool(const HierarchyNode&)> allLeavesSelected = [&](const HierarchyNode& node) -> bool {
-            if (node.children.empty()) return editorSelection_.isEntitySelected(node.handle);
-            for (const auto& child: node.children)
-                if (!allLeavesSelected(child)) return false;
-            return true;
-        };
 
         // Forward-declare so drawSiblings can call drawNode recursively.
         std::function<void(const std::vector<HierarchyNode>&)> drawSiblings;
@@ -112,8 +101,7 @@ public:
             std::string label = obj ? getLabel(*obj) : "Entity " + std::to_string(e);
 
             bool hasChildren = !node.children.empty();
-            // Group nodes show as selected when all their descendants are selected.
-            bool selected = hasChildren ? allLeavesSelected(node) : editorSelection_.isEntitySelected(e);
+            bool selected = editorSelection_.isEntitySelected(e);
             bool isContextTarget = contextTargetId && *contextTargetId == e;
 
             ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
@@ -159,24 +147,10 @@ public:
 
             bool hovered = ImGui::IsItemHovered() || isContextTarget;
             if (hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
-                if (hasChildren) {
-                    // Clicking a group selects/deselects all its leaf descendants.
-                    std::vector<EntityHandle> leaves;
-                    collectLeaves(node, leaves);
-                    if (cmdDown && selected) {
-                        for (EntityHandle leaf: leaves)
-                            editorSelection_.removeFromSelection(leaf);
-                    } else {
-                        if (!cmdDown) editorSelection_.clearSelection();
-                        for (EntityHandle leaf: leaves)
-                            editorSelection_.addToSelection(leaf, true);
-                    }
-                } else {
-                    if (cmdDown && editorSelection_.isEntitySelected(e))
-                        editorSelection_.removeFromSelection(e);
-                    else
-                        editorSelection_.addToSelection(e, cmdDown);
-                }
+                if (cmdDown && editorSelection_.isEntitySelected(e))
+                    editorSelection_.removeFromSelection(e);
+                else
+                    editorSelection_.addToSelection(e, cmdDown);
             }
             if (hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
                 rightClickedThisFrame = true;
