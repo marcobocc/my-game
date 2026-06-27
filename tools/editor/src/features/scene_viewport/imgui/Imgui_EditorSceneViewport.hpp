@@ -61,6 +61,11 @@ public:
 
         if (isInViewport && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
             if (const ImGuiPayload* payload = ImGui::GetDragDropPayload()) {
+                if (strcmp(payload->DataType, "PREFAB_ASSET") == 0) {
+                    std::string prefabName = static_cast<const char*>(payload->Data);
+                    auto prefab = assetStore_.readPrefab(prefabName);
+                    if (prefab) scene_.instantiatePrefab(*prefab, UndoHistory::randomGroupId("Instantiate Prefab"));
+                }
                 if (strcmp(payload->DataType, "MATERIAL_ASSET") == 0) {
                     auto materialName = static_cast<const char*>(payload->Data);
                     auto result = pickingSystem_.pick(static_cast<uint32_t>(mousePos.x),

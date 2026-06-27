@@ -120,6 +120,69 @@ void RuntimeScene::restoreObject(const GameObjectDTO& dto, const std::string& mu
             mutationGroup);
 }
 
+EntityHandle RuntimeScene::instantiatePrefab(const SceneDTO& prefab, const std::string& mutationGroup) {
+    if (prefab.objects.empty()) return INVALID_ENTITY_HANDLE;
+
+    // Remap prefab-local handles to fresh scene handles.
+    std::unordered_map<EntityHandle, EntityHandle> remap;
+    std::vector<GameObjectDTO> remapped;
+    for (const auto& obj: prefab.objects) {
+        EntityHandle newHandle = nextHandle_++;
+        remap[obj.handle] = newHandle;
+        GameObjectDTO copy = obj;
+        copy.handle = newHandle;
+        remapped.push_back(std::move(copy));
+    }
+
+    // Remap hierarchy node handles recursively.
+    std::function<HierarchyNode(const HierarchyNode&)> remapNode = [&](const HierarchyNode& n) {
+        HierarchyNode out;
+        auto it = remap.find(n.handle);
+        out.handle = (it != remap.end()) ? it->second : n.handle;
+        for (const auto& child: n.children)
+            out.children.push_back(remapNode(child));
+        return out;
+    };
+
+    // Identify root handle (first hierarchy root, or first object).
+    EntityHandle rootHandle = remapped.front().handle;
+    std::vector<HierarchyNode> subtree;
+    if (!prefab.hierarchy.empty()) {
+        subtree.push_back(remapNode(prefab.hierarchy.front()));
+        rootHandle = subtree.front().handle;
+    } else {
+        for (const auto& obj: remapped)
+            subtree.push_back({obj.handle, {}});
+    }
+
+    for (const auto& obj: remapped)
+        restore_Impl(obj);
+    for (const auto& node: subtree)
+        hierarchy_.push_back(node);
+
+    std::vector<EntityHandle> newHandles;
+    for (const auto& obj: remapped)
+        newHandles.push_back(obj.handle);
+
+    undo_.push(
+            [this, newHandles] {
+                for (auto h: newHandles) {
+                    world_.removeActor(h);
+                    removeFromHierarchy(hierarchy_, h);
+                }
+            },
+            [this, remapped, subtree] {
+                for (const auto& obj: remapped)
+                    restore_Impl(obj);
+                for (const auto& node: subtree)
+                    hierarchy_.push_back(node);
+            },
+            "Instantiate Prefab",
+            mutationGroup);
+
+    return rootHandle;
+}
+
 void RuntimeScene::restore_Impl(const SceneDTO& dto) {
     world_.clear();
     nextHandle_ = 0;

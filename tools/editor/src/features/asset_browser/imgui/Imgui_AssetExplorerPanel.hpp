@@ -87,6 +87,7 @@ private:
             ".model",
             ".lua",
             ".animctrl",
+            ".prefab",
     };
 
     static bool isKnownAsset(const std::string& path) {

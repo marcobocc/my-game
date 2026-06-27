@@ -50,6 +50,7 @@ private:
             {"Shaders", ".shad", nullptr},
             {"Scripts", ".lua", nullptr},
             {"Animators", ".animctrl", nullptr},
+            {"Prefabs", ".prefab", nullptr},
     };
 
     static constexpr std::string_view knownExtensions[] = {
@@ -61,6 +62,7 @@ private:
             ".model",
             ".lua",
             ".animctrl",
+            ".prefab",
     };
 
     AssetStore& assetStore_;
@@ -189,6 +191,11 @@ private:
             }
             if (asset.ends_with(".animctrl") && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 ImGui::SetDragDropPayload("ANIMCTRL_ASSET", asset.c_str(), asset.size() + 1);
+                ImGui::TextUnformatted(asset.c_str());
+                ImGui::EndDragDropSource();
+            }
+            if (asset.ends_with(".prefab") && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                ImGui::SetDragDropPayload("PREFAB_ASSET", asset.c_str(), asset.size() + 1);
                 ImGui::TextUnformatted(asset.c_str());
                 ImGui::EndDragDropSource();
             }

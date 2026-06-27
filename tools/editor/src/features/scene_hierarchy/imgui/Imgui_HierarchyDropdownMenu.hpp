@@ -1,6 +1,10 @@
 #pragma once
+#include <fstream>
+#include <functional>
 #include <imgui.h>
+#include <nfd.hpp>
 #include <string>
+#include <unordered_map>
 #include "../../../services/ActionDispatcher.hpp"
 #include "../../../services/ClipboardService.hpp"
 #include "../../../services/EditorSelection.hpp"
@@ -79,6 +83,9 @@ protected:
         if (ImGui::MenuItem("Rename", nullptr, false, hasContextEntity)) {
             if (contextEntity_) renameRequested_ = *contextEntity_;
         }
+        if (ImGui::MenuItem("Save as Prefab", nullptr, false, hasContextEntity)) {
+            if (contextEntity_) saveAsPrefab(*contextEntity_);
+        }
 
         ImGui::Separator();
 
@@ -130,6 +137,74 @@ private:
     std::optional<EntityHandle> contextEntity_;
     std::optional<EntityHandle> renameRequested_;
     std::string contextEntityName_;
+
+    void saveAsPrefab(EntityHandle entity) {
+        NFD::Guard nfdGuard;
+        nfdnchar_t* outPath = nullptr;
+        nfdfilteritem_t filters[] = {{"Prefab", "prefab"}};
+        if (NFD::SaveDialog(outPath, filters, 1) == NFD_OKAY) {
+            // Collect all handles in the subtree (root + all descendants).
+            std::vector<EntityHandle> handles;
+            collectSubtree(scene_.getHierarchy(), entity, handles);
+            if (handles.empty()) handles.push_back(entity);
+
+            // Remap handles to sequential IDs starting at 0.
+            std::unordered_map<EntityHandle, EntityHandle> remap;
+            EntityHandle localId = 0;
+            for (auto h: handles)
+                remap[h] = localId++;
+
+            // Build remapped hierarchy subtree.
+            std::function<HierarchyNode(const HierarchyNode&)> remapNode =
+                    [&](const HierarchyNode& n) -> HierarchyNode {
+                HierarchyNode out;
+                out.handle = remap.count(n.handle) ? remap[n.handle] : n.handle;
+                for (const auto& c: n.children)
+                    if (remap.count(c.handle)) out.children.push_back(remapNode(c));
+                return out;
+            };
+
+            SceneDTO prefab;
+            for (auto h: handles) {
+                GameObjectDTO dto = scene_.snapshotObject(h);
+                dto.handle = remap[h];
+                prefab.objects.push_back(std::move(dto));
+            }
+            // Find and remap the root node in the scene hierarchy.
+            if (const HierarchyNode* root = findNode(scene_.getHierarchy(), entity))
+                prefab.hierarchy.push_back(remapNode(*root));
+
+            std::ofstream f(outPath);
+            if (f) f << prefab.serialize().dump(2);
+            NFD::FreePath(outPath);
+        }
+    }
+
+    static bool
+    collectSubtree(const std::vector<HierarchyNode>& nodes, EntityHandle target, std::vector<EntityHandle>& out) {
+        for (const auto& node: nodes) {
+            if (node.handle == target) {
+                collectAll(node, out);
+                return true;
+            }
+            if (collectSubtree(node.children, target, out)) return true;
+        }
+        return false;
+    }
+
+    static void collectAll(const HierarchyNode& node, std::vector<EntityHandle>& out) {
+        out.push_back(node.handle);
+        for (const auto& child: node.children)
+            collectAll(child, out);
+    }
+
+    static const HierarchyNode* findNode(const std::vector<HierarchyNode>& nodes, EntityHandle target) {
+        for (const auto& node: nodes) {
+            if (node.handle == target) return &node;
+            if (const auto* found = findNode(node.children, target)) return found;
+        }
+        return nullptr;
+    }
 
     void drawModelsSubmenu() {
         if (ImGui::BeginMenu("Models")) {

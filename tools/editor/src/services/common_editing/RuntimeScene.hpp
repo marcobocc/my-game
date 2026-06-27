@@ -80,6 +80,10 @@ public:
     void destroyObject(EntityHandle e, const std::string& mutationGroup = "");
     void restoreObject(const GameObjectDTO& dto, const std::string& mutationGroup = "");
 
+    // Instantiates a prefab (multi-object SceneDTO) into the scene as independent copies.
+    // Returns the handle of the root object, or INVALID_ENTITY_HANDLE on failure.
+    EntityHandle instantiatePrefab(const SceneDTO& prefab, const std::string& mutationGroup = "");
+
     // --------------------------------------------------------------------------------
     // Active Camera
     // --------------------------------------------------------------------------------

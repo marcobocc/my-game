@@ -2,12 +2,15 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include "../UndoHistory.hpp"
 #include "details/AssetBaker.hpp"
 #include "modules/asset_management/AssetLoader.hpp"
 #include "modules/asset_management/VirtualFileSystem.hpp"
+#include "transport/GameObjectDTO.hpp"
+#include "transport/SceneDTO.hpp"
 
 class AssetStore {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetStore");
@@ -34,6 +37,17 @@ public:
         auto asset = loader_.get<T>(assetName);
         if (!asset) throw std::runtime_error("Asset '" + assetName + "'does not exist");
         return *asset;
+    }
+
+    std::optional<SceneDTO> readPrefab(const std::string& assetName) const {
+        if (!vfs_.exists(assetName)) return std::nullopt;
+        try {
+            auto data = vfs_.read(assetName);
+            auto j = nlohmann::json::parse(data.begin(), data.end());
+            return SceneDTO::deserialize(j);
+        } catch (...) {
+            return std::nullopt;
+        }
     }
 
     std::vector<std::string> listAll() const { return vfs_.listFilesRecursive(); }
