@@ -9,6 +9,7 @@
 #include "../core/utils/structs.hpp"
 #include "modules/animation/AnimationSystem.hpp"
 #include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/BuiltinAssetNames.hpp"
 #include "modules/asset_management/asset_types/Material.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/scene/components/Camera.hpp"
@@ -18,8 +19,6 @@ public:
     static constexpr VkFormat ALBEDO_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
     static constexpr VkFormat NORMAL_FORMAT = VK_FORMAT_R16G16B16A16_SFLOAT;
     static constexpr VkFormat DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT;
-
-    static constexpr const char* SKINNED_SHADER_NAME = "assets/builtin/shaders/_gbuffer_skinned/_gbuffer_skinned.shad";
 
     VulkanGeometryPass(const VulkanContext& context,
                        VulkanResourcesManager& resourcesManager,
@@ -125,23 +124,26 @@ private:
     void renderEntity(VkCommandBuffer cmd, VkDescriptorSet geometryDescriptorSet, const DrawCall& drawCall) {
         const Material* material = assetLoader_.get<Material>(drawCall.renderer.materialName);
         if (!material) return;
+        const Mesh* mesh = assetLoader_.get<Mesh>(drawCall.renderer.meshName);
+        if (!mesh) return;
         static constexpr std::array<VkFormat, 2> colorFormats{ALBEDO_FORMAT, NORMAL_FORMAT};
 
-        const bool isSkinned = (drawCall.skinningBones != nullptr);
+        const bool isSkinned = mesh->isSkinned();
+        const std::string& shaderName = isSkinned ? GBUFFER_SKINNED_SHADER : GBUFFER_SHADER;
 
         VulkanPipeline* pipeline = nullptr;
         VkDescriptorSet texturesDescriptorSet = VK_NULL_HANDLE;
 
         if (isSkinned) {
-            // Use the dedicated skinned shader pipeline.
-            const Shader* skinnedShader = assetLoader_.get<Shader>(SKINNED_SHADER_NAME);
+            const Shader* skinnedShader = assetLoader_.get<Shader>(shaderName);
             if (!skinnedShader) return;
             pipeline = &resourcesManager_.getPipeline(*skinnedShader, colorFormats, DEPTH_FORMAT);
-            // Textures descriptor set from material pipeline (set 1 layout matches).
-            auto [matPipeline, matDS] = resourcesManager_.getMaterial(*material, colorFormats, DEPTH_FORMAT);
+            auto [matPipeline, matDS] =
+                    resourcesManager_.getMaterial(*material, shaderName, colorFormats, DEPTH_FORMAT);
             texturesDescriptorSet = matDS;
         } else {
-            auto [matPipeline, matDS] = resourcesManager_.getMaterial(*material, colorFormats, DEPTH_FORMAT);
+            auto [matPipeline, matDS] =
+                    resourcesManager_.getMaterial(*material, shaderName, colorFormats, DEPTH_FORMAT);
             pipeline = matPipeline;
             texturesDescriptorSet = matDS;
         }
@@ -157,7 +159,7 @@ private:
         if (pipeline->descriptorSetLayouts.size() > 2) {
             // Pipeline uses set=2 (skinning UBO). Always bind it — upload bone data or identity matrices.
             VkDescriptorSet skinDS = getOrCreateSkinningDescriptorSet(drawCall.objectId, pipeline->layout);
-            if (isSkinned) {
+            if (drawCall.skinningBones) {
                 updateSkinningBuffer(drawCall.objectId, drawCall.skinningBones);
             } else {
                 static const auto identityBones = []() {
@@ -189,8 +191,6 @@ private:
                            sizeof(PushConstants),
                            &pc);
 
-        const Mesh* mesh = assetLoader_.get<Mesh>(drawCall.renderer.meshName);
-        if (!mesh) return;
         const auto& meshBuffers = resourcesManager_.getMesh(*mesh);
         std::array<VkDeviceSize, 1> offsets{};
         vkCmdBindVertexBuffers(cmd, 0, 1, &meshBuffers.vertexBuffer.buffer, offsets.data());

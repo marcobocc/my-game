@@ -9,7 +9,6 @@
 class Material final : public Asset {
 public:
     Material(const std::string& name,
-             const std::string& shaderName,
              const glm::vec4& tint,
              const std::string& albedoTexture,
              const std::string& normalTexture,
@@ -23,7 +22,6 @@ public:
              const glm::vec2& offset,
              bool scaleInvariantUV) :
         Asset(name),
-        shaderName(shaderName),
         tint(tint),
         albedoTexture(albedoTexture),
         normalTexture(normalTexture),
@@ -39,7 +37,6 @@ public:
 
     static Material deserialize(const nlohmann::json& j, const std::string& name) {
         return {name,
-                JsonUtils::getOptional<std::string>(j, "shaderName", GBUFFER_SHADER),
                 JsonUtils::getOptional<glm::vec4>(j, "tint", glm::vec4{1.0f, 1.0f, 1.0f, 1.0f}),
                 JsonUtils::getOptional<std::string>(j, "albedoTexture", EMPTY_TEXTURE),
                 JsonUtils::getOptional<std::string>(j, "normalTexture", EMPTY_TEXTURE),
@@ -56,7 +53,6 @@ public:
 
     nlohmann::json serialize() const {
         nlohmann::json j;
-        j["shaderName"] = shaderName;
         j["tint"] = JsonUtils::serializeVec4(tint);
         j["albedoTexture"] = albedoTexture;
         j["normalTexture"] = normalTexture;
@@ -72,7 +68,6 @@ public:
         return j;
     }
 
-    std::string shaderName;
     glm::vec4 tint;
     std::string albedoTexture;
     std::string normalTexture;

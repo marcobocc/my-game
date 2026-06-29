@@ -193,7 +193,6 @@ Mesh AssetPrefabs::capsule(uint32_t resolution, const std::string& name) {
 
 Material AssetPrefabs::solidColor(const std::string& name) {
     return Material(name,
-                    GBUFFER_SHADER,
                     glm::vec4(1.0f),
                     EMPTY_TEXTURE,
                     EMPTY_TEXTURE,

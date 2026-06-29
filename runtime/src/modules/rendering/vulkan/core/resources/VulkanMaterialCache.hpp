@@ -20,12 +20,15 @@ public:
         textureCache_(textureCache),
         assetLoader_(assetLoader) {}
 
-    VulkanMaterial& get(const Material& material) {
-        return get(material, std::span<const VkFormat>{}, VK_FORMAT_D32_SFLOAT);
+    VulkanMaterial& get(const Material& material, const std::string& shaderName) {
+        return get(material, shaderName, std::span<const VkFormat>{}, VK_FORMAT_D32_SFLOAT);
     }
 
-    VulkanMaterial& get(const Material& material, std::span<const VkFormat> colorFormats, VkFormat depthFormat) {
-        std::string key = material.shaderName + "|" + material.albedoTexture;
+    VulkanMaterial& get(const Material& material,
+                        const std::string& shaderName,
+                        std::span<const VkFormat> colorFormats,
+                        VkFormat depthFormat) {
+        std::string key = shaderName + "|" + material.albedoTexture;
         for (VkFormat f: colorFormats)
             key += "|" + std::to_string(static_cast<int>(f));
         key += "|" + std::to_string(static_cast<int>(depthFormat));
@@ -33,7 +36,7 @@ public:
         auto it = cache_.find(key);
         if (it != cache_.end()) return it->second;
 
-        const Shader* shader = assetLoader_.get<Shader>(material.shaderName);
+        const Shader* shader = assetLoader_.get<Shader>(shaderName);
         VulkanPipeline& pipeline = colorFormats.empty() ? pipelineCache_.get(*shader)
                                                         : pipelineCache_.get(*shader, colorFormats, depthFormat);
         VkDescriptorSet descriptorSet = createTexturesDescriptorSet(pipeline, material);

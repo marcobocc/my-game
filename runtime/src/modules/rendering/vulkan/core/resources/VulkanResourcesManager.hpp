@@ -41,11 +41,15 @@ public:
         return pipelineCache_.get(shader, colorFormats, depthFormat, cullFront, additiveBlend);
     }
 
-    VulkanMaterial& getMaterial(const Material& material) { return materialCache_.get(material); }
+    VulkanMaterial& getMaterial(const Material& material, const std::string& shaderName) {
+        return materialCache_.get(material, shaderName);
+    }
 
-    VulkanMaterial&
-    getMaterial(const Material& material, std::span<const VkFormat> colorFormats, VkFormat depthFormat) {
-        return materialCache_.get(material, colorFormats, depthFormat);
+    VulkanMaterial& getMaterial(const Material& material,
+                                const std::string& shaderName,
+                                std::span<const VkFormat> colorFormats,
+                                VkFormat depthFormat) {
+        return materialCache_.get(material, shaderName, colorFormats, depthFormat);
     }
 
 private:
