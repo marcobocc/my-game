@@ -119,7 +119,7 @@ function M:onUpdate(dt)
     if wasGrounded and not self.grounded and self.velocityY <= 0 then
         local rt = World:getTransform(rootEntity)
         if rt then
-            local probeSteps = { 0.15, 0.35, 0.6, 1.0 }
+            local probeSteps = { 0.05, 0.10, 0.15 }
             local baseY = rt.position.y
             local snapped = false
             for _, dist in ipairs(probeSteps) do
@@ -147,7 +147,7 @@ function M:onUpdate(dt)
     if not self.grounded and self.velocityY > 0 then
         self:setAnimState("Jump")
     elseif not self.grounded then
-        self:setAnimState("Idle")
+        self:setAnimState(self.moving and "Run" or "Idle")
     elseif self.moving then
         self:setAnimState("Run")
     else
