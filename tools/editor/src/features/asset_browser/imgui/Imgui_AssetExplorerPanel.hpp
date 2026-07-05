@@ -176,7 +176,8 @@ private:
     void drawFileList() {
         std::vector<std::string> items;
         for (auto& f: assetStore_.listAll()) {
-            if (isKnownAsset(f) && matchesSearch(f) && matchesTypeFilter(f)) items.push_back(f);
+            if (!AssetStore::isBuiltin(f) && isKnownAsset(f) && matchesSearch(f) && matchesTypeFilter(f))
+                items.push_back(f);
         }
         std::ranges::sort(items);
         fileExplorer_.setItems(std::move(items));

@@ -119,7 +119,8 @@ private:
     void drawAssetGrid(const Tab& tab) {
         std::vector<std::string> assets;
         for (auto& file: assetStore_.listAll()) {
-            if (isKnownAsset(file) && matchesSearch(file) && matchesTab(file, tab)) assets.push_back(file);
+            if (!AssetStore::isBuiltin(file) && isKnownAsset(file) && matchesSearch(file) && matchesTab(file, tab))
+                assets.push_back(file);
         }
         std::ranges::sort(assets);
 
