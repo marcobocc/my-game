@@ -115,6 +115,12 @@ void EditorRenderer::buildGizmos() {
     const auto& selectedIds = editorSelection_.getSelectedEntityIds();
     if (selectedIds.empty()) return;
 
+    bool anyHasTransform = std::ranges::any_of(selectedIds, [&](EntityHandle id) {
+        auto* actor = entityManager_.getActor(id);
+        return actor && actor->getComponent<Transform>() != nullptr;
+    });
+    if (!anyHasTransform) return;
+
     glm::vec3 pivot = objectTransformHandle_.computeGroupPivot(selectedIds);
     const Camera& camera = editorOrbitCamera_.getCamera();
     const Transform& cameraTransform = editorOrbitCamera_.getCameraTransform();

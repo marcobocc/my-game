@@ -2,6 +2,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <optional>
 #include "../Imgui_InspectorWidget.hpp"
+#include "modules/scene/components/Metadata.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 class RuntimeScene;
@@ -22,8 +23,10 @@ private:
     void buildProperties() override {
         if (!lastObjectId_) return;
 
-        add<LabelProperty>("Parent", [this] {
-            return component_.parent == INVALID_ENTITY_HANDLE ? "(none)" : std::to_string(component_.parent);
+        add<LabelProperty>("Parent", [this] -> std::string {
+            if (component_.parent == INVALID_ENTITY_HANDLE) return "(none)";
+            const auto* meta = scene_.getObject(component_.parent).getComponent<Metadata>();
+            return meta ? meta->displayName : std::to_string(component_.parent);
         });
 
         add<Vec3Property>(
