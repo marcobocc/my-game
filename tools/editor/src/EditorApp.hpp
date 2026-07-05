@@ -141,7 +141,7 @@ public:
                     inputSystem_.setBlocked(imguiConsole_.isVisible());
                 }
                 auto [mouseX, mouseY] = inputSystem_.getMousePosition();
-                inputHandler_.update(mouseX, mouseY, deltaTime);
+                inputHandler_.update(mouseX, mouseY, deltaTime, simActive);
             }
 
             {

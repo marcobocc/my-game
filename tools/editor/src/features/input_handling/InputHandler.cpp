@@ -9,7 +9,7 @@
 #include "../scene_viewport/transform_handle/ObjectTransformHandle.hpp"
 
 
-void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
+void InputHandler::update(double mouseX, double mouseY, double deltaTime, bool simActive) {
     bool imguiCapturingInput = ImGui::GetIO().WantTextInput || ImGui::GetIO().WantCaptureMouse;
 
     if (!ImGui::GetIO().WantTextInput) {
@@ -19,7 +19,7 @@ void InputHandler::update(double mouseX, double mouseY, double deltaTime) {
         getModifierState(ctrl, shift, alt);
         processGizmoDrag(mouseX, mouseY, leftDown);
         processMouseInteraction(mouseX, mouseY, leftDown, ctrl);
-        processCameraInput(mouseX, mouseY, deltaTime);
+        if (!simActive) processCameraInput(mouseX, mouseY, deltaTime);
         wasLeftDown_ = leftDown;
     } else {
         wasLeftDown_ = false;

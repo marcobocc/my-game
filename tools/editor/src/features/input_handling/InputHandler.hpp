@@ -61,7 +61,7 @@ public:
         actionDispatcher_(actionDispatcher) {}
 
 
-    void update(double mouseX, double mouseY, double deltaTime);
+    void update(double mouseX, double mouseY, double deltaTime, bool simActive = false);
 
 private:
     GameWindow& window_;
