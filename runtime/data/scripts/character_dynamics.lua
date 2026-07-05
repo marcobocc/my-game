@@ -1,12 +1,13 @@
 -- character_dynamics.lua
 -- Handles physics, mesh rotation, and animation for a character.
--- Attach to the same entity as the collider. Set meshEntity to the root transform/animator entity.
+-- Attach to the character entity (same entity as the collider and animator).
 
 Properties = {
-    { name = "meshEntity",    type = "entity", default = 0    },
     { name = "jumpForce",     type = "float",  default = 6.0  },
     { name = "gravity",       type = "float",  default = 18.0 },
     { name = "rotationSpeed", type = "float",  default = 8.0  },
+    { name = "moveSpeed",     type = "float",  default = 5.0  },
+    { name = "sprintSpeed",   type = "float",  default = 10.0 },
 }
 
 local M = {}
@@ -19,15 +20,14 @@ function M:onStart()
     self.meshYaw    = 0.0
     self.animState  = ""
 
-    local rootEntity = (self.meshEntity and self.meshEntity ~= 0) and self.meshEntity or self.entity
-    local t = World:getTransform(rootEntity)
+    local t = World:getTransform(self.entity)
     if t then
         local fwd = t:getForward()
         self.meshYaw = math.deg(math.atan2(fwd.x, fwd.z))
     end
 end
 
--- Called by PlayerController each frame with the desired horizontal velocity and whether the character is moving.
+-- Called by player_controller each frame with the desired horizontal velocity and whether the character is moving.
 function M:setMoveVelocity(vx, vz, moving)
     self.velocityXZ = Vec3(vx, 0, vz)
     self.moving     = moving
@@ -53,8 +53,7 @@ function M:setAnimState(state)
     if self.animState == state then return end
     local prev = self.animState
     self.animState = state
-    local target = (self.meshEntity and self.meshEntity ~= 0) and self.meshEntity or self.entity
-    local anim = World:getAnimator(target)
+    local anim = World:getAnimator(self.entity)
     if anim then
         local blend = (prev == "Jump") and 0.5 or 0.2
         anim:play(state, blend)
@@ -62,8 +61,7 @@ function M:setAnimState(state)
 end
 
 function M:onUpdate(dt)
-    local rootEntity = (self.meshEntity and self.meshEntity ~= 0) and self.meshEntity or self.entity
-    local t = World:getTransform(rootEntity)
+    local t = World:getTransform(self.entity)
     if not t then return end
 
     -- Mesh rotation toward movement direction
@@ -89,14 +87,14 @@ function M:onUpdate(dt)
     end
     t.position = Vec3(t.position.x, t.position.y + self.velocityY * dt, t.position.z)
 
-    World:setTransform(rootEntity, t)
+    World:setTransform(self.entity, t)
 
     -- Collision resolution
     local wasGrounded = self.grounded
     self.grounded = false
     local push = World:resolveCollisions(self.entity)
     if push.x ~= 0 or push.y ~= 0 or push.z ~= 0 then
-        local rt = World:getTransform(rootEntity)
+        local rt = World:getTransform(self.entity)
         if rt then
             local pushLen = math.sqrt(push.x*push.x + push.y*push.y + push.z*push.z)
             local normalY = (pushLen > 0) and (push.y / pushLen) or 0
@@ -111,20 +109,20 @@ function M:onUpdate(dt)
                 rt.position = rt.position + Vec3(push.x, 0, push.z)
                 self.grounded = wasGrounded
             end
-            World:setTransform(rootEntity, rt)
+            World:setTransform(self.entity, rt)
         end
     end
 
     -- Ground snap: probe downward at several depths to stay glued across collider seams.
     if wasGrounded and not self.grounded and self.velocityY <= 0 then
-        local rt = World:getTransform(rootEntity)
+        local rt = World:getTransform(self.entity)
         if rt then
             local probeSteps = { 0.05, 0.10, 0.15 }
             local baseY = rt.position.y
             local snapped = false
             for _, dist in ipairs(probeSteps) do
                 rt.position = Vec3(rt.position.x, baseY - dist, rt.position.z)
-                World:setTransform(rootEntity, rt)
+                World:setTransform(self.entity, rt)
                 local snapPush = World:resolveCollisions(self.entity)
                 local snapLen = math.sqrt(snapPush.x*snapPush.x + snapPush.y*snapPush.y + snapPush.z*snapPush.z)
                 local snapNormalY = (snapLen > 0) and (snapPush.y / snapLen) or 0
@@ -139,7 +137,7 @@ function M:onUpdate(dt)
             if not snapped then
                 rt.position = Vec3(rt.position.x, baseY, rt.position.z)
             end
-            World:setTransform(rootEntity, rt)
+            World:setTransform(self.entity, rt)
         end
     end
 
