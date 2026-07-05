@@ -1,4 +1,5 @@
 #include "ObjectTransformHandle.hpp"
+#include <array>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <string>
@@ -436,6 +437,53 @@ ObjectTransformHandle::buildGizmoCube(const glm::vec3& center, float halfSize, c
     return gizmoObject;
 }
 
+static void appendArrowMesh(ObjectTransformHandle::GizmoObject& verts,
+                            const glm::vec3& origin,
+                            const glm::vec3& dir,
+                            const glm::vec3& color,
+                            float totalLength,
+                            float cylinderRadius,
+                            float coneRadius,
+                            float coneLength) {
+    constexpr int segments = 12;
+    float shaftLength = totalLength - coneLength;
+
+    glm::vec3 perp1 = glm::normalize(glm::cross(dir, glm::abs(dir.x) < 0.9f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0)));
+    glm::vec3 perp2 = glm::cross(dir, perp1);
+
+    glm::vec3 shaftEnd = origin + dir * shaftLength;
+    glm::vec3 tip = origin + dir * totalLength;
+
+    // Build ring points for cylinder bottom, cylinder top (=cone base), and cone tip
+    std::array<glm::vec3, segments> ringBottom, ringShaft, ringCone;
+    for (int s = 0; s < segments; ++s) {
+        float a = glm::two_pi<float>() * static_cast<float>(s) / static_cast<float>(segments);
+        glm::vec3 radial = (perp1 * glm::cos(a) + perp2 * glm::sin(a));
+        ringBottom[s] = origin + radial * cylinderRadius;
+        ringShaft[s] = shaftEnd + radial * cylinderRadius;
+        ringCone[s] = shaftEnd + radial * coneRadius;
+    }
+
+    auto tri = [&](glm::vec3 a, glm::vec3 b, glm::vec3 c) {
+        verts.push_back({a, color});
+        verts.push_back({b, color});
+        verts.push_back({c, color});
+    };
+
+    for (int s = 0; s < segments; ++s) {
+        int n = (s + 1) % segments;
+        // Cylinder side (two triangles per quad)
+        tri(ringBottom[s], ringShaft[s], ringBottom[n]);
+        tri(ringBottom[n], ringShaft[s], ringShaft[n]);
+        // Cone side
+        tri(ringCone[s], tip, ringCone[n]);
+        // Cylinder end cap (bottom disk, winding toward origin)
+        tri(origin, ringBottom[n], ringBottom[s]);
+        // Cone base disk
+        tri(shaftEnd, ringCone[s], ringCone[n]);
+    }
+}
+
 ObjectTransformHandle::GizmoTransformHandle
 ObjectTransformHandle::buildTranslationGizmo(glm::vec3 pivot, const Camera& camera, const Transform& cameraTransform) {
     GizmoTransformHandle result;
@@ -452,9 +500,10 @@ ObjectTransformHandle::buildTranslationGizmo(glm::vec3 pivot, const Camera& came
     float dist = glm::length(cameraTransform.position - pivot);
     float scale = dist * 0.15f;
 
-    float shaftLength = scale;
-    float headLength = scale * 0.25f;
-    float headSpread = scale * 0.10f;
+    float totalLength = scale;
+    float coneLength = scale * 0.25f;
+    float cylinderRadius = scale * 0.025f;
+    float coneRadius = scale * 0.07f;
     float pickRadius = scale * 0.18f;
     float pickOffset = scale * 0.20f;
 
@@ -468,24 +517,116 @@ ObjectTransformHandle::buildTranslationGizmo(glm::vec3 pivot, const Camera& came
         glm::vec3 dir = axes[i];
         if (isLocal) dir = rotateVector(dir, localRot);
         glm::vec3 color = colors[i];
-        glm::vec3 tip = pivot + dir * shaftLength;
+        glm::vec3 tip = pivot + dir * totalLength;
 
-        addGizmoLine(result.visualization, pivot, tip, color);
-
-        glm::vec3 perp1 =
-                glm::normalize(glm::cross(dir, glm::abs(dir.x) < 0.9f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0)));
-        glm::vec3 perp2 = glm::cross(dir, perp1);
-        glm::vec3 headBase = tip - dir * headLength;
-        addGizmoLine(result.visualization, headBase + perp1 * headSpread, tip, color);
-        addGizmoLine(result.visualization, headBase - perp1 * headSpread, tip, color);
-        addGizmoLine(result.visualization, headBase + perp2 * headSpread, tip, color);
-        addGizmoLine(result.visualization, headBase - perp2 * headSpread, tip, color);
+        appendArrowMesh(result.visualization, pivot, dir, color, totalLength, cylinderRadius, coneRadius, coneLength);
 
         glm::vec3 capsuleBase = pivot + dir * pickOffset;
         result.pickingHandles.push_back({ids, GizmoType::Translation, gaxes[i], capsuleBase, tip, pickRadius});
     }
 
     return result;
+}
+
+static void appendCylinderMesh(ObjectTransformHandle::GizmoObject& verts,
+                               const glm::vec3& origin,
+                               const glm::vec3& dir,
+                               const glm::vec3& color,
+                               float length,
+                               float radius) {
+    constexpr int segments = 12;
+    glm::vec3 perp1 = glm::normalize(glm::cross(dir, glm::abs(dir.x) < 0.9f ? glm::vec3(1, 0, 0) : glm::vec3(0, 1, 0)));
+    glm::vec3 perp2 = glm::cross(dir, perp1);
+    glm::vec3 top = origin + dir * length;
+
+    std::array<glm::vec3, segments> ringBot, ringTop;
+    for (int s = 0; s < segments; ++s) {
+        float a = glm::two_pi<float>() * static_cast<float>(s) / static_cast<float>(segments);
+        glm::vec3 r = (perp1 * glm::cos(a) + perp2 * glm::sin(a)) * radius;
+        ringBot[s] = origin + r;
+        ringTop[s] = top + r;
+    }
+
+    auto tri = [&](glm::vec3 a, glm::vec3 b, glm::vec3 c) {
+        verts.push_back({a, color});
+        verts.push_back({b, color});
+        verts.push_back({c, color});
+    };
+
+    for (int s = 0; s < segments; ++s) {
+        int n = (s + 1) % segments;
+        tri(ringBot[s], ringTop[s], ringBot[n]);
+        tri(ringBot[n], ringTop[s], ringTop[n]);
+        tri(origin, ringBot[n], ringBot[s]);
+        tri(top, ringTop[s], ringTop[n]);
+    }
+}
+
+// Tube torus segment: given two ring-center points and their tangent frames, emit quads around the tube.
+static void appendTorusTube(ObjectTransformHandle::GizmoObject& verts,
+                            const glm::vec3& c0,
+                            const glm::vec3& c1,
+                            const glm::vec3& n0a,
+                            const glm::vec3& n0b,
+                            const glm::vec3& n1a,
+                            const glm::vec3& n1b,
+                            float tubeRadius,
+                            const glm::vec3& color) {
+    constexpr int tubeSegs = 8;
+    auto tri = [&](glm::vec3 a, glm::vec3 b, glm::vec3 c) {
+        verts.push_back({a, color});
+        verts.push_back({b, color});
+        verts.push_back({c, color});
+    };
+    for (int t = 0; t < tubeSegs; ++t) {
+        float a0 = glm::two_pi<float>() * static_cast<float>(t) / static_cast<float>(tubeSegs);
+        float a1 = glm::two_pi<float>() * static_cast<float>(t + 1) / static_cast<float>(tubeSegs);
+        glm::vec3 r00 = c0 + (n0a * glm::cos(a0) + n0b * glm::sin(a0)) * tubeRadius;
+        glm::vec3 r01 = c0 + (n0a * glm::cos(a1) + n0b * glm::sin(a1)) * tubeRadius;
+        glm::vec3 r10 = c1 + (n1a * glm::cos(a0) + n1b * glm::sin(a0)) * tubeRadius;
+        glm::vec3 r11 = c1 + (n1a * glm::cos(a1) + n1b * glm::sin(a1)) * tubeRadius;
+        tri(r00, r10, r01);
+        tri(r01, r10, r11);
+    }
+}
+
+static void appendSolidCubeMesh(ObjectTransformHandle::GizmoObject& verts,
+                                const glm::vec3& center,
+                                float half,
+                                const glm::vec3& color) {
+    auto tri = [&](glm::vec3 a, glm::vec3 b, glm::vec3 c) {
+        verts.push_back({a, color});
+        verts.push_back({b, color});
+        verts.push_back({c, color});
+    };
+    glm::vec3 p[8] = {
+            center + glm::vec3(-half, -half, -half),
+            center + glm::vec3(half, -half, -half),
+            center + glm::vec3(half, half, -half),
+            center + glm::vec3(-half, half, -half),
+            center + glm::vec3(-half, -half, half),
+            center + glm::vec3(half, -half, half),
+            center + glm::vec3(half, half, half),
+            center + glm::vec3(-half, half, half),
+    };
+    // -Z
+    tri(p[0], p[2], p[1]);
+    tri(p[0], p[3], p[2]);
+    // +Z
+    tri(p[4], p[5], p[6]);
+    tri(p[4], p[6], p[7]);
+    // -Y
+    tri(p[0], p[1], p[5]);
+    tri(p[0], p[5], p[4]);
+    // +Y
+    tri(p[3], p[6], p[2]);
+    tri(p[3], p[7], p[6]);
+    // -X
+    tri(p[0], p[4], p[7]);
+    tri(p[0], p[7], p[3]);
+    // +X
+    tri(p[1], p[2], p[6]);
+    tri(p[1], p[6], p[5]);
 }
 
 ObjectTransformHandle::GizmoTransformHandle
@@ -503,13 +644,15 @@ ObjectTransformHandle::buildRotationGizmo(glm::vec3 pivot, const Camera& camera,
 
     float dist = glm::length(cameraTransform.position - pivot);
     float ringRadius = dist * 0.15f;
-    float pickRadius = ringRadius * 0.18f;
+    float tubeRadius = ringRadius * 0.03f;
+    float pickRadius = ringRadius * 0.08f;
 
     constexpr int segments = 32;
 
     const glm::vec3 colors[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     const glm::vec3 perp1s[3] = {{0, 1, 0}, {1, 0, 0}, {1, 0, 0}};
     const glm::vec3 perp2s[3] = {{0, 0, 1}, {0, 0, 1}, {0, 1, 0}};
+    const glm::vec3 normals[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
 
     result.pickingHandles.reserve(3 * segments);
 
@@ -517,21 +660,31 @@ ObjectTransformHandle::buildRotationGizmo(glm::vec3 pivot, const Camera& camera,
         glm::vec3 color = colors[i];
         glm::vec3 p1 = perp1s[i];
         glm::vec3 p2 = perp2s[i];
+        glm::vec3 axisNormal = normals[i];
         if (isLocal) {
             p1 = rotateVector(p1, localRot);
             p2 = rotateVector(p2, localRot);
+            axisNormal = rotateVector(axisNormal, localRot);
         }
 
         glm::vec3 prevPt{};
+        glm::vec3 prevRadial{};
         for (int s = 0; s <= segments; ++s) {
             float angle = glm::two_pi<float>() * static_cast<float>(s) / static_cast<float>(segments);
-            glm::vec3 pt = pivot + (p1 * glm::cos(angle) + p2 * glm::sin(angle)) * ringRadius;
+            glm::vec3 radial = p1 * glm::cos(angle) + p2 * glm::sin(angle);
+            glm::vec3 pt = pivot + radial * ringRadius;
+            // tube frame: outward radial + ring axis normal
+            glm::vec3 frameA = radial;
+            glm::vec3 frameB = axisNormal;
             if (s > 0) {
-                addGizmoLine(result.visualization, prevPt, pt, color);
+                glm::vec3 prevFrameA = prevRadial;
+                appendTorusTube(
+                        result.visualization, prevPt, pt, prevFrameA, frameB, frameA, frameB, tubeRadius, color);
                 result.pickingHandles.push_back(
                         {ids, GizmoType::Rotation, static_cast<GizmoAxis>(i), prevPt, pt, pickRadius});
             }
             prevPt = pt;
+            prevRadial = frameA;
         }
     }
 
@@ -548,6 +701,7 @@ ObjectTransformHandle::buildScaleGizmo(glm::vec3 pivot, const Camera& camera, co
     float scale = dist * 0.15f;
 
     float shaftLength = scale;
+    float cylinderRadius = scale * 0.025f;
     float cubeHalf = scale * 0.07f;
     float pickRadius = scale * 0.18f;
     float pickOffset = scale * 0.20f;
@@ -567,18 +721,16 @@ ObjectTransformHandle::buildScaleGizmo(glm::vec3 pivot, const Camera& camera, co
         glm::vec3 color = colors[i];
         glm::vec3 tip = pivot + dir * shaftLength;
 
-        addGizmoLine(result.visualization, pivot, tip, color);
-        auto cubeGizmo = buildGizmoCube(tip, cubeHalf, color);
-        result.visualization.insert(result.visualization.end(), cubeGizmo.begin(), cubeGizmo.end());
+        appendCylinderMesh(result.visualization, pivot, dir, color, shaftLength, cylinderRadius);
+        appendSolidCubeMesh(result.visualization, tip, cubeHalf, color);
 
         glm::vec3 capsuleBase = pivot + dir * pickOffset;
         result.pickingHandles.push_back(
                 {ids, GizmoType::Scale, gaxes[i], capsuleBase, tip + dir * cubeHalf, pickRadius});
     }
 
-    float centerHalf = scale * 0.09f;
-    auto centerCubeGizmo = buildGizmoCube(pivot, centerHalf, {1, 1, 1});
-    result.visualization.insert(result.visualization.end(), centerCubeGizmo.begin(), centerCubeGizmo.end());
+    float centerHalf = scale * 0.07f;
+    appendSolidCubeMesh(result.visualization, pivot, centerHalf, {1, 1, 1});
 
     result.pickingHandles.push_back({ids,
                                      GizmoType::Scale,

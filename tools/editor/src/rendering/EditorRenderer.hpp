@@ -58,4 +58,5 @@ private:
     float deltaTime_ = 0.0f;
     std::vector<DrawCall> outlineQueue_;
     std::vector<VulkanGizmoPass::GizmoVertex> builtGizmoLines_;
+    std::vector<VulkanGizmoPass::GizmoVertex> builtOverlayGizmoLines_;
 };

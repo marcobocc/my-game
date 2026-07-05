@@ -28,6 +28,7 @@ VulkanBackend::VulkanBackend(GameWindow& window,
                              VulkanLightingPass& lightingPass,
                              VulkanGridPass& gridPass,
                              VulkanGizmoPass& gizmoPass,
+                             VulkanGizmoPass& gizmoOverlayPass,
                              VulkanObjectIdPass& objectIdPass,
                              VulkanOutlinePass& outlinePass,
                              VulkanUIPass& uiPass,
@@ -54,6 +55,7 @@ VulkanBackend::VulkanBackend(GameWindow& window,
             VK_FORMAT_D32_SFLOAT)),
     gridPass_(gridPass),
     gizmoPass_(gizmoPass),
+    gizmoOverlayPass_(gizmoOverlayPass),
     objectIdPass_(objectIdPass),
     outlinePass_(outlinePass),
     uiPass_(uiPass),
@@ -128,6 +130,7 @@ bool VulkanBackend::renderFrame(const GameRenderData& rd) {
                                         rd.cameraTransform,
                                         rd.drawQueue,
                                         empty,
+                                        noGizmos,
                                         noGizmos,
                                         rd.lightsWithTransforms,
                                         rd.particleEmitters,
@@ -299,6 +302,7 @@ void VulkanBackend::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, con
                                                         renderData.drawQueue,
                                                         renderData.outlineQueue,
                                                         renderData.gizmoLines,
+                                                        renderData.overlayGizmoLines,
                                                         renderData.lightsWithTransforms,
                                                         renderData.particleEmitters,
                                                         renderData.gridScale,
@@ -806,6 +810,38 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                               window_,
                               graph.getImageView(gbufferDepthHandle_),
                               ctx.gizmoLines);
+            return true;
+        };
+        renderGraph_->addPass(std::move(n));
+    }
+
+    // --- Gizmo overlay pass (depth-ignored, for transform handles) ---
+    {
+        VulkanRenderGraph<EditorRenderData>::RenderPassNode n;
+        n.name = "GizmoOverlayPass";
+        n.reads = {{gbufferDepthHandle_,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT}};
+        n.writes = {{colorTargetHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd,
+                           const VulkanRenderGraph<EditorRenderData>& graph,
+                           const EditorRenderData& ctx) -> bool {
+            if (ctx.isOffscreen) return false;
+            const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
+            gizmoOverlayPass_.record(cmd,
+                                     graph.getImageView(colorTargetHandle_),
+                                     extent,
+                                     ctx.camera,
+                                     ctx.cameraTransform,
+                                     window_,
+                                     graph.getImageView(gbufferDepthHandle_),
+                                     ctx.overlayGizmoLines);
             return true;
         };
         renderGraph_->addPass(std::move(n));

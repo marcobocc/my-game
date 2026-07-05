@@ -14,6 +14,7 @@ struct EditorRenderData {
     const std::vector<DrawCall>& drawQueue;
     const std::vector<DrawCall>& outlineQueue;
     const std::vector<VulkanGizmoPass::GizmoVertex>& gizmoLines;
+    const std::vector<VulkanGizmoPass::GizmoVertex>& overlayGizmoLines;
     const std::vector<std::pair<Light, Transform>>& lightsWithTransforms;
     std::vector<ParticleEmitterRef> particleEmitters;
     float gridScale;
@@ -24,6 +25,7 @@ struct EditorRenderData {
                      const std::vector<DrawCall>& drawQ,
                      const std::vector<DrawCall>& outlineQ,
                      const std::vector<VulkanGizmoPass::GizmoVertex>& gizmoL,
+                     const std::vector<VulkanGizmoPass::GizmoVertex>& overlayGizmoL,
                      const std::vector<std::pair<Light, Transform>>& lightsWT,
                      std::vector<ParticleEmitterRef> particlesIn,
                      float gridS,
@@ -33,6 +35,7 @@ struct EditorRenderData {
         drawQueue(drawQ),
         outlineQueue(outlineQ),
         gizmoLines(gizmoL),
+        overlayGizmoLines(overlayGizmoL),
         lightsWithTransforms(lightsWT),
         particleEmitters(std::move(particlesIn)),
         gridScale(gridS),

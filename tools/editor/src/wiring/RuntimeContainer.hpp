@@ -61,6 +61,7 @@ public:
         time_([&window] { return static_cast<float>(window.getTime()); }),
         gridPass_(assetLoader_, resourcesManager_),
         gizmoPass_(vulkanContext_, assetLoader_, resourcesManager_, swapchainManager_),
+        gizmoOverlayPass_(vulkanContext_, assetLoader_, resourcesManager_, swapchainManager_, GIZMO_OVERLAY_SHADER),
         objectIdPass_(vulkanContext_, assetLoader_, resourcesManager_),
         outlinePass_(
                 vulkanContext_, assetLoader_, resourcesManager_, swapchainManager_.swapchain().swapchainImageFormat),
@@ -73,6 +74,7 @@ public:
                        lightingPass_,
                        gridPass_,
                        gizmoPass_,
+                       gizmoOverlayPass_,
                        objectIdPass_,
                        outlinePass_,
                        uiPass_,
@@ -108,6 +110,7 @@ public:
     VulkanLightingPass& lightingPass() { return lightingPass_; }
     VulkanGridPass& gridPass() { return gridPass_; }
     VulkanGizmoPass& gizmoPass() { return gizmoPass_; }
+    VulkanGizmoPass& gizmoOverlayPass() { return gizmoOverlayPass_; }
     VulkanObjectIdPass& objectIdPass() { return objectIdPass_; }
     VulkanOutlinePass& outlinePass() { return outlinePass_; }
     VulkanUIPass& uiPass() { return uiPass_; }
@@ -144,6 +147,7 @@ private:
     DeveloperConsole developerConsole_;
     VulkanGridPass gridPass_;
     VulkanGizmoPass gizmoPass_;
+    VulkanGizmoPass gizmoOverlayPass_;
     VulkanObjectIdPass objectIdPass_;
     VulkanOutlinePass outlinePass_;
     VulkanUIPass uiPass_;

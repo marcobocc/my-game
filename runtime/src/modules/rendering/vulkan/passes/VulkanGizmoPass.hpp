@@ -25,11 +25,13 @@ public:
     VulkanGizmoPass(const VulkanContext& context,
                     AssetLoader& assetLoader,
                     VulkanResourcesManager& resourcesManager,
-                    VulkanSwapchainManager& swapchainManager) :
+                    VulkanSwapchainManager& swapchainManager,
+                    const char* shaderName = GIZMO_SHADER) :
         context_(context),
         assetLoader_(assetLoader),
         resourcesManager_(resourcesManager),
-        swapchainManager_(swapchainManager) {
+        swapchainManager_(swapchainManager),
+        shaderName_(shaderName) {
         initPipeline();
         initVertexBuffers();
     }
@@ -116,7 +118,7 @@ public:
 
 private:
     void initPipeline() {
-        const Shader* shader = assetLoader_.get<Shader>(GIZMO_SHADER);
+        const Shader* shader = assetLoader_.get<Shader>(shaderName_);
         if (!shader) return;
         const VkFormat colorFormat = swapchainManager_.swapchain().swapchainImageFormat;
         pipeline_ = &resourcesManager_.getPipeline(*shader, colorFormat, VK_FORMAT_D32_SFLOAT);
@@ -139,6 +141,7 @@ private:
     AssetLoader& assetLoader_;
     VulkanResourcesManager& resourcesManager_;
     VulkanSwapchainManager& swapchainManager_;
+    const char* shaderName_;
 
     VulkanPipeline* pipeline_ = nullptr;
     std::vector<VulkanBuffer> vertexBuffers_;

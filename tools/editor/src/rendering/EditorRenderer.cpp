@@ -80,6 +80,7 @@ void EditorRenderer::buildOutlines() {
 
 void EditorRenderer::buildGizmos() {
     builtGizmoLines_.clear();
+    builtOverlayGizmoLines_.clear();
     pickingSystem_.clearHandles();
 
     auto aabbEnabled = editorGizmos_.getObjectsWithAABBEnabled();
@@ -121,19 +122,22 @@ void EditorRenderer::buildGizmos() {
 
     if (dragState.gizmoMode == GizmoType::Translation) {
         auto result = objectTransformHandle_.buildTranslationGizmo(pivot, camera, cameraTransform);
-        builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
+        builtOverlayGizmoLines_.insert(
+                builtOverlayGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);
         }
     } else if (dragState.gizmoMode == GizmoType::Rotation) {
         auto result = objectTransformHandle_.buildRotationGizmo(pivot, camera, cameraTransform);
-        builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
+        builtOverlayGizmoLines_.insert(
+                builtOverlayGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);
         }
     } else if (dragState.gizmoMode == GizmoType::Scale) {
         auto result = objectTransformHandle_.buildScaleGizmo(pivot, camera, cameraTransform);
-        builtGizmoLines_.insert(builtGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
+        builtOverlayGizmoLines_.insert(
+                builtOverlayGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
         for (const auto& h: result.pickingHandles) {
             pickingSystem_.registerHandle(h);
         }
@@ -193,6 +197,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                                        drawQueue,
                                                        emptyOutlines,
                                                        emptyGizmos,
+                                                       emptyGizmos,
                                                        activeLights,
                                                        particleEmitters,
                                                        0.0f,
@@ -208,6 +213,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                                defaultTransform,
                                                drawQueue,
                                                emptyOutlines,
+                                               emptyGizmos,
                                                emptyGizmos,
                                                activeLights,
                                                particleEmitters,
@@ -227,6 +233,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                                    drawQueue,
                                                    outlineQueue_,
                                                    builtGizmoLines_,
+                                                   builtOverlayGizmoLines_,
                                                    activeLights,
                                                    particleEmitters,
                                                    gridScale,
@@ -238,6 +245,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                            drawQueue,
                                            outlineQueue_,
                                            builtGizmoLines_,
+                                           builtOverlayGizmoLines_,
                                            activeLights,
                                            particleEmitters,
                                            gridScale,

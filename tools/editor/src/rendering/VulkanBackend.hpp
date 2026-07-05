@@ -42,6 +42,7 @@ public:
                   VulkanLightingPass& lightingPass,
                   VulkanGridPass& gridPass,
                   VulkanGizmoPass& gizmoPass,
+                  VulkanGizmoPass& gizmoOverlayPass,
                   VulkanObjectIdPass& objectIdPass,
                   VulkanOutlinePass& outlinePass,
                   VulkanUIPass& uiPass,
@@ -104,6 +105,7 @@ private:
     VulkanLightingPass& lightingPass_;
     VulkanGridPass& gridPass_;
     VulkanGizmoPass& gizmoPass_;
+    VulkanGizmoPass& gizmoOverlayPass_;
     VulkanObjectIdPass& objectIdPass_;
     VulkanOutlinePass& outlinePass_;
     VulkanUIPass& uiPass_;

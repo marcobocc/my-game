@@ -16,6 +16,7 @@ static constexpr auto OBJECT_ID_SHADER = "assets/builtin/shaders/_object_id/_obj
 static constexpr auto OBJECT_ID_SKINNED_SHADER = "assets/builtin/shaders/_object_id_skinned/_object_id_skinned.shad";
 static constexpr auto OUTLINE_SHADER = "assets/builtin/shaders/_outline/_outline.shad";
 static constexpr auto GIZMO_SHADER = "assets/builtin/shaders/_gizmo/_gizmo.shad";
+static constexpr auto GIZMO_OVERLAY_SHADER = "assets/builtin/shaders/_gizmo/_gizmo_overlay.shad";
 static constexpr auto GBUFFER_SHADER = "assets/builtin/shaders/_gbuffer/_gbuffer.shad";
 static constexpr auto GBUFFER_SKINNED_SHADER = "assets/builtin/shaders/_gbuffer_skinned/_gbuffer_skinned.shad";
 static constexpr auto LIGHTING_SHADER = "assets/builtin/shaders/_lighting/_lighting.shad";
