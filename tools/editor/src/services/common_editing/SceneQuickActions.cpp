@@ -364,19 +364,25 @@ void SceneQuickActions::reorder(EntityHandle dragged, EntityHandle anchor, bool 
     };
     if (!extract(hierarchy) || !extracted) return;
 
-    // Find the anchor in the sibling list and insert before/after it.
-    std::function<bool(std::vector<HierarchyNode>&)> insert = [&](std::vector<HierarchyNode>& nodes) -> bool {
+    // Find the anchor and its parent so we can update Transform.parent.
+    EntityHandle newParent = INVALID_ENTITY_HANDLE;
+    std::function<bool(std::vector<HierarchyNode>&, EntityHandle)> insert = [&](std::vector<HierarchyNode>& nodes,
+                                                                                EntityHandle parentHandle) -> bool {
         for (auto it = nodes.begin(); it != nodes.end(); ++it) {
             if (it->handle == anchor) {
+                newParent = parentHandle;
                 auto pos = insertBefore ? it : std::next(it);
                 nodes.insert(pos, std::move(*extracted));
                 return true;
             }
-            if (insert(it->children)) return true;
+            if (insert(it->children, it->handle)) return true;
         }
         return false;
     };
-    if (!insert(hierarchy)) return;
+    if (!insert(hierarchy, INVALID_ENTITY_HANDLE)) return;
 
-    scene_.setHierarchy(std::move(hierarchy), UndoHistory::randomGroupId("Reorder"));
+    auto mutationGroup = UndoHistory::randomGroupId("Reorder");
+    scene_.getObject(dragged).mutateComponent<Transform>([newParent](Transform& t) { t.parent = newParent; },
+                                                         mutationGroup);
+    scene_.setHierarchy(std::move(hierarchy), mutationGroup);
 }
