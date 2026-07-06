@@ -9,6 +9,7 @@
 #include "modules/scene/components/Metadata.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/TextComponent.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 struct GameObjectDTO {
@@ -21,7 +22,8 @@ struct GameObjectDTO {
                                           Metadata,
                                           BehaviourScript,
                                           ParticleEmitter,
-                                          Animator>;
+                                          Animator,
+                                          TextComponent>;
     EntityHandle handle;
     std::vector<ComponentVariant> components;
 
@@ -69,6 +71,8 @@ struct GameObjectDTO {
                 dto.components.emplace_back(ParticleEmitter::deserialize(c["data"]));
             else if (type == "Animator")
                 dto.components.emplace_back(Animator::deserialize(c["data"]));
+            else if (type == "TextComponent")
+                dto.components.emplace_back(TextComponent::deserialize(c["data"]));
             else
                 throw std::runtime_error("Invalid component: " + type);
         }

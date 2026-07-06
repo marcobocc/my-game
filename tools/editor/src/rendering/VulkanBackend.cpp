@@ -17,6 +17,7 @@
 #include "modules/rendering/vulkan/passes/VulkanParticlePass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanShadowPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanSkyPass.hpp"
+#include "modules/rendering/vulkan/passes/VulkanTextPass.hpp"
 #include "modules/rendering/vulkan/passes/VulkanUIPass.hpp"
 #include "structs/RenderTargetHandle.hpp"
 
@@ -53,6 +54,13 @@ VulkanBackend::VulkanBackend(GameWindow& window,
             static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size()),
             swapchainManager.swapchain().swapchainImageFormat,
             VK_FORMAT_D32_SFLOAT)),
+    textPass_(
+            std::make_unique<VulkanTextPass>(context,
+                                             assetLoader,
+                                             resourcesManager,
+                                             static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size()),
+                                             swapchainManager.swapchain().swapchainImageFormat,
+                                             VK_FORMAT_D32_SFLOAT)),
     gridPass_(gridPass),
     gizmoPass_(gizmoPass),
     gizmoOverlayPass_(gizmoOverlayPass),
@@ -134,6 +142,7 @@ bool VulkanBackend::renderFrame(const GameRenderData& rd) {
                                         noGizmos,
                                         rd.lightsWithTransforms,
                                         rd.particleEmitters,
+                                        rd.textQueue,
                                         1.0f,
                                         true});
 }
@@ -305,6 +314,7 @@ void VulkanBackend::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, con
                                                         renderData.overlayGizmoLines,
                                                         renderData.lightsWithTransforms,
                                                         renderData.particleEmitters,
+                                                        renderData.textQueue,
                                                         renderData.gridScale,
                                                         true});
                     transitionColorImageFinal(cmd,
@@ -842,6 +852,38 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                                      window_,
                                      graph.getImageView(gbufferDepthHandle_),
                                      ctx.overlayGizmoLines);
+            return true;
+        };
+        renderGraph_->addPass(std::move(n));
+    }
+
+    // --- Text pass ---
+    {
+        VulkanRenderGraph<EditorRenderData>::RenderPassNode n;
+        n.name = "TextPass";
+        n.reads = {{gbufferDepthHandle_,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT}};
+        n.writes = {{colorTargetHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd,
+                           const VulkanRenderGraph<EditorRenderData>& graph,
+                           const EditorRenderData& ctx) -> bool {
+            if (ctx.textQueue.empty()) return false;
+            const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
+            textPass_->record(cmd,
+                              graph.getImageView(colorTargetHandle_),
+                              extent,
+                              ctx.camera,
+                              ctx.cameraTransform,
+                              window_,
+                              ctx.textQueue,
+                              graph.getImageView(gbufferDepthHandle_));
             return true;
         };
         renderGraph_->addPass(std::move(n));

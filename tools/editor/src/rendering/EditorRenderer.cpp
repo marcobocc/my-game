@@ -8,11 +8,13 @@
 #include "../services/EditorSelection.hpp"
 #include "EditorRenderData.hpp"
 #include "VulkanBackend.hpp"
+#include "modules/asset_management/BuiltinAssetNames.hpp"
 #include "modules/rendering/GameRenderData.hpp"
 #include "modules/scene/TransformUtils.hpp"
 #include "modules/scene/World.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/TextComponent.hpp"
 
 EditorRenderer::EditorRenderer(VulkanBackend& renderer,
                                EditorCamera& editorOrbitCamera,
@@ -190,6 +192,19 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
         particleEmitters.push_back({e, transformPtr->position, toSpawn});
     }
 
+    std::vector<TextDrawCall> textQueue;
+    auto textQuery = entityManager.query<TextComponent, Transform>();
+    for (auto& [entity, textComp, transform]: textQuery) {
+        if (!textComp->visible || textComp->text.empty()) continue;
+        textQueue.push_back({textComp->text,
+                             textComp->fontName.empty() ? DEFAULT_FONT : textComp->fontName,
+                             TransformUtils::resolveWorldMatrix(*transform, entityManager)[3],
+                             textComp->color,
+                             textComp->fontSize,
+                             textComp->billboard,
+                             textComp->alignment});
+    }
+
     if (simMode_) {
         static const std::vector<DrawCall> emptyOutlines;
         static const std::vector<VulkanGizmoPass::GizmoVertex> emptyGizmos;
@@ -206,6 +221,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                                        emptyGizmos,
                                                        activeLights,
                                                        particleEmitters,
+                                                       textQueue,
                                                        0.0f,
                                                        false));
                 return;
@@ -223,6 +239,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                                emptyGizmos,
                                                activeLights,
                                                particleEmitters,
+                                               textQueue,
                                                0.0f,
                                                false));
         return;
@@ -242,6 +259,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                                    builtOverlayGizmoLines_,
                                                    activeLights,
                                                    particleEmitters,
+                                                   textQueue,
                                                    gridScale,
                                                    true));
     }
@@ -254,6 +272,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                            builtOverlayGizmoLines_,
                                            activeLights,
                                            particleEmitters,
+                                           textQueue,
                                            gridScale,
                                            false));
 }

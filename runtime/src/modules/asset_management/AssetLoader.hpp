@@ -8,6 +8,7 @@
 #include "VirtualFileSystem.hpp"
 #include "asset_types/AnimationClip.hpp"
 #include "asset_types/AnimatorController.hpp"
+#include "asset_types/Font.hpp"
 #include "asset_types/Mesh.hpp"
 #include "asset_types/Shader.hpp"
 #include "asset_types/Skeleton.hpp"
@@ -15,6 +16,7 @@
 #include "modules/asset_management/asset_types/Material.hpp"
 #include "modules/asset_management/asset_types/Model.hpp"
 #include "stb_image.h"
+#include "stb_truetype.h"
 #include "utils/JsonUtils.hpp"
 
 class AssetLoader {
@@ -124,6 +126,7 @@ inline std::unique_ptr<Shader> AssetLoader::load<Shader>(const std::string& name
         bool depthBias = JsonUtils::getOptional<bool>(j, "depthBias", false);
         bool depthLessOrEqual = JsonUtils::getOptional<bool>(j, "depthLessOrEqual", false);
         bool skinnedVertexLayout = JsonUtils::getOptional<bool>(j, "skinnedVertexLayout", false);
+        bool textVertexLayout = JsonUtils::getOptional<bool>(j, "textVertexLayout", false);
 
         auto readBytecode = [&](const std::string& path) -> std::vector<char> {
             auto data = vfs_.read(path);
@@ -155,7 +158,8 @@ inline std::unique_ptr<Shader> AssetLoader::load<Shader>(const std::string& name
                                                depthBias,
                                                depthLessOrEqual,
                                                std::move(computeBytecode),
-                                               skinnedVertexLayout);
+                                               skinnedVertexLayout,
+                                               textVertexLayout);
         if (shader) {
             auto shaderPtr = shader.get();
             cache_.insert<Shader>(std::move(shader));
@@ -253,4 +257,84 @@ inline std::unique_ptr<Model> AssetLoader::load<Model>(const std::string& name) 
         LOG4CXX_ERROR(LOGGER, "Failed to load model: " << name << " - " << e.what());
     }
     return nullptr;
+}
+
+template<>
+inline std::unique_ptr<Font> AssetLoader::load<Font>(const std::string& name) const {
+    if (!vfs_.exists(name)) {
+        LOG4CXX_ERROR(LOGGER, "Font file not found in VFS: " << name);
+        return nullptr;
+    }
+    auto ttfData = vfs_.read(name);
+    if (ttfData.empty()) {
+        LOG4CXX_ERROR(LOGGER, "Failed to read font data: " << name);
+        return nullptr;
+    }
+
+    constexpr float FONT_SIZE = 32.0f;
+    constexpr int ATLAS_W = 512;
+    constexpr int ATLAS_H = 512;
+    constexpr int FIRST_CHAR = 32; // space
+    constexpr int NUM_CHARS = 96; // printable ASCII
+
+    std::vector<stbtt_bakedchar> charData(NUM_CHARS);
+    std::vector<uint8_t> alphaAtlas(ATLAS_W * ATLAS_H, 0);
+
+    int bakeResult = stbtt_BakeFontBitmap(
+            ttfData.data(), 0, FONT_SIZE, alphaAtlas.data(), ATLAS_W, ATLAS_H, FIRST_CHAR, NUM_CHARS, charData.data());
+
+    if (bakeResult == 0) {
+        LOG4CXX_ERROR(LOGGER, "Font atlas too small for: " << name);
+        return nullptr;
+    }
+
+    // Expand single-channel alpha atlas to RGBA8 (R=G=B=1, A=coverage).
+    std::vector<uint8_t> rgbaAtlas(ATLAS_W * ATLAS_H * 4);
+    for (int i = 0; i < ATLAS_W * ATLAS_H; ++i) {
+        rgbaAtlas[i * 4 + 0] = 255;
+        rgbaAtlas[i * 4 + 1] = 255;
+        rgbaAtlas[i * 4 + 2] = 255;
+        rgbaAtlas[i * 4 + 3] = alphaAtlas[i];
+    }
+
+    // Extract per-glyph metrics.
+    std::unordered_map<uint32_t, Font::Glyph> glyphs;
+    glyphs.reserve(NUM_CHARS);
+    for (int i = 0; i < NUM_CHARS; ++i) {
+        const auto& bc = charData[i];
+        uint32_t codepoint = static_cast<uint32_t>(FIRST_CHAR + i);
+        Font::Glyph g{};
+        g.u0 = bc.x0 / static_cast<float>(ATLAS_W);
+        g.v0 = bc.y0 / static_cast<float>(ATLAS_H);
+        g.u1 = bc.x1 / static_cast<float>(ATLAS_W);
+        g.v1 = bc.y1 / static_cast<float>(ATLAS_H);
+        g.bearingX = bc.xoff;
+        g.bearingY = bc.yoff;
+        g.advance = bc.xadvance;
+        g.width = bc.x1 - bc.x0;
+        g.height = bc.y1 - bc.y0;
+        glyphs.emplace(codepoint, g);
+    }
+
+    // Extract global metrics via stbtt_fontinfo for ascent/descent/lineGap.
+    stbtt_fontinfo info{};
+    stbtt_InitFont(&info, ttfData.data(), stbtt_GetFontOffsetForIndex(ttfData.data(), 0));
+    int ascent = 0, descent = 0, lineGap = 0;
+    stbtt_GetFontVMetrics(&info, &ascent, &descent, &lineGap);
+    float scale = stbtt_ScaleForPixelHeight(&info, FONT_SIZE);
+
+    auto font = std::make_unique<Font>(name,
+                                       static_cast<uint32_t>(ATLAS_W),
+                                       static_cast<uint32_t>(ATLAS_H),
+                                       std::move(rgbaAtlas),
+                                       std::move(glyphs),
+                                       ascent * scale,
+                                       descent * scale,
+                                       lineGap * scale,
+                                       FONT_SIZE);
+
+    auto* ptr = font.get();
+    cache_.insert<Font>(std::move(font));
+    LOG4CXX_INFO(LOGGER, "Successfully loaded font: " << name);
+    return std::make_unique<Font>(*ptr);
 }

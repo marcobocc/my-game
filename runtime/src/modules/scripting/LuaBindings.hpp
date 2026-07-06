@@ -7,6 +7,7 @@
 #include "LuaInput.hpp"
 #include "LuaWorld.hpp"
 #include "modules/scene/components/Animator.hpp"
+#include "modules/scene/components/TextComponent.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 namespace LuaBindings {
@@ -103,6 +104,38 @@ namespace LuaBindings {
                 "clipNames",
                 &Animator::clipNames);
 
+        // ---- TextComponent -----------------------------------------------------
+
+        lua.new_usertype<TextComponent>(
+                "TextComponent",
+                sol::call_constructor,
+                sol::constructors<TextComponent()>(),
+                "text",
+                &TextComponent::text,
+                "fontName",
+                &TextComponent::fontName,
+                "fontSize",
+                &TextComponent::fontSize,
+                "visible",
+                &TextComponent::visible,
+                "billboard",
+                &TextComponent::billboard,
+                "r",
+                sol::property([](const TextComponent& t) { return t.color.r; },
+                              [](TextComponent& t, float v) { t.color.r = v; }),
+                "g",
+                sol::property([](const TextComponent& t) { return t.color.g; },
+                              [](TextComponent& t, float v) { t.color.g = v; }),
+                "b",
+                sol::property([](const TextComponent& t) { return t.color.b; },
+                              [](TextComponent& t, float v) { t.color.b = v; }),
+                "a",
+                sol::property([](const TextComponent& t) { return t.color.a; },
+                              [](TextComponent& t, float v) { t.color.a = v; }),
+                "alignment",
+                sol::property([](const TextComponent& t) { return static_cast<int>(t.alignment); },
+                              [](TextComponent& t, int v) { t.alignment = static_cast<TextAlignment>(v); }));
+
         // ---- World facade ------------------------------------------------------
 
         lua.new_usertype<LuaWorld>("LuaWorld",
@@ -121,7 +154,15 @@ namespace LuaBindings {
                                    "getAnimator",
                                    &LuaWorld::getAnimator,
                                    "resolveCollisions",
-                                   &LuaWorld::resolveCollisions);
+                                   &LuaWorld::resolveCollisions,
+                                   "getTextComponent",
+                                   &LuaWorld::getTextComponent,
+                                   "setTextComponent",
+                                   &LuaWorld::setTextComponent,
+                                   "addTextComponent",
+                                   &LuaWorld::addTextComponent,
+                                   "removeTextComponent",
+                                   &LuaWorld::removeTextComponent);
 
         // ---- Input facade ------------------------------------------------------
 
@@ -147,6 +188,13 @@ namespace LuaBindings {
 
         lua["World"] = &world;
         lua["Input"] = &input;
+
+        lua["TextAlign"] = lua.create_table_with("Left",
+                                                 static_cast<int>(TextAlignment::Left),
+                                                 "Center",
+                                                 static_cast<int>(TextAlignment::Center),
+                                                 "Right",
+                                                 static_cast<int>(TextAlignment::Right));
     }
 
 } // namespace LuaBindings

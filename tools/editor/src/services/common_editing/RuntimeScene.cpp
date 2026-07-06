@@ -8,6 +8,7 @@
 #include "modules/scene/components/Metadata.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/TextComponent.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 RuntimeGameObject RuntimeScene::getObject(EntityHandle e) const {
@@ -43,6 +44,7 @@ GameObjectDTO RuntimeScene::snapshotObject(EntityHandle e) const {
     for (const BehaviourScript* s: actor->getComponents<BehaviourScript>())
         dto.components.emplace_back(*s);
     tryAdd.operator()<Animator>();
+    tryAdd.operator()<TextComponent>();
     return dto;
 }
 

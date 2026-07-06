@@ -27,3 +27,9 @@ static constexpr auto SKYDOME_TEXTURE = "assets/builtin/textures/_skydome.jpg";
 static constexpr auto PARTICLES_SHADER = "assets/builtin/shaders/_particles/_particles.shad";
 static constexpr auto PARTICLES_SPAWN_SHADER = "assets/builtin/shaders/_particles/_particles_spawn.shad";
 static constexpr auto PARTICLES_SIMULATE_SHADER = "assets/builtin/shaders/_particles/_particles_simulate.shad";
+
+// --- Fonts ---
+static constexpr auto DEFAULT_FONT = "assets/builtin/fonts/Arial.ttf";
+
+// --- Text ---
+static constexpr auto TEXT_SHADER = "assets/builtin/shaders/_text/_text.shad";

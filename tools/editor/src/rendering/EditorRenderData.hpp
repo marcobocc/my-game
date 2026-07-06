@@ -17,6 +17,7 @@ struct EditorRenderData {
     const std::vector<VulkanGizmoPass::GizmoVertex>& overlayGizmoLines;
     const std::vector<std::pair<Light, Transform>>& lightsWithTransforms;
     std::vector<ParticleEmitterRef> particleEmitters;
+    std::vector<TextDrawCall> textQueue;
     float gridScale;
     bool isOffscreen = false;
 
@@ -28,6 +29,7 @@ struct EditorRenderData {
                      const std::vector<VulkanGizmoPass::GizmoVertex>& overlayGizmoL,
                      const std::vector<std::pair<Light, Transform>>& lightsWT,
                      std::vector<ParticleEmitterRef> particlesIn,
+                     std::vector<TextDrawCall> textIn,
                      float gridS,
                      bool offscreen = false) :
         camera(cam),
@@ -38,6 +40,7 @@ struct EditorRenderData {
         overlayGizmoLines(overlayGizmoL),
         lightsWithTransforms(lightsWT),
         particleEmitters(std::move(particlesIn)),
+        textQueue(std::move(textIn)),
         gridScale(gridS),
         isOffscreen(offscreen) {}
 };

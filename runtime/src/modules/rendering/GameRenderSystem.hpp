@@ -3,6 +3,7 @@
 #include "GameRenderData.hpp"
 #include "IGameRenderer.hpp"
 #include "modules/animation/AnimationSystem.hpp"
+#include "modules/asset_management/BuiltinAssetNames.hpp"
 #include "modules/scene/TransformUtils.hpp"
 #include "modules/scene/World.hpp"
 #include "modules/scene/components/Animator.hpp"
@@ -10,6 +11,7 @@
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/TextComponent.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 class GameRenderSystem {
@@ -65,9 +67,23 @@ public:
             particleEmitters.push_back({e, transformPtr->position, toSpawn});
         }
 
+        std::vector<TextDrawCall> textQueue;
+        auto texts = entityManager.query<TextComponent, Transform>();
+        for (auto& [entity, textComp, transformPtr]: texts) {
+            if (!textComp->visible || textComp->text.empty()) continue;
+            textQueue.push_back({textComp->text,
+                                 textComp->fontName.empty() ? std::string(DEFAULT_FONT) : textComp->fontName,
+                                 glm::vec3(TransformUtils::resolveWorldMatrix(*transformPtr, entityManager)[3]),
+                                 textComp->color,
+                                 textComp->fontSize,
+                                 textComp->billboard,
+                                 textComp->alignment});
+        }
+
         const Camera& cam = getActiveCamera();
         const Transform& camTransform = getActiveCameraTransform();
-        GameRenderData rd{cam, camTransform, drawQueue, lightsWithTransforms, std::move(particleEmitters)};
+        GameRenderData rd{
+                cam, camTransform, drawQueue, lightsWithTransforms, std::move(particleEmitters), std::move(textQueue)};
         renderer_.renderFrame(rd);
     }
 

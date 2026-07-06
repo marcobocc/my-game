@@ -21,6 +21,7 @@ class VulkanLightingPass;
 class VulkanShadowPass;
 class VulkanSkyPass;
 class VulkanParticlePass;
+class VulkanTextPass;
 class VulkanGridPass;
 class VulkanGizmoPass;
 class VulkanObjectIdPass;
@@ -113,6 +114,7 @@ private:
     std::unique_ptr<VulkanShadowPass> shadowPass_;
     std::unique_ptr<VulkanSkyPass> skyPass_;
     std::unique_ptr<VulkanParticlePass> particlePass_;
+    std::unique_ptr<VulkanTextPass> textPass_;
 
     // --- Render graph ---
     std::optional<VulkanRenderGraph<EditorRenderData>> renderGraph_;

@@ -15,6 +15,7 @@
 #include "modules/rendering/vulkan/core/VulkanFrameManager.hpp"
 #include "modules/rendering/vulkan/core/VulkanSwapchainManager.hpp"
 #include "modules/rendering/vulkan/core/resources/AssetThumbnailGenerator.hpp"
+#include "modules/rendering/vulkan/core/resources/VulkanFontCache.hpp"
 #include "modules/rendering/vulkan/core/resources/VulkanMaterialCache.hpp"
 #include "modules/rendering/vulkan/core/resources/VulkanMeshBuffersCache.hpp"
 #include "modules/rendering/vulkan/core/resources/VulkanPipelineCache.hpp"
@@ -51,8 +52,9 @@ public:
         meshBuffersCache_(vulkanContext_),
         textureCache_(vulkanContext_),
         materialCache_(vulkanContext_, pipelineCache_, textureCache_, assetLoader_),
+        fontCache_(vulkanContext_),
         assetThumbnailGenerator_(assetLoader_, textureCache_),
-        resourcesManager_(meshBuffersCache_, textureCache_, pipelineCache_, materialCache_),
+        resourcesManager_(meshBuffersCache_, textureCache_, pipelineCache_, materialCache_, fontCache_),
         renderTargetManager_(vulkanContext_),
         geometryPass_(vulkanContext_, resourcesManager_, assetLoader_, window),
         lightingPass_(
@@ -137,6 +139,7 @@ private:
     VulkanMeshBuffersCache meshBuffersCache_;
     VulkanTextureCache textureCache_;
     VulkanMaterialCache materialCache_;
+    VulkanFontCache fontCache_;
     AssetThumbnailGenerator assetThumbnailGenerator_;
     VulkanResourcesManager resourcesManager_;
     VulkanRenderTargetManager renderTargetManager_;

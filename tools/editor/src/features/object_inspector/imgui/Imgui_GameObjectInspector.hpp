@@ -15,6 +15,7 @@
 #include "components/Imgui_LightWidget.hpp"
 #include "components/Imgui_ParticleEmitterWidget.hpp"
 #include "components/Imgui_RendererWidget.hpp"
+#include "components/Imgui_TextComponentWidget.hpp"
 #include "components/Imgui_TransformWidget.hpp"
 #include "modules/scene/components/Animator.hpp"
 #include "modules/scene/components/BehaviourScript.hpp"
@@ -24,6 +25,7 @@
 #include "modules/scene/components/Light.hpp"
 #include "modules/scene/components/ParticleEmitter.hpp"
 #include "modules/scene/components/Renderer.hpp"
+#include "modules/scene/components/TextComponent.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 class Imgui_GameObjectInspector {
@@ -43,7 +45,8 @@ public:
         cameraWidget_(scene),
         lightWidget_(scene),
         particleEmitterWidget_(scene),
-        animatorWidget_(scene, assetStore) {}
+        animatorWidget_(scene, assetStore),
+        textComponentWidget_(scene) {}
 
     void draw(EntityHandle entity) {
         transformWidget_.setCurrentObjectId(entity);
@@ -53,6 +56,7 @@ public:
         lightWidget_.setCurrentObjectId(entity);
         particleEmitterWidget_.setCurrentObjectId(entity);
         animatorWidget_.setCurrentObjectId(entity);
+        textComponentWidget_.setCurrentObjectId(entity);
         drawObject(entity);
     }
 
@@ -69,6 +73,7 @@ private:
     Imgui_LightWidget lightWidget_;
     Imgui_ParticleEmitterWidget particleEmitterWidget_;
     Imgui_AnimatorWidget animatorWidget_;
+    Imgui_TextComponentWidget textComponentWidget_;
     std::vector<std::unique_ptr<Imgui_BehaviourScriptWidget>> behaviourScriptWidgets_;
 
     void drawObject(EntityHandle entity) {
@@ -112,6 +117,11 @@ private:
             animatorWidget_.setComponent(*animator, renderer);
             animatorWidget_.draw("AnimatorContext",
                                  [this, entity] { scene_.getObject(entity).removeComponent<Animator>(); });
+        }
+        if (const auto* textComponent = obj.getComponent<TextComponent>()) {
+            textComponentWidget_.setComponent(*textComponent);
+            textComponentWidget_.draw("TextComponentContext",
+                                      [this, entity] { scene_.getObject(entity).removeComponent<TextComponent>(); });
         }
         auto scripts = scene_.getObject(entity).getComponents<BehaviourScript>();
         while (behaviourScriptWidgets_.size() < scripts.size())
@@ -161,6 +171,10 @@ private:
             }
             if (!obj.getComponent<Animator>()) {
                 if (ImGui::MenuItem("Animator")) scene_.getObject(entity).addComponent<Animator>(Animator{});
+            }
+            if (!obj.getComponent<TextComponent>()) {
+                if (ImGui::MenuItem("Text Component"))
+                    scene_.getObject(entity).addComponent<TextComponent>(TextComponent{});
             }
             if (ImGui::MenuItem("Behaviour Script"))
                 scene_.getObject(entity).addComponent<BehaviourScript>(BehaviourScript{});

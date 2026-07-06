@@ -64,6 +64,23 @@ public:
                 addAttrib(2, SL::UV_OFFSET, VK_FORMAT_R32G32_SFLOAT);
                 addAttrib(3, SL::BONE_IDX_OFFSET, VK_FORMAT_R32G32B32A32_SINT);
                 addAttrib(4, SL::BONE_WT_OFFSET, VK_FORMAT_R32G32B32A32_SFLOAT);
+            } else if (shader.textVertexLayout) {
+                using TL = VertexLayout_PositionUvColor;
+                vertexBinding.binding = 0;
+                vertexBinding.stride = sizeof(float) * TL::VERTEX_STRIDE;
+                vertexBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                auto addAttrib = [&](uint32_t location, uint32_t offset, VkFormat fmt) {
+                    VkVertexInputAttributeDescription d{};
+                    d.location = location;
+                    d.binding = 0;
+                    d.format = fmt;
+                    d.offset = offset * sizeof(float);
+                    vertexAttributes.push_back(d);
+                };
+                addAttrib(0, TL::POSITION_OFFSET, VK_FORMAT_R32G32B32_SFLOAT);
+                addAttrib(1, TL::UV_OFFSET, VK_FORMAT_R32G32_SFLOAT);
+                addAttrib(2, TL::COLOR_OFFSET, VK_FORMAT_R32G32B32A32_SFLOAT);
             } else {
                 const uint32_t stride = shader.positionColorVertexLayout ? VertexLayout_PositionColor::VERTEX_STRIDE
                                                                          : VertexLayout_PositionNormalUv::VERTEX_STRIDE;

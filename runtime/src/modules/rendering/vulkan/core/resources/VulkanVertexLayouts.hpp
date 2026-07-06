@@ -27,6 +27,19 @@ struct VertexLayout_PositionColor {
             {{POSITION_OFFSET, POSITION_COMPONENTS}, {COLOR_OFFSET, COLOR_COMPONENTS}}};
 };
 
+// pos(3) + uv(2) + color(4) = 9 floats — used by text quads
+struct VertexLayout_PositionUvColor {
+    static constexpr uint32_t POSITION_OFFSET = 0;
+    static constexpr uint32_t POSITION_COMPONENTS = 3;
+    static constexpr uint32_t UV_OFFSET = 3;
+    static constexpr uint32_t UV_COMPONENTS = 2;
+    static constexpr uint32_t COLOR_OFFSET = 5;
+    static constexpr uint32_t COLOR_COMPONENTS = 4;
+    static constexpr uint32_t VERTEX_STRIDE = 9;
+    static constexpr std::array<VertexAttribute, 3> VERTEX_ATTRIBS = {
+            {{POSITION_OFFSET, POSITION_COMPONENTS}, {UV_OFFSET, UV_COMPONENTS}, {COLOR_OFFSET, COLOR_COMPONENTS}}};
+};
+
 struct VertexLayout_PositionUv {
     static constexpr uint32_t POSITION_OFFSET = 0;
     static constexpr uint32_t POSITION_COMPONENTS = 3;

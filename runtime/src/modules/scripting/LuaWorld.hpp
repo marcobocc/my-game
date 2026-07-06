@@ -10,6 +10,7 @@
 #include "modules/scene/components/Animator.hpp"
 #include "modules/scene/components/BoxCollider.hpp"
 #include "modules/scene/components/CapsuleCollider.hpp"
+#include "modules/scene/components/TextComponent.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 // Thin facade over World exposed to Lua scripts.
@@ -105,6 +106,32 @@ public:
             result.z += pushes[i].z;
         }
         return result;
+    }
+
+    std::optional<TextComponent> getTextComponent(EntityHandle entity) const {
+        const Actor* actor = world_.getActor(entity);
+        if (!actor) return std::nullopt;
+        const TextComponent* c = actor->getComponent<TextComponent>();
+        if (!c) return std::nullopt;
+        return *c;
+    }
+
+    void setTextComponent(EntityHandle entity, const TextComponent& component) {
+        Actor* actor = world_.getActor(entity);
+        if (!actor) return;
+        if (auto* existing = actor->getComponent<TextComponent>()) *existing = component;
+    }
+
+    void addTextComponent(EntityHandle entity, const TextComponent& component) {
+        Actor* actor = world_.getActor(entity);
+        if (!actor) return;
+        if (!actor->getComponent<TextComponent>()) actor->addComponent<TextComponent>(component);
+    }
+
+    void removeTextComponent(EntityHandle entity) {
+        Actor* actor = world_.getActor(entity);
+        if (!actor) return;
+        if (auto* existing = actor->getComponent<TextComponent>()) actor->removeComponent(existing);
     }
 
     // Finds the first actor whose name tag matches. Returns invalid handle if not found.

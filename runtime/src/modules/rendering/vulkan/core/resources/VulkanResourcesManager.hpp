@@ -1,8 +1,10 @@
 #pragma once
 #include <span>
 #include <vulkan/vulkan.h>
+#include "../../../../asset_management/asset_types/Font.hpp"
 #include "../../../../asset_management/asset_types/Shader.hpp"
 #include "../../../../asset_management/asset_types/Texture.hpp"
+#include "VulkanFontCache.hpp"
 #include "VulkanMaterialCache.hpp"
 #include "VulkanMeshBuffersCache.hpp"
 #include "VulkanPipelineCache.hpp"
@@ -14,16 +16,20 @@ public:
     explicit VulkanResourcesManager(VulkanMeshBuffersCache& meshBuffersCache,
                                     VulkanTextureCache& textureCache,
                                     VulkanPipelineCache& pipelineCache,
-                                    VulkanMaterialCache& materialCache) :
+                                    VulkanMaterialCache& materialCache,
+                                    VulkanFontCache& fontCache) :
         meshBuffersCache_(meshBuffersCache),
         textureCache_(textureCache),
         pipelineCache_(pipelineCache),
-        materialCache_(materialCache) {}
+        materialCache_(materialCache),
+        fontCache_(fontCache) {}
 
     VulkanMeshBuffers& getMesh(const Mesh& mesh) const { return meshBuffersCache_.get(mesh); }
 
     VulkanTexture& getTexture(const Texture& texture) const { return textureCache_.get(texture); }
     VulkanTextureCache& getTextureCache() { return textureCache_; }
+
+    VulkanTexture& getFontAtlas(const Font& font) { return fontCache_.get(font); }
 
     VulkanPipeline& getPipeline(const Shader& shader,
                                 VkFormat colorFormat = VK_FORMAT_B8G8R8A8_UNORM,
@@ -57,4 +63,5 @@ private:
     VulkanTextureCache& textureCache_;
     VulkanPipelineCache& pipelineCache_;
     VulkanMaterialCache& materialCache_;
+    VulkanFontCache& fontCache_;
 };
