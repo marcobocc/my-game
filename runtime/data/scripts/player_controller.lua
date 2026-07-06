@@ -18,13 +18,15 @@ local M = {}
 function M:onStart()
     self.dynScript       = nil
     self.spaceWasDown    = false
+    self.lmbWasDown      = false
+    self.statusScript    = nil
 
     self.yaw             = 0.0
     self.pitch           = 15.0
     self.currentDistance = self.cameraDistance
     self.targetDistance  = self.cameraDistance
 
-    local t = self.targetCharacter ~= 0 and World:getTransform(self.targetCharacter)
+    local t = self.targetCharacter:isValid() and self.targetCharacter:getTransform()
     if t then
         local fwd = t:getForward()
         self.yaw = math.deg(math.atan2(fwd.x, fwd.z))
@@ -36,7 +38,7 @@ end
 
 function M:getDynScript()
     if not self.dynScript then
-        self.dynScript = World:getScript(self.targetCharacter, "character_dynamics")
+        self.dynScript = self.targetCharacter:getScript("character_dynamics")
         if not self.dynScript then
             Logger.warn("player_controller: character_dynamics not found on entity " .. tostring(self.targetCharacter))
         end
@@ -44,9 +46,19 @@ function M:getDynScript()
     return self.dynScript
 end
 
+function M:getStatusScript()
+    if not self.statusScript then
+        self.statusScript = self.targetCharacter:getScript("character_status")
+        if not self.statusScript then
+            Logger.warn("player_controller: character_status not found on entity " .. tostring(self.targetCharacter))
+        end
+    end
+    return self.statusScript
+end
+
 function M:recomputeCameraPosition()
-    if not self.targetCharacter or self.targetCharacter == 0 then return end
-    local targetT = World:getTransform(self.targetCharacter)
+    if not self.targetCharacter or not self.targetCharacter:isValid() then return end
+    local targetT = self.targetCharacter:getTransform()
     if not targetT then return end
 
     local yawRad   = math.rad(self.yaw)
@@ -64,7 +76,7 @@ function M:recomputeCameraPosition()
         targetT.position.z
     )
 
-    local camT = World:getTransform(self.entity)
+    local camT = self.entity:getTransform()
     if not camT then return end
 
     camT.position = Vec3(pivot.x + armX, pivot.y + armY, pivot.z + armZ)
@@ -74,7 +86,7 @@ function M:recomputeCameraPosition()
     local camPitchQ = quatAxisAngle(rightAxis, -self.pitch)
     camT.rotation   = camPitchQ * camYawQ
 
-    World:setTransform(self.entity, camT)
+    self.entity:setTransform(camT)
 end
 
 function M:onUpdate(dt)
@@ -125,6 +137,14 @@ function M:onUpdate(dt)
         dyn:jump()
     end
     self.spaceWasDown = spaceDown
+
+    -- Attack
+    local lmbDown = Input:isMouseButtonDown("LEFT")
+    if lmbDown and not self.lmbWasDown then
+        local status = self:getStatusScript()
+        if status then status:attack() end
+    end
+    self.lmbWasDown = lmbDown
 
     self:recomputeCameraPosition()
 end

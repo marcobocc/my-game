@@ -79,9 +79,42 @@ namespace LuaBindings {
                                     "getUp",
                                     &Transform::getUp);
 
-        // ---- EntityHandle ------------------------------------------------------
+        // ---- Entity ------------------------------------------------------------
+        // Opaque handle wrapper. Scripts operate on entities via methods on this
+        // usertype and never touch the raw uint64_t handle (which cannot round-trip
+        // through Lua's double-based number type without losing precision).
 
-        lua.new_usertype<EntityHandle>("EntityHandle");
+        lua.new_usertype<LuaEntity>("Entity",
+                                    "isValid",
+                                    &LuaEntity::isValid,
+                                    "getTransform",
+                                    &LuaEntity::getTransform,
+                                    "setTransform",
+                                    &LuaEntity::setTransform,
+                                    "setParent",
+                                    &LuaEntity::setParent,
+                                    "clearParent",
+                                    &LuaEntity::clearParent,
+                                    "destroy",
+                                    &LuaEntity::destroy,
+                                    "getAnimator",
+                                    &LuaEntity::getAnimator,
+                                    "resolveCollisions",
+                                    &LuaEntity::resolveCollisions,
+                                    "getScript",
+                                    &LuaEntity::getScript,
+                                    "getTextComponent",
+                                    &LuaEntity::getTextComponent,
+                                    "setTextComponent",
+                                    &LuaEntity::setTextComponent,
+                                    "addTextComponent",
+                                    &LuaEntity::addTextComponent,
+                                    "removeTextComponent",
+                                    &LuaEntity::removeTextComponent,
+                                    sol::meta_function::equal_to,
+                                    &LuaEntity::operator==,
+                                    sol::meta_function::to_string,
+                                    &LuaEntity::toString);
 
         // ---- Animator ----------------------------------------------------------
 
@@ -138,31 +171,10 @@ namespace LuaBindings {
 
         // ---- World facade ------------------------------------------------------
 
-        lua.new_usertype<LuaWorld>("LuaWorld",
-                                   "getTransform",
-                                   &LuaWorld::getTransform,
-                                   "setTransform",
-                                   &LuaWorld::setTransform,
-                                   "setParent",
-                                   &LuaWorld::setParent,
-                                   "clearParent",
-                                   &LuaWorld::clearParent,
-                                   "findByName",
-                                   &LuaWorld::findByName,
-                                   "getScript",
-                                   &LuaWorld::getScript,
-                                   "getAnimator",
-                                   &LuaWorld::getAnimator,
-                                   "resolveCollisions",
-                                   &LuaWorld::resolveCollisions,
-                                   "getTextComponent",
-                                   &LuaWorld::getTextComponent,
-                                   "setTextComponent",
-                                   &LuaWorld::setTextComponent,
-                                   "addTextComponent",
-                                   &LuaWorld::addTextComponent,
-                                   "removeTextComponent",
-                                   &LuaWorld::removeTextComponent);
+        // World-level surface only. Per-entity operations live on the Entity usertype;
+        // World returns Entities from these lookups rather than exposing raw handles.
+        lua.new_usertype<LuaWorld>(
+                "LuaWorld", "createEntity", &LuaWorld::createEntity, "findByName", &LuaWorld::findByName);
 
         // ---- Input facade ------------------------------------------------------
 

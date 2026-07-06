@@ -5,6 +5,7 @@
 #include <sol/sol.hpp>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "LuaBindings.hpp"
 #include "LuaInput.hpp"
@@ -24,6 +25,7 @@ private:
     struct ScriptChunk {
         sol::table proto;
         std::filesystem::file_time_type lastWriteTime;
+        std::unordered_set<std::string> entityProps; // property names declared as type "entity"
     };
 
     struct ScriptInstance {
@@ -47,7 +49,7 @@ private:
     std::unique_ptr<LuaInput> ownedInput_;
 
     ScriptChunk& loadChunk(const std::string& scriptName);
-    sol::table instantiate(sol::table proto,
+    sol::table instantiate(const ScriptChunk& chunk,
                            EntityHandle entity,
                            const std::unordered_map<std::string, nlohmann::json>& propertyValues);
     void callOnStart(ScriptInstance& inst);
@@ -63,7 +65,9 @@ private:
         } catch (const sol::error& e) {
             LOG4CXX_ERROR(logger_, "[" << context << "] Lua error: " << e.what());
         } catch (const std::exception& e) {
-            LOG4CXX_ERROR(logger_, "[" << context << "] Error: " << e.what());
+            LOG4CXX_ERROR(logger_, "[" << context << "] C++ exception: " << e.what());
+        } catch (...) {
+            LOG4CXX_ERROR(logger_, "[" << context << "] Unknown exception");
         }
     }
 };

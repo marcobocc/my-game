@@ -90,8 +90,14 @@ public:
         return result;
     }
 
+    EntityHandle generateHandle() { return nextHandleId_++; }
+
 private:
     std::vector<std::unique_ptr<Actor>> actors_;
     std::unordered_map<EntityHandle, Actor*> handleToActor_;
     std::optional<EntityHandle> activeCameraHandle_;
+    // Runtime handles start high enough to avoid colliding with editor-assigned
+    // handles (which start at 0), but below 2^53 so they survive the round-trip
+    // through Lua's number type (a double) without losing integer precision.
+    EntityHandle nextHandleId_ = 1ULL << 40;
 };

@@ -3,6 +3,7 @@
 #include <optional>
 #include <sol/sol.hpp>
 #include <string>
+#include "LuaEntity.hpp"
 #include "modules/physics/collision_utils.hpp"
 #include "modules/scene/EntityHandle.hpp"
 #include "modules/scene/TransformUtils.hpp"
@@ -15,6 +16,11 @@
 
 // Thin facade over World exposed to Lua scripts.
 // Returns copies of components to keep ownership simple.
+//
+// Scripts interact with entities through the opaque LuaEntity wrapper (never
+// raw handles). The handle-based methods below are the implementation the
+// LuaEntity methods delegate to; the Lua-facing surface is Entity methods plus
+// the world-level lookups that return Entity (createEntity, findByName).
 class LuaWorld {
 public:
     using ScriptLookup = std::function<std::optional<sol::table>(EntityHandle, const std::string&)>;
@@ -22,6 +28,9 @@ public:
     explicit LuaWorld(World& world) : world_(world) {}
 
     void setScriptLookup(ScriptLookup fn) { scriptLookup_ = std::move(fn); }
+
+    // Wraps a raw handle into an Entity bound to this world.
+    LuaEntity wrap(EntityHandle handle) { return LuaEntity(this, handle); }
 
     std::optional<sol::table> getScript(EntityHandle entity, const std::string& scriptName) const {
         if (scriptLookup_) return scriptLookup_(entity, scriptName);
@@ -51,6 +60,16 @@ public:
     }
 
     void clearParent(EntityHandle entity) { setParent(entity, INVALID_ENTITY_HANDLE); }
+
+    // Creates a new empty entity with a default Transform and returns it.
+    LuaEntity createEntity() {
+        EntityHandle handle = world_.generateHandle();
+        Actor* actor = world_.addActor(handle);
+        if (actor) actor->addComponent<Transform>();
+        return wrap(handle);
+    }
+
+    void destroyEntity(EntityHandle entity) { world_.removeActor(entity); }
 
     Animator* getAnimator(EntityHandle entity) const {
         Actor* actor = world_.getActor(entity);
@@ -134,18 +153,37 @@ public:
         if (auto* existing = actor->getComponent<TextComponent>()) actor->removeComponent(existing);
     }
 
-    // Finds the first actor whose name tag matches. Returns invalid handle if not found.
-    // (Name lookup requires a NameTag component — returns nullopt if not present.)
-    std::optional<EntityHandle> findByName(const std::string& name) const {
+    // Finds the first actor whose name tag matches. Returns an invalid Entity if not found.
+    // (Name lookup requires a NameTag component — not yet implemented.)
+    LuaEntity findByName(const std::string& name) {
         for (const auto& actor: world_.getActors()) {
             // NameTag component not yet implemented — placeholder for future use
             (void) name;
             (void) actor;
         }
-        return std::nullopt;
+        return LuaEntity(this, INVALID_ENTITY_HANDLE);
     }
 
 private:
     World& world_;
     ScriptLookup scriptLookup_;
 };
+
+// ---- LuaEntity method definitions -----------------------------------------
+// Defined here (after LuaWorld is complete) so each Entity operation delegates
+// to the handle-based LuaWorld method.
+
+inline std::optional<Transform> LuaEntity::getTransform() const { return world_->getTransform(handle_); }
+inline void LuaEntity::setTransform(const Transform& t) { world_->setTransform(handle_, t); }
+inline void LuaEntity::setParent(const LuaEntity& parent) { world_->setParent(handle_, parent.handle_); }
+inline void LuaEntity::clearParent() { world_->clearParent(handle_); }
+inline void LuaEntity::destroy() { world_->destroyEntity(handle_); }
+inline Animator* LuaEntity::getAnimator() const { return world_->getAnimator(handle_); }
+inline glm::vec3 LuaEntity::resolveCollisions() const { return world_->resolveCollisions(handle_); }
+inline std::optional<sol::table> LuaEntity::getScript(const std::string& scriptName) const {
+    return world_->getScript(handle_, scriptName);
+}
+inline std::optional<TextComponent> LuaEntity::getTextComponent() const { return world_->getTextComponent(handle_); }
+inline void LuaEntity::setTextComponent(const TextComponent& c) { world_->setTextComponent(handle_, c); }
+inline void LuaEntity::addTextComponent(const TextComponent& c) { world_->addTextComponent(handle_, c); }
+inline void LuaEntity::removeTextComponent() { world_->removeTextComponent(handle_); }

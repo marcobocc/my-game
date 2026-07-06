@@ -27,7 +27,7 @@ function M:onStart()
     self.grounded = true
 
     -- requirement 1: read Transform from world
-    local t = World:getTransform(self.entity)
+    local t = self.entity:getTransform()
     if t then
         -- derive initial yaw from forward vector
         local fwd = t:getForward()
@@ -41,7 +41,7 @@ end
 
 function M:onUpdate(dt)
     -- requirement 1 + 4: get Transform (custom struct) from world
-    local t = World:getTransform(self.entity)
+    local t = self.entity:getTransform()
     if not t then return end
 
     -- Mouse look
@@ -98,7 +98,7 @@ function M:onUpdate(dt)
     end
 
     -- requirement 1: write Transform back
-    World:setTransform(self.entity, t)
+    self.entity:setTransform(t)
 end
 
 return M

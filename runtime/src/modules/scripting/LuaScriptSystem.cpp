@@ -1,6 +1,7 @@
 #include "LuaScriptSystem.hpp"
 #include <glm/glm.hpp>
 #include <log4cxx/logger.h>
+#include "ScriptPropertyParser.hpp"
 #include "modules/scene/components/BehaviourScript.hpp"
 
 void LuaScriptSystem::init(World& world, InputSystem& input, const std::filesystem::path& scriptsDir) {
@@ -8,8 +9,21 @@ void LuaScriptSystem::init(World& world, InputSystem& input, const std::filesyst
     world_ = &world;
     scriptsDir_ = scriptsDir;
 
-    lua_.open_libraries(
-            sol::lib::base, sol::lib::math, sol::lib::string, sol::lib::table, sol::lib::io, sol::lib::package);
+    lua_.open_libraries(sol::lib::base,
+                        sol::lib::math,
+                        sol::lib::string,
+                        sol::lib::table,
+                        sol::lib::io,
+                        sol::lib::package,
+                        sol::lib::debug);
+
+    lua_.set_exception_handler([](lua_State* L, sol::optional<const std::exception&> e, sol::string_view) -> int {
+        if (e)
+            luaL_error(L, "C++ exception: %s", e->what());
+        else
+            luaL_error(L, "Unknown C++ exception");
+        return 0;
+    });
 
     // Point require() at the scripts directory
     std::string packagePath = (scriptsDir_ / "?.lua").string();
@@ -35,7 +49,7 @@ void LuaScriptSystem::init(World& world, InputSystem& input, const std::filesyst
             if (script->scriptName.empty()) continue;
             safeCall(script->scriptName.c_str(), [&] {
                 ScriptChunk& chunk = loadChunk(script->scriptName);
-                sol::table self = instantiate(chunk.proto, actor->handle(), script->propertyValues);
+                sol::table self = instantiate(chunk, actor->handle(), script->propertyValues);
                 instances_.push_back({actor->handle(), script->scriptName, std::move(self)});
                 callOnStart(instances_.back());
             });
@@ -75,21 +89,34 @@ LuaScriptSystem::ScriptChunk& LuaScriptSystem::loadChunk(const std::string& scri
     }
 
     sol::table proto = result;
-    chunks_[scriptName] = {std::move(proto), writeTime};
+
+    // Record which properties are declared as type "entity" so their injected
+    // handle values get wrapped into Entity objects rather than left as integers.
+    std::unordered_set<std::string> entityProps;
+    for (const auto& desc: ScriptPropertyParser::parse(path))
+        if (desc.type == "entity") entityProps.insert(desc.name);
+
+    chunks_[scriptName] = {std::move(proto), writeTime, std::move(entityProps)};
     return chunks_[scriptName];
 }
 
-sol::table LuaScriptSystem::instantiate(sol::table proto,
+sol::table LuaScriptSystem::instantiate(const ScriptChunk& chunk,
                                         EntityHandle entity,
                                         const std::unordered_map<std::string, nlohmann::json>& propertyValues) {
     sol::table self = lua_.create_table();
-    for (auto& [k, v]: proto)
+    for (auto& [k, v]: chunk.proto)
         self[k] = v;
-    self["entity"] = entity;
+    self["entity"] = worldFacade_->wrap(entity);
 
     // Inject editor-set property values into self before onStart runs
     for (const auto& [key, val]: propertyValues) {
-        if (val.is_number()) {
+        if (chunk.entityProps.count(key)) {
+            // Entity-typed property: wrap the stored handle into an Entity.
+            self[key] = worldFacade_->wrap(val.is_number_integer() ? static_cast<EntityHandle>(val.get<int64_t>())
+                                                                   : INVALID_ENTITY_HANDLE);
+        } else if (val.is_number_integer()) {
+            self[key] = static_cast<lua_Integer>(val.get<int64_t>());
+        } else if (val.is_number()) {
             self[key] = val.get<double>();
         } else if (val.is_boolean()) {
             self[key] = val.get<bool>();
@@ -111,7 +138,7 @@ void LuaScriptSystem::callOnCollision(EntityHandle self, EntityHandle other) {
         sol::protected_function onCollision = inst.self["onCollision"];
         if (!onCollision.valid()) continue;
         safeCall(inst.scriptName.c_str(), [&] {
-            auto result = onCollision(inst.self, other);
+            auto result = onCollision(inst.self, worldFacade_->wrap(other));
             if (!result.valid()) {
                 sol::error err = result;
                 LOG4CXX_ERROR(logger_, "[" << inst.scriptName << "] onCollision error: " << err.what());
@@ -154,7 +181,7 @@ void LuaScriptSystem::reload(ScriptInstance& inst) {
 
     safeCall(inst.scriptName.c_str(), [&] {
         ScriptChunk& chunk = loadChunk(inst.scriptName);
-        inst.self = instantiate(chunk.proto, inst.entity, propertyValues);
+        inst.self = instantiate(chunk, inst.entity, propertyValues);
         callOnStart(inst);
     });
 }
