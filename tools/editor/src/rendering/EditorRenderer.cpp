@@ -9,6 +9,7 @@
 #include "EditorRenderData.hpp"
 #include "VulkanBackend.hpp"
 #include "modules/asset_management/BuiltinAssetNames.hpp"
+#include "modules/debug/DebugDraw.hpp"
 #include "modules/rendering/GameRenderData.hpp"
 #include "modules/scene/TransformUtils.hpp"
 #include "modules/scene/World.hpp"
@@ -80,39 +81,23 @@ void EditorRenderer::buildOutlines() {
     }
 }
 
-void EditorRenderer::buildGizmos() {
-    builtGizmoLines_.clear();
+void EditorRenderer::buildGizmos(const World& world, DebugDraw& out) {
     builtOverlayGizmoLines_.clear();
     pickingSystem_.clearHandles();
 
-    auto aabbEnabled = editorGizmos_.getObjectsWithAABBEnabled();
-    for (const auto& objectId: aabbEnabled) {
-        auto aabbGizmo = gizmosBuilder_.buildGizmoObjectAABB(objectId, {0.0f, 1.0f, 0.0f});
-        builtGizmoLines_.insert(builtGizmoLines_.end(), aabbGizmo.begin(), aabbGizmo.end());
-    }
+    for (EntityHandle objectId: editorGizmos_.getObjectsWithAABBEnabled())
+        gizmosBuilder_.buildGizmoObjectAABB(out, objectId, world, {0.0f, 1.0f, 0.0f});
 
-    auto boundingSpheresEnabled = editorGizmos_.getObjectsWithBoundingSpheresEnabled();
-    for (const auto& objectId: boundingSpheresEnabled) {
-        auto sphereGizmo = gizmosBuilder_.buildGizmoObjectBoundingSphere(objectId, {1.0f, 1.0f, 0.0f});
-        builtGizmoLines_.insert(builtGizmoLines_.end(), sphereGizmo.begin(), sphereGizmo.end());
-    }
+    for (EntityHandle objectId: editorGizmos_.getObjectsWithBoundingSpheresEnabled())
+        gizmosBuilder_.buildGizmoObjectBoundingSphere(out, objectId, world, {1.0f, 1.0f, 0.0f});
 
-    auto boxColliderEnabled = editorGizmos_.getObjectsWithBoxColliderEnabled();
-    for (const auto& objectId: boxColliderEnabled) {
-        auto boxGizmo = gizmosBuilder_.buildGizmoObjectBoxCollider(objectId, {0.0f, 1.0f, 0.5f});
-        builtGizmoLines_.insert(builtGizmoLines_.end(), boxGizmo.begin(), boxGizmo.end());
-    }
+    for (EntityHandle objectId: editorGizmos_.getObjectsWithBoxColliderEnabled())
+        gizmosBuilder_.buildGizmoObjectBoxCollider(out, objectId, world, {0.0f, 1.0f, 0.5f});
 
-    auto capsuleColliderEnabled = editorGizmos_.getObjectsWithCapsuleColliderEnabled();
-    for (const auto& objectId: capsuleColliderEnabled) {
-        auto capsuleGizmo = gizmosBuilder_.buildGizmoObjectCapsuleCollider(objectId, {0.0f, 0.8f, 1.0f});
-        builtGizmoLines_.insert(builtGizmoLines_.end(), capsuleGizmo.begin(), capsuleGizmo.end());
-    }
+    for (EntityHandle objectId: editorGizmos_.getObjectsWithCapsuleColliderEnabled())
+        gizmosBuilder_.buildGizmoObjectCapsuleCollider(out, objectId, world, {0.0f, 0.8f, 1.0f});
 
-    if (editorGizmos_.bvhEnabled()) {
-        auto bvhGizmo = gizmosBuilder_.buildGizmoBVH({1.0f, 1.0f, 0.0f});
-        builtGizmoLines_.insert(builtGizmoLines_.end(), bvhGizmo.begin(), bvhGizmo.end());
-    }
+    if (editorGizmos_.bvhEnabled()) gizmosBuilder_.buildGizmoBVH(out, world, {1.0f, 1.0f, 0.0f});
 
     const auto& selectedIds = editorSelection_.getSelectedEntityIds();
     if (selectedIds.empty()) return;
@@ -132,23 +117,20 @@ void EditorRenderer::buildGizmos() {
         auto result = objectTransformHandle_.buildTranslationGizmo(pivot, camera, cameraTransform);
         builtOverlayGizmoLines_.insert(
                 builtOverlayGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
-        for (const auto& h: result.pickingHandles) {
+        for (const auto& h: result.pickingHandles)
             pickingSystem_.registerHandle(h);
-        }
     } else if (dragState.gizmoMode == GizmoType::Rotation) {
         auto result = objectTransformHandle_.buildRotationGizmo(pivot, camera, cameraTransform);
         builtOverlayGizmoLines_.insert(
                 builtOverlayGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
-        for (const auto& h: result.pickingHandles) {
+        for (const auto& h: result.pickingHandles)
             pickingSystem_.registerHandle(h);
-        }
     } else if (dragState.gizmoMode == GizmoType::Scale) {
         auto result = objectTransformHandle_.buildScaleGizmo(pivot, camera, cameraTransform);
         builtOverlayGizmoLines_.insert(
                 builtOverlayGizmoLines_.end(), result.visualization.begin(), result.visualization.end());
-        for (const auto& h: result.pickingHandles) {
+        for (const auto& h: result.pickingHandles)
             pickingSystem_.registerHandle(h);
-        }
     }
 }
 
@@ -207,7 +189,11 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
 
     if (simMode_) {
         static const std::vector<DrawCall> emptyOutlines;
-        static const std::vector<VulkanGizmoPass::GizmoVertex> emptyGizmos;
+        static const std::vector<VulkanGizmoPass::GizmoVertex> emptyOverlay;
+        if (playModeDebugDraw_) buildGizmos(entityManager, *playModeDebugDraw_);
+        const std::vector<VulkanGizmoPass::GizmoVertex>& debugLines =
+                playModeDebugDraw_ ? playModeDebugDraw_->getVertices() : emptyOverlay;
+
         const Actor* camActor = entityManager.getActiveCamera();
         if (camActor) {
             const auto* camera = camActor->getComponent<Camera>();
@@ -217,8 +203,8 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                                        *transform,
                                                        drawQueue,
                                                        emptyOutlines,
-                                                       emptyGizmos,
-                                                       emptyGizmos,
+                                                       debugLines,
+                                                       emptyOverlay,
                                                        activeLights,
                                                        particleEmitters,
                                                        textQueue,
@@ -235,8 +221,8 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                                defaultTransform,
                                                drawQueue,
                                                emptyOutlines,
-                                               emptyGizmos,
-                                               emptyGizmos,
+                                               debugLines,
+                                               emptyOverlay,
                                                activeLights,
                                                particleEmitters,
                                                textQueue,
@@ -246,7 +232,10 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
     }
 
     buildOutlines();
-    buildGizmos();
+    editorDebugDraw_.flush();
+    buildGizmos(entityManager, editorDebugDraw_);
+
+    const std::vector<VulkanGizmoPass::GizmoVertex>& editorGizmoLines = editorDebugDraw_.getVertices();
 
     auto cameras = entityManager.query<Camera, Transform>();
     for (auto& [entity, camera, transform]: cameras) {
@@ -255,7 +244,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                                    *transform,
                                                    drawQueue,
                                                    outlineQueue_,
-                                                   builtGizmoLines_,
+                                                   editorGizmoLines,
                                                    builtOverlayGizmoLines_,
                                                    activeLights,
                                                    particleEmitters,
@@ -268,7 +257,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
                                            editorOrbitCamera_.getCameraTransform(),
                                            drawQueue,
                                            outlineQueue_,
-                                           builtGizmoLines_,
+                                           editorGizmoLines,
                                            builtOverlayGizmoLines_,
                                            activeLights,
                                            particleEmitters,

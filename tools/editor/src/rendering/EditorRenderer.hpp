@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "modules/animation/AnimationSystem.hpp"
+#include "modules/debug/DebugDraw.hpp"
 #include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "modules/scene/World.hpp"
 
@@ -35,11 +36,12 @@ public:
     void setSimMode(bool enabled);
     void setWelcomeMode(bool enabled);
     void setAnimationSystem(AnimationSystem* animSystem) { animationSystem_ = animSystem; }
+    void setPlayModeDebugDraw(DebugDraw* debugDraw) { playModeDebugDraw_ = debugDraw; }
     void render(const World& entityManager, float gridScale, float deltaTime = 0.0f);
     void renderWelcome();
 
 private:
-    void buildGizmos();
+    void buildGizmos(const World& world, DebugDraw& out);
     void buildOutlines();
 
     VulkanBackend& renderer_;
@@ -54,9 +56,10 @@ private:
     SimHUDRoot& simHUDRoot_;
     WelcomeRoot& welcomeRoot_;
     AnimationSystem* animationSystem_ = nullptr;
+    DebugDraw* playModeDebugDraw_ = nullptr;
+    DebugDraw editorDebugDraw_;
     bool simMode_ = false;
     float deltaTime_ = 0.0f;
     std::vector<DrawCall> outlineQueue_;
-    std::vector<VulkanGizmoPass::GizmoVertex> builtGizmoLines_;
     std::vector<VulkanGizmoPass::GizmoVertex> builtOverlayGizmoLines_;
 };

@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include "IConsoleCommand.hpp"
-#include "modules/console/messages/StringResponse.hpp"
+#include "modules/debug/console/messages/StringResponse.hpp"
 
 
 class EchoCommand : public IConsoleCommand {

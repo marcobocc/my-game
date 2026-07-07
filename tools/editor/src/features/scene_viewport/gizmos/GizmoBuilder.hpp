@@ -1,33 +1,30 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <vector>
-#include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
 #include "modules/scene/World.hpp"
 
 class AssetLoader;
 class EditorSettings;
+class DebugDraw;
 struct AABB;
 struct BoundingSphere;
-
-using GizmoObject = std::vector<VulkanGizmoPass::GizmoVertex>;
 
 class GizmoBuilder {
 public:
     GizmoBuilder(AssetLoader& assetLoader, World& entityManager, EditorSettings& editorSettings);
 
-    GizmoObject buildGizmoLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color);
-    GizmoObject buildGizmoCube(const glm::vec3& center, float halfSize, const glm::vec3& color);
-    GizmoObject buildGizmoAABB(const AABB& aabb, const glm::vec3& color);
-    GizmoObject buildGizmoObjectAABB(EntityHandle objectId, const glm::vec3& color);
-    GizmoObject buildGizmoObjectBoxCollider(EntityHandle objectId, const glm::vec3& color);
-    GizmoObject buildGizmoObjectCapsuleCollider(EntityHandle objectId, const glm::vec3& color);
-    GizmoObject buildGizmoBoundingSphere(const BoundingSphere& sphere, const glm::vec3& color);
-    GizmoObject buildGizmoObjectBoundingSphere(EntityHandle objectId, const glm::vec3& color);
-    GizmoObject buildGizmoBVH(const glm::vec3& color);
+    void buildGizmoLine(DebugDraw& out, const glm::vec3& from, const glm::vec3& to, const glm::vec3& color);
+    void buildGizmoCube(DebugDraw& out, const glm::vec3& center, float halfSize, const glm::vec3& color);
+    void buildGizmoAABB(DebugDraw& out, const AABB& aabb, const glm::vec3& color);
+    void buildGizmoObjectAABB(DebugDraw& out, EntityHandle objectId, const World& world, const glm::vec3& color);
+    void buildGizmoObjectBoxCollider(DebugDraw& out, EntityHandle objectId, const World& world, const glm::vec3& color);
+    void
+    buildGizmoObjectCapsuleCollider(DebugDraw& out, EntityHandle objectId, const World& world, const glm::vec3& color);
+    void buildGizmoBoundingSphere(DebugDraw& out, const BoundingSphere& sphere, const glm::vec3& color);
+    void
+    buildGizmoObjectBoundingSphere(DebugDraw& out, EntityHandle objectId, const World& world, const glm::vec3& color);
+    void buildGizmoBVH(DebugDraw& out, const World& world, const glm::vec3& color);
 
 private:
-    void addGizmoLine(GizmoObject& gizmoObject, const glm::vec3& from, const glm::vec3& to, const glm::vec3& color);
-
     AssetLoader& assetLoader_;
     World& entityManager_;
     EditorSettings& editorSettings_;

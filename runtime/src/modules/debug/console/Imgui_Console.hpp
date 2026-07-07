@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 #include "messages/IConsoleMessage.hpp"
-#include "modules/console/ConsoleBuffer.hpp"
-#include "modules/console/DeveloperConsole.hpp"
-#include "modules/console/messages/LogMessage.hpp"
+#include "modules/debug/console/ConsoleBuffer.hpp"
+#include "modules/debug/console/DeveloperConsole.hpp"
+#include "modules/debug/console/messages/LogMessage.hpp"
 
 class Imgui_Console {
 public:

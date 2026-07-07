@@ -1,10 +1,14 @@
 #include "LuaScriptSystem.hpp"
 #include <glm/glm.hpp>
 #include <log4cxx/logger.h>
+#include "LuaBindings.hpp"
 #include "ScriptPropertyParser.hpp"
 #include "modules/scene/components/BehaviourScript.hpp"
 
-void LuaScriptSystem::init(World& world, InputSystem& input, const std::filesystem::path& scriptsDir) {
+void LuaScriptSystem::init(World& world,
+                           InputSystem& input,
+                           DebugDraw& debugDraw,
+                           const std::filesystem::path& scriptsDir) {
     logger_ = log4cxx::Logger::getLogger("LuaScriptSystem");
     world_ = &world;
     scriptsDir_ = scriptsDir;
@@ -31,8 +35,10 @@ void LuaScriptSystem::init(World& world, InputSystem& input, const std::filesyst
 
     ownedWorld_ = std::make_unique<LuaWorld>(world);
     ownedInput_ = std::make_unique<LuaInput>(input);
+    ownedDebugDraw_ = std::make_unique<LuaDebugDraw>(debugDraw);
     worldFacade_ = ownedWorld_.get();
     inputFacade_ = ownedInput_.get();
+    debugDrawFacade_ = ownedDebugDraw_.get();
 
     worldFacade_->setScriptLookup(
             [this](EntityHandle entity, const std::string& scriptName) -> std::optional<sol::table> {
@@ -41,7 +47,7 @@ void LuaScriptSystem::init(World& world, InputSystem& input, const std::filesyst
                 return std::nullopt;
             });
 
-    LuaBindings::registerAll(lua_, *worldFacade_, *inputFacade_);
+    LuaBindings::registerAll(lua_, *worldFacade_, *inputFacade_, *debugDrawFacade_);
 
     // Instantiate one ScriptInstance per BehaviourScript component (entities may have multiple)
     for (const auto& actor: world.getActors()) {

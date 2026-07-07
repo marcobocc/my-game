@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../../runtime/src/modules/console/Imgui_Console.hpp"
+#include "../../../../runtime/src/modules/debug/console/Imgui_Console.hpp"
 #include "../features/input_handling/ShortcutBindingService.hpp"
 #include "../features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "../features/scene_viewport/gizmos/EditorGizmos.hpp"
@@ -9,7 +9,7 @@
 #include "../services/ActionDispatcher.hpp"
 #include "ImguiContainer.hpp"
 #include "ServicesContainer.hpp"
-#include "modules/console/DeveloperConsole.hpp"
+#include "modules/debug/console/DeveloperConsole.hpp"
 #include "modules/input/InputSystem.hpp"
 
 class FeaturesContainer {

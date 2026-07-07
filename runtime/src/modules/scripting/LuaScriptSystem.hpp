@@ -7,17 +7,17 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "LuaBindings.hpp"
-#include "LuaInput.hpp"
-#include "LuaWorld.hpp"
+#include "api/LuaDebugDraw.hpp"
+#include "api/LuaInput.hpp"
+#include "api/LuaWorld.hpp"
+#include "modules/debug/DebugDraw.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/scene/EntityHandle.hpp"
 #include "modules/scene/World.hpp"
-#include "modules/scene/components/BehaviourScript.hpp"
 
 class LuaScriptSystem {
 public:
-    void init(World& world, InputSystem& input, const std::filesystem::path& scriptsDir);
+    void init(World& world, InputSystem& input, DebugDraw& debugDraw, const std::filesystem::path& scriptsDir);
     void update(float dt);
     void callOnCollision(EntityHandle self, EntityHandle other);
 
@@ -37,6 +37,7 @@ private:
     sol::state lua_;
     LuaWorld* worldFacade_ = nullptr;
     LuaInput* inputFacade_ = nullptr;
+    LuaDebugDraw* debugDrawFacade_ = nullptr;
     std::filesystem::path scriptsDir_;
     World* world_ = nullptr;
     log4cxx::LoggerPtr logger_;
@@ -47,6 +48,7 @@ private:
     // Heap-allocated facades so pointers stay stable after init
     std::unique_ptr<LuaWorld> ownedWorld_;
     std::unique_ptr<LuaInput> ownedInput_;
+    std::unique_ptr<LuaDebugDraw> ownedDebugDraw_;
 
     ScriptChunk& loadChunk(const std::string& scriptName);
     sol::table instantiate(const ScriptChunk& chunk,

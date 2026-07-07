@@ -2,7 +2,7 @@
 #include <functional>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include "../../../../runtime/src/modules/console/Imgui_Console.hpp"
+#include "../../../../runtime/src/modules/debug/console/Imgui_Console.hpp"
 #include "application_toolbar/Imgui_ApplicationMenuBar.hpp"
 #include "asset_browser/imgui/Imgui_AssetGridPanel.hpp"
 #include "modules/core/GameWindow.hpp"

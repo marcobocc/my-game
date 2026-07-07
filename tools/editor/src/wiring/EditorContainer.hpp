@@ -6,9 +6,9 @@
 #include "RenderingContainer.hpp"
 #include "RuntimeContainer.hpp"
 #include "ServicesContainer.hpp"
-#include "modules/console/commands/EchoCommand.hpp"
-#include "modules/console/commands/ListActorsCommand.hpp"
 #include "modules/core/GameWindow.hpp"
+#include "modules/debug/console/commands/EchoCommand.hpp"
+#include "modules/debug/console/commands/ListActorsCommand.hpp"
 
 class EditorContainer {
 public:

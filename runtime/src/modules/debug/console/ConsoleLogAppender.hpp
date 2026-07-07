@@ -2,8 +2,8 @@
 #include <log4cxx/appenderskeleton.h>
 #include <log4cxx/level.h>
 #include <log4cxx/spi/loggingevent.h>
-#include "modules/console/DeveloperConsole.hpp"
-#include "modules/console/messages/LogMessage.hpp"
+#include "modules/debug/console/DeveloperConsole.hpp"
+#include "modules/debug/console/messages/LogMessage.hpp"
 
 class ConsoleLogAppender : public log4cxx::AppenderSkeleton {
 public:

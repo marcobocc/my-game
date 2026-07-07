@@ -1,6 +1,6 @@
 #pragma once
 #include <filesystem>
-#include "../../../../runtime/src/modules/console/Imgui_Console.hpp"
+#include "../../../../runtime/src/modules/debug/console/Imgui_Console.hpp"
 #include "../features/ImguiRoot.hpp"
 #include "../features/application_toolbar/Imgui_ApplicationMenuBar.hpp"
 #include "../features/asset_browser/imgui/Imgui_AssetGridPanel.hpp"

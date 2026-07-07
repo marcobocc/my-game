@@ -41,6 +41,13 @@ public:
 
     void requestPlay() {
         if (state_ != State::Stopped || !editorWorld_) return;
+        pendingPlay_ = true;
+    }
+
+    void flushPendingPlay() {
+        if (!pendingPlay_) return;
+        pendingPlay_ = false;
+        if (state_ != State::Stopped || !editorWorld_) return;
         start(editorWorld_->snapshot());
     }
 
@@ -113,4 +120,5 @@ private:
     std::unique_ptr<GameInstance> gameInstance_;
     State state_ = State::Stopped;
     bool pendingStop_ = false;
+    bool pendingPlay_ = false;
 };

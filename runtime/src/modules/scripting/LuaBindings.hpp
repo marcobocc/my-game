@@ -2,17 +2,19 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
 #include <sol/sol.hpp>
-#include "LuaInput.hpp"
-#include "LuaWorld.hpp"
+#include "api/LuaDebugDraw.hpp"
+#include "api/LuaEntity.hpp"
+#include "api/LuaInput.hpp"
+#include "api/LuaWorld.hpp"
 #include "modules/scene/components/Animator.hpp"
 #include "modules/scene/components/TextComponent.hpp"
 #include "modules/scene/components/Transform.hpp"
 
 namespace LuaBindings {
 
-    inline void registerAll(sol::state& lua, LuaWorld& world, LuaInput& input) {
+    inline void registerAll(sol::state& lua, LuaWorld& world, LuaInput& input, LuaDebugDraw& debugDraw) {
+
         // ---- Math types --------------------------------------------------------
 
         lua.new_usertype<glm::vec3>(
@@ -81,8 +83,7 @@ namespace LuaBindings {
 
         // ---- Entity ------------------------------------------------------------
         // Opaque handle wrapper. Scripts operate on entities via methods on this
-        // usertype and never touch the raw uint64_t handle (which cannot round-trip
-        // through Lua's double-based number type without losing precision).
+        // usertype and never touch the raw uint64_t handle
 
         lua.new_usertype<LuaEntity>("Entity",
                                     "isValid",
@@ -171,8 +172,6 @@ namespace LuaBindings {
 
         // ---- World facade ------------------------------------------------------
 
-        // World-level surface only. Per-entity operations live on the Entity usertype;
-        // World returns Entities from these lookups rather than exposing raw handles.
         lua.new_usertype<LuaWorld>(
                 "LuaWorld", "createEntity", &LuaWorld::createEntity, "findByName", &LuaWorld::findByName);
 
@@ -196,11 +195,21 @@ namespace LuaBindings {
                                    "unlockMouse",
                                    &LuaInput::unlockMouse);
 
+        // ---- DebugDraw facade -------------------------------------------------
+
+        lua.new_usertype<LuaDebugDraw>("LuaDebugDraw",
+                                       "line",
+                                       sol::overload(&LuaDebugDraw::line, &LuaDebugDraw::lineDefault),
+                                       "box",
+                                       sol::overload(&LuaDebugDraw::box, &LuaDebugDraw::boxDefault),
+                                       "sphere",
+                                       sol::overload(&LuaDebugDraw::sphere, &LuaDebugDraw::sphereDefault));
+
         // ---- Globals -----------------------------------------------------------
 
         lua["World"] = &world;
         lua["Input"] = &input;
-
+        lua["Debug"] = &debugDraw;
         lua["TextAlign"] = lua.create_table_with("Left",
                                                  static_cast<int>(TextAlignment::Left),
                                                  "Center",

@@ -4,17 +4,17 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
 #include <tracy/Tracy.hpp>
-#include "../../../runtime/src/modules/console/ConsoleLogAppender.hpp"
-#include "../../../runtime/src/modules/console/Imgui_Console.hpp"
+#include "../../../runtime/src/modules/debug/console/ConsoleLogAppender.hpp"
+#include "../../../runtime/src/modules/debug/console/Imgui_Console.hpp"
 #include "features/ImguiRoot.hpp"
 #include "features/close_modal/Imgui_CloseModal.hpp"
 #include "features/input_handling/InputHandler.hpp"
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "features/welcome/Imgui_WelcomeScreen.hpp"
 #include "modules/animation/AnimationSystem.hpp"
-#include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/GameWindow.hpp"
 #include "modules/core/TimeManager.hpp"
+#include "modules/debug/console/DeveloperConsole.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
 #include "modules/scene/World.hpp"
@@ -110,6 +110,7 @@ public:
             }
 
             simulationController_.flushPendingStop();
+            simulationController_.flushPendingPlay();
 
             bool simActive = simulationController_.isActive();
             if (simActive != simWasActive_) {
@@ -121,6 +122,7 @@ public:
                     imguiConsole_.hide();
                     editorSettings_.disableGrid();
                     editorRenderer_.setAnimationSystem(&simulationController_.gameInstance()->animationSystem());
+                    editorRenderer_.setPlayModeDebugDraw(&simulationController_.gameInstance()->debugDraw());
                 } else {
                     inputSystem_.setBlocked(false);
                     window_.setSceneViewport(
@@ -129,6 +131,7 @@ public:
                     imguiConsole_.show();
                     editorSettings_.enableGrid();
                     editorRenderer_.setAnimationSystem(&animationSystem_);
+                    editorRenderer_.setPlayModeDebugDraw(nullptr);
                 }
                 simWasActive_ = simActive;
             }

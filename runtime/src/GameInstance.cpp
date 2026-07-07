@@ -1,10 +1,11 @@
 #include "GameInstance.hpp"
 #include <tracy/Tracy.hpp>
 #include "modules/asset_management/AssetCache.hpp"
-#include "modules/console/DeveloperConsole.hpp"
-#include "modules/console/commands/EchoCommand.hpp"
-#include "modules/console/commands/ListActorsCommand.hpp"
 #include "modules/core/TimeManager.hpp"
+#include "modules/debug/console/DeveloperConsole.hpp"
+#include "modules/debug/console/commands/DebugDrawCommand.hpp"
+#include "modules/debug/console/commands/EchoCommand.hpp"
+#include "modules/debug/console/commands/ListActorsCommand.hpp"
 #include "modules/input/InputSystem.hpp"
 #include "modules/rendering/GameRenderSystem.hpp"
 
@@ -27,10 +28,12 @@ GameInstance::GameInstance(GameWindow& window,
     rendererSettings_(rendererSettings),
     renderer_(renderer),
     animationSystem_(assetLoader) {
+
     developerConsole_.registerCommand("list-actors", [this] { return std::make_unique<ListActorsCommand>(world_); });
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
+    developerConsole_.registerCommand("debug", [this] { return std::make_unique<DebugDrawCommand>(debugDraw_); });
 
-    luaScriptSystem_.init(world_, inputSystem_, std::filesystem::path(ENGINE_DATA_DIR) / "scripts");
+    luaScriptSystem_.init(world_, inputSystem_, debugDraw_, std::filesystem::path(ENGINE_DATA_DIR) / "scripts");
 
     physicsSystem_.onCollisionEnter([this](const PhysicsSystem::CollisionPair& pair) {
         luaScriptSystem_.callOnCollision(pair.first, pair.second);
@@ -48,6 +51,8 @@ GameInstance::GameInstance(GameWindow& window,
 GameInstance::~GameInstance() { renderSystem_.setAnimationSystem(nullptr); }
 
 void GameInstance::tick(float deltaTime) {
+    debugDraw_.flush();
+    debugDraw_.drawScene(world_);
     physicsSystem_.update();
     animationSystem_.update(deltaTime, world_);
     luaScriptSystem_.update(deltaTime);
@@ -93,7 +98,7 @@ void GameInstance::lockMouse() const { inputSystem_.lockMouse(); }
 void GameInstance::unlockMouse() const { inputSystem_.unlockMouse(); }
 bool GameInstance::isKeyDown(int key) const { return inputSystem_.isKeyDown(key); }
 bool GameInstance::isKeyPressed(int key) const { return inputSystem_.isKeyPressed(key); }
-bool GameInstance::isMouseButtonDown(int btn) const { return inputSystem_.isMouseButtonDown(btn); }
+bool GameInstance::isMouseButtonDown(int button) const { return inputSystem_.isMouseButtonDown(button); }
 double GameInstance::getScrollDelta() const { return inputSystem_.getScrollDelta(); }
 
 // --------------------------------------------------------

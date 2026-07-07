@@ -5,8 +5,9 @@
 #include "modules/animation/AnimationSystem.hpp"
 #include "modules/asset_management/AssetCache.hpp"
 #include "modules/asset_management/AssetLoader.hpp"
-#include "modules/console/DeveloperConsole.hpp"
 #include "modules/core/GameWindow.hpp"
+#include "modules/debug/DebugDraw.hpp"
+#include "modules/debug/console/DeveloperConsole.hpp"
 #include "modules/physics/PhysicsSystem.hpp"
 #include "modules/scene/World.hpp"
 #include "modules/scripting/LuaScriptSystem.hpp"
@@ -89,6 +90,7 @@ public:
     DeveloperConsole& developerConsole() { return developerConsole_; }
     PhysicsSystem& physicsSystem() { return physicsSystem_; }
     AnimationSystem& animationSystem() { return animationSystem_; }
+    DebugDraw& debugDraw() { return debugDraw_; }
 
 private:
     bool shouldClose() const;
@@ -105,5 +107,6 @@ private:
 
     DeveloperConsole developerConsole_;
     AnimationSystem animationSystem_;
+    DebugDraw debugDraw_;
     LuaScriptSystem luaScriptSystem_;
 };
