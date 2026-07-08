@@ -1,0 +1,7 @@
+{
+  "vertexShader": "assets/internal.core/shaders/object_id/object_id_skinned.vert.spv",
+  "fragmentShader": "assets/internal.core/shaders/object_id/object_id.frag.spv",
+  "skinnedVertexLayout": true,
+  "disableDepthTest": true,
+  "disableDepthWrite": true
+}

@@ -3907,7 +3907,7 @@ XXH_FORCE_INLINE xxh_u64x2 XXH_vec_loadu(const void *ptr)
 #  define XXH_vec_mulo vec_mulo
 #  define XXH_vec_mule vec_mule
 # elif defined(__clang__) && XXH_HAS_BUILTIN(__builtin_altivec_vmuleuw) && !defined(__ibmxl__)
-/* Clang has a better way to control this, we can just use the builtin which doesn't swap. */
+/* Clang has a better way to control this, we can just use the internal which doesn't swap. */
  /* The IBM XL Compiler (which defined __clang__) only implements the vec_* operations */
 #  define XXH_vec_mulo __builtin_altivec_vmulouw
 #  define XXH_vec_mule __builtin_altivec_vmuleuw
@@ -4052,7 +4052,7 @@ XXH_mult64to128(xxh_u64 lhs, xxh_u64 rhs)
      *
      * Despite being a 32-bit platform, Clang (and emscripten) define this type
      * despite not having the arithmetic for it. This results in a laggy
-     * compiler builtin call which calculates a full 128-bit multiply.
+     * compiler internal call which calculates a full 128-bit multiply.
      * In that case it is best to use the portable one.
      * https://github.com/Cyan4973/xxHash/issues/211#issuecomment-515575677
      */

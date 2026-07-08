@@ -1,6 +1,0 @@
-{
-  "vertexShader": "assets/builtin/shaders/_shadow_skinned/_shadow_skinned.vert.spv",
-  "fragmentShader": "assets/builtin/shaders/_shadow/_shadow.frag.spv",
-  "skinnedVertexLayout": true,
-  "depthBias": true
-}

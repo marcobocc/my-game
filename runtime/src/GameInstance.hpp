@@ -98,6 +98,7 @@ private:
     GameWindow& window_;
     TimeManager& time_;
     AssetCache& loadedAssets_;
+    AssetLoader& assetLoader_;
     InputSystem& inputSystem_;
     World world_;
     PhysicsSystem physicsSystem_;

@@ -1,6 +1,0 @@
-{
-  "vertexShader": "assets/builtin/shaders/_object_id/_object_id.vert.spv",
-  "fragmentShader": "assets/builtin/shaders/_object_id/_object_id.frag.spv",
-  "disableDepthTest": true,
-  "disableDepthWrite": true
-}

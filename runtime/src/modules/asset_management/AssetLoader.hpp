@@ -9,6 +9,7 @@
 #include "asset_types/AnimationClip.hpp"
 #include "asset_types/AnimatorController.hpp"
 #include "asset_types/Font.hpp"
+#include "asset_types/LuaScript.hpp"
 #include "asset_types/Mesh.hpp"
 #include "asset_types/Shader.hpp"
 #include "asset_types/Skeleton.hpp"
@@ -18,6 +19,8 @@
 #include "stb_image.h"
 #include "stb_truetype.h"
 #include "utils/JsonUtils.hpp"
+
+class LuaScriptSystem;
 
 class AssetLoader {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetLoader");
@@ -31,6 +34,8 @@ public:
         if (!cache_.contains(name)) return nullptr;
         return cache_.get<T>(name);
     }
+
+    void scanAndRegisterScripts(LuaScriptSystem& luaScriptSystem);
 
 private:
     template<typename T>
@@ -337,4 +342,18 @@ inline std::unique_ptr<Font> AssetLoader::load<Font>(const std::string& name) co
     cache_.insert<Font>(std::move(font));
     LOG4CXX_INFO(LOGGER, "Successfully loaded font: " << name);
     return std::make_unique<Font>(*ptr);
+}
+
+template<>
+inline std::unique_ptr<LuaScript> AssetLoader::load<LuaScript>(const std::string& name) const {
+    auto realPath = vfs_.getRealPath(name);
+    if (!realPath) {
+        LOG4CXX_ERROR(LOGGER, "Lua script not found in VFS: " << name);
+        return nullptr;
+    }
+    auto script = std::make_unique<LuaScript>(name, *realPath);
+    auto* ptr = script.get();
+    cache_.insert<LuaScript>(std::move(script));
+    LOG4CXX_INFO(LOGGER, "Successfully loaded lua script: " << name);
+    return std::make_unique<LuaScript>(*ptr);
 }

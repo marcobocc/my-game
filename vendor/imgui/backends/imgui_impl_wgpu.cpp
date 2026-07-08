@@ -140,7 +140,7 @@ struct VertexInput {
 };
 
 struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
+    @internal(position) position: vec4<f32>,
     @location(0) color: vec4<f32>,
     @location(1) uv: vec2<f32>,
 };
@@ -164,7 +164,7 @@ fn main(in: VertexInput) -> VertexOutput {
 
 static const char __shader_frag_wgsl[] = R"(
 struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
+    @internal(position) position: vec4<f32>,
     @location(0) color: vec4<f32>,
     @location(1) uv: vec2<f32>,
 };

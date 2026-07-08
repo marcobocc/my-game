@@ -1,0 +1,8 @@
+{
+  "vertexShader": "assets/internal.core/shaders/particles/particles.vert.spv",
+  "fragmentShader": "assets/internal.core/shaders/particles/particles.frag.spv",
+  "noVertexInput": true,
+  "enableAlphaBlend": true,
+  "disableCull": true,
+  "disableDepthWrite": true
+}

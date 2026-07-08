@@ -21,6 +21,7 @@ GameInstance::GameInstance(GameWindow& window,
     window_(window),
     time_(time),
     loadedAssets_(loadedAssets),
+    assetLoader_(assetLoader),
     inputSystem_(inputSystem),
     world_(std::move(world)),
     physicsSystem_(world_),
@@ -33,7 +34,9 @@ GameInstance::GameInstance(GameWindow& window,
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
     developerConsole_.registerCommand("debug", [this] { return std::make_unique<DebugDrawCommand>(debugDraw_); });
 
-    luaScriptSystem_.init(world_, inputSystem_, debugDraw_, std::filesystem::path(ENGINE_DATA_DIR) / "scripts");
+    luaScriptSystem_.init(world_, inputSystem_, debugDraw_);
+    assetLoader_.scanAndRegisterScripts(luaScriptSystem_);
+    luaScriptSystem_.startInstances();
 
     physicsSystem_.onCollisionEnter([this](const PhysicsSystem::CollisionPair& pair) {
         luaScriptSystem_.callOnCollision(pair.first, pair.second);

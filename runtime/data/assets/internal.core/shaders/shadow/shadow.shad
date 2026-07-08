@@ -1,0 +1,5 @@
+{
+  "vertexShader": "assets/internal.core/shaders/shadow/shadow.vert.spv",
+  "fragmentShader": "assets/internal.core/shaders/shadow/shadow.frag.spv",
+  "depthBias": true
+}

@@ -1,0 +1,6 @@
+{
+  "vertexShader":      "assets/internal.editor/shaders/skydome/skydome.vert.spv",
+  "fragmentShader":    "assets/internal.editor/shaders/skydome/skydome.frag.spv",
+  "disableDepthWrite": true,
+  "depthLessOrEqual":  true
+}

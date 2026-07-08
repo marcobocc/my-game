@@ -147,7 +147,7 @@ namespace sol {
 						lua_pop(L, 1);
 #endif // Lua 5.2+ only
 						break;
-#endif // Not LuaJIT - comes builtin
+#endif // Not LuaJIT - comes internal
 					case lib::string:
 						luaL_requiref(L, "string", luaopen_string, 1);
 						lua_pop(L, 1);

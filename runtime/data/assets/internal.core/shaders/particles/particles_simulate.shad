@@ -1,0 +1,3 @@
+{
+  "computeShader": "assets/internal.core/shaders/particles/particles_simulate.comp.spv"
+}

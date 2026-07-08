@@ -1,8 +1,0 @@
-{
-  "vertexShader": "assets/builtin/shaders/_text/_text.vert.spv",
-  "fragmentShader": "assets/builtin/shaders/_text/_text.frag.spv",
-  "disableCull": true,
-  "enableAlphaBlend": true,
-  "disableDepthWrite": true,
-  "textVertexLayout": true
-}

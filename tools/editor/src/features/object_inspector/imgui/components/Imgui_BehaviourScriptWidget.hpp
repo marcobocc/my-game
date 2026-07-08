@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 #include "../Imgui_InspectorWidget.hpp"
+#include "modules/asset_management/AssetLoader.hpp"
+#include "modules/asset_management/asset_types/LuaScript.hpp"
 #include "modules/scene/components/BehaviourScript.hpp"
 #include "modules/scripting/ScriptPropertyParser.hpp"
 
@@ -13,9 +15,10 @@ class RuntimeScene;
 
 class Imgui_BehaviourScriptWidget : public Imgui_InspectorWidget {
 public:
-    Imgui_BehaviourScriptWidget(RuntimeScene& scene, std::string title) :
+    Imgui_BehaviourScriptWidget(RuntimeScene& scene, AssetLoader& assetLoader, std::string title) :
         Imgui_InspectorWidget(std::move(title)),
-        scene_(scene) {}
+        scene_(scene),
+        assetLoader_(assetLoader) {}
 
     void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
 
@@ -43,6 +46,7 @@ public:
 
 private:
     RuntimeScene& scene_;
+    AssetLoader& assetLoader_;
     std::optional<EntityHandle> lastObjectId_;
     BehaviourScript component_{};
     std::array<char, 256> nameBuf_{};
@@ -215,10 +219,10 @@ private:
                         UndoHistory::randomGroupId("Edit Script Property"));
     }
 
-    static std::vector<ScriptPropertyDescriptor> parseDescriptors(const std::string& scriptName) {
+    std::vector<ScriptPropertyDescriptor> parseDescriptors(const std::string& scriptName) {
         if (scriptName.empty()) return {};
-        auto path = std::filesystem::path(ENGINE_DATA_DIR) / "scripts" / (scriptName + ".lua");
-        if (!std::filesystem::exists(path)) return {};
-        return ScriptPropertyParser::parse(path);
+        auto* script = assetLoader_.get<LuaScript>(scriptName);
+        if (!script) return {};
+        return ScriptPropertyParser::parse(script->path);
     }
 };

@@ -1,0 +1,5 @@
+{
+  "vertexShader": "assets/internal.core/shaders/geometry_skinned/geometry_skinned.vert.spv",
+  "fragmentShader": "assets/internal.core/shaders/geometry_skinned/geometry_skinned.frag.spv",
+  "skinnedVertexLayout": true
+}

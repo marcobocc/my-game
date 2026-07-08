@@ -1,5 +1,0 @@
-{
-  "vertexShader": "assets/builtin/shaders/_shadow/_shadow.vert.spv",
-  "fragmentShader": "assets/builtin/shaders/_shadow/_shadow.frag.spv",
-  "depthBias": true
-}

@@ -17,7 +17,9 @@
 
 class LuaScriptSystem {
 public:
-    void init(World& world, InputSystem& input, DebugDraw& debugDraw, const std::filesystem::path& scriptsDir);
+    void init(World& world, InputSystem& input, DebugDraw& debugDraw);
+    void registerScript(const std::string& name, const std::filesystem::path& path);
+    void startInstances();
     void update(float dt);
     void callOnCollision(EntityHandle self, EntityHandle other);
 
@@ -25,7 +27,7 @@ private:
     struct ScriptChunk {
         sol::table proto;
         std::filesystem::file_time_type lastWriteTime;
-        std::unordered_set<std::string> entityProps; // property names declared as type "entity"
+        std::unordered_set<std::string> entityProps;
     };
 
     struct ScriptInstance {
@@ -38,14 +40,13 @@ private:
     LuaWorld* worldFacade_ = nullptr;
     LuaInput* inputFacade_ = nullptr;
     LuaDebugDraw* debugDrawFacade_ = nullptr;
-    std::filesystem::path scriptsDir_;
+    std::unordered_map<std::string, std::filesystem::path> registeredScripts_;
     World* world_ = nullptr;
     log4cxx::LoggerPtr logger_;
 
     std::unordered_map<std::string, ScriptChunk> chunks_;
     std::vector<ScriptInstance> instances_;
 
-    // Heap-allocated facades so pointers stay stable after init
     std::unique_ptr<LuaWorld> ownedWorld_;
     std::unique_ptr<LuaInput> ownedInput_;
     std::unique_ptr<LuaDebugDraw> ownedDebugDraw_;
@@ -57,8 +58,12 @@ private:
     void callOnStart(ScriptInstance& inst);
     void reload(ScriptInstance& inst);
     void checkHotReload();
+    void rebuildPackagePath();
 
-    std::filesystem::path pathFor(const std::string& name) const { return scriptsDir_ / (name + ".lua"); }
+    std::filesystem::path pathFor(const std::string& name) const {
+        auto it = registeredScripts_.find(name);
+        return it != registeredScripts_.end() ? it->second : std::filesystem::path{};
+    }
 
     template<typename Fn>
     void safeCall(const char* context, Fn&& fn) {

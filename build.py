@@ -213,32 +213,21 @@ def run_tests() -> bool:
     return return_code == 0
 
 
-
 # -----------------------------------------------------------------------------
 # Shader Compilation
 # -----------------------------------------------------------------------------
 def compile_shaders() -> bool:
-    """Compile shaders from the assets directory"""
-    shaders_dir = PROJECT_ROOT / "runtime" / "data" / "assets" / "builtin" / "shaders"
+    """Compile all shaders found under PROJECT_ROOT"""
+    shader_files = []
+    for ext in ("*.vert", "*.frag", "*.comp"):
+        shader_files.extend(PROJECT_ROOT.rglob(ext))
 
-    for pipeline_dir in shaders_dir.iterdir():
-        if not pipeline_dir.is_dir():
-            continue
-
-        pipeline_name = pipeline_dir.name
-        info(f"Compiling shaders for pipeline: {pipeline_name}")
-        shader_files = list(pipeline_dir.glob("*.vert")) + list(pipeline_dir.glob("*.frag"))
-        if not shader_files:
-            warn(f"No .vert or .frag files found in pipeline {pipeline_name}")
-            continue
-
-        pipeline_out_dir = shaders_dir / pipeline_name
-        for shader_file in shader_files:
-            output_file = pipeline_out_dir / f"{shader_file.name}.spv"
-            info(f"Compiling {pipeline_name}/{shader_file.name} -> {shader_file.name}.spv")
-            return_code = run_cmd(["glslc", str(shader_file), "-o", str(output_file)])
-            if return_code != 0:
-                return False
+    for shader_file in shader_files:
+        output_file = shader_file.parent / f"{shader_file.name}.spv"
+        info(f"Compiling {shader_file.relative_to(PROJECT_ROOT)} -> {output_file.name}")
+        return_code = run_cmd(["glslc", str(shader_file), "-o", str(output_file)])
+        if return_code != 0:
+            return False
     return True
 
 

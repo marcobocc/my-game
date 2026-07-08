@@ -63,8 +63,7 @@ public:
     }
 
     static bool isBuiltin(const std::string& assetName) {
-        return std::string_view(assetName).starts_with("assets/builtin/") ||
-               std::string_view(assetName).starts_with("assets/editor/");
+        return std::string_view(assetName).starts_with("assets/internal");
     }
 
     static bool isMutable(const std::string& assetName) { return !isBuiltin(assetName); }
@@ -112,6 +111,8 @@ public:
                 "Modify Asset",
                 mutationGroup);
     }
+
+    AssetLoader& loader() { return loader_; }
 
 private:
     AssetLoader& loader_;

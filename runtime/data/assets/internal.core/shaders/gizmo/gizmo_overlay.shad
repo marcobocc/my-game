@@ -1,0 +1,7 @@
+{
+  "vertexShader": "assets/internal.core/shaders/gizmo/gizmo.vert.spv",
+  "fragmentShader": "assets/internal.core/shaders/gizmo/gizmo.frag.spv",
+  "disableCull": true,
+  "disableDepthTest": true,
+  "positionColorVertexLayout": true
+}

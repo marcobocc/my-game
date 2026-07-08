@@ -126,7 +126,7 @@ private:
         auto scripts = scene_.getObject(entity).getComponents<BehaviourScript>();
         while (behaviourScriptWidgets_.size() < scripts.size())
             behaviourScriptWidgets_.emplace_back(std::make_unique<Imgui_BehaviourScriptWidget>(
-                    scene_, "BehaviourScript_" + std::to_string(behaviourScriptWidgets_.size())));
+                    scene_, assetStore_.loader(), "BehaviourScript_" + std::to_string(behaviourScriptWidgets_.size())));
         for (size_t i = 0; i < scripts.size(); ++i) {
             behaviourScriptWidgets_[i]->setCurrentObjectId(entity);
             behaviourScriptWidgets_[i]->setComponent(*scripts[i], i);

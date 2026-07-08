@@ -77,7 +77,7 @@ POSSIBILITY OF SUCH DAMAGE.  */
 
 #ifdef HAVE_ATOMIC_FUNCTIONS
 
-/* We have the atomic builtin functions.  */
+/* We have the atomic internal functions.  */
 
 #define backtrace_atomic_load_pointer(p) \
     __atomic_load_n ((p), __ATOMIC_ACQUIRE)

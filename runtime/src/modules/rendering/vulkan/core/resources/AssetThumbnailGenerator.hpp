@@ -12,8 +12,7 @@
 
 class AssetThumbnailGenerator {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetThumbnailGenerator");
-    static constexpr const char* PREVIEW_NOT_AVAILABLE_PATH = "assets/editor/preview_not_available.jpg";
-
+    static constexpr auto PREVIEW_NOT_AVAILABLE_PATH = "assets/internal.editor/images/preview_not_available.jpg";
 
 public:
     AssetThumbnailGenerator(AssetLoader& assetLoader, VulkanTextureCache& textureCache) :

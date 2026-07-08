@@ -1,0 +1,6 @@
+{
+  "vertexShader": "assets/internal.core/shaders/object_id/object_id.vert.spv",
+  "fragmentShader": "assets/internal.core/shaders/object_id/object_id.frag.spv",
+  "disableDepthTest": true,
+  "disableDepthWrite": true
+}

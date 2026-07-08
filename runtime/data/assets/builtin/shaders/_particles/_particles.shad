@@ -1,8 +1,0 @@
-{
-  "vertexShader": "assets/builtin/shaders/_particles/_particles.vert.spv",
-  "fragmentShader": "assets/builtin/shaders/_particles/_particles.frag.spv",
-  "noVertexInput": true,
-  "enableAlphaBlend": true,
-  "disableCull": true,
-  "disableDepthWrite": true
-}

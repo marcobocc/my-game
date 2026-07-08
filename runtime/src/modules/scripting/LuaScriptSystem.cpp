@@ -5,13 +5,9 @@
 #include "ScriptPropertyParser.hpp"
 #include "modules/scene/components/BehaviourScript.hpp"
 
-void LuaScriptSystem::init(World& world,
-                           InputSystem& input,
-                           DebugDraw& debugDraw,
-                           const std::filesystem::path& scriptsDir) {
+void LuaScriptSystem::init(World& world, InputSystem& input, DebugDraw& debugDraw) {
     logger_ = log4cxx::Logger::getLogger("LuaScriptSystem");
     world_ = &world;
-    scriptsDir_ = scriptsDir;
 
     lua_.open_libraries(sol::lib::base,
                         sol::lib::math,
@@ -29,9 +25,9 @@ void LuaScriptSystem::init(World& world,
         return 0;
     });
 
-    // Point require() at the scripts directory
-    std::string packagePath = (scriptsDir_ / "?.lua").string();
-    lua_["package"]["path"] = packagePath;
+    // Baseline: internal lua modules only. Extended by registerScript().
+    auto internalLuaDir = std::filesystem::path(ENGINE_DATA_DIR) / "assets" / "internal.core" / "lua";
+    lua_["package"]["path"] = (internalLuaDir / "?.lua").string();
 
     ownedWorld_ = std::make_unique<LuaWorld>(world);
     ownedInput_ = std::make_unique<LuaInput>(input);
@@ -48,21 +44,27 @@ void LuaScriptSystem::init(World& world,
             });
 
     LuaBindings::registerAll(lua_, *worldFacade_, *inputFacade_, *debugDrawFacade_);
+}
 
-    // Instantiate one ScriptInstance per BehaviourScript component (entities may have multiple)
-    for (const auto& actor: world.getActors()) {
-        for (const auto* script: actor->getComponents<BehaviourScript>()) {
-            if (script->scriptName.empty()) continue;
-            safeCall(script->scriptName.c_str(), [&] {
-                ScriptChunk& chunk = loadChunk(script->scriptName);
-                sol::table self = instantiate(chunk, actor->handle(), script->propertyValues);
-                instances_.push_back({actor->handle(), script->scriptName, std::move(self)});
-                callOnStart(instances_.back());
-            });
-        }
+void LuaScriptSystem::registerScript(const std::string& name, const std::filesystem::path& path) {
+    registeredScripts_[name] = path;
+    rebuildPackagePath();
+}
+
+void LuaScriptSystem::rebuildPackagePath() {
+    auto internalLuaDir = std::filesystem::path(ENGINE_DATA_DIR) / "assets" / "internal.core" / "lua";
+
+    std::unordered_set<std::string> dirs;
+    dirs.insert(internalLuaDir.string());
+    for (const auto& [_, p]: registeredScripts_)
+        dirs.insert(p.parent_path().string());
+
+    std::string packagePath;
+    for (const auto& dir: dirs) {
+        if (!packagePath.empty()) packagePath += ";";
+        packagePath += dir + "/?.lua";
     }
-
-    LOG4CXX_INFO(logger_, "Initialized — " << instances_.size() << " script instance(s)");
+    lua_["package"]["path"] = packagePath;
 }
 
 void LuaScriptSystem::update(float dt) {
@@ -86,6 +88,7 @@ LuaScriptSystem::ScriptChunk& LuaScriptSystem::loadChunk(const std::string& scri
     if (it != chunks_.end()) return it->second;
 
     auto path = pathFor(scriptName);
+    if (path.empty()) throw sol::error("Script not registered: " + scriptName);
     auto writeTime = std::filesystem::last_write_time(path);
 
     sol::protected_function_result result = lua_.safe_script_file(path.string());
@@ -96,14 +99,27 @@ LuaScriptSystem::ScriptChunk& LuaScriptSystem::loadChunk(const std::string& scri
 
     sol::table proto = result;
 
-    // Record which properties are declared as type "entity" so their injected
-    // handle values get wrapped into Entity objects rather than left as integers.
     std::unordered_set<std::string> entityProps;
     for (const auto& desc: ScriptPropertyParser::parse(path))
         if (desc.type == "entity") entityProps.insert(desc.name);
 
     chunks_[scriptName] = {std::move(proto), writeTime, std::move(entityProps)};
     return chunks_[scriptName];
+}
+
+void LuaScriptSystem::startInstances() {
+    for (const auto& actor: world_->getActors()) {
+        for (const auto* script: actor->getComponents<BehaviourScript>()) {
+            if (script->scriptName.empty()) continue;
+            safeCall(script->scriptName.c_str(), [&] {
+                ScriptChunk& chunk = loadChunk(script->scriptName);
+                sol::table self = instantiate(chunk, actor->handle(), script->propertyValues);
+                instances_.push_back({actor->handle(), script->scriptName, std::move(self)});
+                callOnStart(instances_.back());
+            });
+        }
+    }
+    LOG4CXX_INFO(logger_, "Started — " << instances_.size() << " script instance(s)");
 }
 
 sol::table LuaScriptSystem::instantiate(const ScriptChunk& chunk,
@@ -114,10 +130,8 @@ sol::table LuaScriptSystem::instantiate(const ScriptChunk& chunk,
         self[k] = v;
     self["entity"] = worldFacade_->wrap(entity);
 
-    // Inject editor-set property values into self before onStart runs
     for (const auto& [key, val]: propertyValues) {
         if (chunk.entityProps.count(key)) {
-            // Entity-typed property: wrap the stored handle into an Entity.
             self[key] = worldFacade_->wrap(val.is_number_integer() ? static_cast<EntityHandle>(val.get<int64_t>())
                                                                    : INVALID_ENTITY_HANDLE);
         } else if (val.is_number_integer()) {
@@ -168,7 +182,6 @@ void LuaScriptSystem::callOnStart(ScriptInstance& inst) {
 void LuaScriptSystem::reload(ScriptInstance& inst) {
     LOG4CXX_INFO(logger_, "Hot-reloading: " << inst.scriptName);
 
-    // Collect current propertyValues from the world so hot-reload preserves them
     std::unordered_map<std::string, nlohmann::json> propertyValues;
     if (world_) {
         if (Actor* actor = world_->getActor(inst.entity)) {
@@ -181,7 +194,6 @@ void LuaScriptSystem::reload(ScriptInstance& inst) {
         }
     }
 
-    // Fully release old state before reloading
     inst.self = sol::lua_nil;
     chunks_.erase(inst.scriptName);
 
@@ -195,6 +207,7 @@ void LuaScriptSystem::reload(ScriptInstance& inst) {
 void LuaScriptSystem::checkHotReload() {
     for (auto& inst: instances_) {
         auto path = pathFor(inst.scriptName);
+        if (path.empty()) continue;
         std::error_code ec;
         auto t = std::filesystem::last_write_time(path, ec);
         if (ec) continue;
