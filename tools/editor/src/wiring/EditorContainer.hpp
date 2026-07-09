@@ -75,10 +75,13 @@ public:
                    runtime_.simulationController(),
                    features_.imguiConsole(),
                    features_.welcomeScreen(),
-                   runtime_.animationSystem()) {
+                   runtime_.animationSystem(),
+                   runtime_.assetThumbnailGenerator()) {
         runtime_.simulationController().setEditorWorld(&runtime_.entityManager());
         runtime_.simulationController().setProjectRoot(runtime_.projectRoot());
-        if (!runtime_.projectRoot().empty()) services_.project().initProject();
+        if (!runtime_.projectRoot().empty()) {
+            services_.project().initProject();
+        }
         runtime_.developerConsole().registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
         runtime_.developerConsole().registerCommand(
                 "list-actors", [this] { return std::make_unique<ListActorsCommand>(runtime_.entityManager()); });

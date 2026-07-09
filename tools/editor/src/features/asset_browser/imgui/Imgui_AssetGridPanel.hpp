@@ -2,15 +2,15 @@
 #include <filesystem>
 #include <imgui.h>
 #include <string>
+#include "../../../services/AssetThumbnailGenerator.hpp"
 #include "../../../services/EditorSelection.hpp"
+#include "../../../services/ImguiThumbnail.hpp"
 #include "../../../services/common_editing/AssetQuickActions.hpp"
 #include "../../../services/common_editing/AssetStore.hpp"
 #include "../../../styling/EditorPanel.hpp"
 #include "../../../styling/ImguiStyling.hpp"
 #include "../../../styling/SearchBar.hpp"
 #include "Imgui_AssetDropdownMenu.hpp"
-#include "modules/rendering/vulkan/core/resources/AssetThumbnailGenerator.hpp"
-#include "modules/rendering/vulkan/core/resources/ImguiThumbnail.hpp"
 
 class Imgui_AssetGridPanel : public EditorPanel {
 public:
@@ -119,6 +119,7 @@ private:
     void drawAssetGrid(const Tab& tab) {
         std::vector<std::string> assets;
         for (auto& file: assetStore_.listAll()) {
+            if (file.starts_with(".cache/")) continue;
             if (!AssetStore::isBuiltin(file) && isKnownAsset(file) && matchesSearch(file) && matchesTab(file, tab))
                 assets.push_back(file);
         }

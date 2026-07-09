@@ -1,11 +1,11 @@
 #pragma once
 #include <imgui.h>
 #include <string>
+#include "../../../services/AssetThumbnailGenerator.hpp"
 #include "../../../services/EditorSelection.hpp"
+#include "../../../services/ImguiThumbnail.hpp"
 #include "../../../styling/EditorPanel.hpp"
 #include "../../../styling/ImguiStyling.hpp"
-#include "modules/rendering/vulkan/core/resources/AssetThumbnailGenerator.hpp"
-#include "modules/rendering/vulkan/core/resources/ImguiThumbnail.hpp"
 
 class Imgui_AssetPreviewPanel : public EditorPanel {
 public:

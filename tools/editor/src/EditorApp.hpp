@@ -19,6 +19,7 @@
 #include "modules/physics/PhysicsSystem.hpp"
 #include "modules/scene/World.hpp"
 #include "rendering/EditorRenderer.hpp"
+#include "services/AssetThumbnailGenerator.hpp"
 #include "services/EditorContext.hpp"
 #include "services/EditorSettings.hpp"
 #include "services/SimulationController.hpp"
@@ -49,7 +50,8 @@ public:
               SimulationController& simulationController,
               Imgui_Console& imguiConsole,
               Imgui_WelcomeScreen& welcomeScreen,
-              AnimationSystem& animationSystem) :
+              AnimationSystem& animationSystem,
+              AssetThumbnailGenerator& thumbnailGenerator) :
         window_(window),
         developerConsole_(developerConsole),
         inputSystem_(inputSystem),
@@ -66,7 +68,8 @@ public:
         simulationController_(simulationController),
         imguiConsole_(imguiConsole),
         welcomeScreen_(welcomeScreen),
-        animationSystem_(animationSystem) {
+        animationSystem_(animationSystem),
+        thumbnailGenerator_(thumbnailGenerator) {
         welcomeScreen_.setCallbacks({
                 [this](const std::filesystem::path& path) { openProject(path); },
                 [this] { newProject(); },
@@ -79,6 +82,7 @@ public:
     void openProject(const std::filesystem::path& projectRoot) {
         project_.openProject(projectRoot);
         simulationController_.setProjectRoot(projectRoot);
+        thumbnailGenerator_.setProjectRoot(projectRoot);
         enterEditor();
     }
 
@@ -245,6 +249,7 @@ private:
     Imgui_Console& imguiConsole_;
     Imgui_WelcomeScreen& welcomeScreen_;
     AnimationSystem& animationSystem_;
+    AssetThumbnailGenerator& thumbnailGenerator_;
     Imgui_CloseModal closeModal_;
     AppState appState_ = AppState::Welcome;
     bool simWasActive_ = false;
