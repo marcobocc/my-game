@@ -1,8 +1,8 @@
 #pragma once
+#include "../../../../../../../runtime/src/graphics/assets/Mesh.hpp"
 #include "../../../../services/EditorSelection.hpp"
 #include "../../../../services/common_editing/AssetStore.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/asset_management/asset_types/Mesh.hpp"
 
 class Imgui_MeshWidget : public Imgui_InspectorWidget {
 public:

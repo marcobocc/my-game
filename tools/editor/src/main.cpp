@@ -4,7 +4,7 @@
 #include <log4cxx/logger.h>
 #include <log4cxx/patternlayout.h>
 #include <vector>
-#include "modules/core/GameWindow.hpp"
+#include "core/GameWindow.hpp"
 #include "wiring/EditorContainer.hpp"
 
 std::vector<std::filesystem::path> createMountPaths(const std::filesystem::path& projectPath) {

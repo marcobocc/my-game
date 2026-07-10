@@ -1,6 +1,6 @@
 #pragma once
 #include <log4cxx/logger.h>
-#include "modules/asset_management/VirtualFileSystem.hpp"
+#include "core/assets/VirtualFileSystem.hpp"
 
 class AssetBaker {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetBaker");

@@ -1,12 +1,12 @@
 #pragma once
 #include <optional>
 #include <string>
+#include "../../../../../../../runtime/src/graphics/assets/Material.hpp"
+#include "../../../../../../../runtime/src/graphics/components/Renderer.hpp"
 #include "../../../../services/common_editing/AssetStore.hpp"
 #include "../../../../services/common_editing/RuntimeScene.hpp"
 #include "../../../scene_viewport/gizmos/EditorGizmos.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/asset_management/asset_types/Material.hpp"
-#include "modules/scene/components/Renderer.hpp"
 
 class Imgui_RendererWidget : public Imgui_InspectorWidget {
 public:

@@ -1,6 +1,6 @@
 #pragma once
 #include "../UndoHistory.hpp"
-#include "modules/scene/World.hpp"
+#include "core/scene/World.hpp"
 
 /*
 RuntimeGameObject

@@ -1,9 +1,9 @@
 #pragma once
 #include <glm/gtc/quaternion.hpp>
 #include <optional>
+#include "../../../../../../../runtime/src/core/components/Metadata.hpp"
+#include "../../../../../../../runtime/src/core/components/Transform.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/scene/components/Metadata.hpp"
-#include "modules/scene/components/Transform.hpp"
 
 class RuntimeScene;
 

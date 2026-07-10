@@ -1,9 +1,9 @@
 #pragma once
 #include <vector>
-#include "modules/animation/AnimationSystem.hpp"
-#include "modules/debug/DebugDraw.hpp"
-#include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "modules/scene/World.hpp"
+#include "../../../../runtime/src/graphics/debug/DebugDraw.hpp"
+#include "animation/AnimationSystem.hpp"
+#include "core/scene/World.hpp"
+#include "graphics/vulkan/passes/VulkanGizmoPass.hpp"
 
 class VulkanBackend;
 class EditorCamera;

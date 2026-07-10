@@ -1,12 +1,12 @@
 #pragma once
 #include <imgui.h>
+#include "../../../../../../runtime/src/graphics/components/Renderer.hpp"
 #include "../../../services/ClipboardService.hpp"
 #include "../../scene_hierarchy/imgui/Imgui_CapsulePopupModal.hpp"
 #include "../../scene_hierarchy/imgui/Imgui_HierarchyDropdownMenu.hpp"
 #include "../editor_camera/EditorCamera.hpp"
 #include "../picking/PickingSystem.hpp"
-#include "modules/core/GameWindow.hpp"
-#include "modules/scene/components/Renderer.hpp"
+#include "core/GameWindow.hpp"
 
 class RuntimeScene;
 class AssetStore;

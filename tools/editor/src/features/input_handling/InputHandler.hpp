@@ -4,8 +4,8 @@
 #include "../../services/UndoHistory.hpp"
 #include "../scene_viewport/picking/PickingSystem.hpp"
 #include "ShortcutBindingService.hpp"
-#include "modules/core/GameWindow.hpp"
-#include "modules/input/InputSystem.hpp"
+#include "core/GameWindow.hpp"
+#include "input/InputSystem.hpp"
 
 class EditorGizmos;
 class EditorCamera;

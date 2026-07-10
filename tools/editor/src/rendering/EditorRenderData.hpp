@@ -1,12 +1,12 @@
 #pragma once
 #include <utility>
 #include <vector>
-#include "modules/rendering/GameRenderData.hpp"
-#include "modules/rendering/vulkan/core/utils/structs.hpp"
-#include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "modules/scene/components/Camera.hpp"
-#include "modules/scene/components/Light.hpp"
-#include "modules/scene/components/Transform.hpp"
+#include "../../../../runtime/src/core/components/Transform.hpp"
+#include "../../../../runtime/src/graphics/components/Camera.hpp"
+#include "../../../../runtime/src/graphics/components/Light.hpp"
+#include "graphics/GameRenderData.hpp"
+#include "graphics/vulkan/core/utils/structs.hpp"
+#include "graphics/vulkan/passes/VulkanGizmoPass.hpp"
 
 struct EditorRenderData {
     const Camera& camera;

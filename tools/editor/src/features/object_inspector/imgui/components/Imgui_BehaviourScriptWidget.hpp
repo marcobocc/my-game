@@ -5,11 +5,11 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include "../../../../../../../runtime/src/scripting/assets/LuaScript.hpp"
+#include "../../../../../../../runtime/src/scripting/components/BehaviourScript.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/asset_management/AssetLoader.hpp"
-#include "modules/asset_management/asset_types/LuaScript.hpp"
-#include "modules/scene/components/BehaviourScript.hpp"
-#include "modules/scripting/ScriptPropertyParser.hpp"
+#include "core/assets/AssetLoader.hpp"
+#include "scripting/ScriptPropertyParser.hpp"
 
 class RuntimeScene;
 

@@ -1,4 +1,8 @@
 #include "EditorRenderer.hpp"
+#include "../../../../runtime/src/graphics/components/ParticleEmitter.hpp"
+#include "../../../../runtime/src/graphics/components/Renderer.hpp"
+#include "../../../../runtime/src/graphics/components/TextComponent.hpp"
+#include "../../../../runtime/src/graphics/debug/DebugDraw.hpp"
 #include "../features/ImguiRoot.hpp"
 #include "../features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "../features/scene_viewport/gizmos/EditorGizmos.hpp"
@@ -8,14 +12,10 @@
 #include "../services/EditorSelection.hpp"
 #include "EditorRenderData.hpp"
 #include "VulkanBackend.hpp"
-#include "modules/asset_management/BuiltinAssetNames.hpp"
-#include "modules/debug/DebugDraw.hpp"
-#include "modules/rendering/GameRenderData.hpp"
-#include "modules/scene/TransformUtils.hpp"
-#include "modules/scene/World.hpp"
-#include "modules/scene/components/ParticleEmitter.hpp"
-#include "modules/scene/components/Renderer.hpp"
-#include "modules/scene/components/TextComponent.hpp"
+#include "core/assets/BuiltinAssetNames.hpp"
+#include "core/scene/TransformUtils.hpp"
+#include "core/scene/World.hpp"
+#include "graphics/GameRenderData.hpp"
 
 EditorRenderer::EditorRenderer(VulkanBackend& renderer,
                                EditorCamera& editorOrbitCamera,

@@ -2,7 +2,7 @@
 #include <imgui.h>
 #include <string>
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/scene/components/gameplay/HealthComponent.hpp"
+#include "core/scene/components/gameplay/HealthComponent.hpp"
 
 class RuntimeScene;
 

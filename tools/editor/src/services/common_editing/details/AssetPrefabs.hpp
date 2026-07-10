@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
-#include "modules/asset_management/asset_types/Material.hpp"
-#include "modules/asset_management/asset_types/Mesh.hpp"
+#include "../../../../../../runtime/src/graphics/assets/Material.hpp"
+#include "graphics/assets/Mesh.hpp"
 
 namespace AssetPrefabs {
     Mesh sphere(uint32_t resolution, const std::string& name);

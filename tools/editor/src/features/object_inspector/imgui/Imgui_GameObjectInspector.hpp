@@ -3,6 +3,15 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "../../../../../../runtime/src/animation/components/Animator.hpp"
+#include "../../../../../../runtime/src/core/components/Transform.hpp"
+#include "../../../../../../runtime/src/graphics/components/Camera.hpp"
+#include "../../../../../../runtime/src/graphics/components/Light.hpp"
+#include "../../../../../../runtime/src/graphics/components/ParticleEmitter.hpp"
+#include "../../../../../../runtime/src/graphics/components/Renderer.hpp"
+#include "../../../../../../runtime/src/graphics/components/TextComponent.hpp"
+#include "../../../../../../runtime/src/physics/components/CapsuleCollider.hpp"
+#include "../../../../../../runtime/src/scripting/components/BehaviourScript.hpp"
 #include "../../../services/EditorSelection.hpp"
 #include "../../../services/common_editing/AssetStore.hpp"
 #include "../../../services/common_editing/RuntimeScene.hpp"
@@ -17,16 +26,7 @@
 #include "components/Imgui_RendererWidget.hpp"
 #include "components/Imgui_TextComponentWidget.hpp"
 #include "components/Imgui_TransformWidget.hpp"
-#include "modules/scene/components/Animator.hpp"
-#include "modules/scene/components/BehaviourScript.hpp"
-#include "modules/scene/components/BoxCollider.hpp"
-#include "modules/scene/components/Camera.hpp"
-#include "modules/scene/components/CapsuleCollider.hpp"
-#include "modules/scene/components/Light.hpp"
-#include "modules/scene/components/ParticleEmitter.hpp"
-#include "modules/scene/components/Renderer.hpp"
-#include "modules/scene/components/TextComponent.hpp"
-#include "modules/scene/components/Transform.hpp"
+#include "physics/components/BoxCollider.hpp"
 
 class Imgui_GameObjectInspector {
 public:

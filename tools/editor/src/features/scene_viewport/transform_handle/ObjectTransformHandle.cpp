@@ -3,13 +3,13 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <string>
+#include "../../../../../../runtime/src/core/components/Transform.hpp"
 #include "../../../services/EditorSelection.hpp"
 #include "../../../services/EditorSettings.hpp"
 #include "../../../services/common_editing/RuntimeScene.hpp"
 #include "../editor_camera/EditorCamera.hpp"
-#include "modules/input/RaycastPickingSystem.hpp"
-#include "modules/scene/TransformUtils.hpp"
-#include "modules/scene/components/Transform.hpp"
+#include "core/scene/TransformUtils.hpp"
+#include "input/RaycastPickingSystem.hpp"
 
 // Walks the parent chain and returns the world matrix of t's parent (identity if no parent).
 static glm::mat4 parentWorldMatrix(const Transform& t, const RuntimeScene& scene) {

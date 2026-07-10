@@ -1,7 +1,7 @@
 #pragma once
 #include <optional>
+#include "../../../../../../../runtime/src/graphics/components/ParticleEmitter.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/scene/components/ParticleEmitter.hpp"
 
 class RuntimeScene;
 

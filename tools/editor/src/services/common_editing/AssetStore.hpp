@@ -6,9 +6,9 @@
 #include <string>
 #include <unordered_map>
 #include "../UndoHistory.hpp"
+#include "core/assets/AssetLoader.hpp"
+#include "core/assets/VirtualFileSystem.hpp"
 #include "details/AssetBaker.hpp"
-#include "modules/asset_management/AssetLoader.hpp"
-#include "modules/asset_management/VirtualFileSystem.hpp"
 #include "transport/GameObjectDTO.hpp"
 #include "transport/SceneDTO.hpp"
 

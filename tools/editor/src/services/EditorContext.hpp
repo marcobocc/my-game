@@ -2,8 +2,8 @@
 #include <filesystem>
 #include <optional>
 #include "common_editing/RuntimeScene.hpp"
-#include "modules/asset_management/VirtualFileSystem.hpp"
-#include "modules/scene/World.hpp"
+#include "core/assets/VirtualFileSystem.hpp"
+#include "core/scene/World.hpp"
 
 class EditorSelection;
 class AssetStore;

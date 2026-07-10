@@ -5,12 +5,12 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include "../../../../../../runtime/src/core/components/Transform.hpp"
+#include "../../../../../../runtime/src/graphics/components/Camera.hpp"
 #include "../gizmos/gizmos.hpp"
-#include "modules/rendering/vulkan/passes/VulkanGizmoPass.hpp"
-#include "modules/scene/EntityHandle.hpp"
-#include "modules/scene/components/Camera.hpp"
-#include "modules/scene/components/Transform.hpp"
-#include "utils/math/Ray.hpp"
+#include "core/scene/EntityHandle.hpp"
+#include "graphics/vulkan/passes/VulkanGizmoPass.hpp"
+#include "math/Ray.hpp"
 
 class GameWindow;
 class RuntimeScene;

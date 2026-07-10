@@ -2,7 +2,7 @@
 #include <vector>
 #include "../UndoHistory.hpp"
 #include "RuntimeGameObject.hpp"
-#include "modules/scene/World.hpp"
+#include "core/scene/World.hpp"
 #include "transport/GameObjectDTO.hpp"
 #include "transport/SceneDTO.hpp"
 

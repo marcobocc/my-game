@@ -1,8 +1,8 @@
 #pragma once
 #include <optional>
+#include "../../../../../../../runtime/src/graphics/components/Camera.hpp"
 #include "../../../../services/common_editing/RuntimeScene.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/scene/components/Camera.hpp"
 
 class Imgui_CameraWidget : public Imgui_InspectorWidget {
 public:

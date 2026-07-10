@@ -2,8 +2,8 @@
 #include <array>
 #include <cstring>
 #include <optional>
+#include "../../../../../../../runtime/src/graphics/components/TextComponent.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/scene/components/TextComponent.hpp"
 
 class RuntimeScene;
 

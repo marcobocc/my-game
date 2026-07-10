@@ -2,17 +2,17 @@
 #include <filesystem>
 #include <memory>
 #include <stdexcept>
-#include "../../../runtime/src/GameInstance.hpp"
-#include "../../../runtime/src/modules/input/InputSystem.hpp"
-#include "../../../runtime/src/modules/physics/PhysicsSystem.hpp"
-#include "../../../runtime/src/modules/rendering/GameRenderSystem.hpp"
-#include "../../../runtime/src/modules/scene/World.hpp"
+#include "../../../../runtime/src/core/GameInstance.hpp"
+#include "../../../runtime/src/core/scene/World.hpp"
+#include "../../../runtime/src/graphics/GameRenderSystem.hpp"
+#include "../../../runtime/src/input/InputSystem.hpp"
+#include "../../../runtime/src/physics/PhysicsSystem.hpp"
 
 class GameWindow;
 class TimeManager;
 class AssetCache;
 class AssetLoader;
-#include "modules/rendering/IGameRenderer.hpp"
+#include "graphics/IGameRenderer.hpp"
 struct RendererSettings;
 
 class SimulationController {
@@ -52,15 +52,8 @@ public:
     }
 
     void start(World snapshot) {
-        gameInstance_ = std::make_unique<GameInstance>(window_,
-                                                       time_,
-                                                       loadedAssets_,
-                                                       assetLoader_,
-                                                       inputSystem_,
-                                                       std::move(snapshot),
-                                                       renderSystem_,
-                                                       rendererSettings_,
-                                                       renderer_);
+        gameInstance_ = std::make_unique<GameInstance>(
+                window_, time_, loadedAssets_, assetLoader_, inputSystem_, std::move(snapshot), renderSystem_);
         gameInstance_->physicsSystem().resume();
         state_ = State::Running;
     }

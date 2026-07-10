@@ -2,8 +2,8 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <sstream>
-#include "modules/asset_management/asset_types/Material.hpp"
-#include "modules/asset_management/asset_types/Mesh.hpp"
+#include "../../../../../../runtime/src/graphics/assets/Material.hpp"
+#include "graphics/assets/Mesh.hpp"
 
 template<>
 void AssetBaker::bake<Material>(const Material& material, const std::string& assetName) {

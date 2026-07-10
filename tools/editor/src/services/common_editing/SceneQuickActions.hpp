@@ -3,18 +3,18 @@
 #include <glm/gtc/quaternion.hpp>
 #include <optional>
 #include <string>
+#include "../../../../../runtime/src/core/components/Metadata.hpp"
+#include "../../../../../runtime/src/core/components/Transform.hpp"
+#include "../../../../../runtime/src/graphics/assets/Mesh.hpp"
+#include "../../../../../runtime/src/graphics/components/Light.hpp"
+#include "../../../../../runtime/src/graphics/components/Renderer.hpp"
 #include "../ClipboardService.hpp"
 #include "../EditorSelection.hpp"
 #include "../UndoHistory.hpp"
 #include "AssetStore.hpp"
 #include "RuntimeScene.hpp"
 #include "details/AssetPrefabs.hpp"
-#include "modules/asset_management/asset_types/Mesh.hpp"
-#include "modules/asset_management/asset_types/Model.hpp"
-#include "modules/scene/components/Light.hpp"
-#include "modules/scene/components/Metadata.hpp"
-#include "modules/scene/components/Renderer.hpp"
-#include "modules/scene/components/Transform.hpp"
+#include "graphics/assets/Model.hpp"
 #include "transport/GameObjectDTO.hpp"
 
 class SceneQuickActions {

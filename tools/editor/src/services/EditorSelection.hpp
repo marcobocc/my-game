@@ -2,7 +2,7 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include "modules/scene/EntityHandle.hpp"
+#include "core/scene/EntityHandle.hpp"
 
 using AssetHandle = std::string;
 

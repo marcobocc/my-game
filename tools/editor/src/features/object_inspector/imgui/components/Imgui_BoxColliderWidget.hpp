@@ -1,10 +1,10 @@
 #pragma once
 #include <optional>
 #include <string>
+#include "../../../../../../../runtime/src/physics/components/BoxCollider.hpp"
 #include "../../../../services/common_editing/RuntimeScene.hpp"
 #include "../../../scene_viewport/gizmos/EditorGizmos.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/scene/components/BoxCollider.hpp"
 
 class Imgui_BoxColliderWidget : public Imgui_InspectorWidget {
 public:

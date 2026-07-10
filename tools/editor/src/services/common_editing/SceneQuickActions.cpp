@@ -4,7 +4,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <optional>
 #include <unordered_set>
-#include "modules/scene/TransformUtils.hpp"
+#include "core/scene/TransformUtils.hpp"
 #include "transport/SceneDTO.hpp"
 
 void SceneQuickActions::deleteSelection() {

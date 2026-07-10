@@ -3,7 +3,7 @@
 #include <optional>
 #include <vector>
 #include "GameObjectDTO.hpp"
-#include "modules/scene/EntityHandle.hpp"
+#include "core/scene/EntityHandle.hpp"
 
 struct HierarchyNode {
     EntityHandle handle{};

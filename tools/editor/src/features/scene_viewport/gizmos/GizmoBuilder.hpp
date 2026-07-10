@@ -1,6 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
-#include "modules/scene/World.hpp"
+#include "core/scene/World.hpp"
 
 class AssetLoader;
 class EditorSettings;

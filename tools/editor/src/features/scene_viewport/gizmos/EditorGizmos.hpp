@@ -1,6 +1,6 @@
 #pragma once
 #include <unordered_set>
-#include "modules/scene/EntityHandle.hpp"
+#include "core/scene/EntityHandle.hpp"
 
 class EditorGizmos {
 public:

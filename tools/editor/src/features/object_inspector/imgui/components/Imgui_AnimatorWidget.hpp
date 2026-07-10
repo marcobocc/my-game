@@ -1,13 +1,13 @@
 #pragma once
 #include <array>
 #include <optional>
+#include "../../../../../../../runtime/src/animation/assets/AnimatorController.hpp"
+#include "../../../../../../../runtime/src/animation/components/Animator.hpp"
+#include "../../../../../../../runtime/src/graphics/assets/Mesh.hpp"
+#include "../../../../../../../runtime/src/graphics/components/Renderer.hpp"
 #include "../../../../services/common_editing/AssetStore.hpp"
 #include "../../../../services/common_editing/RuntimeScene.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/asset_management/asset_types/AnimatorController.hpp"
-#include "modules/asset_management/asset_types/Mesh.hpp"
-#include "modules/scene/components/Animator.hpp"
-#include "modules/scene/components/Renderer.hpp"
 
 class Imgui_AnimatorWidget : public Imgui_InspectorWidget {
 public:

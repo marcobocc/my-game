@@ -6,11 +6,11 @@
 #include <string>
 #include <unordered_map>
 #include <vulkan/vulkan.h>
+#include "../../../../runtime/src/graphics/assets/Texture.hpp"
 #include "ImguiThumbnail.hpp"
 #include "backends/imgui_impl_vulkan.h"
-#include "modules/asset_management/AssetLoader.hpp"
-#include "modules/asset_management/asset_types/Texture.hpp"
-#include "modules/rendering/vulkan/core/resources/VulkanTextureCache.hpp"
+#include "core/assets/AssetLoader.hpp"
+#include "graphics/vulkan/core/resources/VulkanTextureCache.hpp"
 #include "stb_image.h"
 #include "stb_image_write.h"
 

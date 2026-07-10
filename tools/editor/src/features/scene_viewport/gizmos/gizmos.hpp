@@ -1,7 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <vector>
-#include "modules/scene/EntityHandle.hpp"
+#include "core/scene/EntityHandle.hpp"
 
 enum class GizmoType { Translation, Rotation, Scale };
 enum class GizmoAxis { X, Y, Z, All };

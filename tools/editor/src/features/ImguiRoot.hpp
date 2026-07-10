@@ -2,10 +2,10 @@
 #include <functional>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include "../../../../runtime/src/modules/debug/console/Imgui_Console.hpp"
+#include "../../../../runtime/src/graphics/debug/Imgui_Console.hpp"
 #include "application_toolbar/Imgui_ApplicationMenuBar.hpp"
 #include "asset_browser/imgui/Imgui_AssetGridPanel.hpp"
-#include "modules/core/GameWindow.hpp"
+#include "core/GameWindow.hpp"
 #include "object_inspector/imgui/Imgui_InspectorPanel.hpp"
 #include "scene_hierarchy/imgui/Imgui_HierarchyPanel.hpp"
 #include "scene_viewport/imgui/Imgui_EditorSceneViewport.hpp"

@@ -2,10 +2,10 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
+#include "../../../../../../../runtime/src/graphics/assets/Material.hpp"
 #include "../../../../services/EditorSelection.hpp"
 #include "../../../../services/common_editing/AssetStore.hpp"
 #include "../Imgui_InspectorWidget.hpp"
-#include "modules/asset_management/asset_types/Material.hpp"
 
 class Imgui_MaterialWidget : public Imgui_InspectorWidget {
 public:

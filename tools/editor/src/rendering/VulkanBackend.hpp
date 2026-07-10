@@ -7,13 +7,13 @@
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "../../../../runtime/src/core/components/Transform.hpp"
+#include "../../../../runtime/src/graphics/RendererSettings.hpp"
+#include "../../../../runtime/src/graphics/components/Camera.hpp"
 #include "EditorRenderData.hpp"
-#include "modules/rendering/IGameRenderer.hpp"
-#include "modules/rendering/vulkan/core/RenderGraph.hpp"
-#include "modules/rendering/vulkan/core/utils/structs.hpp"
-#include "modules/scene/components/Camera.hpp"
-#include "modules/scene/components/Transform.hpp"
-#include "structs/RendererSettings.hpp"
+#include "graphics/IGameRenderer.hpp"
+#include "graphics/vulkan/core/RenderGraph.hpp"
+#include "graphics/vulkan/core/utils/structs.hpp"
 
 class GameWindow;
 class VulkanGeometryPass;

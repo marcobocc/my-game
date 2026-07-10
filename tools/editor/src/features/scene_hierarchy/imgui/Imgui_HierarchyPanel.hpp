@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include <string>
 #include <unordered_map>
+#include "../../../../../../runtime/src/core/components/Metadata.hpp"
 #include "../../../services/ActionDispatcher.hpp"
 #include "../../../services/ClipboardService.hpp"
 #include "../../../services/EditorSelection.hpp"
@@ -18,7 +19,6 @@
 #include "Imgui_CapsulePopupModal.hpp"
 #include "Imgui_HierarchyDropdownMenu.hpp"
 #include "Imgui_SpherePopupModal.hpp"
-#include "modules/scene/components/Metadata.hpp"
 
 class Imgui_HierarchyPanel : public EditorPanel {
 public:
