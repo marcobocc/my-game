@@ -43,6 +43,7 @@ struct VulkanTexture {
     VkSampler sampler = VK_NULL_HANDLE;
     uint32_t width = 0;
     uint32_t height = 0;
+    uint32_t mipLevels = 1;
 };
 
 struct VulkanRenderTarget {
@@ -90,6 +91,7 @@ struct VulkanPipeline {
 struct VulkanMaterial {
     VulkanPipeline* pipeline = nullptr;
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+    VulkanBuffer layerParams{}; // terrain-blend only: UBO with per-layer tint/tiling
 };
 
 // ------------------------------------------------------------------------

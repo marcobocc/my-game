@@ -20,7 +20,12 @@ public:
              float ao,
              const glm::vec2& tiling,
              const glm::vec2& offset,
-             bool scaleInvariantUV) :
+             bool scaleInvariantUV,
+             const std::string& splatMapTexture = EMPTY_TEXTURE,
+             const std::string& layerMaterial0 = SOLID_COLOR_MATERIAL,
+             const std::string& layerMaterial1 = SOLID_COLOR_MATERIAL,
+             const std::string& layerMaterial2 = SOLID_COLOR_MATERIAL,
+             const std::string& layerMaterial3 = SOLID_COLOR_MATERIAL) :
         Asset(name),
         tint(tint),
         albedoTexture(albedoTexture),
@@ -33,7 +38,16 @@ public:
         ao(ao),
         tiling(tiling),
         offset(offset),
-        scaleInvariantUV(scaleInvariantUV) {}
+        scaleInvariantUV(scaleInvariantUV),
+        splatMapTexture(splatMapTexture),
+        layerMaterial0(layerMaterial0),
+        layerMaterial1(layerMaterial1),
+        layerMaterial2(layerMaterial2),
+        layerMaterial3(layerMaterial3) {}
+
+    // A material paints via a splatmap once "Enable Painting" has assigned one (see terrain.md Milestone 3);
+    // this is what routes it to the terrain-blend shader/descriptor path instead of the single-albedo path.
+    bool isTerrainBlend() const { return splatMapTexture != EMPTY_TEXTURE; }
 
     static Material deserialize(const nlohmann::json& j, const std::string& name) {
         return {name,
@@ -48,7 +62,12 @@ public:
                 JsonUtils::getOptional<float>(j, "ao", 1.0f),
                 JsonUtils::getOptional<glm::vec2>(j, "tiling", glm::vec2{1.0f, 1.0f}),
                 JsonUtils::getOptional<glm::vec2>(j, "offset", glm::vec2{0.0f, 0.0f}),
-                JsonUtils::getOptional<bool>(j, "scaleInvariantUV", false)};
+                JsonUtils::getOptional<bool>(j, "scaleInvariantUV", false),
+                JsonUtils::getOptional<std::string>(j, "splatMapTexture", EMPTY_TEXTURE),
+                JsonUtils::getOptional<std::string>(j, "layerMaterial0", SOLID_COLOR_MATERIAL),
+                JsonUtils::getOptional<std::string>(j, "layerMaterial1", SOLID_COLOR_MATERIAL),
+                JsonUtils::getOptional<std::string>(j, "layerMaterial2", SOLID_COLOR_MATERIAL),
+                JsonUtils::getOptional<std::string>(j, "layerMaterial3", SOLID_COLOR_MATERIAL)};
     }
 
     nlohmann::json serialize() const {
@@ -65,6 +84,11 @@ public:
         j["tiling"] = JsonUtils::serializeVec2(tiling);
         j["offset"] = JsonUtils::serializeVec2(offset);
         j["scaleInvariantUV"] = scaleInvariantUV;
+        j["splatMapTexture"] = splatMapTexture;
+        j["layerMaterial0"] = layerMaterial0;
+        j["layerMaterial1"] = layerMaterial1;
+        j["layerMaterial2"] = layerMaterial2;
+        j["layerMaterial3"] = layerMaterial3;
         return j;
     }
 
@@ -80,4 +104,11 @@ public:
     glm::vec2 tiling;
     glm::vec2 offset;
     bool scaleInvariantUV;
+    std::string splatMapTexture;
+    // Terrain-blend layers: each references another Material asset whose albedo/tint/tiling
+    // define the layer's appearance. Weighted by the splatmap's RGBA channels.
+    std::string layerMaterial0;
+    std::string layerMaterial1;
+    std::string layerMaterial2;
+    std::string layerMaterial3;
 };

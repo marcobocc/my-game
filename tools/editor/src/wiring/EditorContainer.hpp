@@ -2,6 +2,9 @@
 #include <filesystem>
 #include "../EditorApp.hpp"
 #include "../features/input_handling/InputHandler.hpp"
+#include "../features/terrain_tool/Imgui_TerrainPanel.hpp"
+#include "../features/terrain_tool/TerrainPaintTool.hpp"
+#include "../features/terrain_tool/TerrainSculptTool.hpp"
 #include "FeaturesContainer.hpp"
 #include "RenderingContainer.hpp"
 #include "RuntimeContainer.hpp"
@@ -32,7 +35,8 @@ public:
                   services_.assetQuickActions(),
                   services_.sceneQuickActions(),
                   services_.clipboardService(),
-                  runtime_.simulationController()),
+                  runtime_.simulationController(),
+                  services_.editorModeService()),
         inputHandler_(window,
                       runtime_.inputSystem(),
                       features_.pickingSystem(),
@@ -58,7 +62,28 @@ public:
                    features_.objectTransformHandle(),
                    features_.imguiRoot(),
                    features_.simHUDRoot(),
-                   features_.welcomeRoot()),
+                   features_.welcomeRoot(),
+                   services_.editorModeService()),
+        terrainSculptTool_(runtime_.entityManager(),
+                           services_.scene(),
+                           services_.editorSelection(),
+                           services_.assetStore(),
+                           features_.editorCamera(),
+                           runtime_.inputSystem(),
+                           window,
+                           runtime_.vulkanBackend(),
+                           services_.undoHistory()),
+        terrainPaintTool_(runtime_.entityManager(),
+                          services_.scene(),
+                          services_.editorSelection(),
+                          services_.assetStore(),
+                          features_.editorCamera(),
+                          runtime_.inputSystem(),
+                          window,
+                          runtime_.vulkanBackend(),
+                          services_.undoHistory()),
+        terrainPanel_(
+                terrainSculptTool_, terrainPaintTool_, services_.sceneQuickActions(), services_.editorSelection()),
         editorApp_(window,
                    runtime_.developerConsole(),
                    runtime_.inputSystem(),
@@ -76,7 +101,11 @@ public:
                    features_.imguiConsole(),
                    features_.welcomeScreen(),
                    runtime_.animationSystem(),
-                   runtime_.assetThumbnailGenerator()) {
+                   runtime_.assetThumbnailGenerator(),
+                   terrainSculptTool_,
+                   terrainPaintTool_,
+                   services_.editorModeService()) {
+        features_.imguiRoot().setTerrainPanel(&terrainPanel_);
         runtime_.simulationController().setEditorWorld(&runtime_.entityManager());
         runtime_.simulationController().setProjectRoot(runtime_.projectRoot());
         if (!runtime_.projectRoot().empty()) {
@@ -99,5 +128,8 @@ private:
     FeaturesContainer features_;
     InputHandler inputHandler_;
     RenderingContainer rendering_;
+    TerrainSculptTool terrainSculptTool_;
+    TerrainPaintTool terrainPaintTool_;
+    Imgui_TerrainPanel terrainPanel_;
     EditorApp editorApp_;
 };

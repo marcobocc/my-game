@@ -67,6 +67,7 @@ VulkanBackend::VulkanBackend(GameWindow& window,
     objectIdPass_(objectIdPass),
     outlinePass_(outlinePass),
     uiPass_(uiPass),
+    resourcesManager_(resourcesManager),
     frameCount_(static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size())),
     swapchainColorFormat_(swapchainManager.swapchain().swapchainImageFormat) {
     const auto& sc = swapchainManager_.swapchain();

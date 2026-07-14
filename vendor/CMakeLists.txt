@@ -24,9 +24,12 @@ target_compile_definitions(imgui PRIVATE IMGUI_IMPL_VULKAN_USE_VOLK)     # DO NO
 # stb
 # -------------------------------------------------------------------------
 set(STB_DIR ${VENDOR_DIR}/stb)
-set(STB_SOURCES ${STB_DIR}/stb_image_impl.cpp ${STB_DIR}/stb_truetype_impl.cpp)
+set(STB_SOURCES ${STB_DIR}/stb_image_impl.cpp ${STB_DIR}/stb_truetype_impl.cpp ${STB_DIR}/stb_image_write_impl.cpp)
 add_library(stb STATIC ${STB_SOURCES})
 target_include_directories(stb PUBLIC ${STB_DIR})
+# stb_image_write.h is provided by vcpkg's "stb" package (shared include dir), not vendored locally.
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(stb PRIVATE nlohmann_json::nlohmann_json)
 
 # -------------------------------------------------------------------------
 # spirv-reflect

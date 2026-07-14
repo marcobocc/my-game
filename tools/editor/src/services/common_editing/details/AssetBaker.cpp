@@ -1,9 +1,12 @@
 #include "AssetBaker.hpp"
 #include <filesystem>
+#include <limits>
 #include <nlohmann/json.hpp>
 #include <sstream>
+#include <stb_image_write.h>
 #include "../../../../../../runtime/src/graphics/assets/Material.hpp"
 #include "graphics/assets/Mesh.hpp"
+#include "graphics/assets/Texture.hpp"
 
 template<>
 void AssetBaker::bake<Material>(const Material& material, const std::string& assetName) {
@@ -23,6 +26,11 @@ void AssetBaker::bake<Mesh>(const Mesh& mesh, const std::string& assetName) {
     const auto& indices = mesh.getIndices();
 
     std::ostringstream obj;
+    // Full float round-trip precision: the default ostringstream precision (6 significant
+    // digits) truncates coordinates enough that adjacent terrain-grid vertices can become
+    // bit-identical, which aiProcess_JoinIdenticalVertices then welds on reimport, corrupting
+    // the grid topology (breaking TerrainHeightfield::isGridMesh and reshaping the mesh).
+    obj << std::setprecision(std::numeric_limits<float>::max_digits10);
     for (const auto& pos: positions)
         obj << "v " << pos.x << " " << pos.y << " " << pos.z << "\n";
     for (const auto& uv: uvs)
@@ -56,6 +64,29 @@ void AssetBaker::bake<Mesh>(const Mesh& mesh, const std::string& assetName) {
     }
 
     LOG4CXX_INFO(LOGGER, "Baked mesh: " << assetName);
+}
+
+template<>
+void AssetBaker::bake<Texture>(const Texture& texture, const std::string& assetName) {
+    // Textures are stored as plain PNG files (asset name == file path), matching how AssetLoader
+    // reads them directly with stbi — no separate JSON metadata wrapper like meshes have.
+    auto writeFn = [](void* context, void* data, int size) {
+        auto* out = static_cast<std::vector<unsigned char>*>(context);
+        auto* bytes = static_cast<unsigned char*>(data);
+        out->insert(out->end(), bytes, bytes + size);
+    };
+    std::vector<unsigned char> pngBytes;
+    int ok = stbi_write_png_to_func(writeFn,
+                                    &pngBytes,
+                                    texture.width,
+                                    texture.height,
+                                    texture.channels,
+                                    texture.imageData.data(),
+                                    texture.width * texture.channels);
+    if (!ok || !vfs_.write(assetName, pngBytes)) {
+        throw std::runtime_error("Failed to write texture: " + assetName);
+    }
+    LOG4CXX_INFO(LOGGER, "Baked texture: " << assetName);
 }
 
 template<typename T>

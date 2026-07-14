@@ -116,7 +116,10 @@ inline VulkanContext initVulkanContext() {
     queueInfo.queueFamilyIndex = ctx.graphicsQueueFamilyIndex;
     queueInfo.queueCount = 1;
     queueInfo.pQueuePriorities = &priority;
+    VkPhysicalDeviceFeatures supported{};
+    vkGetPhysicalDeviceFeatures(ctx.physicalDevice, &supported);
     VkPhysicalDeviceFeatures features{};
+    features.samplerAnisotropy = supported.samplerAnisotropy;
     std::vector<const char*> devExtensions = getRequiredExtensions();
 
     VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature{};

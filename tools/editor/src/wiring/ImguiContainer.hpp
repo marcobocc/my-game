@@ -48,11 +48,12 @@ public:
                    AssetQuickActions& assetQuickActions,
                    SceneQuickActions& sceneQuickActions,
                    SimulationController& simulationController,
-                   Imgui_Console& console) :
+                   Imgui_Console& console,
+                   EditorModeService& editorModeService) :
 
         applicationMenuBar_(project, undoHistory, editorSelection, actionDispatcher, shortcutBindingService),
 
-        sceneViewToolbar_(editorSettings, editorGizmos, simulationController),
+        sceneViewToolbar_(editorSettings, editorGizmos, simulationController, editorModeService),
 
         hierarchyPanel_(assetStore,
                         editorSelection,
@@ -87,7 +88,8 @@ public:
                    inspectorPanel_,
                    editorSceneViewport_,
                    console,
-                   window),
+                   window,
+                   editorModeService),
 
         simHUDRoot_(simHUD_, console),
         welcomeScreen_(std::filesystem::path{PROJECTS_DIR}, std::filesystem::path{SAMPLES_DIR}),

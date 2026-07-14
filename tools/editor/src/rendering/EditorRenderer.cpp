@@ -27,7 +27,8 @@ EditorRenderer::EditorRenderer(VulkanBackend& renderer,
                                PickingSystem& pickingService,
                                ImguiRoot& imguiRoot,
                                SimHUDRoot& simHUDRoot,
-                               WelcomeRoot& welcomeRoot) :
+                               WelcomeRoot& welcomeRoot,
+                               EditorModeService& editorMode) :
     renderer_(renderer),
     editorOrbitCamera_(editorOrbitCamera),
     editorSelection_(editorSelection),
@@ -38,7 +39,8 @@ EditorRenderer::EditorRenderer(VulkanBackend& renderer,
     pickingSystem_(pickingService),
     imguiRoot_(imguiRoot),
     simHUDRoot_(simHUDRoot),
-    welcomeRoot_(welcomeRoot) {
+    welcomeRoot_(welcomeRoot),
+    editorMode_(editorMode) {
     renderer_.setDrawCallback([this] { welcomeRoot_.draw(); });
 }
 
@@ -107,6 +109,10 @@ void EditorRenderer::buildGizmos(const World& world, DebugDraw& out) {
         return actor && actor->getComponent<Transform>() != nullptr;
     });
     if (!anyHasTransform) return;
+
+    // Terrain mode owns viewport input for sculpt/paint strokes, so the transform
+    // gizmo (and its picking handles) is hidden to avoid interfering with those tools.
+    if (editorMode_.mode() == EditorMode::Terrain) return;
 
     glm::vec3 pivot = objectTransformHandle_.computeGroupPivot(selectedIds);
     const Camera& camera = editorOrbitCamera_.getCamera();
@@ -234,6 +240,7 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
     buildOutlines();
     editorDebugDraw_.flush();
     buildGizmos(entityManager, editorDebugDraw_);
+    if (debugOverlayCallback_) debugOverlayCallback_(editorDebugDraw_);
 
     const std::vector<VulkanGizmoPass::GizmoVertex>& editorGizmoLines = editorDebugDraw_.getVertices();
 

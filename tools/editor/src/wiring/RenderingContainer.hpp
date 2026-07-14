@@ -1,5 +1,6 @@
 #pragma once
 #include "../rendering/EditorRenderer.hpp"
+#include "../services/EditorMode.hpp"
 #include "RuntimeContainer.hpp"
 
 class EditorCamera;
@@ -25,7 +26,8 @@ public:
                        ObjectTransformHandle& objectTransformHandle,
                        ImguiRoot& imguiRoot,
                        SimHUDRoot& simHUDRoot,
-                       WelcomeRoot& welcomeRoot) :
+                       WelcomeRoot& welcomeRoot,
+                       EditorModeService& editorMode) :
 
         editorRenderer_(runtime.vulkanBackend(),
                         editorCamera,
@@ -37,7 +39,8 @@ public:
                         pickingService,
                         imguiRoot,
                         simHUDRoot,
-                        welcomeRoot) {}
+                        welcomeRoot,
+                        editorMode) {}
 
     EditorRenderer& editorRenderer() { return editorRenderer_; }
 

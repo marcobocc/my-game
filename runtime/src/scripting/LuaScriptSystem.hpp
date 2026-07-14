@@ -18,6 +18,9 @@
 class LuaScriptSystem {
 public:
     void init(World& world, InputSystem& input, DebugDraw& debugDraw);
+    void setMeshLookup(LuaWorld::MeshLookup fn) {
+        if (worldFacade_) worldFacade_->setMeshLookup(std::move(fn));
+    }
     void registerScript(const std::string& name, const std::filesystem::path& path);
     void startInstances();
     void update(float dt);

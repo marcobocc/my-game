@@ -17,8 +17,10 @@ void InputHandler::update(double mouseX, double mouseY, double deltaTime, bool s
         bool leftDown = inputSystem_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
         bool ctrl = false, shift = false, alt = false;
         getModifierState(ctrl, shift, alt);
-        processGizmoDrag(mouseX, mouseY, leftDown);
-        processMouseInteraction(mouseX, mouseY, leftDown, ctrl);
+        if (!terrainSculptMode_) {
+            processGizmoDrag(mouseX, mouseY, leftDown);
+            processMouseInteraction(mouseX, mouseY, leftDown, ctrl);
+        }
         if (!simActive) processCameraInput(mouseX, mouseY, deltaTime);
         wasLeftDown_ = leftDown;
     } else {

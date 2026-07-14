@@ -60,6 +60,12 @@ public:
                 const Transform& cameraTransform,
                 const std::vector<DrawCall>& drawQueue,
                 const VkRect2D* viewportOverride = nullptr) {
+        // Resolve materials/pipelines/textures BEFORE vkCmdBeginRendering: first-time GPU uploads
+        // (e.g. a freshly assigned texture) submit their own one-off command buffer on the same
+        // graphics queue, which must not happen while this frame's primary command buffer is still
+        // being recorded (mid vkCmdBeginRendering/vkCmdEndRendering).
+        warmResourceCaches(drawQueue);
+
         beginRendering(cmd, albedoView, normalView, depthView, extent, viewportOverride);
         updatePerFrameUBO(geometryBuffer, camera, cameraTransform);
         for (const auto& drawCall: drawQueue)
@@ -121,6 +127,28 @@ private:
         updateBuffer(context_.device, buf, data, sizeof(data));
     }
 
+    void warmResourceCaches(const std::vector<DrawCall>& drawQueue) {
+        static constexpr std::array<VkFormat, 2> colorFormats{ALBEDO_FORMAT, NORMAL_FORMAT};
+        for (const auto& drawCall: drawQueue) {
+            const Material* material = assetLoader_.get<Material>(drawCall.renderer.materialName);
+            if (!material) continue;
+            const Mesh* mesh = assetLoader_.get<Mesh>(drawCall.renderer.meshName);
+            if (!mesh) continue;
+
+            const bool isSkinned = mesh->isSkinned();
+            const std::string& shaderName =
+                    isSkinned ? GBUFFER_SKINNED_SHADER
+                              : (material->isTerrainBlend() ? GBUFFER_TERRAIN_SHADER : GBUFFER_SHADER);
+
+            resourcesManager_.getMaterial(*material, shaderName, colorFormats, DEPTH_FORMAT);
+            if (isSkinned) {
+                if (const Shader* skinnedShader = assetLoader_.get<Shader>(shaderName))
+                    resourcesManager_.getPipeline(*skinnedShader, colorFormats, DEPTH_FORMAT);
+            }
+            resourcesManager_.getMesh(*mesh);
+        }
+    }
+
     void renderEntity(VkCommandBuffer cmd, VkDescriptorSet geometryDescriptorSet, const DrawCall& drawCall) {
         const Material* material = assetLoader_.get<Material>(drawCall.renderer.materialName);
         if (!material) return;
@@ -129,7 +157,9 @@ private:
         static constexpr std::array<VkFormat, 2> colorFormats{ALBEDO_FORMAT, NORMAL_FORMAT};
 
         const bool isSkinned = mesh->isSkinned();
-        const std::string& shaderName = isSkinned ? GBUFFER_SKINNED_SHADER : GBUFFER_SHADER;
+        const std::string& shaderName =
+                isSkinned ? GBUFFER_SKINNED_SHADER
+                          : (material->isTerrainBlend() ? GBUFFER_TERRAIN_SHADER : GBUFFER_SHADER);
 
         VulkanPipeline* pipeline = nullptr;
         VkDescriptorSet texturesDescriptorSet = VK_NULL_HANDLE;
@@ -138,14 +168,14 @@ private:
             const Shader* skinnedShader = assetLoader_.get<Shader>(shaderName);
             if (!skinnedShader) return;
             pipeline = &resourcesManager_.getPipeline(*skinnedShader, colorFormats, DEPTH_FORMAT);
-            auto [matPipeline, matDS] =
+            const VulkanMaterial& mat =
                     resourcesManager_.getMaterial(*material, shaderName, colorFormats, DEPTH_FORMAT);
-            texturesDescriptorSet = matDS;
+            texturesDescriptorSet = mat.descriptorSet;
         } else {
-            auto [matPipeline, matDS] =
+            const VulkanMaterial& mat =
                     resourcesManager_.getMaterial(*material, shaderName, colorFormats, DEPTH_FORMAT);
-            pipeline = matPipeline;
-            texturesDescriptorSet = matDS;
+            pipeline = mat.pipeline;
+            texturesDescriptorSet = mat.descriptorSet;
         }
 
         if (!pipeline) return;

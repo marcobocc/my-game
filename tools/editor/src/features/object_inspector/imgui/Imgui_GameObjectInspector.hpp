@@ -11,6 +11,7 @@
 #include "../../../../../../runtime/src/graphics/components/Renderer.hpp"
 #include "../../../../../../runtime/src/graphics/components/TextComponent.hpp"
 #include "../../../../../../runtime/src/physics/components/CapsuleCollider.hpp"
+#include "../../../../../../runtime/src/physics/components/TerrainCollider.hpp"
 #include "../../../../../../runtime/src/scripting/components/BehaviourScript.hpp"
 #include "../../../services/EditorSelection.hpp"
 #include "../../../services/common_editing/AssetStore.hpp"
@@ -24,6 +25,7 @@
 #include "components/Imgui_LightWidget.hpp"
 #include "components/Imgui_ParticleEmitterWidget.hpp"
 #include "components/Imgui_RendererWidget.hpp"
+#include "components/Imgui_TerrainColliderWidget.hpp"
 #include "components/Imgui_TextComponentWidget.hpp"
 #include "components/Imgui_TransformWidget.hpp"
 #include "physics/components/BoxCollider.hpp"
@@ -69,6 +71,7 @@ private:
     Imgui_RendererWidget rendererWidget_;
     Imgui_BoxColliderWidget boxColliderWidget_;
     Imgui_CapsuleColliderWidget capsuleColliderWidget_;
+    Imgui_TerrainColliderWidget terrainColliderWidget_;
     Imgui_CameraWidget cameraWidget_;
     Imgui_LightWidget lightWidget_;
     Imgui_ParticleEmitterWidget particleEmitterWidget_;
@@ -100,6 +103,11 @@ private:
             capsuleColliderWidget_.setComponent(*capsuleCollider);
             capsuleColliderWidget_.draw("CapsuleColliderContext", [this, entity] {
                 scene_.getObject(entity).removeComponent<CapsuleCollider>();
+            });
+        }
+        if (obj.getComponent<TerrainCollider>()) {
+            terrainColliderWidget_.draw("TerrainColliderContext", [this, entity] {
+                scene_.getObject(entity).removeComponent<TerrainCollider>();
             });
         }
         if (const auto* light = obj.getComponent<Light>()) {
@@ -161,6 +169,10 @@ private:
             if (!obj.getComponent<CapsuleCollider>()) {
                 if (ImGui::MenuItem("Capsule Collider"))
                     scene_.getObject(entity).addComponent<CapsuleCollider>(CapsuleCollider{});
+            }
+            if (!obj.getComponent<TerrainCollider>()) {
+                if (ImGui::MenuItem("Terrain Collider"))
+                    scene_.getObject(entity).addComponent<TerrainCollider>(TerrainCollider{});
             }
             if (!obj.getComponent<Light>()) {
                 if (ImGui::MenuItem("Light")) scene_.getObject(entity).addComponent<Light>(Light{});

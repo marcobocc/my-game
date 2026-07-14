@@ -17,6 +17,7 @@ static constexpr auto GIZMO_SHADER = "assets/internal.core/shaders/gizmo/gizmo.s
 static constexpr auto GIZMO_OVERLAY_SHADER = "assets/internal.core/shaders/gizmo/gizmo_overlay.shad";
 static constexpr auto GBUFFER_SHADER = "assets/internal.core/shaders/geometry/geometry.shad";
 static constexpr auto GBUFFER_SKINNED_SHADER = "assets/internal.core/shaders/geometry_skinned/geometry_skinned.shad";
+static constexpr auto GBUFFER_TERRAIN_SHADER = "assets/internal.core/shaders/geometry_terrain/geometry_terrain.shad";
 static constexpr auto LIGHTING_SHADER = "assets/internal.core/shaders/lighting/lighting.shad";
 static constexpr auto SHADOW_SHADER = "assets/internal.core/shaders/shadow/shadow.shad";
 static constexpr auto SHADOW_SKINNED_SHADER = "assets/internal.core/shaders/shadow/shadow_skinned.shad";

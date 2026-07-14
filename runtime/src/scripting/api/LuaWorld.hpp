@@ -3,11 +3,15 @@
 #include <optional>
 #include <sol/sol.hpp>
 #include <string>
+#include <unordered_map>
 #include "../../animation/components/Animator.hpp"
 #include "../../core/components/Transform.hpp"
+#include "../../graphics/components/Renderer.hpp"
 #include "../../graphics/components/TextComponent.hpp"
+#include "../../physics/TerrainHeightfield.hpp"
 #include "../../physics/components/BoxCollider.hpp"
 #include "../../physics/components/CapsuleCollider.hpp"
+#include "../../physics/components/TerrainCollider.hpp"
 #include "LuaEntity.hpp"
 #include "core/scene/EntityHandle.hpp"
 #include "core/scene/TransformUtils.hpp"
@@ -24,10 +28,12 @@
 class LuaWorld {
 public:
     using ScriptLookup = std::function<std::optional<sol::table>(EntityHandle, const std::string&)>;
+    using MeshLookup = std::function<const Mesh*(const std::string&)>;
 
     explicit LuaWorld(World& world) : world_(world) {}
 
     void setScriptLookup(ScriptLookup fn) { scriptLookup_ = std::move(fn); }
+    void setMeshLookup(MeshLookup fn) { meshLookup_ = std::move(fn); }
 
     // Wraps a raw handle into an Entity bound to this world.
     LuaEntity wrap(EntityHandle handle) { return LuaEntity(this, handle); }
@@ -77,7 +83,8 @@ public:
         return actor->getComponent<Animator>();
     }
 
-    // Returns the accumulated MTV to push entity out of all overlapping box colliders.
+    // Returns the accumulated MTV to push entity out of all overlapping box
+    // colliders and terrain heightfields (entities with a TerrainCollider).
     // Supports entities with either a BoxCollider or CapsuleCollider.
     // The entity itself (and its children) are excluded from the check.
     // Returns zero vector if no overlaps.
@@ -107,6 +114,20 @@ public:
                 mtv = Physics::computeCapsuleBoxMTV(*selfCapsule, selfMat, *otherCollider, otherMat);
 
             if (mtv) pushes.push_back(*mtv);
+        }
+
+        auto terrains = world_.query<TerrainCollider, Transform>();
+        if (!terrains.empty()) {
+            std::vector<glm::vec3> samplePoints = selfBox ? Physics::terrainSamplePoints(*selfBox, selfMat)
+                                                          : Physics::terrainSamplePoints(*selfCapsule, selfMat);
+            for (const auto& [other, terrainCollider, terrainTransform]: terrains) {
+                if (other == entity) continue;
+                const TerrainHeightfield* heightfield = heightfieldFor(other);
+                if (!heightfield) continue;
+                glm::mat4 terrainMat = TransformUtils::resolveWorldMatrix(*terrainTransform, world_);
+                auto mtv = Physics::computeTerrainMTV(samplePoints, *heightfield, terrainMat, glm::inverse(terrainMat));
+                if (mtv) pushes.push_back(*mtv);
+            }
         }
 
         if (pushes.empty()) return glm::vec3(0.0f);
@@ -165,8 +186,27 @@ public:
     }
 
 private:
+    // Heightfields are built lazily from the terrain's Renderer mesh and cached
+    // per mesh name; mesh assets don't change while a simulation is running.
+    const TerrainHeightfield* heightfieldFor(EntityHandle terrainEntity) const {
+        const Actor* actor = world_.getActor(terrainEntity);
+        if (!actor || !meshLookup_) return nullptr;
+        const Renderer* renderer = actor->getComponent<Renderer>();
+        if (!renderer) return nullptr;
+
+        auto it = heightfields_.find(renderer->meshName);
+        if (it == heightfields_.end()) {
+            const Mesh* mesh = meshLookup_(renderer->meshName);
+            std::optional<TerrainHeightfield> built = mesh ? TerrainHeightfield::build(*mesh) : std::nullopt;
+            it = heightfields_.emplace(renderer->meshName, std::move(built)).first;
+        }
+        return it->second ? &*it->second : nullptr;
+    }
+
     World& world_;
     ScriptLookup scriptLookup_;
+    MeshLookup meshLookup_;
+    mutable std::unordered_map<std::string, std::optional<TerrainHeightfield>> heightfields_;
 };
 
 // ---- LuaEntity method definitions -----------------------------------------

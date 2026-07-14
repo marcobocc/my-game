@@ -1,0 +1,4 @@
+{
+  "vertexShader": "assets/internal.core/shaders/geometry/geometry.vert.spv",
+  "fragmentShader": "assets/internal.core/shaders/geometry_terrain/geometry_terrain.frag.spv"
+}

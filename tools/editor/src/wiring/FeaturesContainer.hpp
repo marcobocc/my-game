@@ -29,7 +29,8 @@ public:
                                AssetQuickActions& assetQuickActions,
                                SceneQuickActions& sceneQuickActions,
                                ClipboardService& clipboardService,
-                               SimulationController& simulationController) :
+                               SimulationController& simulationController,
+                               EditorModeService& editorModeService) :
         imguiConsole_(developerConsole),
         gizmosBuilder_(assetLoader, entityManager, editorSettings),
         pickingSystem_(assetLoader),
@@ -60,7 +61,8 @@ public:
                assetQuickActions,
                sceneQuickActions,
                simulationController,
-               imguiConsole_) {}
+               imguiConsole_,
+               editorModeService) {}
 
     EditorGizmos& editorGizmos() { return editorGizmos_; }
     EditorCamera& editorCamera() { return editorCamera_; }

@@ -82,6 +82,8 @@ public:
 
     const std::vector<std::string>& objectIdMap() const { return objectIdMap_; }
 
+    VulkanResourcesManager& getResourcesManager() { return resourcesManager_; }
+
 private:
     // --- Frame helpers ---
     void recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const EditorRenderData& renderData);
@@ -110,6 +112,7 @@ private:
     VulkanObjectIdPass& objectIdPass_;
     VulkanOutlinePass& outlinePass_;
     VulkanUIPass& uiPass_;
+    VulkanResourcesManager& resourcesManager_;
 
     std::unique_ptr<VulkanShadowPass> shadowPass_;
     std::unique_ptr<VulkanSkyPass> skyPass_;

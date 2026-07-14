@@ -1,8 +1,10 @@
 #pragma once
+#include <array>
 #include <functional>
 #include <imgui.h>
 #include <imgui_internal.h>
 #include "../../../../runtime/src/graphics/debug/Imgui_Console.hpp"
+#include "../services/EditorMode.hpp"
 #include "application_toolbar/Imgui_ApplicationMenuBar.hpp"
 #include "asset_browser/imgui/Imgui_AssetGridPanel.hpp"
 #include "core/GameWindow.hpp"
@@ -11,6 +13,7 @@
 #include "scene_viewport/imgui/Imgui_EditorSceneViewport.hpp"
 #include "scene_viewport/scene_toolbar/Imgui_SceneViewToolbar.hpp"
 #include "scene_viewport/scene_toolbar/Imgui_SimHUD.hpp"
+#include "terrain_tool/Imgui_TerrainPanel.hpp"
 #include "welcome/Imgui_WelcomeScreen.hpp"
 
 class ImguiRoot {
@@ -22,7 +25,8 @@ public:
               Imgui_InspectorPanel& inspectorPanel,
               Imgui_EditorSceneViewport& editorSceneViewport,
               Imgui_Console& console,
-              GameWindow& window) :
+              GameWindow& window,
+              EditorModeService& editorMode) :
         applicationMenuBar_(applicationMenuBar),
         sceneViewToolbar_(sceneViewToolbar),
         hierarchyPanel_(hierarchyPanel),
@@ -30,19 +34,29 @@ public:
         inspectorPanel_(inspectorPanel),
         editorSceneViewport_(editorSceneViewport),
         console_(console),
-        window_(window) {}
+        window_(window),
+        editorMode_(editorMode) {}
 
     void setOverlayCallback(std::function<void()> cb) { overlayCallback_ = std::move(cb); }
+
+    // The terrain panel is constructed after the ImGui wiring (it depends on the
+    // terrain tools), so it is injected via setter rather than the constructor.
+    void setTerrainPanel(Imgui_TerrainPanel* panel) { terrainPanel_ = panel; }
 
     void draw() {
         applicationMenuBar_.draw();
         drawDockSpace();
 
-        hierarchyPanel_.draw();
-        assetGridPanel_.draw();
-        inspectorPanel_.draw();
+        if (editorMode_.mode() == EditorMode::Terrain) {
+            if (terrainPanel_) terrainPanel_->draw();
+            assetGridPanel_.draw();
+        } else {
+            hierarchyPanel_.draw();
+            assetGridPanel_.draw();
+            inspectorPanel_.draw();
+            console_.draw();
+        }
         editorSceneViewport_.draw();
-        console_.draw();
         if (overlayCallback_) overlayCallback_();
     }
 
@@ -70,14 +84,25 @@ private:
 
         sceneViewToolbar_.draw(dockSize.x);
 
-        ImGuiID dockId = ImGui::GetID("##MainDockSpace");
+        const EditorMode mode = editorMode_.mode();
+        const bool isTerrain = mode == EditorMode::Terrain;
+        ImGuiID dockId = ImGui::GetID(isTerrain ? "##TerrainDockSpace" : "##MainDockSpace");
         ImGui::DockSpace(dockId,
                          ImVec2(dockSize.x, dockSize.y - Imgui_SceneViewToolbar::BAR_HEIGHT),
                          ImGuiDockNodeFlags_PassthruCentralNode);
 
-        if (!layoutBuilt_) {
-            buildDefaultLayout(dockId, viewport->WorkSize);
-            layoutBuilt_ = true;
+        // Shared windows (e.g. the Asset Grid) can only be docked in one dockspace at a
+        // time, so the layout of the mode being entered is rebuilt on every mode switch.
+        if (mode != lastMode_) {
+            layoutBuilt_[static_cast<size_t>(mode)] = false;
+            lastMode_ = mode;
+        }
+        if (!layoutBuilt_[static_cast<size_t>(mode)]) {
+            if (isTerrain)
+                buildTerrainLayout(dockId, viewport->WorkSize);
+            else
+                buildSelectionLayout(dockId, viewport->WorkSize);
+            layoutBuilt_[static_cast<size_t>(mode)] = true;
         }
 
         // Read the central (passthrough) node rect and update the scene viewport every frame.
@@ -98,7 +123,7 @@ private:
         ImGui::End();
     }
 
-    static void buildDefaultLayout(ImGuiID dockId, ImVec2 size) {
+    static void buildSelectionLayout(ImGuiID dockId, ImVec2 size) {
         ImGui::DockBuilderRemoveNode(dockId);
         ImGui::DockBuilderAddNode(dockId, ImGuiDockNodeFlags_DockSpace);
         ImGui::DockBuilderSetNodeSize(dockId, size);
@@ -134,6 +159,23 @@ private:
         ImGui::DockBuilderFinish(dockId);
     }
 
+    static void buildTerrainLayout(ImGuiID dockId, ImVec2 size) {
+        ImGui::DockBuilderRemoveNode(dockId);
+        ImGui::DockBuilderAddNode(dockId, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dockId, size);
+
+        ImGuiID dockLeft, dockCenter;
+        ImGui::DockBuilderSplitNode(dockId, ImGuiDir_Left, 0.20f, &dockLeft, &dockCenter);
+
+        ImGuiID dockBottom, dockMain;
+        ImGui::DockBuilderSplitNode(dockCenter, ImGuiDir_Down, 0.28f, &dockBottom, &dockMain);
+
+        ImGui::DockBuilderDockWindow("Terrain", dockLeft);
+        ImGui::DockBuilderDockWindow("Asset Grid", dockBottom);
+
+        ImGui::DockBuilderFinish(dockId);
+    }
+
     Imgui_ApplicationMenuBar& applicationMenuBar_;
     Imgui_SceneViewToolbar& sceneViewToolbar_;
     Imgui_HierarchyPanel& hierarchyPanel_;
@@ -142,10 +184,13 @@ private:
     Imgui_EditorSceneViewport& editorSceneViewport_;
     Imgui_Console& console_;
     GameWindow& window_;
+    EditorModeService& editorMode_;
+    Imgui_TerrainPanel* terrainPanel_ = nullptr;
     std::function<void()> overlayCallback_;
     ImVec2 centralNodePos_{0.0f, 0.0f};
     ImVec2 centralNodeSize_{0.0f, 0.0f};
-    bool layoutBuilt_ = false;
+    EditorMode lastMode_ = EditorMode::Selection;
+    std::array<bool, 2> layoutBuilt_{};
 };
 
 class SimHUDRoot {

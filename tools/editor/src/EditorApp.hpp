@@ -15,12 +15,15 @@
 #include "features/close_modal/Imgui_CloseModal.hpp"
 #include "features/input_handling/InputHandler.hpp"
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
+#include "features/terrain_tool/TerrainPaintTool.hpp"
+#include "features/terrain_tool/TerrainSculptTool.hpp"
 #include "features/welcome/Imgui_WelcomeScreen.hpp"
 #include "input/InputSystem.hpp"
 #include "physics/PhysicsSystem.hpp"
 #include "rendering/EditorRenderer.hpp"
 #include "services/AssetThumbnailGenerator.hpp"
 #include "services/EditorContext.hpp"
+#include "services/EditorMode.hpp"
 #include "services/EditorSettings.hpp"
 #include "services/SimulationController.hpp"
 #include "services/UndoHistory.hpp"
@@ -51,7 +54,10 @@ public:
               Imgui_Console& imguiConsole,
               Imgui_WelcomeScreen& welcomeScreen,
               AnimationSystem& animationSystem,
-              AssetThumbnailGenerator& thumbnailGenerator) :
+              AssetThumbnailGenerator& thumbnailGenerator,
+              TerrainSculptTool& terrainSculptTool,
+              TerrainPaintTool& terrainPaintTool,
+              EditorModeService& editorMode) :
         window_(window),
         developerConsole_(developerConsole),
         inputSystem_(inputSystem),
@@ -69,12 +75,26 @@ public:
         imguiConsole_(imguiConsole),
         welcomeScreen_(welcomeScreen),
         animationSystem_(animationSystem),
-        thumbnailGenerator_(thumbnailGenerator) {
+        thumbnailGenerator_(thumbnailGenerator),
+        terrainSculptTool_(terrainSculptTool),
+        terrainPaintTool_(terrainPaintTool),
+        editorMode_(editorMode) {
         welcomeScreen_.setCallbacks({
                 [this](const std::filesystem::path& path) { openProject(path); },
                 [this] { newProject(); },
         });
         editorRenderer_.setAnimationSystem(&animationSystem_);
+        editorRenderer_.setDebugOverlayCallback([this](DebugDraw& debugDraw) {
+            terrainSculptTool_.update(debugDraw);
+            terrainPaintTool_.update(debugDraw);
+        });
+        // Leaving Terrain mode cancels any in-flight stroke, same as the old tab-switch behavior.
+        editorMode_.subscribe([this](EditorMode mode) {
+            if (mode != EditorMode::Terrain) {
+                terrainSculptTool_.setActive(false);
+                terrainPaintTool_.setActive(false);
+            }
+        });
         initApp();
         ImguiStyling::ApplyEditorStyle();
     }
@@ -120,6 +140,7 @@ public:
             if (simActive != simWasActive_) {
                 editorRenderer_.setSimMode(simActive);
                 if (simActive) {
+                    editorMode_.setMode(EditorMode::Selection);
                     auto [w, h] = window_.getLogicalSize();
                     window_.setSceneViewport({0, 0, w, h});
                     imguiConsole_.setConsole(simulationController_.gameInstance()->developerConsole());
@@ -148,6 +169,7 @@ public:
                     inputSystem_.setBlocked(imguiConsole_.isVisible());
                 }
                 auto [mouseX, mouseY] = inputSystem_.getMousePosition();
+                inputHandler_.setTerrainSculptMode(!simActive && editorMode_.mode() == EditorMode::Terrain);
                 inputHandler_.update(mouseX, mouseY, deltaTime, simActive);
             }
 
@@ -250,6 +272,9 @@ private:
     Imgui_WelcomeScreen& welcomeScreen_;
     AnimationSystem& animationSystem_;
     AssetThumbnailGenerator& thumbnailGenerator_;
+    TerrainSculptTool& terrainSculptTool_;
+    TerrainPaintTool& terrainPaintTool_;
+    EditorModeService& editorMode_;
     Imgui_CloseModal closeModal_;
     AppState appState_ = AppState::Welcome;
     bool simWasActive_ = false;

@@ -8,6 +8,7 @@
 #include "../../../../../runtime/src/graphics/components/Renderer.hpp"
 #include "../../../../../runtime/src/graphics/components/TextComponent.hpp"
 #include "../../../../../runtime/src/physics/components/CapsuleCollider.hpp"
+#include "../../../../../runtime/src/physics/components/TerrainCollider.hpp"
 #include "../../../../../runtime/src/scripting/components/BehaviourScript.hpp"
 #include "physics/components/BoxCollider.hpp"
 
@@ -39,6 +40,7 @@ GameObjectDTO RuntimeScene::snapshotObject(EntityHandle e) const {
     tryAdd.operator()<Renderer>();
     tryAdd.operator()<BoxCollider>();
     tryAdd.operator()<CapsuleCollider>();
+    tryAdd.operator()<TerrainCollider>();
     tryAdd.operator()<Light>();
     tryAdd.operator()<ParticleEmitter>();
     for (const BehaviourScript* s: actor->getComponents<BehaviourScript>())

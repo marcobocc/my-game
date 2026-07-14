@@ -117,6 +117,9 @@ protected:
             if (ImGui::MenuItem("Capsule")) {
                 if (capsulePopupModal_) capsulePopupModal_->requestCreation();
             }
+            if (ImGui::MenuItem("Terrain")) {
+                sceneQuickActions_.createTerrain(32, 20.0f);
+            }
             ImGui::Separator();
             drawModelsSubmenu();
             ImGui::EndMenu();

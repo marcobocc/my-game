@@ -7,6 +7,7 @@
 #include "console/commands/ListActorsCommand.hpp"
 #include "core/assets/AssetCache.hpp"
 #include "graphics/GameRenderSystem.hpp"
+#include "graphics/assets/Mesh.hpp"
 #include "input/InputSystem.hpp"
 
 GameInstance::GameInstance(GameWindow& window,
@@ -31,6 +32,14 @@ GameInstance::GameInstance(GameWindow& window,
     developerConsole_.registerCommand("debug", [this] { return std::make_unique<DebugDrawCommand>(debugDraw_); });
 
     luaScriptSystem_.init(world_, inputSystem_, debugDraw_);
+    luaScriptSystem_.setMeshLookup([this](const std::string& name) -> const Mesh* {
+        if (!loadedAssets_.contains(name)) return nullptr;
+        try {
+            return loadedAssets_.get<Mesh>(name);
+        } catch (const std::exception&) {
+            return nullptr; // name exists but is not a Mesh
+        }
+    });
     assetLoader_.scanAndRegisterScripts(luaScriptSystem_);
     luaScriptSystem_.startInstances();
 

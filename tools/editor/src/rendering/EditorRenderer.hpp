@@ -1,6 +1,8 @@
 #pragma once
+#include <functional>
 #include <vector>
 #include "../../../../runtime/src/graphics/debug/DebugDraw.hpp"
+#include "../services/EditorMode.hpp"
 #include "animation/AnimationSystem.hpp"
 #include "core/scene/World.hpp"
 #include "graphics/vulkan/passes/VulkanGizmoPass.hpp"
@@ -31,12 +33,18 @@ public:
                    PickingSystem& pickingService,
                    ImguiRoot& imguiRoot,
                    SimHUDRoot& simHUDRoot,
-                   WelcomeRoot& welcomeRoot);
+                   WelcomeRoot& welcomeRoot,
+                   EditorModeService& editorMode);
 
     void setSimMode(bool enabled);
     void setWelcomeMode(bool enabled);
     void setAnimationSystem(AnimationSystem* animSystem) { animationSystem_ = animSystem; }
     void setPlayModeDebugDraw(DebugDraw* debugDraw) { playModeDebugDraw_ = debugDraw; }
+    // Invoked each frame (editor/non-sim mode only) after gizmo lines are built, so callers can
+    // inject additional debug draws (e.g. terrain brush cursor) into that frame's output.
+    void setDebugOverlayCallback(std::function<void(DebugDraw&)> callback) {
+        debugOverlayCallback_ = std::move(callback);
+    }
     void render(const World& entityManager, float gridScale, float deltaTime = 0.0f);
     void renderWelcome();
 
@@ -55,8 +63,10 @@ private:
     ImguiRoot& imguiRoot_;
     SimHUDRoot& simHUDRoot_;
     WelcomeRoot& welcomeRoot_;
+    EditorModeService& editorMode_;
     AnimationSystem* animationSystem_ = nullptr;
     DebugDraw* playModeDebugDraw_ = nullptr;
+    std::function<void(DebugDraw&)> debugOverlayCallback_;
     DebugDraw editorDebugDraw_;
     bool simMode_ = false;
     float deltaTime_ = 0.0f;

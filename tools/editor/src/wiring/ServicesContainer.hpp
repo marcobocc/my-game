@@ -1,6 +1,7 @@
 #pragma once
 #include "../services/ClipboardService.hpp"
 #include "../services/EditorContext.hpp"
+#include "../services/EditorMode.hpp"
 #include "../services/EditorSelection.hpp"
 #include "../services/EditorSettings.hpp"
 #include "../services/UndoHistory.hpp"
@@ -34,9 +35,11 @@ public:
     AssetQuickActions& assetQuickActions() { return assetQuickActions_; }
     RuntimeScene& scene() { return project_.getCurrentScene(); }
     EditorContext& project() { return project_; }
+    EditorModeService& editorModeService() { return editorModeService_; }
 
 private:
     UndoHistory undoHistory_;
+    EditorModeService editorModeService_;
     EditorSelection editorSelection_;
     EditorSettings editorSettings_;
     ClipboardService clipboardService_;

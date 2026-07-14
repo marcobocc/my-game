@@ -8,6 +8,7 @@
 #include "../../../../../../runtime/src/graphics/components/Renderer.hpp"
 #include "../../../../../../runtime/src/graphics/components/TextComponent.hpp"
 #include "../../../../../../runtime/src/physics/components/CapsuleCollider.hpp"
+#include "../../../../../../runtime/src/physics/components/TerrainCollider.hpp"
 #include "../../../../../../runtime/src/scripting/components/BehaviourScript.hpp"
 #include "core/scene/EntityHandle.hpp"
 #include "physics/components/BoxCollider.hpp"
@@ -18,6 +19,7 @@ struct GameObjectDTO {
                                           Renderer,
                                           BoxCollider,
                                           CapsuleCollider,
+                                          TerrainCollider,
                                           Light,
                                           Metadata,
                                           BehaviourScript,
@@ -61,6 +63,8 @@ struct GameObjectDTO {
                 dto.components.emplace_back(BoxCollider::deserialize(c["data"]));
             else if (type == "CapsuleCollider")
                 dto.components.emplace_back(CapsuleCollider::deserialize(c["data"]));
+            else if (type == "TerrainCollider")
+                dto.components.emplace_back(TerrainCollider::deserialize(c["data"]));
             else if (type == "Light")
                 dto.components.emplace_back(Light::deserialize(c["data"]));
             else if (type == "Metadata")

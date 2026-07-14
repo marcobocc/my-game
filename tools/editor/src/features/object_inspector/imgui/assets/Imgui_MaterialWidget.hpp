@@ -125,6 +125,44 @@ private:
                         assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.offset = v; });
                     }));
 
+            if (assetStore_.getAsset<Material>(asset).isTerrainBlend()) {
+                props.emplace_back(std::make_unique<SeparatorProperty>());
+                props.emplace_back(std::make_unique<LabelProperty>(
+                        "", [] { return std::string("Terrain Paint Layers (drag materials from the Assets panel)"); }));
+
+                auto layerProperty = [this, asset](const char* label, auto getter, auto setter) {
+                    return std::make_unique<InputTextProperty>(
+                            label,
+                            [this, asset, getter] {
+                                const Material& m = assetStore_.getAsset<Material>(asset);
+                                std::string mat = getter(m);
+                                return (mat == SOLID_COLOR_MATERIAL) ? std::string{} : mat;
+                            },
+                            "MATERIAL_ASSET",
+                            [this, asset, setter](const char* mat) {
+                                assetStore_.mutateAsset<Material>(asset,
+                                                                  [mat, setter](Material& m) { setter(m, mat); });
+                            });
+                };
+
+                props.emplace_back(layerProperty(
+                        "Layer 0",
+                        [](const Material& m) { return m.layerMaterial0; },
+                        [](Material& m, const char* mat) { m.layerMaterial0 = mat; }));
+                props.emplace_back(layerProperty(
+                        "Layer 1",
+                        [](const Material& m) { return m.layerMaterial1; },
+                        [](Material& m, const char* mat) { m.layerMaterial1 = mat; }));
+                props.emplace_back(layerProperty(
+                        "Layer 2",
+                        [](const Material& m) { return m.layerMaterial2; },
+                        [](Material& m, const char* mat) { m.layerMaterial2 = mat; }));
+                props.emplace_back(layerProperty(
+                        "Layer 3",
+                        [](const Material& m) { return m.layerMaterial3; },
+                        [](Material& m, const char* mat) { m.layerMaterial3 = mat; }));
+            }
+
             if (immutable) {
                 addRaw(std::make_unique<DisabledGroupProperty>(std::move(props)));
                 add<SpacingProperty>();

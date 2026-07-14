@@ -1,5 +1,7 @@
 #pragma once
 #include <imgui.h>
+#include <string>
+#include "../../../services/EditorMode.hpp"
 #include "../../../services/EditorSettings.hpp"
 #include "../../../services/SimulationController.hpp"
 #include "../gizmos/EditorGizmos.hpp"
@@ -11,10 +13,12 @@ public:
 
     Imgui_SceneViewToolbar(EditorSettings& editorSettings,
                            EditorGizmos& editorGizmos,
-                           SimulationController& simulationController) :
+                           SimulationController& simulationController,
+                           EditorModeService& editorMode) :
         editorSettings_(editorSettings),
         editorGizmos_(editorGizmos),
-        simulationController_(simulationController) {}
+        simulationController_(simulationController),
+        editorMode_(editorMode) {}
 
     // Call this from inside the dockspace host window, before DockSpace().
     void draw(float width) {
@@ -37,7 +41,12 @@ public:
         ImGui::Text("Scene");
 
         ImGui::SameLine();
-        ImGui::Dummy({40.0f, 0.0f});
+        ImGui::Dummy({20.0f, 0.0f});
+        ImGui::SameLine();
+        drawModeDropdown();
+
+        ImGui::SameLine();
+        ImGui::Dummy({20.0f, 0.0f});
         ImGui::SameLine();
 
         auto drawButton = [&](const char* label,
@@ -107,7 +116,27 @@ public:
     }
 
 private:
+    static const char* modeLabel(EditorMode mode) { return mode == EditorMode::Terrain ? "Terrain" : "Selection"; }
+
+    void drawModeDropdown() {
+        const EditorMode mode = editorMode_.mode();
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.25f, 0.25f, 0.28f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.35f, 0.35f, 0.4f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.35f, 0.35f, 0.4f, 1.0f});
+        std::string label = std::string("Mode: ") + modeLabel(mode);
+        if (ImGui::Button(label.c_str())) ImGui::OpenPopup("##ModeDropdown");
+        ImGui::PopStyleColor(3);
+
+        if (ImGui::BeginPopup("##ModeDropdown")) {
+            if (ImGui::Selectable("Selection", mode == EditorMode::Selection))
+                editorMode_.setMode(EditorMode::Selection);
+            if (ImGui::Selectable("Terrain", mode == EditorMode::Terrain)) editorMode_.setMode(EditorMode::Terrain);
+            ImGui::EndPopup();
+        }
+    }
+
     EditorSettings& editorSettings_;
     EditorGizmos& editorGizmos_;
     SimulationController& simulationController_;
+    EditorModeService& editorMode_;
 };

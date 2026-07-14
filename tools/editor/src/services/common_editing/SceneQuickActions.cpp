@@ -5,6 +5,7 @@
 #include <optional>
 #include <unordered_set>
 #include "core/scene/TransformUtils.hpp"
+#include "physics/components/TerrainCollider.hpp"
 #include "transport/SceneDTO.hpp"
 
 void SceneQuickActions::deleteSelection() {
@@ -138,6 +139,56 @@ void SceneQuickActions::addModel(const std::string& modelName) {
     obj.addComponent(Metadata{modelName}, groupId);
     obj.addComponent(t, groupId);
     obj.addComponent(r, groupId);
+}
+
+void SceneQuickActions::createTerrain(uint32_t resolution, float worldSize) {
+    auto groupId = UndoHistory::randomGroupId("Create Terrain");
+
+    std::string meshName = "Terrain.mesh";
+    int index = 2;
+    while (assetStore.exists(meshName)) {
+        meshName = "Terrain_" + std::to_string(index) + ".mesh";
+        ++index;
+    }
+    assetStore.createAssetFile<Mesh>(AssetPrefabs::terrainMesh(resolution, worldSize, meshName), groupId);
+
+    EntityHandle handle = scene_.createObject(groupId);
+    RuntimeGameObject obj = scene_.getObject(handle);
+    obj.addComponent(Metadata{"Terrain"}, groupId);
+    obj.addComponent(Transform{glm::vec3(0.0f), glm::quat(1.0f, 0.0f, 0.0f, 0.0f), glm::vec3(1.0f)}, groupId);
+    obj.addComponent(Renderer{meshName, SOLID_COLOR_MATERIAL, std::nullopt, true}, groupId);
+    obj.addComponent(TerrainCollider{}, groupId);
+}
+
+void SceneQuickActions::enableTerrainPainting(EntityHandle entity, uint32_t splatMapResolution) {
+    const Actor* actor = scene_.getWorld().getActor(entity);
+    if (!actor) return;
+    const Renderer* renderer = actor->getComponent<Renderer>();
+    if (!renderer) return;
+    if (assetStore.exists(renderer->materialName) &&
+        assetStore.getAsset<Material>(renderer->materialName).isTerrainBlend())
+        return;
+
+    auto groupId = UndoHistory::randomGroupId("Enable Terrain Painting");
+
+    std::string splatMapName = "Terrain.splatmap.png";
+    int index = 2;
+    while (assetStore.exists(splatMapName)) {
+        splatMapName = "Terrain_" + std::to_string(index) + ".splatmap.png";
+        ++index;
+    }
+    assetStore.createAssetFile<Texture>(AssetPrefabs::splatMap(splatMapResolution, splatMapName), groupId);
+
+    std::string materialName = "Terrain.mat";
+    index = 2;
+    while (assetStore.exists(materialName)) {
+        materialName = "Terrain_" + std::to_string(index) + ".mat";
+        ++index;
+    }
+    assetStore.createAssetFile<Material>(AssetPrefabs::terrainBlend(materialName, splatMapName), groupId);
+
+    scene_.getObject(entity).mutateComponent<Renderer>([materialName](Renderer& r) { r.materialName = materialName; },
+                                                       groupId);
 }
 
 void SceneQuickActions::createPrimitiveGeometry(const std::string& meshName,

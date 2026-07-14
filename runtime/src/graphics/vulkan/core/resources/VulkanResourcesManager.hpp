@@ -25,9 +25,11 @@ public:
         fontCache_(fontCache) {}
 
     VulkanMeshBuffers& getMesh(const Mesh& mesh) const { return meshBuffersCache_.get(mesh); }
+    void updateMesh(const Mesh& mesh) { meshBuffersCache_.update(mesh); }
 
     VulkanTexture& getTexture(const Texture& texture) const { return textureCache_.get(texture); }
     VulkanTextureCache& getTextureCache() { return textureCache_; }
+    void updateTexture(const Texture& texture) { textureCache_.update(texture); }
 
     VulkanTexture& getFontAtlas(const Font& font) { return fontCache_.get(font); }
 

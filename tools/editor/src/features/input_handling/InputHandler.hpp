@@ -63,6 +63,10 @@ public:
 
     void update(double mouseX, double mouseY, double deltaTime, bool simActive = false);
 
+    // While enabled, suppresses selection/gizmo mouse handling (left-button driven) so another
+    // tool (e.g. terrain sculpting) can own left-click input; camera navigation stays active.
+    void setTerrainSculptMode(bool enabled) { terrainSculptMode_ = enabled; }
+
 private:
     GameWindow& window_;
     InputSystem& inputSystem_;
@@ -80,6 +84,7 @@ private:
     ActionDispatcher& actionDispatcher_;
 
     bool wasLeftDown_ = false;
+    bool terrainSculptMode_ = false;
 
     double lastMouseX_ = 0.0;
     double lastMouseY_ = 0.0;

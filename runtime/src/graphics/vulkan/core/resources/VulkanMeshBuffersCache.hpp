@@ -42,6 +42,18 @@ public:
         return insertedIt->second;
     }
 
+    // Re-uploads vertex data into the existing cached vertex buffer for meshAsset.name (no reallocation).
+    // Intended for meshes whose vertex count never changes after creation (e.g. terrain sculpting).
+    void update(const Mesh& meshAsset) {
+        auto it = cache_.find(meshAsset.name);
+        if (it == cache_.end()) return;
+
+        const std::vector<float> packedVertices =
+                meshAsset.isSkinned() ? packSkinnedMeshData(meshAsset) : packMeshData(meshAsset);
+        updateBuffer(
+                context_.device, it->second.vertexBuffer, packedVertices.data(), packedVertices.size() * sizeof(float));
+    }
+
 private:
     VulkanContext& context_;
     std::unordered_map<std::string, VulkanMeshBuffers> cache_;

@@ -5,6 +5,7 @@
 #include <string>
 #include "../../../../../runtime/src/core/components/Metadata.hpp"
 #include "../../../../../runtime/src/core/components/Transform.hpp"
+#include "../../../../../runtime/src/graphics/assets/Material.hpp"
 #include "../../../../../runtime/src/graphics/assets/Mesh.hpp"
 #include "../../../../../runtime/src/graphics/components/Light.hpp"
 #include "../../../../../runtime/src/graphics/components/Renderer.hpp"
@@ -64,6 +65,12 @@ public:
     void createSphere(uint32_t resolution);
     void createCapsule(uint32_t resolution);
     void addModel(const std::string& modelName);
+    // Creates a new terrain entity backed by a freshly generated, uniquely named grid mesh asset.
+    void createTerrain(uint32_t resolution, float worldSize);
+    // Enables texture painting on an existing terrain entity: creates a splatmap texture asset +
+    // a terrain-blend material asset, then swaps the entity's Renderer::materialName to it.
+    // No-op if the entity's material is already terrain-blend.
+    void enableTerrainPainting(EntityHandle entity, uint32_t splatMapResolution);
 
 private:
     void createPrimitiveGeometry(const std::string& meshName,

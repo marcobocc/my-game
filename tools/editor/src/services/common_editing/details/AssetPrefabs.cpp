@@ -191,6 +191,47 @@ Mesh AssetPrefabs::capsule(uint32_t resolution, const std::string& name) {
     return Mesh(name, positions, uvs, colors, indices, normals);
 }
 
+Mesh AssetPrefabs::terrainMesh(uint32_t resolution, float worldSize, const std::string& name) {
+    resolution = std::max(resolution, 1u);
+    const uint32_t verticesPerSide = resolution + 1;
+    const float half = worldSize * 0.5f;
+
+    std::vector<glm::vec3> positions;
+    std::vector<glm::vec2> uvs;
+    std::vector<glm::vec3> normals;
+    positions.reserve(verticesPerSide * verticesPerSide);
+    uvs.reserve(verticesPerSide * verticesPerSide);
+    normals.reserve(verticesPerSide * verticesPerSide);
+
+    for (uint32_t z = 0; z < verticesPerSide; ++z) {
+        for (uint32_t x = 0; x < verticesPerSide; ++x) {
+            float u = static_cast<float>(x) / static_cast<float>(resolution);
+            float v = static_cast<float>(z) / static_cast<float>(resolution);
+            positions.push_back({-half + u * worldSize, 0.0f, -half + v * worldSize});
+            uvs.push_back({u, v});
+            normals.push_back({0.0f, 1.0f, 0.0f});
+        }
+    }
+
+    std::vector<uint32_t> indices;
+    indices.reserve(resolution * resolution * 6);
+    for (uint32_t z = 0; z < resolution; ++z) {
+        for (uint32_t x = 0; x < resolution; ++x) {
+            uint32_t a = z * verticesPerSide + x;
+            uint32_t b = a + verticesPerSide;
+            indices.push_back(a);
+            indices.push_back(a + 1);
+            indices.push_back(b + 1);
+            indices.push_back(a);
+            indices.push_back(b + 1);
+            indices.push_back(b);
+        }
+    }
+
+    std::vector<glm::vec3> colors(positions.size(), glm::vec3(1.0f));
+    return Mesh(name, positions, uvs, colors, indices, normals);
+}
+
 Material AssetPrefabs::solidColor(const std::string& name) {
     return Material(name,
                     glm::vec4(1.0f),
@@ -205,4 +246,37 @@ Material AssetPrefabs::solidColor(const std::string& name) {
                     glm::vec2(1.0f),
                     glm::vec2(0.0f),
                     false);
+}
+
+Texture AssetPrefabs::splatMap(uint32_t resolution, const std::string& name) {
+    resolution = std::max(resolution, 1u);
+    std::vector<unsigned char> pixels(static_cast<size_t>(resolution) * resolution * 4);
+    for (size_t i = 0; i < pixels.size(); i += 4) {
+        pixels[i + 0] = 255; // R: layerMaterial0 fully weighted
+        pixels[i + 1] = 0;
+        pixels[i + 2] = 0;
+        pixels[i + 3] = 0;
+    }
+    return Texture(name, static_cast<int>(resolution), static_cast<int>(resolution), 4, std::move(pixels));
+}
+
+Material AssetPrefabs::terrainBlend(const std::string& name, const std::string& splatMapTexture) {
+    return Material(name,
+                    glm::vec4(1.0f),
+                    EMPTY_TEXTURE,
+                    EMPTY_TEXTURE,
+                    EMPTY_TEXTURE,
+                    EMPTY_TEXTURE,
+                    EMPTY_TEXTURE,
+                    0.0f,
+                    1.0f,
+                    1.0f,
+                    glm::vec2(1.0f),
+                    glm::vec2(0.0f),
+                    false,
+                    splatMapTexture,
+                    SOLID_COLOR_MATERIAL,
+                    SOLID_COLOR_MATERIAL,
+                    SOLID_COLOR_MATERIAL,
+                    SOLID_COLOR_MATERIAL);
 }
