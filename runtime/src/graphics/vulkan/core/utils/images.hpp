@@ -56,8 +56,9 @@ inline void allocateRenderTargetImages(VkDevice device,
         vkCreateSampler(device, &samplerInfo, nullptr, &outSamplerRef);
     };
 
+    // TRANSFER_SRC allows CPU readback of the render target (e.g. thumbnail previews).
     allocImage(swapchainColorFormat,
-               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+               VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                rt.image,
                outMemory);
     allocView(rt.image, swapchainColorFormat, VK_IMAGE_ASPECT_COLOR_BIT, rt.view);

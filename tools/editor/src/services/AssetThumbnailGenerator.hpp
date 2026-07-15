@@ -5,9 +5,13 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vulkan/vulkan.h>
+#include "../../../../runtime/src/core/assets/BuiltinAssetNames.hpp"
+#include "../../../../runtime/src/graphics/assets/Model.hpp"
 #include "../../../../runtime/src/graphics/assets/Texture.hpp"
 #include "ImguiThumbnail.hpp"
+#include "MaterialPreviewRenderer.hpp"
 #include "backends/imgui_impl_vulkan.h"
 #include "core/assets/AssetLoader.hpp"
 #include "graphics/vulkan/core/resources/VulkanTextureCache.hpp"
@@ -30,12 +34,27 @@ public:
         textureCache_(textureCache),
         cacheDir_(std::move(projectRoot) / CACHE_DIR) {}
 
-    void setProjectRoot(const std::filesystem::path& projectRoot) { cacheDir_ = projectRoot / CACHE_DIR; }
+    void setProjectRoot(const std::filesystem::path& projectRoot) {
+        cacheDir_ = projectRoot / CACHE_DIR;
+        cache_.clear();
+        staleEntries_.clear();
+    }
+
+    void setMaterialPreviewRenderer(MaterialPreviewRenderer* renderer) { materialPreviewRenderer_ = renderer; }
+
+    // Mark a thumbnail stale: delete the disk cache, but keep the in-memory entry so
+    // it stays on screen while the replacement regenerates (no placeholder flash).
+    void invalidate(const std::string& assetName) {
+        if (cache_.contains(assetName)) staleEntries_.insert(assetName);
+        std::error_code ec;
+        std::filesystem::remove(osCachePathFor(assetName), ec);
+    }
 
     ImguiThumbnail get(const std::string& assetName) {
         if (assetName.starts_with(CACHE_DIR)) return ImguiThumbnail{};
         auto it = cache_.find(assetName);
-        if (it != cache_.end()) return it->second;
+        bool stale = staleEntries_.contains(assetName);
+        if (it != cache_.end() && !stale) return it->second;
 
         auto ext = std::filesystem::path(assetName).extension().string();
         std::optional<ImguiThumbnail> result;
@@ -43,10 +62,31 @@ public:
             auto osCache = osCachePathFor(assetName);
             if (std::filesystem::exists(osCache)) result = loadThumbnailFromDisk(osCache);
             if (!result) result = generateTexturePreview(assetName);
+        } else if ((ext == ".mat" || ext == ".mesh" || ext == ".model") && materialPreviewRenderer_) {
+            auto osCache = osCachePathFor(assetName);
+            if (!stale && std::filesystem::exists(osCache)) result = loadThumbnailFromDisk(osCache);
+            if (!result) {
+                auto preview = requestRenderedPreview(assetName, ext);
+                if (preview.status == MaterialPreviewRenderer::Status::Pending) {
+                    // Render in flight: keep showing the previous thumbnail if we have
+                    // one; don't cache, so we re-query on the next frame.
+                    if (it != cache_.end()) return it->second;
+                    return thumbnail_PreviewNotAvailable();
+                }
+                if (preview.status == MaterialPreviewRenderer::Status::Ready && preview.texture) {
+                    writeToDiskCache(assetName, *preview.texture);
+                    // Re-upload in case this material was invalidated and re-rendered:
+                    // toImguiThumbnail's texture cache is keyed by name and would
+                    // otherwise return the stale GPU image. No-op on first render.
+                    textureCache_.update(*preview.texture);
+                    result = toImguiThumbnail(*preview.texture);
+                }
+            }
         }
 
         ImguiThumbnail thumbnail = result.value_or(thumbnail_PreviewNotAvailable());
-        cache_.emplace(assetName, thumbnail);
+        cache_[assetName] = thumbnail;
+        staleEntries_.erase(assetName);
         return thumbnail;
     }
 
@@ -55,6 +95,19 @@ private:
     VulkanTextureCache& textureCache_;
     std::filesystem::path cacheDir_;
     std::unordered_map<std::string, ImguiThumbnail> cache_;
+    std::unordered_set<std::string> staleEntries_;
+    MaterialPreviewRenderer* materialPreviewRenderer_ = nullptr;
+
+    MaterialPreviewRenderer::PreviewResult requestRenderedPreview(const std::string& assetName,
+                                                                  const std::string& ext) {
+        if (ext == ".mat") return materialPreviewRenderer_->requestPreview(assetName);
+        if (ext == ".mesh")
+            return materialPreviewRenderer_->requestMeshPreview(assetName, assetName, SOLID_COLOR_MATERIAL);
+        // .model: render its mesh with its material
+        const Model* model = assetLoader_.get<Model>(assetName);
+        if (!model) return {MaterialPreviewRenderer::Status::Failed, std::nullopt};
+        return materialPreviewRenderer_->requestMeshPreview(assetName, model->meshName, model->materialName);
+    }
 
     std::filesystem::path osCachePathFor(const std::string& vfsPath) const {
         std::string encoded = vfsPath;

@@ -114,6 +114,9 @@ public:
 
     AssetLoader& loader() { return loader_; }
 
+    // Fires after any in-memory asset mutation (including undo/redo).
+    void setOnAssetMutated(std::function<void(const std::string&)> callback) { onAssetMutated_ = std::move(callback); }
+
 private:
     AssetLoader& loader_;
     VirtualFileSystem& vfs_;
@@ -144,5 +147,8 @@ private:
     void mutateAsset_Impl(T* asset, const std::string& assetName, Fn&& mutation) {
         std::forward<Fn>(mutation)(*asset);
         bakeList_[assetName] = [this, assetName] { baker_.bake<T>(getAsset<T>(assetName), assetName); };
+        if (onAssetMutated_) onAssetMutated_(assetName);
     }
+
+    std::function<void(const std::string&)> onAssetMutated_;
 };

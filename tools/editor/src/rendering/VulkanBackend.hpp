@@ -75,6 +75,25 @@ public:
         }
     }
 
+    // A fully self-contained off-screen render: uses its own draw queue and lights
+    // instead of the main scene's, and skips the editor grid. Flushed at the start
+    // of the next swapchain frame, like queued off-screen cameras.
+    struct OffscreenSceneJob {
+        Camera camera;
+        Transform cameraTransform;
+        std::vector<DrawCall> drawQueue;
+        std::vector<std::pair<Light, Transform>> lights;
+    };
+    void queueOffscreenScene(OffscreenSceneJob job) {
+        if (job.camera.renderTarget.isValid()) pendingOffscreenScenes_.push_back(std::move(job));
+    }
+
+    // Blocking GPU->CPU readback of an off-screen render target. Waits for the
+    // graphics queue to go idle, then copies the color image into host memory.
+    // Returns tightly-packed RGBA8 pixels (width*height*4), swizzled from BGRA
+    // if needed; empty on failure.
+    std::vector<unsigned char> readbackRenderTarget(RenderTargetHandle handle);
+
     RenderTargetHandle createRenderTarget(uint32_t width, uint32_t height);
     void destroyRenderTarget(RenderTargetHandle handle);
     VkDescriptorSet getRenderTargetImGuiId(RenderTargetHandle handle) const;
@@ -164,4 +183,8 @@ private:
         Transform cameraTransform;
     };
     std::vector<PendingOffscreenCamera> pendingOffscreenCameras_;
+    std::vector<OffscreenSceneJob> pendingOffscreenScenes_;
+
+    void recordOffscreenRender(VkCommandBuffer cmd, const EditorRenderData& renderData);
+    void flushOffscreenScenes();
 };

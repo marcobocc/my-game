@@ -20,6 +20,7 @@ struct EditorRenderData {
     std::vector<TextDrawCall> textQueue;
     float gridScale;
     bool isOffscreen = false;
+    bool drawGrid = true;
 
     EditorRenderData(const Camera& cam,
                      const Transform& cameraTransform,
@@ -31,7 +32,8 @@ struct EditorRenderData {
                      std::vector<ParticleEmitterRef> particlesIn,
                      std::vector<TextDrawCall> textIn,
                      float gridS,
-                     bool offscreen = false) :
+                     bool offscreen = false,
+                     bool drawGridIn = true) :
         camera(cam),
         cameraTransform(cameraTransform),
         drawQueue(drawQ),
@@ -42,5 +44,6 @@ struct EditorRenderData {
         particleEmitters(std::move(particlesIn)),
         textQueue(std::move(textIn)),
         gridScale(gridS),
-        isOffscreen(offscreen) {}
+        isOffscreen(offscreen),
+        drawGrid(drawGridIn) {}
 };

@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include <glm/glm.hpp>
 #include <limits>
 #include <optional>
@@ -15,12 +16,43 @@
     RaycastPickingSystem
 
     Generic engine utility that casts a ray from a camera through a screen-space
-    pixel and returns the name of the closest scene object whose AABB is hit.
+    pixel and returns the name of the closest scene object whose mesh is hit.
+
+    Picking is per-triangle (not just AABB), so objects resting on top of another
+    mesh (e.g. a terrain) are still picked correctly when they're the nearer surface
+    at the clicked pixel — an object's AABB is only used as a broad-phase reject.
 
     Suitable for use by both the editor and in-game code.
 */
 class RaycastPickingSystem {
 public:
+    // Moller-Trumbore ray-triangle intersection; v0/v1/v2 and the ray must be in the same space.
+    static std::optional<float> intersectTriangle(const glm::vec3& origin,
+                                                  const glm::vec3& dir,
+                                                  const glm::vec3& v0,
+                                                  const glm::vec3& v1,
+                                                  const glm::vec3& v2) {
+        constexpr float EPSILON = 1e-6f;
+        glm::vec3 edge1 = v1 - v0;
+        glm::vec3 edge2 = v2 - v0;
+        glm::vec3 h = glm::cross(dir, edge2);
+        float a = glm::dot(edge1, h);
+        if (std::abs(a) < EPSILON) return std::nullopt;
+
+        float f = 1.0f / a;
+        glm::vec3 s = origin - v0;
+        float u = f * glm::dot(s, h);
+        if (u < 0.0f || u > 1.0f) return std::nullopt;
+
+        glm::vec3 q = glm::cross(s, edge1);
+        float v = f * glm::dot(dir, q);
+        if (v < 0.0f || u + v > 1.0f) return std::nullopt;
+
+        float t = f * glm::dot(edge2, q);
+        if (t < EPSILON) return std::nullopt;
+        return t;
+    }
+
     // ndcPos: [0,1] screen-space coord (x right, y down from top-left of the viewport)
     static std::optional<EntityHandle> pick(const glm::vec2& ndcPos,
                                             const Camera& camera,
@@ -39,13 +71,25 @@ public:
             const Mesh* mesh = assetLoader.get<Mesh>(rendererPtr->meshName);
             if (!mesh) continue;
 
-            AABB worldAABB =
-                    mesh->getAABB().applyTransform(TransformUtils::resolveWorldMatrix(*transformPtr, entityManager));
+            glm::mat4 model = TransformUtils::resolveWorldMatrix(*transformPtr, entityManager);
+            AABB worldAABB = mesh->getAABB().applyTransform(model);
 
-            float t = 0.0f;
-            if (ray.intersectsAABB(worldAABB, t) && t < bestT) {
-                bestT = t;
-                best.emplace(entity);
+            // Broad-phase reject: skip meshes whose bounding box can't possibly beat the
+            // current best hit before paying for a per-triangle test.
+            float aabbT = 0.0f;
+            if (!ray.intersectsAABB(worldAABB, aabbT) || aabbT >= bestT) continue;
+
+            const auto& positions = mesh->getPositions();
+            const auto& indices = mesh->getIndices();
+            for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+                glm::vec3 v0 = glm::vec3(model * glm::vec4(positions[indices[i]], 1.0f));
+                glm::vec3 v1 = glm::vec3(model * glm::vec4(positions[indices[i + 1]], 1.0f));
+                glm::vec3 v2 = glm::vec3(model * glm::vec4(positions[indices[i + 2]], 1.0f));
+                auto t = intersectTriangle(ray.origin, ray.direction, v0, v1, v2);
+                if (t && *t < bestT) {
+                    bestT = *t;
+                    best.emplace(entity);
+                }
             }
         }
 

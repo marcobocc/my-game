@@ -5,6 +5,7 @@
 #include "../features/terrain_tool/Imgui_TerrainPanel.hpp"
 #include "../features/terrain_tool/TerrainPaintTool.hpp"
 #include "../features/terrain_tool/TerrainSculptTool.hpp"
+#include "../services/MaterialPreviewRenderer.hpp"
 #include "FeaturesContainer.hpp"
 #include "RenderingContainer.hpp"
 #include "RuntimeContainer.hpp"
@@ -104,7 +105,13 @@ public:
                    runtime_.assetThumbnailGenerator(),
                    terrainSculptTool_,
                    terrainPaintTool_,
-                   services_.editorModeService()) {
+                   services_.editorModeService()),
+        materialPreviewRenderer_(runtime_.vulkanBackend(), runtime_.assetLoader(), runtime_.loadedAssets()) {
+        runtime_.assetThumbnailGenerator().setMaterialPreviewRenderer(&materialPreviewRenderer_);
+        services_.assetStore().setOnAssetMutated([this](const std::string& assetName) {
+            if (assetName.ends_with(".mat") || assetName.ends_with(".mesh") || assetName.ends_with(".model"))
+                runtime_.assetThumbnailGenerator().invalidate(assetName);
+        });
         features_.imguiRoot().setTerrainPanel(&terrainPanel_);
         runtime_.simulationController().setEditorWorld(&runtime_.entityManager());
         runtime_.simulationController().setProjectRoot(runtime_.projectRoot());
@@ -132,4 +139,5 @@ private:
     TerrainPaintTool terrainPaintTool_;
     Imgui_TerrainPanel terrainPanel_;
     EditorApp editorApp_;
+    MaterialPreviewRenderer materialPreviewRenderer_;
 };

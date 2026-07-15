@@ -9,6 +9,7 @@
 #include "graphics/vulkan/core/VulkanSwapchainManager.hpp"
 #include "graphics/vulkan/core/resources/VulkanRenderTargetManager.hpp"
 #include "graphics/vulkan/core/resources/VulkanResourcesManager.hpp"
+#include "graphics/vulkan/core/utils/buffers.hpp"
 #include "graphics/vulkan/passes/VulkanGeometryPass.hpp"
 #include "graphics/vulkan/passes/VulkanGizmoPass.hpp"
 #include "graphics/vulkan/passes/VulkanGridPass.hpp"
@@ -156,6 +157,8 @@ bool VulkanBackend::renderFrame(const EditorRenderData& renderData) {
         return true;
     }
 
+    flushOffscreenScenes();
+
     frameManager_.waitForCurrentFrame();
 
     uint32_t imageIndex = 0;
@@ -241,6 +244,110 @@ VulkanRenderTarget VulkanBackend::getRenderTarget(RenderTargetHandle handle) con
     return *rt;
 }
 
+std::vector<unsigned char> VulkanBackend::readbackRenderTarget(RenderTargetHandle handle) {
+    const auto* rt = renderTargetManager_.get(handle);
+    if (!rt || rt->image == VK_NULL_HANDLE) return {};
+
+    // Editor-only, once-per-thumbnail cost: a coarse wait keeps this simple.
+    vkQueueWaitIdle(context_.graphicsQueue);
+
+    const VkDeviceSize size = static_cast<VkDeviceSize>(rt->width) * rt->height * 4;
+    VulkanBuffer staging = createBuffer(context_.device,
+                                        context_.physicalDevice,
+                                        size,
+                                        VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                                        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    poolInfo.queueFamilyIndex = context_.graphicsQueueFamilyIndex;
+    VkCommandPool pool = VK_NULL_HANDLE;
+    if (vkCreateCommandPool(context_.device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
+        destroyBuffer(context_.device, staging);
+        return {};
+    }
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = pool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+    VkCommandBuffer cmd = VK_NULL_HANDLE;
+    vkAllocateCommandBuffers(context_.device, &allocInfo, &cmd);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(cmd, &beginInfo);
+
+    VkImageMemoryBarrier toSrc{};
+    toSrc.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    toSrc.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    toSrc.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    toSrc.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    toSrc.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    toSrc.image = rt->image;
+    toSrc.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+    toSrc.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    toSrc.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    vkCmdPipelineBarrier(cmd,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         0,
+                         0,
+                         nullptr,
+                         0,
+                         nullptr,
+                         1,
+                         &toSrc);
+
+    VkBufferImageCopy region{};
+    region.imageSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    region.imageExtent = {rt->width, rt->height, 1};
+    vkCmdCopyImageToBuffer(cmd, rt->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging.buffer, 1, &region);
+
+    VkImageMemoryBarrier back = toSrc;
+    back.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    back.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    back.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+    back.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    vkCmdPipelineBarrier(cmd,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                         0,
+                         0,
+                         nullptr,
+                         0,
+                         nullptr,
+                         1,
+                         &back);
+
+    vkEndCommandBuffer(cmd);
+
+    VkSubmitInfo submit{};
+    submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit.commandBufferCount = 1;
+    submit.pCommandBuffers = &cmd;
+    vkQueueSubmit(context_.graphicsQueue, 1, &submit, VK_NULL_HANDLE);
+    vkQueueWaitIdle(context_.graphicsQueue);
+    vkDestroyCommandPool(context_.device, pool, nullptr);
+
+    std::vector<unsigned char> pixels(size);
+    void* mapped = nullptr;
+    vkMapMemory(context_.device, staging.memory, 0, size, 0, &mapped);
+    std::memcpy(pixels.data(), mapped, size);
+    vkUnmapMemory(context_.device, staging.memory);
+    destroyBuffer(context_.device, staging);
+
+    // Render targets use the swapchain color format, which is commonly BGRA.
+    if (rt->format == VK_FORMAT_B8G8R8A8_UNORM || rt->format == VK_FORMAT_B8G8R8A8_SRGB) {
+        for (size_t i = 0; i + 3 < pixels.size(); i += 4)
+            std::swap(pixels[i], pixels[i + 2]);
+    }
+    return pixels;
+}
+
 // ------------------- Frame helpers -------------------
 
 void VulkanBackend::executeRenderGraph(VkCommandBuffer cmd,
@@ -273,59 +380,122 @@ static void transitionColorImageFinal(VkCommandBuffer cmd,
             cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 }
 
+// Render one off-screen frame into renderData.camera.renderTarget, using the render
+// target's per-frame descriptor sets, and leave the image in SHADER_READ_ONLY_OPTIMAL.
+void VulkanBackend::recordOffscreenRender(VkCommandBuffer cmd, const EditorRenderData& renderData) {
+    if (!renderData.camera.renderTarget.isValid()) return;
+    const auto* target = renderTargetManager_.get(renderData.camera.renderTarget);
+    if (!target || target->image == VK_NULL_HANDLE) return;
+
+    size_t frameIdx = frameManager_.currentFrameIndex();
+    uint32_t handleIdx = renderData.camera.renderTarget.index;
+
+    auto bit = renderTargetGeometryBuffers_.find(handleIdx);
+    if (bit == renderTargetGeometryBuffers_.end()) return;
+
+    const auto& geomBufs = bit->second;
+    currentFrameGeometryBuffer_ = (frameIdx < geomBufs.size()) ? const_cast<VulkanBuffer*>(&geomBufs[frameIdx])
+                                                               : const_cast<VulkanBuffer*>(&geomBufs[0]);
+
+    // Set current frame descriptor sets for render passes
+    auto oit = renderTargetOutlineDescriptorSets_.find(handleIdx);
+    auto git = renderTargetGeometryDescriptorSets_.find(handleIdx);
+    if (oit != renderTargetOutlineDescriptorSets_.end()) {
+        currentFrameOutlineDescriptorSet_ = (frameIdx < oit->second.size()) ? oit->second[frameIdx] : oit->second[0];
+    }
+    if (git != renderTargetGeometryDescriptorSets_.end()) {
+        currentFrameGeometryDescriptorSet_ = (frameIdx < git->second.size()) ? git->second[frameIdx] : git->second[0];
+    }
+
+    executeRenderGraph(cmd, target->image, target->view, {target->width, target->height}, renderData);
+    transitionColorImageFinal(cmd,
+                              target->image,
+                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                              VK_ACCESS_SHADER_READ_BIT);
+}
+
+// Render queued self-contained off-screen scenes (e.g. material previews), each in its
+// own immediate submission. This cannot share the main frame's command buffer: the
+// lighting pass uploads light data to shared host-visible SSBOs at record time, so the
+// main scene's lights would overwrite the preview's before the GPU executes it.
+void VulkanBackend::flushOffscreenScenes() {
+    if (pendingOffscreenScenes_.empty()) return;
+
+    VkCommandPoolCreateInfo poolInfo{};
+    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    poolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    poolInfo.queueFamilyIndex = context_.graphicsQueueFamilyIndex;
+    VkCommandPool pool = VK_NULL_HANDLE;
+    if (vkCreateCommandPool(context_.device, &poolInfo, nullptr, &pool) != VK_SUCCESS) {
+        pendingOffscreenScenes_.clear();
+        return;
+    }
+
+    static const std::vector<DrawCall> noDrawCalls;
+    static const std::vector<VulkanGizmoPass::GizmoVertex> noGizmos;
+    for (auto& job: pendingOffscreenScenes_) {
+        // In-flight frames share the render graph's transient images and light SSBOs.
+        vkQueueWaitIdle(context_.graphicsQueue);
+
+        VkCommandBufferAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = pool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocInfo.commandBufferCount = 1;
+        VkCommandBuffer cmd = VK_NULL_HANDLE;
+        vkAllocateCommandBuffers(context_.device, &allocInfo, &cmd);
+
+        VkCommandBufferBeginInfo beginInfo{};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        vkBeginCommandBuffer(cmd, &beginInfo);
+
+        recordOffscreenRender(cmd,
+                              EditorRenderData{job.camera,
+                                               job.cameraTransform,
+                                               job.drawQueue,
+                                               noDrawCalls,
+                                               noGizmos,
+                                               noGizmos,
+                                               job.lights,
+                                               {},
+                                               {},
+                                               1.0f,
+                                               true,
+                                               false});
+
+        vkEndCommandBuffer(cmd);
+
+        VkSubmitInfo submit{};
+        submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submit.commandBufferCount = 1;
+        submit.pCommandBuffers = &cmd;
+        vkQueueSubmit(context_.graphicsQueue, 1, &submit, VK_NULL_HANDLE);
+        vkQueueWaitIdle(context_.graphicsQueue);
+        vkFreeCommandBuffers(context_.device, pool, 1, &cmd);
+    }
+    pendingOffscreenScenes_.clear();
+    vkDestroyCommandPool(context_.device, pool, nullptr);
+}
+
 void VulkanBackend::recordCommands(VkCommandBuffer cmd, uint32_t imageIndex, const EditorRenderData& renderData) {
     uiPass_.prepareFrame();
 
     // Flush off-screen cameras first, within the same command buffer.
     for (auto& job: pendingOffscreenCameras_) {
-        if (job.camera.renderTarget.isValid()) {
-            const auto* target = renderTargetManager_.get(job.camera.renderTarget);
-            if (target && target->image != VK_NULL_HANDLE) {
-                size_t frameIdx = frameManager_.currentFrameIndex();
-                uint32_t handleIdx = job.camera.renderTarget.index;
-
-                auto bit = renderTargetGeometryBuffers_.find(handleIdx);
-                if (bit != renderTargetGeometryBuffers_.end()) {
-                    const auto& geomBufs = bit->second;
-                    currentFrameGeometryBuffer_ = (frameIdx < geomBufs.size())
-                                                          ? const_cast<VulkanBuffer*>(&geomBufs[frameIdx])
-                                                          : const_cast<VulkanBuffer*>(&geomBufs[0]);
-
-                    // Set current frame descriptor sets for render passes
-                    auto oit = renderTargetOutlineDescriptorSets_.find(handleIdx);
-                    auto git = renderTargetGeometryDescriptorSets_.find(handleIdx);
-                    if (oit != renderTargetOutlineDescriptorSets_.end()) {
-                        currentFrameOutlineDescriptorSet_ =
-                                (frameIdx < oit->second.size()) ? oit->second[frameIdx] : oit->second[0];
-                    }
-                    if (git != renderTargetGeometryDescriptorSets_.end()) {
-                        currentFrameGeometryDescriptorSet_ =
-                                (frameIdx < git->second.size()) ? git->second[frameIdx] : git->second[0];
-                    }
-
-                    executeRenderGraph(cmd,
-                                       target->image,
-                                       target->view,
-                                       {target->width, target->height},
-                                       EditorRenderData{job.camera,
-                                                        job.cameraTransform,
-                                                        renderData.drawQueue,
-                                                        renderData.outlineQueue,
-                                                        renderData.gizmoLines,
-                                                        renderData.overlayGizmoLines,
-                                                        renderData.lightsWithTransforms,
-                                                        renderData.particleEmitters,
-                                                        renderData.textQueue,
-                                                        renderData.gridScale,
-                                                        true});
-                    transitionColorImageFinal(cmd,
-                                              target->image,
-                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                              VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                                              VK_ACCESS_SHADER_READ_BIT);
-                }
-            }
-        }
+        recordOffscreenRender(cmd,
+                              EditorRenderData{job.camera,
+                                               job.cameraTransform,
+                                               renderData.drawQueue,
+                                               renderData.outlineQueue,
+                                               renderData.gizmoLines,
+                                               renderData.overlayGizmoLines,
+                                               renderData.lightsWithTransforms,
+                                               renderData.particleEmitters,
+                                               renderData.textQueue,
+                                               renderData.gridScale,
+                                               true});
     }
     pendingOffscreenCameras_.clear();
 
@@ -779,7 +949,7 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
         n.execute = [this](VkCommandBuffer cmd,
                            const VulkanRenderGraph<EditorRenderData>& graph,
                            const EditorRenderData& ctx) -> bool {
-            if (!settings_.enableGrid) return false;
+            if (!settings_.enableGrid || !ctx.drawGrid) return false;
             const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
             gridPass_.record(cmd,
                              graph.getImageView(colorTargetHandle_),
