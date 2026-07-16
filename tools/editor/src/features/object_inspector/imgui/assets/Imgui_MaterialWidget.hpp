@@ -51,59 +51,6 @@ private:
 
             props.emplace_back(std::make_unique<SeparatorProperty>());
 
-            props.emplace_back(std::make_unique<InputTextProperty>(
-                    "Normal Texture",
-                    [this, asset] { return assetStore_.getAsset<Material>(asset).normalTexture; },
-                    "texture_asset",
-                    [this, asset](const char* tex) {
-                        assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.normalTexture = tex; });
-                    }));
-
-            props.emplace_back(std::make_unique<InputTextProperty>(
-                    "Roughness Texture",
-                    [this, asset] { return assetStore_.getAsset<Material>(asset).roughnessTexture; },
-                    "texture_asset",
-                    [this, asset](const char* tex) {
-                        assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.roughnessTexture = tex; });
-                    }));
-
-            props.emplace_back(std::make_unique<InputTextProperty>(
-                    "Metallic Texture",
-                    [this, asset] { return assetStore_.getAsset<Material>(asset).metallicTexture; },
-                    "texture_asset",
-                    [this, asset](const char* tex) {
-                        assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.metallicTexture = tex; });
-                    }));
-
-            props.emplace_back(std::make_unique<InputTextProperty>(
-                    "AO Texture",
-                    [this, asset] { return assetStore_.getAsset<Material>(asset).aoTexture; },
-                    "texture_asset",
-                    [this, asset](const char* tex) {
-                        assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.aoTexture = tex; });
-                    }));
-
-            props.emplace_back(std::make_unique<SliderFloatProperty>(
-                    "Metallic",
-                    [this, asset] { return assetStore_.getAsset<Material>(asset).metallic; },
-                    [this, asset](float v) {
-                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.metallic = v; });
-                    }));
-
-            props.emplace_back(std::make_unique<SliderFloatProperty>(
-                    "Roughness",
-                    [this, asset] { return assetStore_.getAsset<Material>(asset).roughness; },
-                    [this, asset](float v) {
-                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.roughness = v; });
-                    }));
-
-            props.emplace_back(std::make_unique<SliderFloatProperty>(
-                    "Ambient Occlusion",
-                    [this, asset] { return assetStore_.getAsset<Material>(asset).ao; },
-                    [this, asset](float v) {
-                        assetStore_.mutateAsset<Material>(asset, [v](Material& m) { m.ao = v; });
-                    }));
-
             props.emplace_back(std::make_unique<CheckboxProperty>(
                     "Scale Invariant UV",
                     [this, asset] { return assetStore_.getAsset<Material>(asset).scaleInvariantUV; },
