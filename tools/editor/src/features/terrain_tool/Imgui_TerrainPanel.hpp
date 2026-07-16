@@ -86,10 +86,27 @@ protected:
         }
 
         if (activeTool_ == ActiveTool::Paint) {
+            drawLayerMaterialField(selected.front(), paintTool_.activeLayer());
             float radius = paintTool_.radius();
             if (ImGui::SliderFloat("Radius", &radius, 0.5f, 20.0f)) paintTool_.setRadius(radius);
             float strength = paintTool_.strength();
             if (ImGui::SliderFloat("Strength", &strength, 0.1f, 10.0f)) paintTool_.setStrength(strength);
+        }
+    }
+
+    // Shows the active layer's material; dropping a material asset onto it edits the
+    // terrain's layered material directly (it is no longer editable via the asset grid).
+    void drawLayerMaterialField(EntityHandle entity, int layer) {
+        auto material = sceneQuickActions_.terrainLayerMaterial(entity, layer);
+        if (!material) return; // painting not enabled yet
+
+        const char* display = material->empty() ? "(drop material here)" : material->c_str();
+        ImGui::Button(display, ImVec2(-FLT_MIN, 0));
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MATERIAL_ASSET")) {
+                sceneQuickActions_.setTerrainLayerMaterial(entity, layer, static_cast<const char*>(payload->Data));
+            }
+            ImGui::EndDragDropTarget();
         }
     }
 

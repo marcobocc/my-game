@@ -1,4 +1,5 @@
 #include "SceneQuickActions.hpp"
+#include <filesystem>
 #include <functional>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -205,6 +206,47 @@ void SceneQuickActions::enableTerrainPainting(EntityHandle entity, uint32_t spla
 
     scene_.getObject(entity).mutateComponent<Renderer>([materialName](Renderer& r) { r.materialName = materialName; },
                                                        groupId);
+}
+
+namespace {
+    std::string& layerMaterialRef(Material& m, int layer) {
+        switch (layer) {
+            case 1:
+                return m.layerMaterial1;
+            case 2:
+                return m.layerMaterial2;
+            case 3:
+                return m.layerMaterial3;
+            default:
+                return m.layerMaterial0;
+        }
+    }
+} // namespace
+
+std::optional<std::string> SceneQuickActions::terrainLayerMaterial(EntityHandle entity, int layer) const {
+    const Actor* actor = scene_.getWorld().getActor(entity);
+    if (!actor) return std::nullopt;
+    const Renderer* renderer = actor->getComponent<Renderer>();
+    if (!renderer || !assetStore.exists(renderer->materialName)) return std::nullopt;
+    Material blend = assetStore.getAsset<Material>(renderer->materialName);
+    if (!blend.isTerrainBlend()) return std::nullopt;
+    const std::string& layerName = layerMaterialRef(blend, layer);
+    if (layerName == SOLID_COLOR_MATERIAL) return std::string{};
+    return layerName;
+}
+
+void SceneQuickActions::setTerrainLayerMaterial(EntityHandle entity, int layer, const std::string& material) {
+    const Actor* actor = scene_.getWorld().getActor(entity);
+    if (!actor) return;
+    const Renderer* renderer = actor->getComponent<Renderer>();
+    if (!renderer || !assetStore.exists(renderer->materialName)) return;
+    const std::string blendName = renderer->materialName;
+    if (!assetStore.getAsset<Material>(blendName).isTerrainBlend()) return;
+
+    assetStore.mutateAsset<Material>(
+            blendName,
+            [layer, material](Material& m) { layerMaterialRef(m, layer) = material; },
+            UndoHistory::randomGroupId("Set Terrain Layer Material"));
 }
 
 void SceneQuickActions::createPrimitiveGeometry(const std::string& meshName,

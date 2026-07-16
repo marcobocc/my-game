@@ -71,6 +71,10 @@ public:
     // a terrain-blend material asset, then swaps the entity's Renderer::materialName to it.
     // No-op if the entity's material is already terrain-blend.
     void enableTerrainPainting(EntityHandle entity, uint32_t splatMapResolution);
+    // Layer material of the terrain-blend material, or nullopt if the entity has no
+    // terrain-blend material (painting not enabled yet).
+    std::optional<std::string> terrainLayerMaterial(EntityHandle entity, int layer) const;
+    void setTerrainLayerMaterial(EntityHandle entity, int layer, const std::string& material);
 
 private:
     void createPrimitiveGeometry(const std::string& meshName,
