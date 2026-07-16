@@ -14,8 +14,9 @@ void AssetBaker::bake<Material>(const Material& material, const std::string& ass
     std::string serialized = material.serialize().dump(4);
     std::vector<unsigned char> data(serialized.begin(), serialized.end());
     // A .matpkg/.terrainpkg asset name writes to the inner .mat file, never to the package path.
-    if (PackagePaths::isPackage(assetName)) vfs_.makeDirs(assetName);
-    if (!vfs_.write(PackagePaths::resolveAssetFile(assetName, vfs_, ".mat"), data)) {
+    std::string matPath = PackagePaths::resolveAssetFile(assetName, vfs_, ".mat");
+    makeParentDirs(matPath);
+    if (!vfs_.write(matPath, data)) {
         throw std::runtime_error("Failed to write material: " + assetName);
     }
     LOG4CXX_INFO(LOGGER, "Baked material: " << assetName);
@@ -53,8 +54,8 @@ void AssetBaker::bake<Mesh>(const Mesh& mesh, const std::string& assetName) {
     }
 
     // A .terrainpkg asset name writes the inner .mesh metadata (+ .obj alongside it).
-    if (PackagePaths::isPackage(assetName)) vfs_.makeDirs(assetName);
     std::string metaPath = PackagePaths::resolveAssetFile(assetName, vfs_, ".mesh");
+    makeParentDirs(metaPath);
     std::string objPath = std::filesystem::path(metaPath).replace_extension(".obj").string();
     std::string objStr = obj.str();
     if (!vfs_.write(objPath, std::vector<unsigned char>(objStr.begin(), objStr.end()))) {
@@ -89,6 +90,7 @@ void AssetBaker::bake<Texture>(const Texture& texture, const std::string& assetN
                                     texture.channels,
                                     texture.imageData.data(),
                                     texture.width * texture.channels);
+    makeParentDirs(assetName);
     if (!ok || !vfs_.write(assetName, pngBytes)) {
         throw std::runtime_error("Failed to write texture: " + assetName);
     }

@@ -20,7 +20,7 @@ void AssetQuickActions::deleteSelection() {
 
 std::string AssetQuickActions::generateMaterialName(const std::string& folder) const {
     auto availableMaterials = assetStore_.list(".mat");
-    std::string prefix = folder.empty() ? "" : folder + "/";
+    std::string prefix = (folder.empty() ? std::string(AssetStore::CUSTOM_ASSETS_DIR) : folder) + "/";
     int counter = 1;
     std::string materialName = prefix + "New Material (" + std::to_string(counter) + ").matpkg";
     while (std::ranges::find(availableMaterials, materialName) != availableMaterials.end()) {

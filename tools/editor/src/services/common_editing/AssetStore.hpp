@@ -18,6 +18,9 @@ class AssetStore {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("AssetStore");
 
 public:
+    // Assets generated inside the editor (new materials, terrains, primitives, ...) live here.
+    static constexpr const char* CUSTOM_ASSETS_DIR = "assets/custom.pak";
+
     AssetStore(AssetLoader& loader, VirtualFileSystem& vfs, UndoHistory& undoHistory) :
         loader_(loader),
         vfs_(vfs),

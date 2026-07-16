@@ -108,23 +108,25 @@ void SceneQuickActions::createLight() {
 
 void SceneQuickActions::createCube() {
     auto groupId = UndoHistory::randomGroupId("Create Cube");
-    createPrimitiveGeometry("Cube.mesh", "Cube", groupId);
+    createPrimitiveGeometry(std::string(AssetStore::CUSTOM_ASSETS_DIR) + "/Cube.mesh", "Cube", groupId);
 }
 
 void SceneQuickActions::createPlane() {
     auto groupId = UndoHistory::randomGroupId("Create Plane");
-    createPrimitiveGeometry("Plane.mesh", "Plane", groupId);
+    createPrimitiveGeometry(std::string(AssetStore::CUSTOM_ASSETS_DIR) + "/Plane.mesh", "Plane", groupId);
 }
 
 void SceneQuickActions::createSphere(uint32_t resolution) {
     auto groupId = UndoHistory::randomGroupId("Create Sphere");
-    std::string meshName = "Sphere_" + std::to_string(resolution) + ".mesh";
+    std::string meshName =
+            std::string(AssetStore::CUSTOM_ASSETS_DIR) + "/Sphere_" + std::to_string(resolution) + ".mesh";
     createPrimitiveGeometry(meshName, "Sphere", groupId);
 }
 
 void SceneQuickActions::createCapsule(uint32_t resolution) {
     auto groupId = UndoHistory::randomGroupId("Create Capsule");
-    std::string meshName = "Capsule_" + std::to_string(resolution) + ".mesh";
+    std::string meshName =
+            std::string(AssetStore::CUSTOM_ASSETS_DIR) + "/Capsule_" + std::to_string(resolution) + ".mesh";
     createPrimitiveGeometry(meshName, "Capsule", groupId);
 }
 
@@ -146,10 +148,11 @@ void SceneQuickActions::createTerrain(uint32_t resolution, float worldSize) {
     auto groupId = UndoHistory::randomGroupId("Create Terrain");
 
     // Terrains are bundle assets: the .terrainpkg name is the mesh (and later material) asset name.
-    std::string meshName = "Terrain.terrainpkg";
+    std::string dir = std::string(AssetStore::CUSTOM_ASSETS_DIR) + "/";
+    std::string meshName = dir + "Terrain.terrainpkg";
     int index = 2;
     while (assetStore.exists(meshName)) {
-        meshName = "Terrain_" + std::to_string(index) + ".terrainpkg";
+        meshName = dir + "Terrain_" + std::to_string(index) + ".terrainpkg";
         ++index;
     }
     assetStore.createAssetFile<Mesh>(AssetPrefabs::terrainMesh(resolution, worldSize, meshName), groupId);
@@ -182,17 +185,18 @@ void SceneQuickActions::enableTerrainPainting(EntityHandle entity, uint32_t spla
         splatMapName = PackagePaths::defaultInnerPath(pkg, ".splatmap.png");
         materialName = pkg;
     } else {
-        // Legacy loose terrain mesh: keep creating sibling files.
-        splatMapName = "Terrain.splatmap.png";
+        // Legacy loose terrain mesh: create loose files in the custom assets dir.
+        std::string dir = std::string(AssetStore::CUSTOM_ASSETS_DIR) + "/";
+        splatMapName = dir + "Terrain.splatmap.png";
         int index = 2;
         while (assetStore.exists(splatMapName)) {
-            splatMapName = "Terrain_" + std::to_string(index) + ".splatmap.png";
+            splatMapName = dir + "Terrain_" + std::to_string(index) + ".splatmap.png";
             ++index;
         }
-        materialName = "Terrain.mat";
+        materialName = dir + "Terrain.mat";
         index = 2;
         while (assetStore.exists(materialName)) {
-            materialName = "Terrain_" + std::to_string(index) + ".mat";
+            materialName = dir + "Terrain_" + std::to_string(index) + ".mat";
             ++index;
         }
     }
@@ -217,19 +221,20 @@ void SceneQuickActions::createPrimitiveGeometry(const std::string& meshName,
 
 void SceneQuickActions::ensurePrimitiveExists(const std::string& meshName) {
     if (assetStore.exists(meshName)) return;
-    if (meshName == "Cube.mesh") {
+    std::string filename = std::filesystem::path(meshName).filename().string();
+    if (filename == "Cube.mesh") {
         assetStore.createAssetFile<Mesh>(AssetPrefabs::cube(meshName));
-    } else if (meshName == "Plane.mesh") {
+    } else if (filename == "Plane.mesh") {
         assetStore.createAssetFile<Mesh>(AssetPrefabs::plane(meshName));
-    } else if (meshName.find("Sphere_") == 0) {
-        size_t underscorePos = meshName.find('_');
-        size_t dotPos = meshName.find('.');
-        uint32_t resolution = std::stoul(meshName.substr(underscorePos + 1, dotPos - underscorePos - 1));
+    } else if (filename.find("Sphere_") == 0) {
+        size_t underscorePos = filename.find('_');
+        size_t dotPos = filename.find('.');
+        uint32_t resolution = std::stoul(filename.substr(underscorePos + 1, dotPos - underscorePos - 1));
         assetStore.createAssetFile<Mesh>(AssetPrefabs::sphere(resolution, meshName));
-    } else if (meshName.find("Capsule_") == 0) {
-        size_t underscorePos = meshName.find('_');
-        size_t dotPos = meshName.find('.');
-        uint32_t resolution = std::stoul(meshName.substr(underscorePos + 1, dotPos - underscorePos - 1));
+    } else if (filename.find("Capsule_") == 0) {
+        size_t underscorePos = filename.find('_');
+        size_t dotPos = filename.find('.');
+        uint32_t resolution = std::stoul(filename.substr(underscorePos + 1, dotPos - underscorePos - 1));
         assetStore.createAssetFile<Mesh>(AssetPrefabs::capsule(resolution, meshName));
     } else {
         throw std::runtime_error("Unknown mesh name: " + meshName);

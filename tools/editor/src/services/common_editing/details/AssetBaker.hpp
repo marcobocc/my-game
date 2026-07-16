@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <log4cxx/logger.h>
 #include "core/assets/VirtualFileSystem.hpp"
 
@@ -12,5 +13,10 @@ public:
     void bake(const T& asset, const std::string& assetName);
 
 private:
+    void makeParentDirs(const std::string& filePath) {
+        auto parent = std::filesystem::path(filePath).parent_path().string();
+        if (!parent.empty()) vfs_.makeDirs(parent);
+    }
+
     VirtualFileSystem& vfs_;
 };
