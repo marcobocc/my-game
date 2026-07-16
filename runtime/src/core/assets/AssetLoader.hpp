@@ -353,6 +353,17 @@ template<>
 inline std::unique_ptr<LuaScript> AssetLoader::load<LuaScript>(const std::string& name) const {
     auto realPath = vfs_.getRealPath(name);
     if (!realPath) {
+        // Script components reference scripts by class name (the file stem), not by
+        // VFS path — mirror LuaScriptSystem registration and resolve stem -> file.
+        for (const auto& vfsPath: vfs_.listFilesRecursive()) {
+            std::filesystem::path p(vfsPath);
+            if (p.extension() == ".lua" && p.stem() == name) {
+                realPath = vfs_.getRealPath(vfsPath);
+                break;
+            }
+        }
+    }
+    if (!realPath) {
         LOG4CXX_ERROR(LOGGER, "Lua script not found in VFS: " << name);
         return nullptr;
     }
