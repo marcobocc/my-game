@@ -122,7 +122,7 @@ private:
         if (setupDone_) return;
         setupDone_ = true;
 
-        if (!assetCache_.contains(SPHERE_MESH_NAME))
+        if (!assetCache_.contains<Mesh>(SPHERE_MESH_NAME))
             assetCache_.insert<Mesh>(std::make_unique<Mesh>(AssetPrefabs::sphere(48, SPHERE_MESH_NAME)));
 
         renderTarget_ = backend_.createRenderTarget(PREVIEW_SIZE, PREVIEW_SIZE);

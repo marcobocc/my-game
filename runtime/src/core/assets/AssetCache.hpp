@@ -38,17 +38,21 @@ public:
             LOG4CXX_WARN(LOGGER, "Asset with name '" + assetName + "' already exists. Insertion skipped.");
             return nullptr;
         }
-        names_.insert(assetName);
         return it->second.get();
     }
 
-    bool contains(const std::string& name) const { return names_.contains(name); }
+    // Containment is per type: package asset names can map to several assets of
+    // different types (a .terrainpkg is both a Mesh and a Material).
+    template<typename T>
+    bool contains(const std::string& name) const {
+        auto it = containers_.find(std::type_index(typeid(T)));
+        if (it == containers_.end()) return false;
+        return std::static_pointer_cast<Container<T>>(it->second)->contains(name);
+    }
 
     template<typename T>
     void remove(const std::string& name) {
-        auto& container = getContainer<T>();
-        container.erase(name);
-        names_.erase(name);
+        getContainer<T>().erase(name);
     }
 
 private:
@@ -68,5 +72,4 @@ private:
     }
 
     std::unordered_map<std::type_index, std::shared_ptr<void>> containers_;
-    std::unordered_set<std::string> names_;
 };

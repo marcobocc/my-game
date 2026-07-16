@@ -5,6 +5,7 @@
 #include <sstream>
 #include <stb_image_write.h>
 #include "../../../../../../runtime/src/graphics/assets/Material.hpp"
+#include "core/assets/PackagePaths.hpp"
 #include "graphics/assets/Mesh.hpp"
 #include "graphics/assets/Texture.hpp"
 
@@ -12,7 +13,9 @@ template<>
 void AssetBaker::bake<Material>(const Material& material, const std::string& assetName) {
     std::string serialized = material.serialize().dump(4);
     std::vector<unsigned char> data(serialized.begin(), serialized.end());
-    if (!vfs_.write(assetName, data)) {
+    // A .matpkg/.terrainpkg asset name writes to the inner .mat file, never to the package path.
+    if (PackagePaths::isPackage(assetName)) vfs_.makeDirs(assetName);
+    if (!vfs_.write(PackagePaths::resolveAssetFile(assetName, vfs_, ".mat"), data)) {
         throw std::runtime_error("Failed to write material: " + assetName);
     }
     LOG4CXX_INFO(LOGGER, "Baked material: " << assetName);
@@ -49,7 +52,10 @@ void AssetBaker::bake<Mesh>(const Mesh& mesh, const std::string& assetName) {
         }
     }
 
-    std::string objPath = std::filesystem::path(assetName).replace_extension(".obj").string();
+    // A .terrainpkg asset name writes the inner .mesh metadata (+ .obj alongside it).
+    if (PackagePaths::isPackage(assetName)) vfs_.makeDirs(assetName);
+    std::string metaPath = PackagePaths::resolveAssetFile(assetName, vfs_, ".mesh");
+    std::string objPath = std::filesystem::path(metaPath).replace_extension(".obj").string();
     std::string objStr = obj.str();
     if (!vfs_.write(objPath, std::vector<unsigned char>(objStr.begin(), objStr.end()))) {
         throw std::runtime_error("Failed to write OBJ: " + objPath);
@@ -59,7 +65,7 @@ void AssetBaker::bake<Mesh>(const Mesh& mesh, const std::string& assetName) {
     meta["meshFile"] = objPath;
     meta["ccw"] = true;
     std::string metaStr = meta.dump(4);
-    if (!vfs_.write(assetName, std::vector<unsigned char>(metaStr.begin(), metaStr.end()))) {
+    if (!vfs_.write(metaPath, std::vector<unsigned char>(metaStr.begin(), metaStr.end()))) {
         throw std::runtime_error("Failed to write mesh metadata: " + assetName);
     }
 

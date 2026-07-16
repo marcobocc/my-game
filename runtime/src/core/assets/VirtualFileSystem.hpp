@@ -113,6 +113,24 @@ public:
         return result;
     }
 
+    bool isDirectory(const std::string& path) const {
+        PHYSFS_Stat stat;
+        return PHYSFS_stat(path.c_str(), &stat) && stat.filetype == PHYSFS_FILETYPE_DIRECTORY;
+    }
+
+    // Creates the directory and any missing parents.
+    bool makeDirs(const std::string& dir) { return PHYSFS_mkdir(dir.c_str()); }
+
+    // PHYSFS_delete only removes files and empty directories.
+    bool removeRecursive(const std::string& path) {
+        if (isDirectory(path)) {
+            for (const auto& entry: listFiles(path)) {
+                removeRecursive(path + "/" + entry);
+            }
+        }
+        return remove(path);
+    }
+
     bool remove(const std::string& path) {
         if (!PHYSFS_delete(path.c_str())) {
             LOG4CXX_ERROR(LOGGER,

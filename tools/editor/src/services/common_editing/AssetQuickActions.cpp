@@ -22,10 +22,10 @@ std::string AssetQuickActions::generateMaterialName(const std::string& folder) c
     auto availableMaterials = assetStore_.list(".mat");
     std::string prefix = folder.empty() ? "" : folder + "/";
     int counter = 1;
-    std::string materialName = prefix + "New Material (" + std::to_string(counter) + ").mat";
+    std::string materialName = prefix + "New Material (" + std::to_string(counter) + ").matpkg";
     while (std::ranges::find(availableMaterials, materialName) != availableMaterials.end()) {
         counter++;
-        materialName = prefix + "New Material (" + std::to_string(counter) + ").mat";
+        materialName = prefix + "New Material (" + std::to_string(counter) + ").matpkg";
     }
     return materialName;
 }

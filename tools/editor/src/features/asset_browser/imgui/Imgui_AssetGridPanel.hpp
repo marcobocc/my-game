@@ -43,9 +43,9 @@ private:
 
     static constexpr Tab TABS[] = {
             {"All", nullptr, nullptr},
-            {"Materials", ".mat", nullptr},
+            {"Materials", ".mat", ".matpkg"},
             {"Meshes", ".mesh", nullptr},
-            {"Models", ".model", nullptr},
+            {"Models", ".model", ".modelpkg"},
             {"Textures", ".png", ".jpg"},
             {"Shaders", ".shad", nullptr},
             {"Scripts", ".lua", nullptr},
@@ -63,6 +63,8 @@ private:
             ".lua",
             ".animctrl",
             ".prefab",
+            ".matpkg",
+            ".modelpkg",
     };
 
     AssetStore& assetStore_;
@@ -170,7 +172,8 @@ private:
                 ImGui::Dummy(imgSize);
             }
 
-            if (asset.ends_with(".mat") && ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+            if ((asset.ends_with(".mat") || asset.ends_with(".matpkg")) &&
+                ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 ImGui::SetDragDropPayload("MATERIAL_ASSET", asset.c_str(), asset.size() + 1);
                 ImGui::TextUnformatted(asset.c_str());
                 ImGui::EndDragDropSource();

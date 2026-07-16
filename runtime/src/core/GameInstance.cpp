@@ -33,12 +33,8 @@ GameInstance::GameInstance(GameWindow& window,
 
     luaScriptSystem_.init(world_, inputSystem_, debugDraw_);
     luaScriptSystem_.setMeshLookup([this](const std::string& name) -> const Mesh* {
-        if (!loadedAssets_.contains(name)) return nullptr;
-        try {
-            return loadedAssets_.get<Mesh>(name);
-        } catch (const std::exception&) {
-            return nullptr; // name exists but is not a Mesh
-        }
+        if (!loadedAssets_.contains<Mesh>(name)) return nullptr;
+        return loadedAssets_.get<Mesh>(name);
     });
     assetLoader_.scanAndRegisterScripts(luaScriptSystem_);
     luaScriptSystem_.startInstances();

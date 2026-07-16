@@ -13,6 +13,7 @@
 #include "console/commands/EchoCommand.hpp"
 #include "console/commands/ListActorsCommand.hpp"
 #include "core/GameWindow.hpp"
+#include "core/assets/PackagePaths.hpp"
 
 class EditorContainer {
 public:
@@ -109,8 +110,12 @@ public:
         materialPreviewRenderer_(runtime_.vulkanBackend(), runtime_.assetLoader(), runtime_.loadedAssets()) {
         runtime_.assetThumbnailGenerator().setMaterialPreviewRenderer(&materialPreviewRenderer_);
         services_.assetStore().setOnAssetMutated([this](const std::string& assetName) {
-            if (assetName.ends_with(".mat") || assetName.ends_with(".mesh") || assetName.ends_with(".model"))
+            if (assetName.ends_with(".mat") || assetName.ends_with(".mesh") || assetName.ends_with(".model") ||
+                assetName.ends_with(".matpkg") || assetName.ends_with(".modelpkg") ||
+                assetName.ends_with(".terrainpkg"))
                 runtime_.assetThumbnailGenerator().invalidate(assetName);
+            if (auto pkg = PackagePaths::enclosingPackage(assetName))
+                runtime_.assetThumbnailGenerator().invalidate(*pkg);
         });
         features_.imguiRoot().setTerrainPanel(&terrainPanel_);
         runtime_.simulationController().setEditorWorld(&runtime_.entityManager());

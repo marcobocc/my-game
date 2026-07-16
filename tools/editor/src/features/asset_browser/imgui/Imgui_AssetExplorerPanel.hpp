@@ -88,6 +88,9 @@ private:
             ".lua",
             ".animctrl",
             ".prefab",
+            ".matpkg",
+            ".modelpkg",
+            ".terrainpkg",
     };
 
     static bool isKnownAsset(const std::string& path) {
@@ -111,11 +114,11 @@ private:
         bool anyActive = filterMesh_ || filterMat_ || filterShad_ || filterTex_ || filterModel_;
         if (!anyActive) return true;
         auto ext = std::filesystem::path(asset).extension().string();
-        if (filterMesh_ && ext == ".mesh") return true;
-        if (filterMat_ && ext == ".mat") return true;
+        if (filterMesh_ && (ext == ".mesh" || ext == ".terrainpkg")) return true;
+        if (filterMat_ && (ext == ".mat" || ext == ".matpkg")) return true;
         if (filterShad_ && ext == ".shad") return true;
         if (filterTex_ && (ext == ".png" || ext == ".jpg")) return true;
-        if (filterModel_ && ext == ".model") return true;
+        if (filterModel_ && (ext == ".model" || ext == ".modelpkg")) return true;
         return false;
     }
 

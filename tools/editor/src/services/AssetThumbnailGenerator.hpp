@@ -62,7 +62,9 @@ public:
             auto osCache = osCachePathFor(assetName);
             if (std::filesystem::exists(osCache)) result = loadThumbnailFromDisk(osCache);
             if (!result) result = generateTexturePreview(assetName);
-        } else if ((ext == ".mat" || ext == ".mesh" || ext == ".model") && materialPreviewRenderer_) {
+        } else if ((ext == ".mat" || ext == ".matpkg" || ext == ".mesh" || ext == ".model" || ext == ".modelpkg" ||
+                    ext == ".terrainpkg") &&
+                   materialPreviewRenderer_) {
             auto osCache = osCachePathFor(assetName);
             if (!stale && std::filesystem::exists(osCache)) result = loadThumbnailFromDisk(osCache);
             if (!result) {
@@ -100,10 +102,17 @@ private:
 
     MaterialPreviewRenderer::PreviewResult requestRenderedPreview(const std::string& assetName,
                                                                   const std::string& ext) {
-        if (ext == ".mat") return materialPreviewRenderer_->requestPreview(assetName);
+        // Package names (.matpkg/.modelpkg) resolve transparently inside AssetLoader.
+        if (ext == ".mat" || ext == ".matpkg") return materialPreviewRenderer_->requestPreview(assetName);
         if (ext == ".mesh")
             return materialPreviewRenderer_->requestMeshPreview(assetName, assetName, SOLID_COLOR_MATERIAL);
-        // .model: render its mesh with its material
+        if (ext == ".terrainpkg") {
+            // Render with the bundled terrain material if painting is enabled, else flat color.
+            bool hasMaterial = assetLoader_.get<Material>(assetName) != nullptr;
+            return materialPreviewRenderer_->requestMeshPreview(
+                    assetName, assetName, hasMaterial ? assetName : std::string(SOLID_COLOR_MATERIAL));
+        }
+        // .model/.modelpkg: render its mesh with its material
         const Model* model = assetLoader_.get<Model>(assetName);
         if (!model) return {MaterialPreviewRenderer::Status::Failed, std::nullopt};
         return materialPreviewRenderer_->requestMeshPreview(assetName, model->meshName, model->materialName);

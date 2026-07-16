@@ -4,6 +4,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <optional>
 #include <unordered_set>
+#include "core/assets/PackagePaths.hpp"
 #include "core/scene/TransformUtils.hpp"
 #include "physics/components/TerrainCollider.hpp"
 #include "transport/SceneDTO.hpp"
@@ -144,10 +145,11 @@ void SceneQuickActions::addModel(const std::string& modelName) {
 void SceneQuickActions::createTerrain(uint32_t resolution, float worldSize) {
     auto groupId = UndoHistory::randomGroupId("Create Terrain");
 
-    std::string meshName = "Terrain.mesh";
+    // Terrains are bundle assets: the .terrainpkg name is the mesh (and later material) asset name.
+    std::string meshName = "Terrain.terrainpkg";
     int index = 2;
     while (assetStore.exists(meshName)) {
-        meshName = "Terrain_" + std::to_string(index) + ".mesh";
+        meshName = "Terrain_" + std::to_string(index) + ".terrainpkg";
         ++index;
     }
     assetStore.createAssetFile<Mesh>(AssetPrefabs::terrainMesh(resolution, worldSize, meshName), groupId);
@@ -171,20 +173,30 @@ void SceneQuickActions::enableTerrainPainting(EntityHandle entity, uint32_t spla
 
     auto groupId = UndoHistory::randomGroupId("Enable Terrain Painting");
 
-    std::string splatMapName = "Terrain.splatmap.png";
-    int index = 2;
-    while (assetStore.exists(splatMapName)) {
-        splatMapName = "Terrain_" + std::to_string(index) + ".splatmap.png";
-        ++index;
+    std::string splatMapName;
+    std::string materialName;
+    if (PackagePaths::isPackage(renderer->meshName)) {
+        // Terrain package: splatmap and material live inside it; the package path is
+        // the material asset name too (loader resolves per requested type).
+        const std::string& pkg = renderer->meshName;
+        splatMapName = PackagePaths::defaultInnerPath(pkg, ".splatmap.png");
+        materialName = pkg;
+    } else {
+        // Legacy loose terrain mesh: keep creating sibling files.
+        splatMapName = "Terrain.splatmap.png";
+        int index = 2;
+        while (assetStore.exists(splatMapName)) {
+            splatMapName = "Terrain_" + std::to_string(index) + ".splatmap.png";
+            ++index;
+        }
+        materialName = "Terrain.mat";
+        index = 2;
+        while (assetStore.exists(materialName)) {
+            materialName = "Terrain_" + std::to_string(index) + ".mat";
+            ++index;
+        }
     }
     assetStore.createAssetFile<Texture>(AssetPrefabs::splatMap(splatMapResolution, splatMapName), groupId);
-
-    std::string materialName = "Terrain.mat";
-    index = 2;
-    while (assetStore.exists(materialName)) {
-        materialName = "Terrain_" + std::to_string(index) + ".mat";
-        ++index;
-    }
     assetStore.createAssetFile<Material>(AssetPrefabs::terrainBlend(materialName, splatMapName), groupId);
 
     scene_.getObject(entity).mutateComponent<Renderer>([materialName](Renderer& r) { r.materialName = materialName; },

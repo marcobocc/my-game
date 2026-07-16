@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include "AssetCache.hpp"
 #include "MeshImporter.hpp"
+#include "PackagePaths.hpp"
 #include "VirtualFileSystem.hpp"
 #include "animation/assets/AnimationClip.hpp"
 #include "animation/assets/AnimatorController.hpp"
@@ -30,8 +31,8 @@ public:
 
     template<typename T>
     T* get(const std::string& name) {
-        if (!cache_.contains(name)) load<T>(name);
-        if (!cache_.contains(name)) return nullptr;
+        if (!cache_.contains<T>(name)) load<T>(name);
+        if (!cache_.contains<T>(name)) return nullptr;
         return cache_.get<T>(name);
     }
 
@@ -47,15 +48,17 @@ private:
 
 template<>
 inline std::unique_ptr<Mesh> AssetLoader::load<Mesh>(const std::string& name) const {
-    if (!vfs_.exists(name)) {
-        LOG4CXX_ERROR(LOGGER, "Asset not found: " << name);
+    // .terrainpkg package names resolve to the inner .mesh; the asset keeps the package name.
+    std::string fileName = PackagePaths::resolveAssetFile(name, vfs_, ".mesh");
+    if (!vfs_.exists(fileName)) {
+        LOG4CXX_ERROR(LOGGER, "Asset not found: " << fileName);
         return nullptr;
     }
-    std::string meshFilePath = name;
+    std::string meshFilePath = fileName;
     bool reverseWinding = false;
-    if (std::filesystem::path(name).extension() == ".mesh") {
+    if (std::filesystem::path(fileName).extension() == ".mesh") {
         try {
-            auto meshData = vfs_.read(name);
+            auto meshData = vfs_.read(fileName);
             auto meshStr = std::string(meshData.begin(), meshData.end());
             auto j = nlohmann::json::parse(meshStr);
             meshFilePath = JsonUtils::getRequired<std::string>(j, "meshFile");
@@ -211,7 +214,8 @@ inline std::unique_ptr<Texture> AssetLoader::load<Texture>(const std::string& na
 template<>
 inline std::unique_ptr<Material> AssetLoader::load<Material>(const std::string& name) const {
     try {
-        auto materialDataVec = vfs_.read(name);
+        // .matpkg/.terrainpkg package names resolve to the inner .mat; the asset keeps the package name.
+        auto materialDataVec = vfs_.read(PackagePaths::resolveAssetFile(name, vfs_, ".mat"));
         auto materialStr = std::string(materialDataVec.begin(), materialDataVec.end());
         auto j = nlohmann::json::parse(materialStr);
         auto material = std::make_unique<Material>(Material::deserialize(j, name));
@@ -247,7 +251,8 @@ inline std::unique_ptr<AnimatorController> AssetLoader::load<AnimatorController>
 template<>
 inline std::unique_ptr<Model> AssetLoader::load<Model>(const std::string& name) const {
     try {
-        auto modelDataVec = vfs_.read(name);
+        // .modelpkg package names resolve to the inner .model; the asset keeps the package name.
+        auto modelDataVec = vfs_.read(PackagePaths::resolveAssetFile(name, vfs_, ".model"));
         auto modelStr = std::string(modelDataVec.begin(), modelDataVec.end());
         auto j = nlohmann::json::parse(modelStr);
         Model def = Model::deserialize(j, name);

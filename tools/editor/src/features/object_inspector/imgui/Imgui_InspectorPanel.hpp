@@ -24,9 +24,9 @@ public:
         const auto& inspectedEntity = editorSelection_.getInspectedEntity();
         const auto& inspectedAsset = editorSelection_.getInspectedAsset();
         if (inspectedAsset.has_value()) {
-            if (inspectedAsset->ends_with(".mat")) {
+            if (inspectedAsset->ends_with(".mat") || inspectedAsset->ends_with(".matpkg")) {
                 materialInspector.draw();
-            } else if (inspectedAsset->ends_with(".mesh")) {
+            } else if (inspectedAsset->ends_with(".mesh") || inspectedAsset->ends_with(".terrainpkg")) {
                 meshInspector.draw();
             }
         } else if (inspectedEntity.has_value()) {
