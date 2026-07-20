@@ -5,7 +5,7 @@
 #include "ScriptPropertyParser.hpp"
 #include "components/BehaviourScript.hpp"
 
-void LuaScriptSystem::init(World& world, InputSystem& input, DebugDraw& debugDraw) {
+void LuaScriptSystem::init(World& world, InputSystem& input, DebugDraw& debugDraw, UISystem& uiSystem) {
     logger_ = log4cxx::Logger::getLogger("LuaScriptSystem");
     world_ = &world;
 
@@ -32,6 +32,7 @@ void LuaScriptSystem::init(World& world, InputSystem& input, DebugDraw& debugDra
     ownedWorld_ = std::make_unique<LuaWorld>(world);
     ownedInput_ = std::make_unique<LuaInput>(input);
     ownedDebugDraw_ = std::make_unique<LuaDebugDraw>(debugDraw);
+    ownedUI_ = std::make_unique<LuaUI>(uiSystem);
     worldFacade_ = ownedWorld_.get();
     inputFacade_ = ownedInput_.get();
     debugDrawFacade_ = ownedDebugDraw_.get();
@@ -43,7 +44,7 @@ void LuaScriptSystem::init(World& world, InputSystem& input, DebugDraw& debugDra
                 return std::nullopt;
             });
 
-    LuaBindings::registerAll(lua_, *worldFacade_, *inputFacade_, *debugDrawFacade_);
+    LuaBindings::registerAll(lua_, *worldFacade_, *inputFacade_, *debugDrawFacade_, *ownedUI_);
 }
 
 void LuaScriptSystem::registerScript(const std::string& name, const std::filesystem::path& path) {

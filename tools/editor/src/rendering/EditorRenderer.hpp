@@ -14,6 +14,8 @@ class EditorGizmos;
 class GizmoBuilder;
 class ObjectTransformHandle;
 class PickingSystem;
+class UISystem;
+class GameWindow;
 class ImguiRoot;
 class SimHUDRoot;
 class WelcomeRoot;
@@ -40,6 +42,10 @@ public:
     void setWelcomeMode(bool enabled);
     void setAnimationSystem(AnimationSystem* animSystem) { animationSystem_ = animSystem; }
     void setPlayModeDebugDraw(DebugDraw* debugDraw) { playModeDebugDraw_ = debugDraw; }
+    void setPlayModeUISource(const UISystem* uiSystem, const GameWindow* window) {
+        playModeUISystem_ = uiSystem;
+        playModeUIWindow_ = window;
+    }
     // Invoked each frame (editor/non-sim mode only) after gizmo lines are built, so callers can
     // inject additional debug draws (e.g. terrain brush cursor) into that frame's output.
     void setDebugOverlayCallback(std::function<void(DebugDraw&)> callback) {
@@ -66,6 +72,8 @@ private:
     EditorModeService& editorMode_;
     AnimationSystem* animationSystem_ = nullptr;
     DebugDraw* playModeDebugDraw_ = nullptr;
+    const UISystem* playModeUISystem_ = nullptr;
+    const GameWindow* playModeUIWindow_ = nullptr;
     std::function<void(DebugDraw&)> debugOverlayCallback_;
     DebugDraw editorDebugDraw_;
     bool simMode_ = false;

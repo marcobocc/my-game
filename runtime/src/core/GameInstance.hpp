@@ -11,6 +11,7 @@
 #include "physics/PhysicsSystem.hpp"
 #include "scene/World.hpp"
 #include "scripting/LuaScriptSystem.hpp"
+#include "ui/UISystem.hpp"
 
 struct AABB;
 struct Camera;
@@ -88,6 +89,7 @@ public:
     PhysicsSystem& physicsSystem() { return physicsSystem_; }
     AnimationSystem& animationSystem() { return animationSystem_; }
     DebugDraw& debugDraw() { return debugDraw_; }
+    UISystem& uiSystem() { return uiSystem_; }
 
 private:
     bool shouldClose() const;
@@ -105,4 +107,7 @@ private:
     AnimationSystem animationSystem_;
     DebugDraw debugDraw_;
     LuaScriptSystem luaScriptSystem_;
+    // Declared after luaScriptSystem_ so widgets (which hold Lua callbacks)
+    // are destroyed before the Lua state.
+    UISystem uiSystem_;
 };

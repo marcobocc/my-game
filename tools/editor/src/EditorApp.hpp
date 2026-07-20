@@ -148,6 +148,7 @@ public:
                     editorSettings_.disableGrid();
                     editorRenderer_.setAnimationSystem(&simulationController_.gameInstance()->animationSystem());
                     editorRenderer_.setPlayModeDebugDraw(&simulationController_.gameInstance()->debugDraw());
+                    editorRenderer_.setPlayModeUISource(&simulationController_.gameInstance()->uiSystem(), &window_);
                 } else {
                     inputSystem_.setBlocked(false);
                     window_.setSceneViewport(
@@ -157,6 +158,7 @@ public:
                     editorSettings_.enableGrid();
                     editorRenderer_.setAnimationSystem(&animationSystem_);
                     editorRenderer_.setPlayModeDebugDraw(nullptr);
+                    editorRenderer_.setPlayModeUISource(nullptr, nullptr);
                 }
                 simWasActive_ = simActive;
             }

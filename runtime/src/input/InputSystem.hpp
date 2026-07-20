@@ -17,6 +17,7 @@ public:
         scrollDeltaConsumed_ = scrollDelta_;
         scrollDelta_ = 0.0;
         prevKeys_ = keys_;
+        prevMouseButtons_ = mouseButtons_;
         updateKeys();
         updateMouseButtons();
         auto [mx, my] = window_.getMousePosition();
@@ -44,15 +45,37 @@ public:
     }
 
     bool isMouseButtonDown(int button) const {
-        if (blocked_) return false;
+        if (blocked_ || mouseCapturedByUI_) return false;
+        return isMouseButtonDownRaw(button);
+    }
+
+    // Raw variants ignore the UI mouse capture (but not the global block).
+    // Used by the UI system itself, which must see input while capturing it.
+    bool isMouseButtonDownRaw(int button) const {
         auto it = mouseButtons_.find(button);
         return it != mouseButtons_.end() && it->second;
     }
 
-    std::pair<double, double> getMousePosition() const { return window_.getMousePosition(); }
-    std::pair<double, double> getMouseDelta() const { return blocked_ ? std::pair{0.0, 0.0} : mouseDelta_; }
+    bool wasMouseButtonDownRaw(int button) const {
+        auto it = prevMouseButtons_.find(button);
+        return it != prevMouseButtons_.end() && it->second;
+    }
 
-    double getScrollDelta() const { return blocked_ ? 0.0 : scrollDeltaConsumed_; }
+    bool isMouseButtonPressedRaw(int button) const {
+        return isMouseButtonDownRaw(button) && !wasMouseButtonDownRaw(button);
+    }
+
+    std::pair<double, double> getMousePosition() const { return window_.getMousePosition(); }
+    std::pair<double, double> getMouseDelta() const {
+        return (blocked_ || mouseCapturedByUI_) ? std::pair{0.0, 0.0} : mouseDelta_;
+    }
+
+    double getScrollDelta() const { return (blocked_ || mouseCapturedByUI_) ? 0.0 : scrollDeltaConsumed_; }
+
+    // Mouse-only consumption by the game UI: hides mouse buttons, delta and
+    // scroll from scripts while the cursor interacts with UI. Keyboard unaffected.
+    void setMouseCapturedByUI(bool captured) { mouseCapturedByUI_ = captured; }
+    bool isMouseCapturedByUI() const { return mouseCapturedByUI_; }
 
     void lockMouse() const { window_.lockMouse(); }
     void unlockMouse() const { window_.unlockMouse(); }
@@ -89,6 +112,7 @@ private:
     std::unordered_map<int, bool> keys_{};
     std::unordered_map<int, bool> prevKeys_{};
     std::unordered_map<int, bool> mouseButtons_{};
+    std::unordered_map<int, bool> prevMouseButtons_{};
     double scrollDelta_ = 0.0;
     double scrollDeltaConsumed_ = 0.0;
     double prevMouseX_ = 0.0;
@@ -96,5 +120,6 @@ private:
     std::pair<double, double> mouseDelta_{0.0, 0.0};
     bool mouseDeltaInitialized_ = false;
     bool blocked_ = false;
+    bool mouseCapturedByUI_ = false;
     bool mouseWasLocked_ = false;
 };

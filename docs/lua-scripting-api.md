@@ -269,6 +269,181 @@ Supported key names: `A`–`Z`, `0`–`9`, `SPACE`, `ENTER`, `ESCAPE`, `TAB`, `B
 
 ---
 
+## UI
+
+Global object available as `UI`. Builds a screen-space UI canvas (logical scene-viewport pixels, origin top-left). Input is hit-tested and consumed by the UI before reaching world/game scripts — e.g. `Input:isMouseButtonDown` for world interactions won't fire while the cursor is over a UI window.
+
+The API is declarative/write-only: widgets are created with an `args` table and mutated through setter methods; there are no position/size getters, and individual buttons/labels/images can't be removed on their own — destroy the whole window instead.
+
+| Signature | Returns | Description |
+|-----------|---------|-------------|
+| `UI:createWindow(args: table)` | UIWindow | Creates a window |
+| `UI:clear()` | — | Destroys all windows |
+
+**Common `args` fields** (shared by `createWindow`, `addButton`, `addLabel`, `addImage`)
+
+| Field    | Type   | Default    | Description |
+|----------|--------|------------|-------------|
+| `x`      | number | `0`        | Offset X |
+| `y`      | number | `0`        | Offset Y |
+| `w`      | number | widget-specific | Width |
+| `h`      | number | widget-specific | Height |
+| `anchor` | string | `"TopLeft"` | One of `"TopLeft"`, `"Top"`, `"TopRight"`, `"Left"`, `"Center"`, `"Right"`, `"BottomLeft"`, `"Bottom"`, `"BottomRight"` |
+| `visible`| bool   | `true`     | Initial visibility |
+
+---
+
+### UIWindow
+
+Returned by `UI:createWindow(args)`.
+
+**`createWindow` args** (in addition to the common fields above)
+
+| Field           | Type   | Default | Description |
+|-----------------|--------|---------|-------------|
+| `title`         | string | `""`    | Title bar text; empty means no title bar |
+| `w`             | number | `300`   | Width |
+| `h`             | number | `200`   | Height |
+| `bg`            | string | `""`    | Background texture path; empty means a flat colored quad |
+| `border`        | number | `0`     | 9-slice inset in pixels |
+| `bgColor`       | table  | `{0.10, 0.10, 0.12, 0.95}` | `{r, g, b, a}` background color |
+| `titleBarColor` | table  | `{0.05, 0.05, 0.06, 1.0}`  | `{r, g, b, a}` title bar color |
+| `draggable`     | bool   | `false` | Whether the window can be dragged by its title bar |
+
+**Methods**
+
+| Signature | Returns | Description |
+|-----------|---------|-------------|
+| `window:addButton(args: table)` | UIButton | Adds a button (see UIButton args) |
+| `window:addLabel(args: table)` | UILabel | Adds a label (see UILabel args) |
+| `window:addImage(args: table)` | UIImage | Adds an image (see UIImage args) |
+| `window:show()` | — | Makes the window visible |
+| `window:hide()` | — | Hides the window |
+| `window:isVisible()` | bool | Whether the window is currently visible |
+| `window:setTitle(title: string)` | — | Updates the title bar text |
+| `window:destroy()` | — | Removes the window (and all its widgets) |
+
+---
+
+### UIButton
+
+Returned by `window:addButton(args)`.
+
+**`addButton` args** (in addition to the common fields)
+
+| Field          | Type     | Default | Description |
+|----------------|----------|---------|-------------|
+| `w`            | number   | `120`   | Width |
+| `h`            | number   | `32`    | Height |
+| `text`         | string   | `""`    | Button label |
+| `font`         | string   | `""`    | Font asset name; empty means engine default |
+| `fontSize`     | number   | `16`    | Font size in pixels |
+| `texture`      | string   | `""`    | Texture path; empty means a flat colored quad |
+| `color`        | table    | `{0.25, 0.25, 0.28, 1}` | `{r, g, b, a}` idle color |
+| `hoverColor`   | table    | `{0.35, 0.35, 0.40, 1}` | `{r, g, b, a}` hover color |
+| `pressedColor` | table    | `{0.15, 0.15, 0.18, 1}` | `{r, g, b, a}` pressed color |
+| `textColor`    | table    | `{1, 1, 1, 1}` | `{r, g, b, a}` label color |
+| `onClick`      | function | —       | Optional; equivalent to calling `button:onClick(fn)` after creation |
+
+**Methods**
+
+| Signature | Returns | Description |
+|-----------|---------|-------------|
+| `button:onClick(fn: function())` | — | Registers a click callback. Errors thrown inside `fn` are caught and logged, not propagated. |
+| `button:setText(text: string)` | — | Updates the label text |
+| `button:setVisible(visible: bool)` | — | Shows or hides the button |
+
+---
+
+### UILabel
+
+Returned by `window:addLabel(args)`.
+
+**`addLabel` args** (in addition to the common fields)
+
+| Field      | Type   | Default | Description |
+|------------|--------|---------|-------------|
+| `text`     | string | `""`    | Label text |
+| `font`     | string | `""`    | Font asset name; empty means engine default |
+| `fontSize` | number | `16`    | Font size in pixels |
+| `color`    | table  | `{1, 1, 1, 1}` | `{r, g, b, a}` text color |
+| `align`    | string | `"Left"` | One of `"Left"`, `"Center"`, `"Right"` |
+
+**Methods**
+
+| Signature | Returns | Description |
+|-----------|---------|-------------|
+| `label:setText(text: string)` | — | Updates the text |
+| `label:setColor(r: number, g: number, b: number, a: number)` | — | Updates the text color |
+| `label:setVisible(visible: bool)` | — | Shows or hides the label |
+
+---
+
+### UIImage
+
+Returned by `window:addImage(args)`.
+
+**`addImage` args** (in addition to the common fields)
+
+| Field     | Type   | Default | Description |
+|-----------|--------|---------|-------------|
+| `texture` | string | `""`    | Texture path |
+| `tint`    | table  | `{1, 1, 1, 1}` | `{r, g, b, a}` tint applied to the texture |
+
+**Methods**
+
+| Signature | Returns | Description |
+|-----------|---------|-------------|
+| `image:setTexture(texture: string)` | — | Changes the displayed texture |
+| `image:setVisible(visible: bool)` | — | Shows or hides the image |
+
+---
+
+### Example
+
+```lua
+local MyScript = {}
+
+function MyScript:onStart()
+    self.window = UI:createWindow{
+        title = "Inventory",
+        x = 20, y = 20, w = 240, h = 160,
+        anchor = "TopLeft",
+        draggable = true,
+        visible = false,
+    }
+
+    self.countLabel = self.window:addLabel{
+        text = "Clicks: 0",
+        x = 10, y = 10,
+    }
+
+    local clicks = 0
+    self.window:addButton{
+        text = "Click me",
+        x = 10, y = 40,
+        onClick = function()
+            clicks = clicks + 1
+            self.countLabel:setText("Clicks: " .. clicks)
+        end,
+    }
+end
+
+function MyScript:onUpdate(dt)
+    if Input:isKeyPressed("I") then
+        if self.window:isVisible() then
+            self.window:hide()
+        else
+            self.window:show()
+        end
+    end
+end
+
+return MyScript
+```
+
+---
+
 ## Debug
 
 Global object available as `Debug`. All shapes are drawn for one frame only.

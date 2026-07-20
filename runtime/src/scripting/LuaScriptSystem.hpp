@@ -9,6 +9,7 @@
 #include <vector>
 #include "api/LuaDebugDraw.hpp"
 #include "api/LuaInput.hpp"
+#include "api/LuaUI.hpp"
 #include "api/LuaWorld.hpp"
 #include "core/scene/EntityHandle.hpp"
 #include "core/scene/World.hpp"
@@ -17,7 +18,7 @@
 
 class LuaScriptSystem {
 public:
-    void init(World& world, InputSystem& input, DebugDraw& debugDraw);
+    void init(World& world, InputSystem& input, DebugDraw& debugDraw, UISystem& uiSystem);
     void setMeshLookup(LuaWorld::MeshLookup fn) {
         if (worldFacade_) worldFacade_->setMeshLookup(std::move(fn));
     }
@@ -53,6 +54,7 @@ private:
     std::unique_ptr<LuaWorld> ownedWorld_;
     std::unique_ptr<LuaInput> ownedInput_;
     std::unique_ptr<LuaDebugDraw> ownedDebugDraw_;
+    std::unique_ptr<LuaUI> ownedUI_;
 
     ScriptChunk& loadChunk(const std::string& scriptName);
     sol::table instantiate(const ScriptChunk& chunk,

@@ -1,0 +1,9 @@
+{
+  "vertexShader": "assets/internal.core/shaders/ui/ui.vert.spv",
+  "fragmentShader": "assets/internal.core/shaders/ui/ui.frag.spv",
+  "disableCull": true,
+  "disableDepthTest": true,
+  "enableAlphaBlend": true,
+  "disableDepthWrite": true,
+  "textVertexLayout": true
+}

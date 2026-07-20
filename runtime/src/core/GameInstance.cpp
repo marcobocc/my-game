@@ -31,7 +31,7 @@ GameInstance::GameInstance(GameWindow& window,
     developerConsole_.registerCommand("echo", [] { return std::make_unique<EchoCommand>(); });
     developerConsole_.registerCommand("debug", [this] { return std::make_unique<DebugDrawCommand>(debugDraw_); });
 
-    luaScriptSystem_.init(world_, inputSystem_, debugDraw_);
+    luaScriptSystem_.init(world_, inputSystem_, debugDraw_, uiSystem_);
     luaScriptSystem_.setMeshLookup([this](const std::string& name) -> const Mesh* {
         if (!loadedAssets_.contains<Mesh>(name)) return nullptr;
         return loadedAssets_.get<Mesh>(name);
@@ -45,6 +45,7 @@ GameInstance::GameInstance(GameWindow& window,
     });
 
     renderSystem_.setAnimationSystem(&animationSystem_);
+    renderSystem_.setUISource(&uiSystem_, &window_);
 }
 
 
@@ -52,9 +53,15 @@ GameInstance::GameInstance(GameWindow& window,
 // Game Loop
 // --------------------------------------------------------
 
-GameInstance::~GameInstance() { renderSystem_.setAnimationSystem(nullptr); }
+GameInstance::~GameInstance() {
+    renderSystem_.setAnimationSystem(nullptr);
+    renderSystem_.setUISource(nullptr, nullptr);
+    inputSystem_.setMouseCapturedByUI(false);
+}
 
 void GameInstance::tick(float deltaTime) {
+    // UI consumes mouse input before scripts run this frame
+    uiSystem_.update(inputSystem_, window_);
     debugDraw_.flush();
     debugDraw_.drawScene(world_);
     physicsSystem_.update();

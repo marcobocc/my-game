@@ -9,11 +9,12 @@
 #include "api/LuaDebugDraw.hpp"
 #include "api/LuaEntity.hpp"
 #include "api/LuaInput.hpp"
+#include "api/LuaUI.hpp"
 #include "api/LuaWorld.hpp"
 
 namespace LuaBindings {
 
-    inline void registerAll(sol::state& lua, LuaWorld& world, LuaInput& input, LuaDebugDraw& debugDraw) {
+    inline void registerAll(sol::state& lua, LuaWorld& world, LuaInput& input, LuaDebugDraw& debugDraw, LuaUI& ui) {
 
         // ---- Math types --------------------------------------------------------
 
@@ -206,6 +207,8 @@ namespace LuaBindings {
                                        sol::overload(&LuaDebugDraw::sphere, &LuaDebugDraw::sphereDefault));
 
         // ---- Globals -----------------------------------------------------------
+
+        LuaUIDetail::registerTypes(lua, ui);
 
         lua["World"] = &world;
         lua["Input"] = &input;

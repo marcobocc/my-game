@@ -20,6 +20,7 @@
 #include "graphics/vulkan/passes/VulkanShadowPass.hpp"
 #include "graphics/vulkan/passes/VulkanSkyPass.hpp"
 #include "graphics/vulkan/passes/VulkanTextPass.hpp"
+#include "graphics/vulkan/passes/VulkanUIOverlayPass.hpp"
 #include "graphics/vulkan/passes/VulkanUIPass.hpp"
 
 VulkanBackend::VulkanBackend(GameWindow& window,
@@ -62,6 +63,13 @@ VulkanBackend::VulkanBackend(GameWindow& window,
                                              static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size()),
                                              swapchainManager.swapchain().swapchainImageFormat,
                                              VK_FORMAT_D32_SFLOAT)),
+    uiOverlayPass_(std::make_unique<VulkanUIOverlayPass>(
+            context,
+            assetLoader,
+            resourcesManager,
+            static_cast<uint32_t>(swapchainManager.swapchain().swapchainImages.size()),
+            swapchainManager.swapchain().swapchainImageFormat,
+            VK_FORMAT_D32_SFLOAT)),
     gridPass_(gridPass),
     gizmoPass_(gizmoPass),
     gizmoOverlayPass_(gizmoOverlayPass),
@@ -136,17 +144,19 @@ void VulkanBackend::setDrawCallback(std::function<void()> callback) { uiPass_.se
 bool VulkanBackend::renderFrame(const GameRenderData& rd) {
     static const std::vector<DrawCall> empty;
     static const std::vector<VulkanGizmoPass::GizmoVertex> noGizmos;
-    return renderFrame(EditorRenderData{rd.camera,
-                                        rd.cameraTransform,
-                                        rd.drawQueue,
-                                        empty,
-                                        noGizmos,
-                                        noGizmos,
-                                        rd.lightsWithTransforms,
-                                        rd.particleEmitters,
-                                        rd.textQueue,
-                                        1.0f,
-                                        true});
+    EditorRenderData ed{rd.camera,
+                        rd.cameraTransform,
+                        rd.drawQueue,
+                        empty,
+                        noGizmos,
+                        noGizmos,
+                        rd.lightsWithTransforms,
+                        rd.particleEmitters,
+                        rd.textQueue,
+                        1.0f,
+                        true};
+    ed.uiQueue = rd.uiQueue;
+    return renderFrame(ed);
 }
 
 bool VulkanBackend::renderFrame(const EditorRenderData& renderData) {
@@ -1055,6 +1065,36 @@ void VulkanBackend::setupRenderGraph(VkFormat colorFormat, VkImageUsageFlags col
                               window_,
                               ctx.textQueue,
                               graph.getImageView(gbufferDepthHandle_));
+            return true;
+        };
+        renderGraph_->addPass(std::move(n));
+    }
+
+    // --- Game UI overlay pass (screen-space windows/widgets) ---
+    {
+        VulkanRenderGraph<EditorRenderData>::RenderPassNode n;
+        n.name = "GameUIOverlayPass";
+        n.reads = {{gbufferDepthHandle_,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
+                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                    VK_IMAGE_ASPECT_DEPTH_BIT}};
+        n.writes = {{colorTargetHandle_,
+                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                     VK_IMAGE_ASPECT_COLOR_BIT}};
+        n.execute = [this](VkCommandBuffer cmd,
+                           const VulkanRenderGraph<EditorRenderData>& graph,
+                           const EditorRenderData& ctx) -> bool {
+            if (ctx.uiQueue.empty()) return false;
+            const VkExtent2D extent{graph.getWidth(colorTargetHandle_), graph.getHeight(colorTargetHandle_)};
+            uiOverlayPass_->record(cmd,
+                                   graph.getImageView(colorTargetHandle_),
+                                   extent,
+                                   window_,
+                                   ctx.uiQueue,
+                                   graph.getImageView(gbufferDepthHandle_));
             return true;
         };
         renderGraph_->addPass(std::move(n));

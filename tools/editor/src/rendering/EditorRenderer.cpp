@@ -16,6 +16,7 @@
 #include "core/scene/TransformUtils.hpp"
 #include "core/scene/World.hpp"
 #include "graphics/GameRenderData.hpp"
+#include "ui/UISystem.hpp"
 
 EditorRenderer::EditorRenderer(VulkanBackend& renderer,
                                EditorCamera& editorOrbitCamera,
@@ -200,22 +201,27 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
         const std::vector<VulkanGizmoPass::GizmoVertex>& debugLines =
                 playModeDebugDraw_ ? playModeDebugDraw_->getVertices() : emptyOverlay;
 
+        std::vector<UIDrawCall> uiQueue;
+        if (playModeUISystem_ && playModeUIWindow_) playModeUISystem_->buildDrawQueue(uiQueue, *playModeUIWindow_);
+
         const Actor* camActor = entityManager.getActiveCamera();
         if (camActor) {
             const auto* camera = camActor->getComponent<Camera>();
             const auto* transform = camActor->getComponent<Transform>();
             if (camera && transform) {
-                renderer_.renderFrame(EditorRenderData(*camera,
-                                                       *transform,
-                                                       drawQueue,
-                                                       emptyOutlines,
-                                                       debugLines,
-                                                       emptyOverlay,
-                                                       activeLights,
-                                                       particleEmitters,
-                                                       textQueue,
-                                                       0.0f,
-                                                       false));
+                EditorRenderData rd(*camera,
+                                    *transform,
+                                    drawQueue,
+                                    emptyOutlines,
+                                    debugLines,
+                                    emptyOverlay,
+                                    activeLights,
+                                    particleEmitters,
+                                    textQueue,
+                                    0.0f,
+                                    false);
+                rd.uiQueue = std::move(uiQueue);
+                renderer_.renderFrame(rd);
                 return;
             }
         }
@@ -223,17 +229,19 @@ void EditorRenderer::render(const World& entityManager, float gridScale, float d
         Transform defaultTransform;
         defaultTransform.position = glm::vec3(0.0f, 1.0f, 0.0f);
         LOG4CXX_DEBUG(LOGGER, "No active Camera entity in simulation world — rendering with default camera at origin.");
-        renderer_.renderFrame(EditorRenderData(defaultCamera,
-                                               defaultTransform,
-                                               drawQueue,
-                                               emptyOutlines,
-                                               debugLines,
-                                               emptyOverlay,
-                                               activeLights,
-                                               particleEmitters,
-                                               textQueue,
-                                               0.0f,
-                                               false));
+        EditorRenderData rd(defaultCamera,
+                            defaultTransform,
+                            drawQueue,
+                            emptyOutlines,
+                            debugLines,
+                            emptyOverlay,
+                            activeLights,
+                            particleEmitters,
+                            textQueue,
+                            0.0f,
+                            false);
+        rd.uiQueue = std::move(uiQueue);
+        renderer_.renderFrame(rd);
         return;
     }
 

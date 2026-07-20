@@ -18,6 +18,7 @@ struct EditorRenderData {
     const std::vector<std::pair<Light, Transform>>& lightsWithTransforms;
     std::vector<ParticleEmitterRef> particleEmitters;
     std::vector<TextDrawCall> textQueue;
+    std::vector<UIDrawCall> uiQueue;
     float gridScale;
     bool isOffscreen = false;
     bool drawGrid = true;

@@ -19,6 +19,24 @@ struct TextDrawCall {
     TextAlignment alignment = TextAlignment::Left;
 };
 
+struct UIVertex {
+    glm::vec3 position; // xy in logical scene-viewport pixels, z = 0
+    glm::vec2 uv;
+    glm::vec4 color;
+};
+
+struct UIDrawCall {
+    enum class Kind { Quads, Text };
+    Kind kind = Kind::Quads;
+    std::string textureOrFont; // Quads: texture name (empty = white); Text: font name
+    std::vector<UIVertex> vertices; // Quads only
+    std::string text; // Text only
+    glm::vec2 position{}; // Text baseline origin, logical pixels
+    float fontSize = 16.0f;
+    glm::vec4 color{1.0f, 1.0f, 1.0f, 1.0f};
+    TextAlignment alignment = TextAlignment::Left;
+};
+
 class ParticleEmitter;
 
 struct ParticleEmitterRef {
@@ -34,5 +52,6 @@ struct GameRenderData {
     const std::vector<std::pair<Light, Transform>>& lightsWithTransforms;
     std::vector<ParticleEmitterRef> particleEmitters;
     std::vector<TextDrawCall> textQueue;
+    std::vector<UIDrawCall> uiQueue;
     bool isOffscreen = false;
 };

@@ -13,6 +13,7 @@
 #include "core/components/Transform.hpp"
 #include "core/scene/TransformUtils.hpp"
 #include "core/scene/World.hpp"
+#include "ui/UISystem.hpp"
 
 class GameRenderSystem {
     inline static const log4cxx::LoggerPtr LOGGER = log4cxx::Logger::getLogger("GameRenderSystem");
@@ -21,6 +22,11 @@ public:
     explicit GameRenderSystem(IGameRenderer& renderer) : renderer_(renderer) {}
 
     void setAnimationSystem(AnimationSystem* animationSystem) { animationSystem_ = animationSystem; }
+
+    void setUISource(const UISystem* uiSystem, const GameWindow* window) {
+        uiSystem_ = uiSystem;
+        uiWindow_ = window;
+    }
 
     void setActiveCamera(const Camera& camera, const Transform& cameraTransform) {
         activeCamera_ = &camera;
@@ -80,10 +86,18 @@ public:
                                  textComp->alignment});
         }
 
+        std::vector<UIDrawCall> uiQueue;
+        if (uiSystem_ && uiWindow_) uiSystem_->buildDrawQueue(uiQueue, *uiWindow_);
+
         const Camera& cam = getActiveCamera();
         const Transform& camTransform = getActiveCameraTransform();
-        GameRenderData rd{
-                cam, camTransform, drawQueue, lightsWithTransforms, std::move(particleEmitters), std::move(textQueue)};
+        GameRenderData rd{cam,
+                          camTransform,
+                          drawQueue,
+                          lightsWithTransforms,
+                          std::move(particleEmitters),
+                          std::move(textQueue),
+                          std::move(uiQueue)};
         renderer_.renderFrame(rd);
     }
 
@@ -102,6 +116,8 @@ private:
 
     IGameRenderer& renderer_;
     AnimationSystem* animationSystem_ = nullptr;
+    const UISystem* uiSystem_ = nullptr;
+    const GameWindow* uiWindow_ = nullptr;
     const Camera* activeCamera_ = nullptr;
     const Transform* activeCameraTransform_ = nullptr;
     float deltaTime_ = 0.0f;

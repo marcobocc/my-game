@@ -25,6 +25,8 @@ static constexpr auto PARTICLES_SHADER = "assets/internal.core/shaders/particles
 static constexpr auto PARTICLES_SPAWN_SHADER = "assets/internal.core/shaders/particles/particles_spawn.shad";
 static constexpr auto PARTICLES_SIMULATE_SHADER = "assets/internal.core/shaders/particles/particles_simulate.shad";
 static constexpr auto TEXT_SHADER = "assets/internal.core/shaders/text/text.shad";
+static constexpr auto UI_SHADER = "assets/internal.core/shaders/ui/ui.shad";
+static constexpr auto UI_TEXT_SHADER = "assets/internal.core/shaders/ui/ui_text.shad";
 
 static constexpr auto OUTLINE_SHADER = "assets/internal.editor/shaders/selection_outline/selection_outline.shad";
 static constexpr auto SKYDOME_SHADER = "assets/internal.editor/shaders/skydome/skydome.shad";
