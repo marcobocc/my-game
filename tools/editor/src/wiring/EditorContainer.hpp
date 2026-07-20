@@ -84,8 +84,11 @@ public:
                           window,
                           runtime_.vulkanBackend(),
                           services_.undoHistory()),
-        terrainPanel_(
-                terrainSculptTool_, terrainPaintTool_, services_.sceneQuickActions(), services_.editorSelection()),
+        terrainPanel_(terrainSculptTool_,
+                      terrainPaintTool_,
+                      services_.sceneQuickActions(),
+                      services_.editorSelection(),
+                      features_.assetPicker()),
         editorApp_(window,
                    runtime_.developerConsole(),
                    runtime_.inputSystem(),

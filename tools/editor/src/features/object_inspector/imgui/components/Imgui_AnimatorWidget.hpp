@@ -5,16 +5,18 @@
 #include "../../../../../../../runtime/src/animation/components/Animator.hpp"
 #include "../../../../../../../runtime/src/graphics/assets/Mesh.hpp"
 #include "../../../../../../../runtime/src/graphics/components/Renderer.hpp"
+#include "../../../../features/asset_browser/imgui/Imgui_AssetPicker.hpp"
 #include "../../../../services/common_editing/AssetStore.hpp"
 #include "../../../../services/common_editing/RuntimeScene.hpp"
 #include "../Imgui_InspectorWidget.hpp"
 
 class Imgui_AnimatorWidget : public Imgui_InspectorWidget {
 public:
-    Imgui_AnimatorWidget(RuntimeScene& scene, AssetStore& assetStore) :
+    Imgui_AnimatorWidget(RuntimeScene& scene, AssetStore& assetStore, Imgui_AssetPicker& assetPicker) :
         Imgui_InspectorWidget("Animator"),
         scene_(scene),
-        assetStore_(assetStore) {}
+        assetStore_(assetStore),
+        assetPicker_(assetPicker) {}
 
     void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
 
@@ -29,6 +31,7 @@ public:
 private:
     RuntimeScene& scene_;
     AssetStore& assetStore_;
+    Imgui_AssetPicker& assetPicker_;
     std::optional<EntityHandle> lastObjectId_;
     Animator component_{};
     std::array<char, 256> controllerBuf_{};
@@ -53,11 +56,11 @@ private:
                     commit(UndoHistory::randomGroupId("Set Controller"));
                 },
                 "ANIMCTRL_ASSET",
-                [this](const char* path) {
-                    std::strncpy(controllerBuf_.data(), path, controllerBuf_.size() - 1);
-                    controllerBuf_.back() = '\0';
-                    component_.controllerName = controllerBuf_.data();
-                    commit(UndoHistory::randomGroupId("Set Controller"));
+                [this](const char* path) { applyController(path); },
+                [this] {
+                    assetPicker_.open("Select Controller", {".animctrl"}, [this](const std::string& path) {
+                        applyController(path.c_str());
+                    });
                 });
 
         // Try to load controller to show its states.
@@ -120,6 +123,13 @@ private:
             }
             ImGui::PopID();
         }
+    }
+
+    void applyController(const char* path) {
+        std::strncpy(controllerBuf_.data(), path, controllerBuf_.size() - 1);
+        controllerBuf_.back() = '\0';
+        component_.controllerName = controllerBuf_.data();
+        commit(UndoHistory::randomGroupId("Set Controller"));
     }
 
     void commit(const std::string& groupId) {

@@ -7,6 +7,7 @@
 #include <vector>
 #include "../../../../../../../runtime/src/scripting/assets/LuaScript.hpp"
 #include "../../../../../../../runtime/src/scripting/components/BehaviourScript.hpp"
+#include "../../../asset_browser/imgui/Imgui_AssetPicker.hpp"
 #include "../Imgui_InspectorWidget.hpp"
 #include "core/assets/AssetLoader.hpp"
 #include "scripting/ScriptPropertyParser.hpp"
@@ -15,10 +16,14 @@ class RuntimeScene;
 
 class Imgui_BehaviourScriptWidget : public Imgui_InspectorWidget {
 public:
-    Imgui_BehaviourScriptWidget(RuntimeScene& scene, AssetLoader& assetLoader, std::string title) :
+    Imgui_BehaviourScriptWidget(RuntimeScene& scene,
+                                AssetLoader& assetLoader,
+                                Imgui_AssetPicker& assetPicker,
+                                std::string title) :
         Imgui_InspectorWidget(std::move(title)),
         scene_(scene),
-        assetLoader_(assetLoader) {}
+        assetLoader_(assetLoader),
+        assetPicker_(assetPicker) {}
 
     void setCurrentObjectId(EntityHandle objectId) { lastObjectId_.emplace(objectId); }
 
@@ -47,6 +52,7 @@ public:
 private:
     RuntimeScene& scene_;
     AssetLoader& assetLoader_;
+    Imgui_AssetPicker& assetPicker_;
     std::optional<EntityHandle> lastObjectId_;
     BehaviourScript component_{};
     std::array<char, 256> nameBuf_{};
@@ -101,14 +107,10 @@ private:
                     commitEdit();
                 },
                 "SCRIPT_ASSET",
-                [this](const char* path) {
-                    std::string className = std::filesystem::path(path).stem().string();
-                    if (!className.empty()) {
-                        component_.scriptName = className;
-                        component_.scriptName.copy(nameBuf_.data(), nameBuf_.size() - 1);
-                        nameBuf_[component_.scriptName.size()] = '\0';
-                        commitEdit();
-                    }
+                [this](const char* path) { applyScript(path); },
+                [this] {
+                    assetPicker_.open(
+                            "Select Script", {".lua"}, [this](const std::string& path) { applyScript(path); });
                 });
 
         if (descriptors_.empty()) return;
@@ -205,6 +207,16 @@ private:
                             commitEdit();
                         });
             }
+        }
+    }
+
+    void applyScript(const std::string& path) {
+        std::string className = std::filesystem::path(path).stem().string();
+        if (!className.empty()) {
+            component_.scriptName = className;
+            component_.scriptName.copy(nameBuf_.data(), nameBuf_.size() - 1);
+            nameBuf_[component_.scriptName.size()] = '\0';
+            commitEdit();
         }
     }
 

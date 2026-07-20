@@ -5,6 +5,7 @@
 #include "../../services/EditorSelection.hpp"
 #include "../../services/common_editing/SceneQuickActions.hpp"
 #include "../../styling/EditorPanel.hpp"
+#include "../asset_browser/imgui/Imgui_AssetPicker.hpp"
 #include "TerrainPaintTool.hpp"
 #include "TerrainSculptTool.hpp"
 
@@ -13,11 +14,13 @@ public:
     Imgui_TerrainPanel(TerrainSculptTool& sculptTool,
                        TerrainPaintTool& paintTool,
                        SceneQuickActions& sceneQuickActions,
-                       EditorSelection& selection) :
+                       EditorSelection& selection,
+                       Imgui_AssetPicker& assetPicker) :
         sculptTool_(sculptTool),
         paintTool_(paintTool),
         sceneQuickActions_(sceneQuickActions),
-        selection_(selection) {}
+        selection_(selection),
+        assetPicker_(assetPicker) {}
 
     void draw() { EditorPanel::draw("Terrain"); }
 
@@ -94,14 +97,18 @@ protected:
         }
     }
 
-    // Shows the active layer's material; dropping a material asset onto it edits the
-    // terrain's layered material directly (it is no longer editable via the asset grid).
+    // Shows the active layer's material; clicking it opens the asset picker, and
+    // dropping a material asset onto it also edits the terrain's layered material.
     void drawLayerMaterialField(EntityHandle entity, int layer) {
         auto material = sceneQuickActions_.terrainLayerMaterial(entity, layer);
         if (!material) return; // painting not enabled yet
 
-        const char* display = material->empty() ? "(drop material here)" : material->c_str();
-        ImGui::Button(display, ImVec2(-FLT_MIN, 0));
+        const char* display = material->empty() ? "(select material)" : material->c_str();
+        if (ImGui::Button(display, ImVec2(-FLT_MIN, 0))) {
+            assetPicker_.open("Select Material", {".mat", ".matpkg"}, [this, entity, layer](const std::string& mat) {
+                sceneQuickActions_.setTerrainLayerMaterial(entity, layer, mat);
+            });
+        }
         if (ImGui::BeginDragDropTarget()) {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("MATERIAL_ASSET")) {
                 sceneQuickActions_.setTerrainLayerMaterial(entity, layer, static_cast<const char*>(payload->Data));
@@ -117,6 +124,7 @@ private:
     TerrainPaintTool& paintTool_;
     SceneQuickActions& sceneQuickActions_;
     EditorSelection& selection_;
+    Imgui_AssetPicker& assetPicker_;
     ActiveTool activeTool_ = ActiveTool::Sculpt;
     int splatMapResolution_ = 512;
 };

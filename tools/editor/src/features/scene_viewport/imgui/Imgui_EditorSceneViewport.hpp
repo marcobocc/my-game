@@ -34,6 +34,7 @@ public:
         pickingSystem_(pickingSystem),
         window_(window),
         editorCamera_(editorCamera),
+        sceneQuickActions_(sceneQuickActions),
         spherePopupModal_(sceneQuickActions),
         capsulePopupModal_(sceneQuickActions),
         dropdownMenu_(assetStore,
@@ -65,6 +66,10 @@ public:
                     std::string prefabName = static_cast<const char*>(payload->Data);
                     auto prefab = assetStore_.readPrefab(prefabName);
                     if (prefab) scene_.instantiatePrefab(*prefab, UndoHistory::randomGroupId("Instantiate Prefab"));
+                }
+                if (strcmp(payload->DataType, "MODEL_ASSET") == 0) {
+                    std::string modelName = static_cast<const char*>(payload->Data);
+                    sceneQuickActions_.addModel(modelName);
                 }
                 if (strcmp(payload->DataType, "MATERIAL_ASSET") == 0) {
                     auto materialName = static_cast<const char*>(payload->Data);
@@ -159,6 +164,7 @@ private:
     PickingSystem& pickingSystem_;
     GameWindow& window_;
     EditorCamera& editorCamera_;
+    SceneQuickActions& sceneQuickActions_;
     Imgui_SpherePopupModal spherePopupModal_;
     Imgui_CapsulePopupModal capsulePopupModal_;
     Imgui_HierarchyDropdownMenu dropdownMenu_;

@@ -331,16 +331,19 @@ public:
     InputTextProperty(std::string label,
                       std::function<std::string()> getValue,
                       std::string dragDropType = "",
-                      std::function<void(const char*)> onDrop = nullptr) :
+                      std::function<void(const char*)> onDrop = nullptr,
+                      std::function<void()> onClick = nullptr) :
         label_(std::move(label)),
         getValue_(std::move(getValue)),
         dragDropType_(std::move(dragDropType)),
-        onDrop_(std::move(onDrop)) {}
+        onDrop_(std::move(onDrop)),
+        onClick_(std::move(onClick)) {}
 
     void draw() override {
         row(label_.c_str(), [&] {
             auto v = getValue_();
             ImGui::InputText("##v", const_cast<char*>(v.c_str()), v.size() + 1, ImGuiInputTextFlags_ReadOnly);
+            if (onClick_ && ImGui::IsItemClicked(ImGuiMouseButton_Left)) onClick_();
             if (!dragDropType_.empty() && onDrop_ && ImGui::BeginDragDropTarget()) {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragDropType_.c_str()))
                     onDrop_(static_cast<const char*>(payload->Data));
@@ -354,6 +357,7 @@ private:
     std::function<std::string()> getValue_;
     std::string dragDropType_;
     std::function<void(const char*)> onDrop_;
+    std::function<void()> onClick_;
 };
 
 // ---- InputTextEditable (editable with enter-to-commit and drag-drop) ----
@@ -364,20 +368,28 @@ public:
                               std::array<char, 256>& buf,
                               std::function<void()> onCommit,
                               std::string dragDropType = "",
-                              std::function<void(const char*)> onDrop = nullptr) :
+                              std::function<void(const char*)> onDrop = nullptr,
+                              std::function<void()> onClick = nullptr) :
         label_(std::move(label)),
         buf_(buf),
         onCommit_(std::move(onCommit)),
         dragDropType_(std::move(dragDropType)),
-        onDrop_(std::move(onDrop)) {}
+        onDrop_(std::move(onDrop)),
+        onClick_(std::move(onClick)) {}
 
     void draw() override {
         row(label_.c_str(), [&] {
+            // Leave room for the picker button so typing in the field stays possible.
+            if (onClick_) ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - 28.0f);
             if (ImGui::InputText("##v", buf_.data(), buf_.size(), ImGuiInputTextFlags_EnterReturnsTrue)) onCommit_();
             if (!dragDropType_.empty() && onDrop_ && ImGui::BeginDragDropTarget()) {
                 if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dragDropType_.c_str()))
                     onDrop_(static_cast<const char*>(payload->Data));
                 ImGui::EndDragDropTarget();
+            }
+            if (onClick_) {
+                ImGui::SameLine();
+                if (ImGui::Button("...")) onClick_();
             }
         });
     }
@@ -388,6 +400,7 @@ private:
     std::function<void()> onCommit_;
     std::string dragDropType_;
     std::function<void(const char*)> onDrop_;
+    std::function<void()> onClick_;
 };
 
 // ---- Vec3 (three styled spinboxes, optional undo tracking) --------------

@@ -35,19 +35,21 @@ public:
     Imgui_GameObjectInspector(EditorSelection& editorSelection,
                               AssetStore& assetStore,
                               RuntimeScene& scene,
-                              EditorGizmos& debugViz) :
+                              EditorGizmos& debugViz,
+                              Imgui_AssetPicker& assetPicker) :
         editorSelection_(editorSelection),
         assetStore_(assetStore),
         scene_(scene),
         debugViz_(debugViz),
+        assetPicker_(assetPicker),
         transformWidget_(scene),
-        rendererWidget_(assetStore, scene, debugViz),
+        rendererWidget_(assetStore, scene, debugViz, assetPicker),
         boxColliderWidget_(scene, debugViz),
         capsuleColliderWidget_(scene, debugViz),
         cameraWidget_(scene),
         lightWidget_(scene),
         particleEmitterWidget_(scene),
-        animatorWidget_(scene, assetStore),
+        animatorWidget_(scene, assetStore, assetPicker),
         textComponentWidget_(scene) {}
 
     void draw(EntityHandle entity) {
@@ -67,6 +69,7 @@ private:
     AssetStore& assetStore_;
     RuntimeScene& scene_;
     EditorGizmos& debugViz_;
+    Imgui_AssetPicker& assetPicker_;
     Imgui_TransformWidget transformWidget_;
     Imgui_RendererWidget rendererWidget_;
     Imgui_BoxColliderWidget boxColliderWidget_;
@@ -134,7 +137,10 @@ private:
         auto scripts = scene_.getObject(entity).getComponents<BehaviourScript>();
         while (behaviourScriptWidgets_.size() < scripts.size())
             behaviourScriptWidgets_.emplace_back(std::make_unique<Imgui_BehaviourScriptWidget>(
-                    scene_, assetStore_.loader(), "BehaviourScript_" + std::to_string(behaviourScriptWidgets_.size())));
+                    scene_,
+                    assetStore_.loader(),
+                    assetPicker_,
+                    "BehaviourScript_" + std::to_string(behaviourScriptWidgets_.size())));
         for (size_t i = 0; i < scripts.size(); ++i) {
             behaviourScriptWidgets_[i]->setCurrentObjectId(entity);
             behaviourScriptWidgets_[i]->setComponent(*scripts[i], i);

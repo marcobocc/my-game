@@ -7,6 +7,7 @@
 #include "../services/EditorMode.hpp"
 #include "application_toolbar/Imgui_ApplicationMenuBar.hpp"
 #include "asset_browser/imgui/Imgui_AssetGridPanel.hpp"
+#include "asset_browser/imgui/Imgui_AssetPicker.hpp"
 #include "core/GameWindow.hpp"
 #include "object_inspector/imgui/Imgui_InspectorPanel.hpp"
 #include "scene_hierarchy/imgui/Imgui_HierarchyPanel.hpp"
@@ -22,6 +23,7 @@ public:
               Imgui_SceneViewToolbar& sceneViewToolbar,
               Imgui_HierarchyPanel& hierarchyPanel,
               Imgui_AssetGridPanel& assetGridPanel,
+              Imgui_AssetPicker& assetPicker,
               Imgui_InspectorPanel& inspectorPanel,
               Imgui_EditorSceneViewport& editorSceneViewport,
               Imgui_Console& console,
@@ -31,6 +33,7 @@ public:
         sceneViewToolbar_(sceneViewToolbar),
         hierarchyPanel_(hierarchyPanel),
         assetGridPanel_(assetGridPanel),
+        assetPicker_(assetPicker),
         inspectorPanel_(inspectorPanel),
         editorSceneViewport_(editorSceneViewport),
         console_(console),
@@ -56,6 +59,7 @@ public:
             inspectorPanel_.draw();
             console_.draw();
         }
+        assetPicker_.draw();
         editorSceneViewport_.draw();
         if (overlayCallback_) overlayCallback_();
     }
@@ -180,6 +184,7 @@ private:
     Imgui_SceneViewToolbar& sceneViewToolbar_;
     Imgui_HierarchyPanel& hierarchyPanel_;
     Imgui_AssetGridPanel& assetGridPanel_;
+    Imgui_AssetPicker& assetPicker_;
     Imgui_InspectorPanel& inspectorPanel_;
     Imgui_EditorSceneViewport& editorSceneViewport_;
     Imgui_Console& console_;

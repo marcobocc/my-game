@@ -3,20 +3,23 @@
 #include <memory>
 #include <vector>
 #include "../../../../../../../runtime/src/graphics/assets/Material.hpp"
+#include "../../../../features/asset_browser/imgui/Imgui_AssetPicker.hpp"
 #include "../../../../services/EditorSelection.hpp"
 #include "../../../../services/common_editing/AssetStore.hpp"
 #include "../Imgui_InspectorWidget.hpp"
 
 class Imgui_MaterialWidget : public Imgui_InspectorWidget {
 public:
-    Imgui_MaterialWidget(AssetStore& assetStore, EditorSelection& editorSelection) :
+    Imgui_MaterialWidget(AssetStore& assetStore, EditorSelection& editorSelection, Imgui_AssetPicker& assetPicker) :
         Imgui_InspectorWidget("Material"),
         assetStore_(assetStore),
-        editorSelection_(editorSelection) {}
+        editorSelection_(editorSelection),
+        assetPicker_(assetPicker) {}
 
 private:
     AssetStore& assetStore_;
     EditorSelection& editorSelection_;
+    Imgui_AssetPicker& assetPicker_;
 
     void buildProperties() override {
         const auto& inspected = editorSelection_.getInspectedAsset();
@@ -40,6 +43,11 @@ private:
                     "texture_asset",
                     [this, asset](const char* tex) {
                         assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.albedoTexture = tex; });
+                    },
+                    [this, asset] {
+                        assetPicker_.open("Select Texture", {".png", ".jpg"}, [this, asset](const std::string& tex) {
+                            assetStore_.mutateAsset<Material>(asset, [tex](Material& m) { m.albedoTexture = tex; });
+                        });
                     }));
 
             props.emplace_back(std::make_unique<ColorEdit4Property>(
@@ -89,6 +97,15 @@ private:
                             [this, asset, setter](const char* mat) {
                                 assetStore_.mutateAsset<Material>(asset,
                                                                   [mat, setter](Material& m) { setter(m, mat); });
+                            },
+                            [this, asset, setter] {
+                                assetPicker_.open("Select Material",
+                                                  {".mat", ".matpkg"},
+                                                  [this, asset, setter](const std::string& mat) {
+                                                      assetStore_.mutateAsset<Material>(
+                                                              asset,
+                                                              [&mat, setter](Material& m) { setter(m, mat.c_str()); });
+                                                  });
                             });
                 };
 

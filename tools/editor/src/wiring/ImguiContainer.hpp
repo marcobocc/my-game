@@ -4,6 +4,7 @@
 #include "../features/ImguiRoot.hpp"
 #include "../features/application_toolbar/Imgui_ApplicationMenuBar.hpp"
 #include "../features/asset_browser/imgui/Imgui_AssetGridPanel.hpp"
+#include "../features/asset_browser/imgui/Imgui_AssetPicker.hpp"
 #include "../features/object_inspector/imgui/Imgui_InspectorPanel.hpp"
 #include "../features/scene_hierarchy/imgui/Imgui_HierarchyPanel.hpp"
 #include "../features/scene_viewport/imgui/Imgui_EditorSceneViewport.hpp"
@@ -65,7 +66,9 @@ public:
 
         assetGridPanel_(assetStore, editorSelection, assetQuickActions, assetThumbnailGenerator),
 
-        inspectorPanel_(editorSelection, assetStore, scene, editorGizmos),
+        assetPicker_(assetStore, assetThumbnailGenerator),
+
+        inspectorPanel_(editorSelection, assetStore, scene, editorGizmos, assetPicker_),
 
         editorSceneViewport_(assetStore,
                              scene,
@@ -85,6 +88,7 @@ public:
                    sceneViewToolbar_,
                    hierarchyPanel_,
                    assetGridPanel_,
+                   assetPicker_,
                    inspectorPanel_,
                    editorSceneViewport_,
                    console,
@@ -96,6 +100,7 @@ public:
         welcomeRoot_(welcomeScreen_) {}
 
     ImguiRoot& imguiRoot() { return imguiRoot_; }
+    Imgui_AssetPicker& assetPicker() { return assetPicker_; }
     SimHUDRoot& simHUDRoot() { return simHUDRoot_; }
     WelcomeRoot& welcomeRoot() { return welcomeRoot_; }
     Imgui_WelcomeScreen& welcomeScreen() { return welcomeScreen_; }
@@ -106,6 +111,7 @@ private:
     Imgui_SceneViewToolbar sceneViewToolbar_;
     Imgui_HierarchyPanel hierarchyPanel_;
     Imgui_AssetGridPanel assetGridPanel_;
+    Imgui_AssetPicker assetPicker_;
     Imgui_InspectorPanel inspectorPanel_;
     Imgui_EditorSceneViewport editorSceneViewport_;
     Imgui_SimHUD simHUD_;

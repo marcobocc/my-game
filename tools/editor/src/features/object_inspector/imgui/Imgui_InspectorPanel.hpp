@@ -12,10 +12,11 @@ public:
     Imgui_InspectorPanel(EditorSelection& editorSelection,
                          AssetStore& assetStore,
                          RuntimeScene& scene,
-                         EditorGizmos& debugViz) :
+                         EditorGizmos& debugViz,
+                         Imgui_AssetPicker& assetPicker) :
         editorSelection_(editorSelection),
-        gameObjectInspector_(editorSelection, assetStore, scene, debugViz),
-        materialInspector(assetStore, editorSelection),
+        gameObjectInspector_(editorSelection, assetStore, scene, debugViz, assetPicker),
+        materialInspector(assetStore, editorSelection, assetPicker),
         meshInspector(assetStore, editorSelection) {}
 
     void draw() { EditorPanel::draw("Inspector"); }

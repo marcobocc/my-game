@@ -72,6 +72,7 @@ public:
     ShortcutBindingService& shortcutBindingService() { return shortcutBindingService_; }
     ActionDispatcher& actionDispatcher() { return actionDispatcher_; }
     ImguiRoot& imguiRoot() { return imgui_.imguiRoot(); }
+    Imgui_AssetPicker& assetPicker() { return imgui_.assetPicker(); }
     SimHUDRoot& simHUDRoot() { return imgui_.simHUDRoot(); }
     WelcomeRoot& welcomeRoot() { return imgui_.welcomeRoot(); }
     Imgui_WelcomeScreen& welcomeScreen() { return imgui_.welcomeScreen(); }
