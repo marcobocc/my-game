@@ -51,6 +51,11 @@ public:
     void setDebugOverlayCallback(std::function<void(DebugDraw&)> callback) {
         debugOverlayCallback_ = std::move(callback);
     }
+    // Lets callers (e.g. MeshBuilderTool) inject solid gizmo geometry built via
+    // ObjectTransformHandle into this frame's overlay, alongside the object transform gizmo.
+    void appendOverlayGizmoVertices(const std::vector<VulkanGizmoPass::GizmoVertex>& vertices) {
+        builtOverlayGizmoLines_.insert(builtOverlayGizmoLines_.end(), vertices.begin(), vertices.end());
+    }
     void render(const World& entityManager, float gridScale, float deltaTime = 0.0f);
     void renderWelcome();
 

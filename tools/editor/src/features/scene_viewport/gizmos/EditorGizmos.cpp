@@ -28,4 +28,11 @@ void EditorGizmos::toggleCapsuleCollider(EntityHandle objectId) {
         capsuleColliderEnabled_.insert(objectId);
 }
 
+void EditorGizmos::toggleMeshCollider(EntityHandle objectId) {
+    if (meshColliderEnabled_.contains(objectId))
+        meshColliderEnabled_.erase(objectId);
+    else
+        meshColliderEnabled_.insert(objectId);
+}
+
 void EditorGizmos::toggleBVH() { bvhEnabled_ = !bvhEnabled_; }

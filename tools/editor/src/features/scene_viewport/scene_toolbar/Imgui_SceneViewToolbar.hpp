@@ -116,7 +116,16 @@ public:
     }
 
 private:
-    static const char* modeLabel(EditorMode mode) { return mode == EditorMode::Terrain ? "Terrain" : "Selection"; }
+    static const char* modeLabel(EditorMode mode) {
+        switch (mode) {
+            case EditorMode::Terrain:
+                return "Terrain";
+            case EditorMode::MeshBuilder:
+                return "Mesh Builder";
+            default:
+                return "Selection";
+        }
+    }
 
     void drawModeDropdown() {
         const EditorMode mode = editorMode_.mode();
@@ -131,6 +140,8 @@ private:
             if (ImGui::Selectable("Selection", mode == EditorMode::Selection))
                 editorMode_.setMode(EditorMode::Selection);
             if (ImGui::Selectable("Terrain", mode == EditorMode::Terrain)) editorMode_.setMode(EditorMode::Terrain);
+            if (ImGui::Selectable("Mesh Builder", mode == EditorMode::MeshBuilder))
+                editorMode_.setMode(EditorMode::MeshBuilder);
             ImGui::EndPopup();
         }
     }

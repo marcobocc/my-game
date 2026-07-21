@@ -2,6 +2,7 @@
 #include "../../../../../../runtime/src/graphics/assets/Mesh.hpp"
 #include "../../../../../../runtime/src/graphics/components/Renderer.hpp"
 #include "../../../../../../runtime/src/graphics/debug/DebugDraw.hpp"
+#include "../../../../../../runtime/src/physics/MeshColliderUtils.hpp"
 #include "../../../../../../runtime/src/physics/components/BoxCollider.hpp"
 #include "../../../services/EditorSettings.hpp"
 #include "core/assets/AssetLoader.hpp"
@@ -74,6 +75,24 @@ void GizmoBuilder::buildGizmoObjectCapsuleCollider(DebugDraw& out,
                                                    const World& world,
                                                    const glm::vec3& color) {
     out.entityCapsuleCollider(objectId, world, color);
+}
+
+void GizmoBuilder::buildGizmoObjectMeshCollider(DebugDraw& out,
+                                                EntityHandle objectId,
+                                                const World& /*world*/,
+                                                const glm::vec3& color) {
+    auto* actor = entityManager_.getActor(objectId);
+    if (!actor) return;
+    auto* transform = actor->getComponent<Transform>();
+    auto* collider = actor->getComponent<MeshCollider>();
+    if (!transform || !collider) return;
+
+    std::string meshName = Physics::resolveMeshColliderMeshName(*actor, *collider);
+    const Mesh* mesh = meshName.empty() ? nullptr : assetLoader_.get<Mesh>(meshName);
+    Physics::ensureMeshColliderHull(*collider, mesh);
+    if (collider->hull.vertices.empty()) return;
+
+    out.hull(TransformUtils::resolveWorldMatrix(*transform, entityManager_), collider->hull, color);
 }
 
 void GizmoBuilder::buildGizmoBoundingSphere(DebugDraw& out, const BoundingSphere& sphere, const glm::vec3& color) {

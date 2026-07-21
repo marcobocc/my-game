@@ -17,7 +17,7 @@ void InputHandler::update(double mouseX, double mouseY, double deltaTime, bool s
         bool leftDown = inputSystem_.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT);
         bool ctrl = false, shift = false, alt = false;
         getModifierState(ctrl, shift, alt);
-        if (!terrainSculptMode_) {
+        if (!viewportToolMode_) {
             processGizmoDrag(mouseX, mouseY, leftDown);
             processMouseInteraction(mouseX, mouseY, leftDown, ctrl);
         }

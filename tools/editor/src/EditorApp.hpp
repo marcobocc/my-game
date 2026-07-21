@@ -14,6 +14,7 @@
 #include "features/ImguiRoot.hpp"
 #include "features/close_modal/Imgui_CloseModal.hpp"
 #include "features/input_handling/InputHandler.hpp"
+#include "features/mesh_builder/MeshBuilderTool.hpp"
 #include "features/scene_viewport/editor_camera/EditorCamera.hpp"
 #include "features/terrain_tool/TerrainPaintTool.hpp"
 #include "features/terrain_tool/TerrainSculptTool.hpp"
@@ -57,6 +58,7 @@ public:
               AssetThumbnailGenerator& thumbnailGenerator,
               TerrainSculptTool& terrainSculptTool,
               TerrainPaintTool& terrainPaintTool,
+              MeshBuilderTool& meshBuilderTool,
               EditorModeService& editorMode) :
         window_(window),
         developerConsole_(developerConsole),
@@ -78,6 +80,7 @@ public:
         thumbnailGenerator_(thumbnailGenerator),
         terrainSculptTool_(terrainSculptTool),
         terrainPaintTool_(terrainPaintTool),
+        meshBuilderTool_(meshBuilderTool),
         editorMode_(editorMode) {
         welcomeScreen_.setCallbacks({
                 [this](const std::filesystem::path& path) { openProject(path); },
@@ -87,13 +90,15 @@ public:
         editorRenderer_.setDebugOverlayCallback([this](DebugDraw& debugDraw) {
             terrainSculptTool_.update(debugDraw);
             terrainPaintTool_.update(debugDraw);
+            meshBuilderTool_.update(debugDraw);
         });
-        // Leaving Terrain mode cancels any in-flight stroke, same as the old tab-switch behavior.
+        // Leaving a tool's mode cancels any in-flight stroke, same as the old tab-switch behavior.
         editorMode_.subscribe([this](EditorMode mode) {
             if (mode != EditorMode::Terrain) {
                 terrainSculptTool_.setActive(false);
                 terrainPaintTool_.setActive(false);
             }
+            if (mode != EditorMode::MeshBuilder) meshBuilderTool_.setActive(false);
         });
         initApp();
         ImguiStyling::ApplyEditorStyle();
@@ -171,7 +176,8 @@ public:
                     inputSystem_.setBlocked(imguiConsole_.isVisible());
                 }
                 auto [mouseX, mouseY] = inputSystem_.getMousePosition();
-                inputHandler_.setTerrainSculptMode(!simActive && editorMode_.mode() == EditorMode::Terrain);
+                inputHandler_.setViewportToolMode(!simActive && (editorMode_.mode() == EditorMode::Terrain ||
+                                                                 editorMode_.mode() == EditorMode::MeshBuilder));
                 inputHandler_.update(mouseX, mouseY, deltaTime, simActive);
             }
 
@@ -276,6 +282,7 @@ private:
     AssetThumbnailGenerator& thumbnailGenerator_;
     TerrainSculptTool& terrainSculptTool_;
     TerrainPaintTool& terrainPaintTool_;
+    MeshBuilderTool& meshBuilderTool_;
     EditorModeService& editorMode_;
     Imgui_CloseModal closeModal_;
     AppState appState_ = AppState::Welcome;

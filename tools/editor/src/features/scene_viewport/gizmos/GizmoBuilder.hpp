@@ -19,6 +19,10 @@ public:
     void buildGizmoObjectBoxCollider(DebugDraw& out, EntityHandle objectId, const World& world, const glm::vec3& color);
     void
     buildGizmoObjectCapsuleCollider(DebugDraw& out, EntityHandle objectId, const World& world, const glm::vec3& color);
+    // Rebuilds the entity's MeshCollider hull if dirty (needs AssetLoader access, so
+    // this uses GizmoBuilder's own World/AssetLoader rather than the passed `world`).
+    void
+    buildGizmoObjectMeshCollider(DebugDraw& out, EntityHandle objectId, const World& world, const glm::vec3& color);
     void buildGizmoBoundingSphere(DebugDraw& out, const BoundingSphere& sphere, const glm::vec3& color);
     void
     buildGizmoObjectBoundingSphere(DebugDraw& out, EntityHandle objectId, const World& world, const glm::vec3& color);

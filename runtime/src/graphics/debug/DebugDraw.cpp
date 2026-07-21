@@ -144,6 +144,15 @@ void DebugDraw::capsule(
     }
 }
 
+void DebugDraw::hull(const glm::mat4& transform, const ConvexHull& hull, const glm::vec3& color) {
+    std::vector<glm::vec3> worldVerts;
+    worldVerts.reserve(hull.vertices.size());
+    for (const auto& v: hull.vertices)
+        worldVerts.push_back(glm::vec3(transform * glm::vec4(v, 1.0f)));
+    for (const auto& [a, b]: hull.edges)
+        addLine(worldVerts[a], worldVerts[b], color);
+}
+
 void DebugDraw::entityBoxCollider(EntityHandle id, const World& world, const glm::vec3& color) {
     const Actor* actor = world.getActor(id);
     if (!actor) return;

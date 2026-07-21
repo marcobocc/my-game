@@ -3,6 +3,7 @@
 #include <vector>
 #include "../../math/AABB.hpp"
 #include "../../math/BoundingSphere.hpp"
+#include "../../physics/ConvexHull.hpp"
 #include "core/scene/EntityHandle.hpp"
 #include "graphics/vulkan/passes/VulkanGizmoPass.hpp"
 
@@ -34,6 +35,7 @@ public:
                  float height,
                  const glm::vec3& center,
                  const glm::vec3& color = {0.0f, 0.8f, 1.0f});
+    void hull(const glm::mat4& transform, const ConvexHull& hull, const glm::vec3& color = {0.9f, 0.4f, 0.9f});
 
     void entityBoxCollider(EntityHandle id, const World& world, const glm::vec3& color = {0.0f, 1.0f, 0.5f});
     void entityCapsuleCollider(EntityHandle id, const World& world, const glm::vec3& color = {0.0f, 0.8f, 1.0f});

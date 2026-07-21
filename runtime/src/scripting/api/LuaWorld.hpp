@@ -8,9 +8,12 @@
 #include "../../core/components/Transform.hpp"
 #include "../../graphics/components/Renderer.hpp"
 #include "../../graphics/components/TextComponent.hpp"
+#include "../../physics/MeshColliderUtils.hpp"
+#include "../../physics/MeshCollisionDetection.hpp"
 #include "../../physics/TerrainHeightfield.hpp"
 #include "../../physics/components/BoxCollider.hpp"
 #include "../../physics/components/CapsuleCollider.hpp"
+#include "../../physics/components/MeshCollider.hpp"
 #include "../../physics/components/TerrainCollider.hpp"
 #include "LuaEntity.hpp"
 #include "core/scene/EntityHandle.hpp"
@@ -84,7 +87,8 @@ public:
     }
 
     // Returns the accumulated MTV to push entity out of all overlapping box
-    // colliders and terrain heightfields (entities with a TerrainCollider).
+    // colliders, mesh colliders (convex hull), and terrain heightfields (entities
+    // with a TerrainCollider).
     // Supports entities with either a BoxCollider or CapsuleCollider.
     // The entity itself (and its children) are excluded from the check.
     // Returns zero vector if no overlaps.
@@ -112,6 +116,28 @@ public:
                 mtv = Physics::computeMTV(*selfBox, selfMat, *otherCollider, otherMat);
             else
                 mtv = Physics::computeCapsuleBoxMTV(*selfCapsule, selfMat, *otherCollider, otherMat);
+
+            if (mtv) pushes.push_back(*mtv);
+        }
+
+        auto meshColliders = world_.query<MeshCollider, Transform>();
+        for (const auto& [other, otherCollider, otherTransform]: meshColliders) {
+            if (other == entity) continue;
+            if (otherTransform->parent == entity) continue;
+            const Actor* otherActor = world_.getActor(other);
+            if (!otherActor) continue;
+            std::string meshName = Physics::resolveMeshColliderMeshName(*otherActor, *otherCollider);
+            const Mesh* mesh = (meshLookup_ && !meshName.empty()) ? meshLookup_(meshName) : nullptr;
+            Physics::ensureMeshColliderHull(*otherCollider, mesh);
+            if (otherCollider->hull.vertices.empty()) continue;
+
+            glm::mat4 otherMat = TransformUtils::resolveWorldMatrix(*otherTransform, world_);
+
+            std::optional<glm::vec3> mtv;
+            if (selfBox)
+                mtv = Physics::computeBoxHullMTV(*selfBox, selfMat, otherCollider->hull, otherMat);
+            else
+                mtv = Physics::computeCapsuleHullMTV(*selfCapsule, selfMat, otherCollider->hull, otherMat);
 
             if (mtv) pushes.push_back(*mtv);
         }

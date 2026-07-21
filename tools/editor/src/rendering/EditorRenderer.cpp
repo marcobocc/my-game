@@ -100,6 +100,9 @@ void EditorRenderer::buildGizmos(const World& world, DebugDraw& out) {
     for (EntityHandle objectId: editorGizmos_.getObjectsWithCapsuleColliderEnabled())
         gizmosBuilder_.buildGizmoObjectCapsuleCollider(out, objectId, world, {0.0f, 0.8f, 1.0f});
 
+    for (EntityHandle objectId: editorGizmos_.getObjectsWithMeshColliderEnabled())
+        gizmosBuilder_.buildGizmoObjectMeshCollider(out, objectId, world, {0.9f, 0.4f, 0.9f});
+
     if (editorGizmos_.bvhEnabled()) gizmosBuilder_.buildGizmoBVH(out, world, {1.0f, 1.0f, 0.0f});
 
     const auto& selectedIds = editorSelection_.getSelectedEntityIds();
@@ -111,9 +114,9 @@ void EditorRenderer::buildGizmos(const World& world, DebugDraw& out) {
     });
     if (!anyHasTransform) return;
 
-    // Terrain mode owns viewport input for sculpt/paint strokes, so the transform
-    // gizmo (and its picking handles) is hidden to avoid interfering with those tools.
-    if (editorMode_.mode() == EditorMode::Terrain) return;
+    // Terrain and mesh builder modes own viewport input for their own strokes, so the
+    // transform gizmo (and its picking handles) is hidden to avoid interfering with those tools.
+    if (editorMode_.mode() == EditorMode::Terrain || editorMode_.mode() == EditorMode::MeshBuilder) return;
 
     glm::vec3 pivot = objectTransformHandle_.computeGroupPivot(selectedIds);
     const Camera& camera = editorOrbitCamera_.getCamera();

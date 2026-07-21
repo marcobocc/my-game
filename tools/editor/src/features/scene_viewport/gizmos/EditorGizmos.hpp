@@ -24,6 +24,10 @@ public:
         return capsuleColliderEnabled_;
     }
 
+    void toggleMeshCollider(EntityHandle objectId);
+    bool meshColliderEnabled(EntityHandle objectId) const { return meshColliderEnabled_.contains(objectId); }
+    const std::unordered_set<EntityHandle>& getObjectsWithMeshColliderEnabled() const { return meshColliderEnabled_; }
+
     void toggleBVH();
     bool bvhEnabled() const { return bvhEnabled_; }
 
@@ -32,5 +36,6 @@ private:
     std::unordered_set<EntityHandle> boundingSpheresEnabled_;
     std::unordered_set<EntityHandle> boxColliderEnabled_;
     std::unordered_set<EntityHandle> capsuleColliderEnabled_;
+    std::unordered_set<EntityHandle> meshColliderEnabled_;
     bool bvhEnabled_ = false;
 };

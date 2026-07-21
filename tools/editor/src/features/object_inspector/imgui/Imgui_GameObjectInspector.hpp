@@ -11,6 +11,7 @@
 #include "../../../../../../runtime/src/graphics/components/Renderer.hpp"
 #include "../../../../../../runtime/src/graphics/components/TextComponent.hpp"
 #include "../../../../../../runtime/src/physics/components/CapsuleCollider.hpp"
+#include "../../../../../../runtime/src/physics/components/MeshCollider.hpp"
 #include "../../../../../../runtime/src/physics/components/TerrainCollider.hpp"
 #include "../../../../../../runtime/src/scripting/components/BehaviourScript.hpp"
 #include "../../../services/EditorSelection.hpp"
@@ -23,6 +24,7 @@
 #include "components/Imgui_CameraWidget.hpp"
 #include "components/Imgui_CapsuleColliderWidget.hpp"
 #include "components/Imgui_LightWidget.hpp"
+#include "components/Imgui_MeshColliderWidget.hpp"
 #include "components/Imgui_ParticleEmitterWidget.hpp"
 #include "components/Imgui_RendererWidget.hpp"
 #include "components/Imgui_TerrainColliderWidget.hpp"
@@ -46,6 +48,7 @@ public:
         rendererWidget_(assetStore, scene, debugViz, assetPicker),
         boxColliderWidget_(scene, debugViz),
         capsuleColliderWidget_(scene, debugViz),
+        meshColliderWidget_(scene, debugViz, assetPicker),
         cameraWidget_(scene),
         lightWidget_(scene),
         particleEmitterWidget_(scene),
@@ -57,6 +60,7 @@ public:
         cameraWidget_.setCurrentObjectId(entity);
         boxColliderWidget_.setCurrentObjectId(entity);
         capsuleColliderWidget_.setCurrentObjectId(entity);
+        meshColliderWidget_.setCurrentObjectId(entity);
         lightWidget_.setCurrentObjectId(entity);
         particleEmitterWidget_.setCurrentObjectId(entity);
         animatorWidget_.setCurrentObjectId(entity);
@@ -74,6 +78,7 @@ private:
     Imgui_RendererWidget rendererWidget_;
     Imgui_BoxColliderWidget boxColliderWidget_;
     Imgui_CapsuleColliderWidget capsuleColliderWidget_;
+    Imgui_MeshColliderWidget meshColliderWidget_;
     Imgui_TerrainColliderWidget terrainColliderWidget_;
     Imgui_CameraWidget cameraWidget_;
     Imgui_LightWidget lightWidget_;
@@ -107,6 +112,11 @@ private:
             capsuleColliderWidget_.draw("CapsuleColliderContext", [this, entity] {
                 scene_.getObject(entity).removeComponent<CapsuleCollider>();
             });
+        }
+        if (const auto* meshCollider = obj.getComponent<MeshCollider>()) {
+            meshColliderWidget_.setComponent(*meshCollider);
+            meshColliderWidget_.draw("MeshColliderContext",
+                                     [this, entity] { scene_.getObject(entity).removeComponent<MeshCollider>(); });
         }
         if (obj.getComponent<TerrainCollider>()) {
             terrainColliderWidget_.draw("TerrainColliderContext", [this, entity] {
@@ -175,6 +185,10 @@ private:
             if (!obj.getComponent<CapsuleCollider>()) {
                 if (ImGui::MenuItem("Capsule Collider"))
                     scene_.getObject(entity).addComponent<CapsuleCollider>(CapsuleCollider{});
+            }
+            if (!obj.getComponent<MeshCollider>()) {
+                if (ImGui::MenuItem("Mesh Collider"))
+                    scene_.getObject(entity).addComponent<MeshCollider>(MeshCollider{});
             }
             if (!obj.getComponent<TerrainCollider>()) {
                 if (ImGui::MenuItem("Terrain Collider"))

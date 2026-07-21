@@ -9,6 +9,7 @@
 #include "asset_browser/imgui/Imgui_AssetGridPanel.hpp"
 #include "asset_browser/imgui/Imgui_AssetPicker.hpp"
 #include "core/GameWindow.hpp"
+#include "mesh_builder/Imgui_MeshBuilderPanel.hpp"
 #include "object_inspector/imgui/Imgui_InspectorPanel.hpp"
 #include "scene_hierarchy/imgui/Imgui_HierarchyPanel.hpp"
 #include "scene_viewport/imgui/Imgui_EditorSceneViewport.hpp"
@@ -42,16 +43,21 @@ public:
 
     void setOverlayCallback(std::function<void()> cb) { overlayCallback_ = std::move(cb); }
 
-    // The terrain panel is constructed after the ImGui wiring (it depends on the
-    // terrain tools), so it is injected via setter rather than the constructor.
+    // The terrain/mesh-builder panels are constructed after the ImGui wiring (they depend on
+    // their respective tools), so they are injected via setter rather than the constructor.
     void setTerrainPanel(Imgui_TerrainPanel* panel) { terrainPanel_ = panel; }
+    void setMeshBuilderPanel(Imgui_MeshBuilderPanel* panel) { meshBuilderPanel_ = panel; }
 
     void draw() {
         applicationMenuBar_.draw();
         drawDockSpace();
 
-        if (editorMode_.mode() == EditorMode::Terrain) {
+        const EditorMode mode = editorMode_.mode();
+        if (mode == EditorMode::Terrain) {
             if (terrainPanel_) terrainPanel_->draw();
+            assetGridPanel_.draw();
+        } else if (mode == EditorMode::MeshBuilder) {
+            if (meshBuilderPanel_) meshBuilderPanel_->draw();
             assetGridPanel_.draw();
         } else {
             hierarchyPanel_.draw();
@@ -90,7 +96,10 @@ private:
 
         const EditorMode mode = editorMode_.mode();
         const bool isTerrain = mode == EditorMode::Terrain;
-        ImGuiID dockId = ImGui::GetID(isTerrain ? "##TerrainDockSpace" : "##MainDockSpace");
+        const bool isMeshBuilder = mode == EditorMode::MeshBuilder;
+        const char* dockSpaceName =
+                isTerrain ? "##TerrainDockSpace" : (isMeshBuilder ? "##MeshBuilderDockSpace" : "##MainDockSpace");
+        ImGuiID dockId = ImGui::GetID(dockSpaceName);
         ImGui::DockSpace(dockId,
                          ImVec2(dockSize.x, dockSize.y - Imgui_SceneViewToolbar::BAR_HEIGHT),
                          ImGuiDockNodeFlags_PassthruCentralNode);
@@ -104,6 +113,8 @@ private:
         if (!layoutBuilt_[static_cast<size_t>(mode)]) {
             if (isTerrain)
                 buildTerrainLayout(dockId, viewport->WorkSize);
+            else if (isMeshBuilder)
+                buildMeshBuilderLayout(dockId, viewport->WorkSize);
             else
                 buildSelectionLayout(dockId, viewport->WorkSize);
             layoutBuilt_[static_cast<size_t>(mode)] = true;
@@ -180,6 +191,23 @@ private:
         ImGui::DockBuilderFinish(dockId);
     }
 
+    static void buildMeshBuilderLayout(ImGuiID dockId, ImVec2 size) {
+        ImGui::DockBuilderRemoveNode(dockId);
+        ImGui::DockBuilderAddNode(dockId, ImGuiDockNodeFlags_DockSpace);
+        ImGui::DockBuilderSetNodeSize(dockId, size);
+
+        ImGuiID dockLeft, dockCenter;
+        ImGui::DockBuilderSplitNode(dockId, ImGuiDir_Left, 0.20f, &dockLeft, &dockCenter);
+
+        ImGuiID dockBottom, dockMain;
+        ImGui::DockBuilderSplitNode(dockCenter, ImGuiDir_Down, 0.28f, &dockBottom, &dockMain);
+
+        ImGui::DockBuilderDockWindow("Mesh Builder", dockLeft);
+        ImGui::DockBuilderDockWindow("Asset Grid", dockBottom);
+
+        ImGui::DockBuilderFinish(dockId);
+    }
+
     Imgui_ApplicationMenuBar& applicationMenuBar_;
     Imgui_SceneViewToolbar& sceneViewToolbar_;
     Imgui_HierarchyPanel& hierarchyPanel_;
@@ -191,11 +219,12 @@ private:
     GameWindow& window_;
     EditorModeService& editorMode_;
     Imgui_TerrainPanel* terrainPanel_ = nullptr;
+    Imgui_MeshBuilderPanel* meshBuilderPanel_ = nullptr;
     std::function<void()> overlayCallback_;
     ImVec2 centralNodePos_{0.0f, 0.0f};
     ImVec2 centralNodeSize_{0.0f, 0.0f};
     EditorMode lastMode_ = EditorMode::Selection;
-    std::array<bool, 2> layoutBuilt_{};
+    std::array<bool, 3> layoutBuilt_{};
 };
 
 class SimHUDRoot {

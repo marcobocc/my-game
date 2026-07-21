@@ -7,6 +7,7 @@
 enum class EditorMode {
     Selection, // hierarchy / inspector / gizmos — the default editing layout
     Terrain, // terrain sculpt/paint tools own the viewport input
+    MeshBuilder, // vertex/edge mesh editing tool owns the viewport input
 };
 
 class EditorModeService {
